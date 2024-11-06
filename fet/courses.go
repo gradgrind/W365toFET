@@ -274,16 +274,18 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 		scl := &fetinfo.fetdata.Space_Constraints_List
 		tcl := &fetinfo.fetdata.Time_Constraints_List
 		for i, aid := range cinfo.activities {
-			scl.ConstraintActivityPreferredRooms = append(
-				scl.ConstraintActivityPreferredRooms,
-				roomChoice{
-					Weight_Percentage:         100,
-					Activity_Id:               aid,
-					Number_of_Preferred_Rooms: len(rooms),
-					Preferred_Room:            rooms,
-					Active:                    true,
-				},
-			)
+			if len(rooms) != 0 {
+				scl.ConstraintActivityPreferredRooms = append(
+					scl.ConstraintActivityPreferredRooms,
+					roomChoice{
+						Weight_Percentage:         100,
+						Activity_Id:               aid,
+						Number_of_Preferred_Rooms: len(rooms),
+						Preferred_Room:            rooms,
+						Active:                    true,
+					},
+				)
+			}
 			l := cinfo.lessons[i]
 			if l.Day < 0 {
 				continue
