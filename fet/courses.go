@@ -73,7 +73,10 @@ func gatherCourseInfo(fetinfo *fetInfo) {
 			subject = cnode.Subject
 			groups = cnode.Groups
 			teachers = cnode.Teachers
-			rooms = []Ref{cnode.Room}
+			rooms = []Ref{}
+			if cnode.Room != "" {
+				rooms = append(rooms, cnode.Room)
+			}
 		} else {
 			spc, ok := c.(*w365tt.SuperCourse)
 			if !ok {
@@ -107,24 +110,30 @@ func gatherCourseInfo(fetinfo *fetInfo) {
 			fetinfo.superSubs[spc] = append(fetinfo.superSubs[spc], sbc.Id)
 
 			// Add groups
-			cglist := append(cinfo.groups, sbc.Groups...)
-			slices.Sort(cglist)
-			cglist = slices.Compact(cglist)
-			cinfo.groups = make([]Ref, len(cglist))
-			copy(cinfo.groups, cglist)
+			if len(sbc.Groups) != 0 {
+				cglist := append(cinfo.groups, sbc.Groups...)
+				slices.Sort(cglist)
+				cglist = slices.Compact(cglist)
+				cinfo.groups = make([]Ref, len(cglist))
+				copy(cinfo.groups, cglist)
+			}
 
 			// Add teachers
-			ctlist := append(cinfo.teachers, sbc.Teachers...)
-			slices.Sort(ctlist)
-			ctlist = slices.Compact(ctlist)
-			cinfo.teachers = make([]Ref, len(ctlist))
-			copy(cinfo.teachers, ctlist)
+			if len(sbc.Teachers) != 0 {
+				ctlist := append(cinfo.teachers, sbc.Teachers...)
+				slices.Sort(ctlist)
+				ctlist = slices.Compact(ctlist)
+				cinfo.teachers = make([]Ref, len(ctlist))
+				copy(cinfo.teachers, ctlist)
+			}
 
 			// Add rooms
-			crlist := append(roomData[spc], sbc.Room)
-			slices.Sort(crlist)
-			crlist = slices.Compact(crlist)
-			roomData[spc] = crlist
+			if sbc.Room != "" {
+				crlist := append(roomData[spc], sbc.Room)
+				slices.Sort(crlist)
+				crlist = slices.Compact(crlist)
+				roomData[spc] = crlist
+			}
 
 			fetinfo.courseInfo[spc] = cinfo
 		}
