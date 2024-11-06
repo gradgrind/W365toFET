@@ -190,7 +190,7 @@ func addClassConstraints(fetinfo *fetInfo) {
 		captss = append(captss, preferredSlots{
 			Weight_Percentage:              100,
 			Subject:                        lb,
-			Number_of_Preferred_Time_Slots: 2,
+			Number_of_Preferred_Time_Slots: len(ptlist),
 			Preferred_Time_Slot:            ptlist,
 			Active:                         true,
 		})

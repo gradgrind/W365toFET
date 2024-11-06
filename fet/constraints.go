@@ -186,7 +186,7 @@ func addDifferentDaysConstraints(fetinfo *fetInfo) {
 			mdba = append(mdba, minDaysBetweenActivities{
 				Weight_Percentage:       100,
 				Consecutive_If_Same_Day: true,
-				Number_of_Activities:    len(unfixeds),
+				Number_of_Activities:    len(cinfo.activities),
 				Activity_Id:             cinfo.activities,
 				MinDays:                 1,
 				Active:                  true,
