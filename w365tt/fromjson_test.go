@@ -25,7 +25,7 @@ func getJSONfile() string {
 		}
 	*/
 
-	f365 := "../_testdata/test1.json"
+	f365 := "../_testdata/test1_1_w365.json"
 	return f365
 }
 

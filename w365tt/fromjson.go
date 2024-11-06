@@ -52,22 +52,8 @@ func LoadJSON(jsonpath string) *DbTopLevel {
 }
 
 func (dbp *DbTopLevel) readHours() {
-	mdbok := len(dbp.Info.MiddayBreak) == 0
 	for i := 0; i < len(dbp.Hours); i++ {
 		n := &dbp.Hours[i]
-		if n.FirstAfternoonHour {
-			dbp.Info.FirstAfternoonHour = i
-			n.FirstAfternoonHour = false
-		}
-		if n.MiddayBreak {
-			if mdbok {
-				dbp.Info.MiddayBreak = append(
-					dbp.Info.MiddayBreak, i)
-			} else {
-				log.Println("*ERROR* MiddayBreak set in Info AND Hours")
-			}
-			n.MiddayBreak = false
-		}
 		if n.Tag == "" {
 			n.Tag = fmt.Sprintf("(%d)", i+1)
 		}
