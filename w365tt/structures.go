@@ -126,7 +126,8 @@ type SuperCourse struct {
 }
 
 type SubCourse struct {
-	Id             Ref   `json:"id"`
+	Id0            Ref `json:"id"`
+	Id             Ref
 	SuperCourse    Ref   `json:"superCourse"`
 	Subjects       []Ref `json:"subjects,omitempty"`
 	Subject        Ref   `json:"subject"`
@@ -180,7 +181,8 @@ func (db *DbTopLevel) NewId() Ref {
 func (db *DbTopLevel) AddElement(ref Ref, element interface{}) {
 	_, nok := db.Elements[ref]
 	if nok {
-		log.Fatalf("*ERROR* Element Id defined more than once:\n  %s\n", ref)
+		log.Printf("*ERROR* Element Id defined more than once:\n  %s\n", ref)
+		return
 	}
 	db.Elements[ref] = element
 	// Special handling if it is an "indexed" Id.
@@ -289,7 +291,9 @@ func (db *DbTopLevel) checkDb() {
 		db.SubCourses = []SubCourse{}
 	} else {
 		for i, n := range db.SubCourses {
-			db.AddElement(n.Id, &db.SubCourses[i])
+			nid := "$$" + n.Id0
+			db.SubCourses[i].Id = nid
+			db.AddElement(nid, &db.SubCourses[i])
 		}
 	}
 	if db.Lessons == nil {
