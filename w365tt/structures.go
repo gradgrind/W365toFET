@@ -1,8 +1,8 @@
 package w365tt
 
 import (
+	"W365toFET/logging"
 	"fmt"
-	"log"
 	"slices"
 	"strconv"
 	"strings"
@@ -181,7 +181,7 @@ func (db *DbTopLevel) NewId() Ref {
 func (db *DbTopLevel) AddElement(ref Ref, element interface{}) {
 	_, nok := db.Elements[ref]
 	if nok {
-		log.Printf("*ERROR* Element Id defined more than once:\n  %s\n", ref)
+		logging.Error.Printf("Element Id defined more than once:\n  %s\n", ref)
 		return
 	}
 	db.Elements[ref] = element
@@ -206,7 +206,7 @@ func (db *DbTopLevel) checkDb() {
 		slices.Sort(db.Info.MiddayBreak)
 		mb := db.Info.MiddayBreak
 		if mb[len(mb)-1]-mb[0] >= len(mb) {
-			log.Fatalln("*ERROR* MiddayBreak hours not contiguous")
+			logging.Error.Fatalln("MiddayBreak hours not contiguous")
 		}
 
 	}
@@ -217,22 +217,22 @@ func (db *DbTopLevel) checkDb() {
 	// Initialize the Ref -> Element mapping
 	db.Elements = make(map[Ref]interface{})
 	if len(db.Days) == 0 {
-		log.Fatalln("*ERROR* No Days")
+		logging.Error.Fatalln("No Days")
 	}
 	if len(db.Hours) == 0 {
-		log.Fatalln("*ERROR* No Hours")
+		logging.Error.Fatalln("No Hours")
 	}
 	if len(db.Teachers) == 0 {
-		log.Fatalln("*ERROR* No Teachers")
+		logging.Error.Fatalln("No Teachers")
 	}
 	if len(db.Subjects) == 0 {
-		log.Fatalln("*ERROR* No Subjects")
+		logging.Error.Fatalln("No Subjects")
 	}
 	if len(db.Rooms) == 0 {
-		log.Fatalln("*ERROR* No Rooms")
+		logging.Error.Fatalln("No Rooms")
 	}
 	if len(db.Classes) == 0 {
-		log.Fatalln("*ERROR* No Classes")
+		logging.Error.Fatalln("No Classes")
 	}
 	for i, n := range db.Days {
 		db.AddElement(n.Id, &db.Days[i])

@@ -1,10 +1,10 @@
 package w365tt
 
 import (
+	"W365toFET/logging"
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"os"
 )
 
@@ -13,17 +13,17 @@ func ReadJSON(jsonpath string) *DbTopLevel {
 	// Open the  JSON file
 	jsonFile, err := os.Open(jsonpath)
 	if err != nil {
-		log.Fatal(err)
+		logging.Error.Fatal(err)
 	}
 	// Remember to close the file at the end of the function
 	defer jsonFile.Close()
 	// read the opened XML file as a byte array.
 	byteValue, _ := io.ReadAll(jsonFile)
-	log.Printf("*+ Reading: %s\n", jsonpath)
+	logging.Message.Printf("*+ Reading: %s\n", jsonpath)
 	v := DbTopLevel{}
 	err = json.Unmarshal(byteValue, &v)
 	if err != nil {
-		log.Fatalf("Could not unmarshal json: %s\n", err)
+		logging.Error.Fatalf("Could not unmarshal json: %s\n", err)
 	}
 	return &v
 }
@@ -87,89 +87,3 @@ func (dbp *DbTopLevel) readTeachers() {
 		}
 	}
 }
-
-/*
-
-
-func (dbdata *xData) addSuperCourses() {
-	dbp.SuperCourses = []db.SuperCourse{}
-	dbdata.supercourses = map[Ref]db.DbRef{}
-	for _, d := range dbdata.w365.SuperCourses {
-		cr := dbdata.nextId()
-		sr, ok := dbdata.subjects[d.Subject]
-		if !ok {
-			log.Printf("*ERROR* Unknown Subject in SuperCourse %s:\n  %s\n",
-				d.Id, d.Subject)
-			continue
-		}
-		dbp.SuperCourses = append(dbp.SuperCourses, db.SuperCourse{
-			Id:        cr,
-			Subject:   sr,
-			Reference: string(d.Id),
-		})
-		dbdata.supercourses[d.Id] = cr
-	}
-}
-
-func (dbdata *xData) addSubCourses() {
-	dbp.SubCourses = []db.SubCourse{}
-	dbdata.subcourses = map[Ref]db.DbRef{}
-	for _, d := range dbdata.w365.SubCourses {
-		sr, glist, tlist, rm := dbdata.readCourse(
-			d.Id, d.Subject, d.Subjects, d.Groups, d.Teachers, d.PreferredRooms)
-		sc, ok := dbdata.supercourses[d.SuperCourse]
-		if !ok {
-			log.Printf("*ERROR* Unknown SuperCourse in SubCourse %s:\n  %s\n",
-				d.Id, d.SuperCourse)
-			continue
-		}
-		cr := dbdata.nextId()
-		dbp.SubCourses = append(dbp.SubCourses, db.SubCourse{
-			Id:          cr,
-			SuperCourse: sc,
-			Subject:     sr,
-			Groups:      glist,
-			Teachers:    tlist,
-			Room:        rm,
-			Reference:   string(d.Id),
-		})
-		dbdata.subcourses[d.Id] = cr
-	}
-}
-
-func (dbdata *xData) addLessons() {
-	dbp.Lessons = []db.Lesson{}
-	for _, d := range dbdata.w365.Lessons {
-		// The course can be either a Course or a SubCourse.
-		crs, ok := dbdata.courses[d.Course]
-		if !ok {
-			crs, ok = dbdata.subcourses[d.Course]
-			if !ok {
-				log.Printf("*ERROR* Invalid course in Lesson %s:\n  -- %s\n",
-					d.Id, d.Course)
-				continue
-			}
-		}
-		rlist := []db.DbRef{}
-		for _, r := range d.LocalRooms {
-			rr, ok := dbdata.rooms[r]
-			if ok {
-				rlist = append(rlist, rr)
-			} else {
-				log.Printf("*ERROR* Invalid room in Lesson %s:\n  -- %s\n",
-					d.Id, r)
-			}
-		}
-		dbp.Lessons = append(dbp.Lessons, db.Lesson{
-			Id:        dbdata.nextId(),
-			Course:    crs,
-			Duration:  d.Duration,
-			Day:       d.Day,
-			Hour:      d.Hour,
-			Fixed:     d.Fixed,
-			Rooms:     rlist,
-			Reference: string(d.Id),
-		})
-	}
-}
-*/

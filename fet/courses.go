@@ -1,9 +1,9 @@
 package fet
 
 import (
+	"W365toFET/logging"
 	"W365toFET/w365tt"
 	"encoding/xml"
-	"log"
 	"slices"
 )
 
@@ -80,8 +80,8 @@ func gatherCourseInfo(fetinfo *fetInfo) {
 		} else {
 			spc, ok := c.(*w365tt.SuperCourse)
 			if !ok {
-				log.Fatalf(
-					"*ERROR* Invalid Course in Lesson %s:\n  %s\n",
+				logging.Error.Fatalf(
+					"Invalid Course in Lesson %s:\n  %s\n",
 					l.Id, lcref)
 			}
 			fetinfo.superSubs[lcref] = []Ref{}
@@ -161,8 +161,8 @@ func gatherCourseInfo(fetinfo *fetInfo) {
 				} else {
 					rc, ok := rx.(*w365tt.RoomChoiceGroup)
 					if !ok {
-						log.Fatalf(
-							"*BUG* Invalid room in course %s:\n  %s\n",
+						logging.Bug.Fatalf(
+							"Invalid room in course %s:\n  %s\n",
 							cref, rref)
 					}
 					roomChoices = append(roomChoices, rc.Rooms)
@@ -326,8 +326,8 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 				n, ok := fetinfo.fetVirtualRoomN[rooms[0]]
 				if ok {
 					if len(rlist) != n {
-						log.Printf(
-							"*ERROR* Lesson %s:\n  Number of Rooms doesn't"+
+						logging.Error.Printf(
+							"Lesson %s:\n  Number of Rooms doesn't"+
 								" match virtual room (%s) in course. \n",
 							l.Id, rooms[0])
 						continue
@@ -349,8 +349,8 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 			}
 
 			if len(rlist) != 1 {
-				log.Printf(
-					"*ERROR* Course room is not virtual, but Lesson has"+
+				logging.Error.Printf(
+					"Course room is not virtual, but Lesson has"+
 						" more than one Room:\n  %s", l.Id)
 				continue
 			}

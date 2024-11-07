@@ -1,7 +1,7 @@
 package w365tt
 
 import (
-	"log"
+	"W365toFET/logging"
 )
 
 func (dbp *DbTopLevel) readClasses() {
@@ -45,20 +45,20 @@ func (dbp *DbTopLevel) readClasses() {
 				flag, ok := pregroups[g]
 				if ok {
 					if flag {
-						log.Fatalf("*ERROR* Group Defined in"+
+						logging.Error.Fatalf("Group Defined in"+
 							" multiple Divisions:\n  -- %s\n", g)
 					}
 					// Flag Group and add to division's group list
 					pregroups[g] = true
 					glist = append(glist, g)
 				} else {
-					log.Printf("*ERROR* Unknown Group in Class %s,"+
+					logging.Error.Printf("Unknown Group in Class %s,"+
 						" Division %s:\n  %s\n", n.Tag, wdiv.Name, g)
 				}
 			}
 			// Accept Divisions which have too few Groups at this stage.
 			if len(glist) < 2 {
-				log.Printf("*WARNING* In Class %s,"+
+				logging.Warning.Printf("In Class %s,"+
 					" not enough valid Groups (>1) in Division %s\n",
 					n.Tag, wdiv.Name)
 			}
@@ -67,7 +67,7 @@ func (dbp *DbTopLevel) readClasses() {
 	}
 	for g, used := range pregroups {
 		if !used {
-			log.Printf("*ERROR* Group not in Division, removing:\n  %s,", g)
+			logging.Error.Printf("Group not in Division, removing:\n  %s,", g)
 			delete(dbp.Elements, g)
 			//TODO: Also remove from Groups list?
 		}
