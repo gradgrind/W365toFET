@@ -11,6 +11,25 @@ import (
 	"strings"
 )
 
+var (
+	Message *log.Logger
+	Warning *log.Logger
+	Error   *log.Logger
+	Bug     *log.Logger
+)
+
+func openlog(logpath string) {
+	file, err := os.OpenFile(logpath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0666)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	Message = log.New(file, "*INFO* ", log.Lshortfile)
+	Warning = log.New(file, "*WARNING* ", log.Lshortfile)
+	Error = log.New(file, "*ERROR* ", log.Lshortfile)
+	Bug = log.New(file, "*BUG* ", log.Lshortfile)
+}
+
 func main() {
 
 	//wordPtr := flag.String("word", "foo", "a string")
@@ -35,21 +54,43 @@ func main() {
 	if err != nil {
 		log.Fatalf("*ERROR* Couldn't resolve file path: %s\n", args[0])
 	}
+
+	stempath := strings.TrimSuffix(abspath, filepath.Ext(abspath))
+	logpath := stempath + ".log"
+	openlog(logpath)
+
 	data := w365tt.LoadJSON(abspath)
 
 	// ********** Build the fet file **********
-	//xmlitem := make_fet_file(&data, alist, course2activities, sgalist)
-	xmlitem := fet.MakeFetFile(data)
-	//fmt.Printf("\n*** fet:\n%v\n", xmlitem)
-	fetfile := strings.TrimSuffix(abspath, filepath.Ext(abspath)) + ".fet"
+	stempath = strings.TrimSuffix(stempath, "_w365")
+
+	xmlitem, lessonIdMap := fet.MakeFetFile(data)
+
+	// Write FET file
+	fetfile := stempath + ".fet"
 	f, err := os.Create(fetfile)
 	if err != nil {
-		log.Fatalf("Couldn't open output file: %s\n", fetfile)
+		Bug.Fatalf("Couldn't open output file: %s\n", fetfile)
 	}
 	defer f.Close()
 	_, err = f.WriteString(xmlitem)
 	if err != nil {
-		log.Fatalf("Couldn't write fet output to: %s\n", fetfile)
+		Bug.Fatalf("Couldn't write fet output to: %s\n", fetfile)
 	}
-	log.Printf("\nFET file written to: %s\n", fetfile)
+	Message.Printf("FET file written to: %s\n", fetfile)
+
+	//TODO: Write Id-map file.
+	mapfile := stempath + ".map"
+	fm, err := os.Create(mapfile)
+	if err != nil {
+		Bug.Fatalf("Couldn't open output file: %s\n", mapfile)
+	}
+	defer fm.Close()
+	_, err = fm.WriteString(lessonIdMap)
+	if err != nil {
+		Bug.Fatalf("Couldn't write fet output to: %s\n", mapfile)
+	}
+	Message.Printf("Id-map written to: %s\n", mapfile)
+
+	Message.Println("OK")
 }

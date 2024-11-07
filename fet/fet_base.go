@@ -7,6 +7,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 )
 
@@ -63,6 +64,11 @@ type courseInfo struct {
 	room       virtualRoom
 	lessons    []*w365tt.Lesson
 	activities []int
+}
+
+type idMap struct {
+	activityId int
+	w365Id     w365tt.Ref
 }
 
 type fetInfo struct {
@@ -135,7 +141,7 @@ type basicSpaceConstraint struct {
 	Active            bool
 }
 
-func MakeFetFile(dbdata *w365tt.DbTopLevel) string {
+func MakeFetFile(dbdata *w365tt.DbTopLevel) (string, string) {
 	//fmt.Printf("\n????? %+v\n", dbdata.Info)
 
 	// Build ref-index -> fet-key mapping
@@ -203,12 +209,20 @@ func MakeFetFile(dbdata *w365tt.DbTopLevel) string {
 	//fmt.Println("\n +++++++++++++++++++++++++++")
 	//printAtomicGroups(&fetinfo)
 	getClasses(&fetinfo)
-	getActivities(&fetinfo)
+	lessonIdMap := getActivities(&fetinfo)
 
 	addTeacherConstraints(&fetinfo)
 	addClassConstraints(&fetinfo)
 
-	return xml.Header + makeXML(fetinfo.fetdata, 0)
+	// Convert lessonIdMap to string
+	idmlines := []string{}
+	for _, idm := range lessonIdMap {
+		idmlines = append(idmlines,
+			strconv.Itoa(idm.activityId)+":"+string(idm.w365Id))
+	}
+	lidmap := strings.Join(idmlines, "\n")
+
+	return xml.Header + makeXML(fetinfo.fetdata, 0), lidmap
 }
 
 func getString(val interface{}) string {

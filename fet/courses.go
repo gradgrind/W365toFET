@@ -191,7 +191,7 @@ func gatherCourseInfo(fetinfo *fetInfo) {
 }
 
 // Generate the fet activties.
-func getActivities(fetinfo *fetInfo) {
+func getActivities(fetinfo *fetInfo) []idMap {
 
 	// ************* Start with the activity tags
 	tags := []fetActivityTag{}
@@ -210,6 +210,7 @@ func getActivities(fetinfo *fetInfo) {
 	}
 	// ************* Now the activities
 	activities := []fetActivity{}
+	lessonIdMap := []idMap{}
 	aid := 0
 	//for i := 0; i <
 	for cref, cinfo := range fetinfo.courseInfo {
@@ -256,6 +257,9 @@ func getActivities(fetinfo *fetInfo) {
 					Comments:          string(l.Id),
 				},
 			)
+			// Also add to Id-map.
+			lessonIdMap = append(
+				lessonIdMap, idMap{aid, l.Id})
 		}
 		fetinfo.courseInfo[cref] = cinfo
 	}
@@ -264,6 +268,7 @@ func getActivities(fetinfo *fetInfo) {
 	}
 	addPlacementConstraints(fetinfo)
 	addDifferentDaysConstraints(fetinfo)
+	return lessonIdMap
 }
 
 func addPlacementConstraints(fetinfo *fetInfo) {
