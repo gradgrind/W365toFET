@@ -121,8 +121,9 @@ type Course struct {
 }
 
 type SuperCourse struct {
-	Id      Ref `json:"id"`
-	Subject Ref `json:"subject"`
+	Id        Ref `json:"id"`
+	Subject   Ref `json:"subject"`
+	EpochPlan Ref `json:"epochPlan,omitempty"`
 }
 
 type SubCourse struct {
@@ -148,6 +149,12 @@ type Lesson struct {
 	Rooms    []Ref `json:"localRooms"` // only Room Elements
 }
 
+type EpochPlan struct {
+	Id   Ref    `json:"id"`
+	Tag  string `json:"shortcut"`
+	Name string `json:"name"`
+}
+
 type DbTopLevel struct {
 	Info             Info                   `json:"w365TT"`
 	Days             []Day                  `json:"days"`
@@ -163,6 +170,7 @@ type DbTopLevel struct {
 	SuperCourses     []SuperCourse          `json:"superCourses"`
 	SubCourses       []SubCourse            `json:"subCourses"`
 	Lessons          []Lesson               `json:"lessons"`
+	EpochPlans       []EpochPlan            `json:"epochPlans,omitempty"`
 	Constraints      map[string]interface{} `json:"constraints"`
 
 	// These fields do not belong in the JSON object.
@@ -306,6 +314,40 @@ func (db *DbTopLevel) checkDb() {
 	if db.Constraints == nil {
 		db.Constraints = make(map[string]interface{})
 	}
+}
+
+func (dbp *DbTopLevel) newSubjectTag() string {
+	// A rather primitive new-subject-tag generator
+	i := 0
+	for {
+		i++
+		tag := "X" + strconv.Itoa(i)
+		_, nok := dbp.SubjectTags[tag]
+		if !nok {
+			return tag
+		}
+	}
+}
+
+func (dbp *DbTopLevel) makeNewSubject(tag, name string) Ref {
+	stag := tag
+	if stag == "" {
+		stag = dbp.newSubjectTag()
+	}
+
+	sref := dbp.NewId()
+	i := len(dbp.Subjects)
+	dbp.Subjects = append(dbp.Subjects, Subject{
+		Id:   sref,
+		Tag:  stag,
+		Name: name,
+	})
+	dbp.AddElement(sref, &dbp.Subjects[i])
+	dbp.SubjectTags[stag] = sref
+	if tag == "" && name != "" {
+		dbp.SubjectNames[name] = stag
+	}
+	return sref
 }
 
 // Interface for Course and SubCourse elements

@@ -2,7 +2,6 @@ package w365tt
 
 import (
 	"W365toFET/logging"
-	"strconv"
 	"strings"
 )
 
@@ -24,19 +23,6 @@ func (dbp *DbTopLevel) readSubjects() {
 	}
 }
 
-func (dbp *DbTopLevel) newSubject() string {
-	// A rather primitive new-subject-tag generator
-	i := 0
-	for {
-		i++
-		tag := "X" + strconv.Itoa(i)
-		_, nok := dbp.SubjectTags[tag]
-		if !nok {
-			return tag
-		}
-	}
-}
-
 func (dbp *DbTopLevel) readCourses() {
 	for i := 0; i < len(dbp.Courses); i++ {
 		n := &dbp.Courses[i]
@@ -45,19 +31,23 @@ func (dbp *DbTopLevel) readCourses() {
 }
 
 func (dbp *DbTopLevel) readSuperCourses() {
-	for _, n := range dbp.SuperCourses {
-		s, ok := dbp.Elements[n.Subject]
-		if !ok {
-			logging.Error.Fatalf(
-				"SuperCourse %s:\n  Unknown Subject: %s\n",
-				n.Id, n.Subject)
+	// The SuperCourse Subjects come from the EpochPlans, which are then
+	// no longer needed.
+	epochPlanSubjects := map[Ref]Ref{}
+	if dbp.EpochPlans != nil {
+		for _, n := range dbp.EpochPlans {
+			sref, ok := dbp.SubjectTags[n.Tag]
+			if !ok {
+				sref = dbp.makeNewSubject(n.Tag, n.Name)
+			}
+			epochPlanSubjects[n.Id] = sref
 		}
-		_, ok = s.(*Subject)
-		if !ok {
-			logging.Error.Fatalf(
-				"SuperCourse %s:\n  Not a Subject: %s\n",
-				n.Id, n.Subject)
-		}
+	}
+	dbp.EpochPlans = nil
+
+	for i := 0; i < len(dbp.SuperCourses); i++ {
+		n := &dbp.SuperCourses[i]
+		n.Subject = epochPlanSubjects[n.EpochPlan]
 	}
 }
 
@@ -120,18 +110,7 @@ func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 				course.setSubject(dbp.SubjectTags[stag])
 			} else {
 				// Need a new Subject.
-				stag = dbp.newSubject()
-				sref := dbp.NewId()
-				i := len(dbp.Subjects)
-				dbp.Subjects = append(dbp.Subjects, Subject{
-					Id:   sref,
-					Tag:  stag,
-					Name: skname,
-				})
-				dbp.AddElement(sref, &dbp.Subjects[i])
-				dbp.SubjectTags[stag] = sref
-				dbp.SubjectNames[skname] = stag
-				course.setSubject(sref)
+				course.setSubject(dbp.makeNewSubject("", skname))
 			}
 		}
 	} else {
