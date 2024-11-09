@@ -17,7 +17,7 @@ func (dbp *DbTopLevel) readClasses() {
 	for i := 0; i < len(dbp.Classes); i++ {
 		n := &dbp.Classes[i]
 
-		if len(n.NotAvailable) == 0 {
+		if n.NotAvailable == nil {
 			// Avoid a null value
 			n.NotAvailable = []TimeSlot{}
 		}
@@ -38,6 +38,19 @@ func (dbp *DbTopLevel) readClasses() {
 		} else if n.MaxAfternoons == 0.0 {
 			n.MaxAfternoons = -1.0
 			dbp.handleZeroAfternoons(&n.NotAvailable)
+		}
+
+		// Handle special "classes" for stand-ins
+		if n.Year == 0 {
+			// Pending clarification of what exactly this should do, disregard
+			// any divisions.
+
+			n.Tag = "" // no students
+			//TODO
+
+			//
+
+			continue
 		}
 
 		// Get the divisions and flag their Groups.

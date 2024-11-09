@@ -10,10 +10,10 @@ import (
 type fetActivity struct {
 	XMLName           xml.Name `xml:"Activity"`
 	Id                int
-	Teacher           []string
+	Teacher           []string `xml:",omitempty"`
 	Subject           string
-	Activity_Tag      string `xml:",omitempty"`
-	Students          []string
+	Activity_Tag      string   `xml:",omitempty"`
+	Students          []string `xml:",omitempty"`
 	Active            bool
 	Total_Duration    int
 	Duration          int

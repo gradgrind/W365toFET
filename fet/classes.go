@@ -54,13 +54,15 @@ type studentsNotAvailable struct {
 	Active                        bool
 }
 
-//TODO
-
 func getClasses(fetinfo *fetInfo) {
 	items := []fetClass{}
 	natimes := []studentsNotAvailable{}
 	for _, cl := range fetinfo.db.Classes {
 		cname := cl.Tag
+		// Skip "special" classes.
+		if cname == "" {
+			continue
+		}
 		divs, ok := fetinfo.classDivisions[cl.Id]
 		if !ok {
 			logging.Bug.Fatalf(

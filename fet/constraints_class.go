@@ -39,6 +39,9 @@ func addClassConstraints(fetinfo *fetInfo) {
 
 	for clix := 0; clix < len(fetinfo.db.Classes); clix++ {
 		cl := &fetinfo.db.Classes[clix]
+		if cl.Tag == "" {
+			continue
+		}
 
 		n := int(cl.MinLessonsPerDay.(float64))
 		if n >= 2 && n <= nhours {
