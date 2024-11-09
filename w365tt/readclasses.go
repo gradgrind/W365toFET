@@ -35,6 +35,9 @@ func (dbp *DbTopLevel) readClasses() {
 		}
 		if n.MaxAfternoons == nil {
 			n.MaxAfternoons = -1.0
+		} else if n.MaxAfternoons == 0.0 {
+			n.MaxAfternoons = -1.0
+			dbp.handleZeroAfternoons(&n.NotAvailable)
 		}
 
 		// Get the divisions and flag their Groups.

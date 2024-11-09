@@ -350,6 +350,32 @@ func (dbp *DbTopLevel) makeNewSubject(tag, name string) Ref {
 	return sref
 }
 
+// Block all afternoons.
+func (dbp *DbTopLevel) handleZeroAfternoons(notAvailable *[]TimeSlot) {
+	// Make an array and fill this in two passes, then remake list
+	namap := make([][]bool, len(dbp.Days))
+	nhours := len(dbp.Hours)
+	for i := range namap {
+		namap[i] = make([]bool, nhours)
+		for h := dbp.Info.FirstAfternoonHour; h < nhours; h++ {
+			namap[i][h] = true
+		}
+	}
+	for _, ts := range *notAvailable {
+		namap[ts.Day][ts.Hour] = true
+	}
+	*notAvailable = []TimeSlot{}
+	//nalist := []TimeSlot{}
+	for d, naday := range namap {
+		for h, nahour := range naday {
+			if nahour {
+				//nalist = append(nalist, TimeSlot{d, h})
+				*notAvailable = append(*notAvailable, TimeSlot{d, h})
+			}
+		}
+	}
+}
+
 // Interface for Course and SubCourse elements
 type CourseInterface interface {
 	GetId() Ref

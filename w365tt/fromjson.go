@@ -84,6 +84,10 @@ func (dbp *DbTopLevel) readTeachers() {
 		}
 		if n.MaxAfternoons == nil {
 			n.MaxAfternoons = -1.0
+		} else if n.MaxAfternoons == 0.0 {
+			n.MaxAfternoons = -1.0
+			dbp.handleZeroAfternoons(&n.NotAvailable)
 		}
+
 	}
 }
