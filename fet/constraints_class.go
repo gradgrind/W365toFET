@@ -1,7 +1,6 @@
 package fet
 
 import (
-	"fmt"
 	"slices"
 )
 
@@ -31,8 +30,11 @@ func addClassConstraints(fetinfo *fetInfo) {
 	cmaxls := []maxLateStarts{}
 	ndays := len(fetinfo.days)
 	nhours := len(fetinfo.hours)
-	lblist := make([]string, ndays)
+
 	mbhours := fetinfo.db.Info.MiddayBreak
+	lastmbhour := mbhours[len(mbhours)-1]
+	lbwithmaxafternoons := fetinfo.db.Info.FirstAfternoonHour <= lastmbhour
+
 	actlist := &fetinfo.fetdata.Activities_List
 
 	for clix := 0; clix < len(fetinfo.db.Classes); clix++ {
@@ -80,14 +82,14 @@ func addClassConstraints(fetinfo *fetInfo) {
 		}
 
 		i := fetinfo.db.Info.FirstAfternoonHour
-		n = int(cl.MaxAfternoons.(float64))
-		if n >= 0 && i > 0 {
+		maxafternoons := int(cl.MaxAfternoons.(float64))
+		if maxafternoons >= 0 && i > 0 {
 			cmaxaft = append(cmaxaft, maxDaysinIntervalPerWeek{
 				Weight_Percentage:   100,
 				Students:            cl.Tag,
 				Interval_Start_Hour: fetinfo.hours[i],
 				Interval_End_Hour:   "", // end of day
-				Max_Days_Per_Week:   n,
+				Max_Days_Per_Week:   maxafternoons,
 				Active:              true,
 			})
 		}
@@ -104,30 +106,26 @@ func addClassConstraints(fetinfo *fetInfo) {
 		if cl.LunchBreak {
 			// Generate the constraint unless all days have a blocked lesson
 			// at lunchtime.
-			days := make([]bool, ndays)
+			// First count unblocked days.
+			lbdays := ndays
 			d := 0
 			for _, ts := range cl.NotAvailable {
 				if ts.Day < d {
 					continue
 				}
 				if slices.Contains(mbhours, ts.Hour) {
-					days[ts.Day] = true
+					lbdays--
 					d = ts.Day + 1
 				}
 			}
-			// Get days with lunch-breaks.
-			lbdays := []string{}
-			for d, nok := range days {
-				if !nok {
-					lb := lblist[d]
-					if lb == "" {
-						lb = fmt.Sprintf(LUNCH_BREAK_TAG, d)
-						lblist[d] = lb
-					}
-					lbdays = append(lbdays, lb)
-				}
+			// Compare lbdays with MaxAfternoons if a free afternoon would
+			// cover a lunch slot.
+			if maxafternoons >= 0 &&
+				lbwithmaxafternoons &&
+				maxafternoons < lbdays {
+				lbdays = maxafternoons
 			}
-			if len(lbdays) != 0 {
+			if lbdays != 0 {
 				// Add dummy lessons for lunch-breaks.
 				// Undivided classes have no atomic groups, but also they
 				// need to be handled here.
@@ -138,22 +136,42 @@ func addClassConstraints(fetinfo *fetInfo) {
 				if len(agtags) == 0 {
 					agtags = append(agtags, []string{cl.Tag})
 				}
+				mdba := []minDaysBetweenActivities{}
 				for _, agtag := range agtags {
-					for _, lb := range lbdays {
-						aid := len(actlist.Activity) + 1
+					aid0 := len(actlist.Activity) + 1
+					aidlist := []int{}
+					for i := 0; i < lbdays; i++ {
+						aidlist = append(aidlist, aid0+i)
 						actlist.Activity = append(
 							actlist.Activity, fetActivity{
-								Id:                aid,
+								Id:                aid0 + i,
 								Teacher:           []string{},
-								Subject:           lb,
+								Subject:           LUNCH_BREAK_TAG,
 								Students:          agtag,
 								Active:            true,
 								Total_Duration:    1,
 								Duration:          1,
-								Activity_Group_Id: 0,
+								Activity_Group_Id: aid0,
 							})
 					}
+					// Add a different-days constraint
+					if lbdays > 1 {
+						mdba = append(mdba, minDaysBetweenActivities{
+							Weight_Percentage:       100,
+							Consecutive_If_Same_Day: true,
+							Number_of_Activities:    lbdays,
+							Activity_Id:             aidlist,
+							MinDays:                 1,
+							Active:                  true,
+						})
+					}
 				}
+				// Append constraints to full list
+				fetinfo.fetdata.Time_Constraints_List.
+					ConstraintMinDaysBetweenActivities = append(
+					fetinfo.fetdata.Time_Constraints_List.
+						ConstraintMinDaysBetweenActivities,
+					mdba...)
 			}
 		}
 	}
@@ -171,30 +189,29 @@ func addClassConstraints(fetinfo *fetInfo) {
 		ConstraintStudentsSetEarlyMaxBeginningsAtSecondHour = cmaxls
 	// Generate special subjects and time-constraints for the lunch-breaks.
 	captss := []preferredSlots{}
-	for d, lb := range lblist {
-		// Dummy subjects for lunch breaks
-		fetinfo.fetdata.Subjects_List.Subject = append(
-			fetinfo.fetdata.Subjects_List.Subject, fetSubject{
-				Name:      lb,
-				Long_Name: LUNCH_BREAK_NAME,
-			})
-		// Constraint it to the lunch slots on the given day.
-		dtag := fetinfo.days[d]
-		ptlist := []preferredTime{}
+	// Dummy subject for lunch breaks
+	fetinfo.fetdata.Subjects_List.Subject = append(
+		fetinfo.fetdata.Subjects_List.Subject, fetSubject{
+			Name:      LUNCH_BREAK_TAG,
+			Long_Name: LUNCH_BREAK_NAME,
+		})
+	// Constraint it to the lunch slots.
+	ptlist := []preferredTime{}
+	for _, dtag := range fetinfo.days {
 		for _, h := range mbhours {
 			ptlist = append(ptlist, preferredTime{
 				Preferred_Day:  dtag,
 				Preferred_Hour: fetinfo.hours[h],
 			})
 		}
-		captss = append(captss, preferredSlots{
-			Weight_Percentage:              100,
-			Subject:                        lb,
-			Number_of_Preferred_Time_Slots: len(ptlist),
-			Preferred_Time_Slot:            ptlist,
-			Active:                         true,
-		})
 	}
+	captss = append(captss, preferredSlots{
+		Weight_Percentage:              100,
+		Subject:                        LUNCH_BREAK_TAG,
+		Number_of_Preferred_Time_Slots: len(ptlist),
+		Preferred_Time_Slot:            ptlist,
+		Active:                         true,
+	})
 	fetinfo.fetdata.Time_Constraints_List.
 		ConstraintActivitiesPreferredTimeSlots = captss
 }

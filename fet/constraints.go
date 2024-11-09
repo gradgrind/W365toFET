@@ -214,6 +214,10 @@ func addDifferentDaysConstraints(fetinfo *fetInfo) {
 		}
 		fetinfo.differentDayConstraints[cref] = ddc
 	}
+	// Append constraints to full list
 	fetinfo.fetdata.Time_Constraints_List.
-		ConstraintMinDaysBetweenActivities = mdba
+		ConstraintMinDaysBetweenActivities = append(
+		fetinfo.fetdata.Time_Constraints_List.
+			ConstraintMinDaysBetweenActivities,
+		mdba...)
 }
