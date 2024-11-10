@@ -224,6 +224,8 @@ func (db *DbTopLevel) checkDb() {
 	db.RoomChoiceNames = map[string]Ref{}
 	// Initialize the Ref -> Element mapping
 	db.Elements = make(map[Ref]interface{})
+
+	// Checks
 	if len(db.Days) == 0 {
 		logging.Error.Fatalln("No Days")
 	}
@@ -242,6 +244,8 @@ func (db *DbTopLevel) checkDb() {
 	if len(db.Classes) == 0 {
 		logging.Error.Fatalln("No Classes")
 	}
+
+	// More initializations
 	for i, n := range db.Days {
 		db.AddElement(n.Id, &db.Days[i])
 	}
@@ -299,6 +303,8 @@ func (db *DbTopLevel) checkDb() {
 		db.SubCourses = []SubCourse{}
 	} else {
 		for i, n := range db.SubCourses {
+			// Add a prefix to the Id to avoid possible clashe with a
+			// Course having the same Id.
 			nid := "$$" + n.Id0
 			db.SubCourses[i].Id = nid
 			db.AddElement(nid, &db.SubCourses[i])
@@ -365,11 +371,9 @@ func (dbp *DbTopLevel) handleZeroAfternoons(notAvailable *[]TimeSlot) {
 		namap[ts.Day][ts.Hour] = true
 	}
 	*notAvailable = []TimeSlot{}
-	//nalist := []TimeSlot{}
 	for d, naday := range namap {
 		for h, nahour := range naday {
 			if nahour {
-				//nalist = append(nalist, TimeSlot{d, h})
 				*notAvailable = append(*notAvailable, TimeSlot{d, h})
 			}
 		}

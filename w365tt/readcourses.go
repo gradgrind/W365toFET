@@ -72,7 +72,13 @@ func (dbp *DbTopLevel) readSubCourses() {
 
 func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 	//
-	// Deal with the subject(s) fields
+	// Deal with the subject(s) fields. W365 allows multiple subjects, hence
+	// the field "Subjects". For the interface there should only be a single
+	// subject – in the "Subject"-field. If there is a "Subjects" entry, this
+	// is converted to a single subject in the "Subject" field, if necessary
+	// creating a new subject. Repeated use of the same subject list will
+	// reuse the created subject. There should not be an entry in both
+	// "Subject" and "Subjects" field.
 	//
 	msg1 := "Course %s:\n  Unknown Subject: %s\n"
 	msg2 := "Course %s:\n  Not a Subject: %s\n"
@@ -133,7 +139,7 @@ func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 	course.setSubjects(nil)
 
 	//
-	// Deal with groups
+	// Deal with groups.
 	//
 	//glist := []Ref{}
 	for _, gref := range course.GetGroups() {
@@ -179,6 +185,10 @@ func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 
 	//
 	// Deal with rooms. W365 can have a single RoomGroup or a list of Rooms.
+	// If there is a list of Rooms, this is converted to a RoomChoiceGroup.
+	// In the end there should be a single Room, RoomChoiceGroup or RoomGroup
+	// in the "Room" field. The "PreferredRooms" field in cleared.
+	// If a list of rooms recurs, the same RoomChoiceGroup is used.
 	//
 	rref := Ref("")
 	if len(course.getPreferredRooms()) > 1 {
