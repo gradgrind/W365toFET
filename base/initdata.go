@@ -1,5 +1,6 @@
 package base
 
+/*
 import "W365toFET/w365tt"
 
 //TODO: The conversion should be in w365tt
@@ -168,3 +169,4 @@ func MoveDb(db0 *w365tt.DbTopLevel) *DbTopLevel {
 
 	return db
 }
+*/

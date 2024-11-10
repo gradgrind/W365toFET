@@ -1,7 +1,7 @@
 package base
 
 //TODO: This test should be in w365tt
-
+/*
 import (
 	"W365toFET/w365tt"
 	"fmt"
@@ -28,3 +28,4 @@ func TestDb(t *testing.T) {
 	db.CheckDb()
 	fmt.Printf("  --> %+v\n", db)
 }
+*/
