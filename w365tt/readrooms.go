@@ -1,8 +1,8 @@
 package w365tt
 
 import (
+	"W365toFET/logging"
 	"fmt"
-	"log"
 	"strconv"
 	"strings"
 )
@@ -12,8 +12,8 @@ func (dbp *DbTopLevel) readRooms() {
 		n := &dbp.Rooms[i]
 		_, nok := dbp.RoomTags[n.Tag]
 		if nok {
-			log.Fatalf(
-				"*ERROR* Room Tag (Shortcut) defined twice: %s\n",
+			logging.Error.Fatalf(
+				"Room Tag (Shortcut) defined twice: %s\n",
 				n.Tag)
 		}
 		dbp.RoomTags[n.Tag] = n.Id
@@ -32,8 +32,8 @@ func (dbp *DbTopLevel) readRoomGroups() {
 		if n.Tag != "" {
 			_, nok := dbp.RoomTags[n.Tag]
 			if nok {
-				log.Fatalf(
-					"*ERROR* Room Tag (Shortcut) defined twice: %s\n",
+				logging.Error.Fatalf(
+					"Room Tag (Shortcut) defined twice: %s\n",
 					n.Tag)
 			}
 			dbp.RoomTags[n.Tag] = n.Id
@@ -58,8 +58,8 @@ func (dbp *DbTopLevel) checkRoomGroups() {
 					continue
 				}
 			}
-			log.Printf(
-				"*ERROR* Invalid Room in RoomGroup %s:\n  %s\n",
+			logging.Error.Printf(
+				"Invalid Room in RoomGroup %s:\n  %s\n",
 				n.Tag, rref)
 		}
 		if n.Tag == "" {
@@ -95,8 +95,8 @@ func (dbp *DbTopLevel) readRoomChoiceGroups() {
 		n := &dbp.RoomChoiceGroups[i]
 		_, nok := dbp.RoomTags[n.Tag]
 		if nok {
-			log.Fatalf(
-				"*ERROR* Room Tag (Shortcut) defined twice: %s\n",
+			logging.Error.Fatalf(
+				"Room Tag (Shortcut) defined twice: %s\n",
 				n.Tag)
 		}
 		// Check component rooms.
@@ -110,8 +110,8 @@ func (dbp *DbTopLevel) readRoomChoiceGroups() {
 					continue
 				}
 			}
-			log.Printf(
-				"*ERROR* Invalid Room in RoomChoiceGroup %s:\n  %s\n",
+			logging.Error.Printf(
+				"Invalid Room in RoomChoiceGroup %s:\n  %s\n",
 				n.Tag, rref)
 		}
 		n.Rooms = reflist

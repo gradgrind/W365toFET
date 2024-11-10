@@ -2,11 +2,12 @@
 package fet
 
 import (
+	"W365toFET/logging"
 	"W365toFET/w365tt"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
-	"log"
+	"strconv"
 	"strings"
 )
 
@@ -16,7 +17,7 @@ const CLASS_GROUP_SEP = "."
 const ATOMIC_GROUP_SEP1 = "#"
 const ATOMIC_GROUP_SEP2 = "~"
 const VIRTUAL_ROOM_PREFIX = "!"
-const LUNCH_BREAK_TAG = "-lb%d-"
+const LUNCH_BREAK_TAG = "-lb-"
 const LUNCH_BREAK_NAME = "Lunch Break"
 
 const fet_version = "6.25.2"
@@ -28,7 +29,7 @@ func makeXML(data interface{}, indent_level int) string {
 	prefix := strings.Repeat(indent, indent_level)
 	xmlData, err := xml.MarshalIndent(data, prefix, indent)
 	if err != nil {
-		log.Fatalf("Error: %v\n", err)
+		logging.Error.Fatalf("%v\n", err)
 	}
 	return string(xmlData)
 }
@@ -63,6 +64,11 @@ type courseInfo struct {
 	room       virtualRoom
 	lessons    []*w365tt.Lesson
 	activities []int
+}
+
+type idMap struct {
+	activityId int
+	w365Id     w365tt.Ref
 }
 
 type fetInfo struct {
@@ -135,7 +141,7 @@ type basicSpaceConstraint struct {
 	Active            bool
 }
 
-func MakeFetFile(dbdata *w365tt.DbTopLevel) string {
+func MakeFetFile(dbdata *w365tt.DbTopLevel) (string, string) {
 	//fmt.Printf("\n????? %+v\n", dbdata.Info)
 
 	// Build ref-index -> fet-key mapping
@@ -203,12 +209,20 @@ func MakeFetFile(dbdata *w365tt.DbTopLevel) string {
 	//fmt.Println("\n +++++++++++++++++++++++++++")
 	//printAtomicGroups(&fetinfo)
 	getClasses(&fetinfo)
-	getActivities(&fetinfo)
+	lessonIdMap := getActivities(&fetinfo)
 
 	addTeacherConstraints(&fetinfo)
 	addClassConstraints(&fetinfo)
 
-	return xml.Header + makeXML(fetinfo.fetdata, 0)
+	// Convert lessonIdMap to string
+	idmlines := []string{}
+	for _, idm := range lessonIdMap {
+		idmlines = append(idmlines,
+			strconv.Itoa(idm.activityId)+":"+string(idm.w365Id))
+	}
+	lidmap := strings.Join(idmlines, "\n")
+
+	return xml.Header + makeXML(fetinfo.fetdata, 0), lidmap
 }
 
 func getString(val interface{}) string {

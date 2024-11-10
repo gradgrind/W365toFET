@@ -1,8 +1,8 @@
 package w365tt
 
 import (
+	"W365toFET/logging"
 	"fmt"
-	"log"
 	"slices"
 	"strconv"
 	"strings"
@@ -14,165 +14,164 @@ import (
 type Ref string // Element reference
 
 type Info struct {
-	Institution        string `json:"SchoolName"`
-	FirstAfternoonHour int
-	MiddayBreak        []int
-	Reference          string `json:"Scenario"`
+	Institution        string `json:"schoolName"`
+	FirstAfternoonHour int    `json:"firstAfternoonHour"`
+	MiddayBreak        []int  `json:"middayBreak"`
+	Reference          string `json:"scenario"`
 }
 
 type Day struct {
-	Id   Ref
-	Name string
-	Tag  string `json:"Shortcut"`
+	Id   Ref    `json:"id"`
+	Name string `json:"name"`
+	Tag  string `json:"shortcut"`
 }
 
 type Hour struct {
-	Id    Ref
-	Name  string
-	Tag   string `json:"Shortcut"`
-	Start string
-	End   string
-	// These are for W365 only, optional, with default = False:
-	FirstAfternoonHour bool `json:",omitempty"`
-	MiddayBreak        bool `json:",omitempty"`
+	Id    Ref    `json:"id"`
+	Name  string `json:"name"`
+	Tag   string `json:"shortcut"`
+	Start string `json:"start"`
+	End   string `json:"end"`
 }
 
 type TimeSlot struct {
-	Day  int
-	Hour int
+	Day  int `json:"day"`
+	Hour int `json:"hour"`
 }
 
 type Teacher struct {
-	Id               Ref
-	Name             string
-	Tag              string `json:"Shortcut"`
-	Firstname        string
-	NotAvailable     []TimeSlot `json:"Absences"`
-	MinLessonsPerDay interface{}
-	MaxLessonsPerDay interface{}
-	MaxDays          interface{}
-	MaxGapsPerDay    interface{}
-	MaxGapsPerWeek   interface{}
-	MaxAfternoons    interface{}
-	LunchBreak       bool
+	Id               Ref         `json:"id"`
+	Name             string      `json:"name"`
+	Tag              string      `json:"shortcut"`
+	Firstname        string      `json:"firstname"`
+	NotAvailable     []TimeSlot  `json:"absences"`
+	MinLessonsPerDay interface{} `json:"minLessonsPerDay"`
+	MaxLessonsPerDay interface{} `json:"maxLessonsPerDay"`
+	MaxDays          interface{} `json:"maxDays"`
+	MaxGapsPerDay    interface{} `json:"maxGapsPerDay"`
+	MaxGapsPerWeek   interface{} `json:"maxGapsPerWeek"`
+	MaxAfternoons    interface{} `json:"maxAfternoons"`
+	LunchBreak       bool        `json:"lunchBreak"`
 }
 
 type Subject struct {
-	Id   Ref
-	Name string
-	Tag  string `json:"Shortcut"`
+	Id   Ref    `json:"id"`
+	Name string `json:"name"`
+	Tag  string `json:"shortcut"`
 }
 
 type Room struct {
-	Id           Ref
-	Name         string
-	Tag          string     `json:"Shortcut"`
-	NotAvailable []TimeSlot `json:"Absences"`
+	Id           Ref        `json:"id"`
+	Name         string     `json:"name"`
+	Tag          string     `json:"shortcut"`
+	NotAvailable []TimeSlot `json:"absences"`
 }
 
 type RoomGroup struct {
-	Id    Ref
-	Name  string
-	Tag   string `json:"Shortcut"`
-	Rooms []Ref
+	Id    Ref    `json:"id"`
+	Name  string `json:"name"`
+	Tag   string `json:"shortcut"`
+	Rooms []Ref  `json:"rooms"`
 }
 
 type RoomChoiceGroup struct {
-	Id    Ref
-	Name  string
-	Tag   string `json:"Shortcut"`
-	Rooms []Ref
+	Id    Ref    `json:"id"`
+	Name  string `json:"name"`
+	Tag   string `json:"shortcut"`
+	Rooms []Ref  `json:"rooms"`
 }
 
 type Class struct {
-	Id               Ref
-	Name             string
-	Tag              string `json:"Shortcut"`
-	Year             int    `json:"Level"`
-	Letter           string
-	NotAvailable     []TimeSlot `json:"Absences"`
-	Divisions        []Division
-	MinLessonsPerDay interface{}
-	MaxLessonsPerDay interface{}
-	MaxGapsPerDay    interface{}
-	MaxGapsPerWeek   interface{}
-	MaxAfternoons    interface{}
-	LunchBreak       bool
-	ForceFirstHour   bool
+	Id               Ref         `json:"id"`
+	Name             string      `json:"name"`
+	Tag              string      `json:"shortcut"`
+	Year             int         `json:"level"`
+	Letter           string      `json:"letter"`
+	NotAvailable     []TimeSlot  `json:"absences"`
+	Divisions        []Division  `json:"divisions"`
+	MinLessonsPerDay interface{} `json:"minLessonsPerDay"`
+	MaxLessonsPerDay interface{} `json:"maxLessonsPerDay"`
+	MaxGapsPerDay    interface{} `json:"maxGapsPerDay"`
+	MaxGapsPerWeek   interface{} `json:"maxGapsPerWeek"`
+	MaxAfternoons    interface{} `json:"maxAfternoons"`
+	LunchBreak       bool        `json:"lunchBreak"`
+	ForceFirstHour   bool        `json:"forceFirstHour"`
 }
 
 type Group struct {
-	Id  Ref
-	Tag string `json:"Shortcut"`
+	Id  Ref    `json:"id"`
+	Tag string `json:"shortcut"`
 }
 
 type Division struct {
-	Name   string
-	Groups []Ref
+	Id     Ref    `json:"id"`
+	Name   string `json:"name"`
+	Groups []Ref  `json:"groups"`
 }
-
-/*
-type Division struct {
-	Id     Ref
-	Name   string
-	Groups []Ref
-}
-*/
 
 type Course struct {
-	Id             Ref
-	Subjects       []Ref `json:",omitempty"`
-	Subject        Ref
-	Groups         []Ref
-	Teachers       []Ref
-	PreferredRooms []Ref `json:",omitempty"`
+	Id             Ref   `json:"id"`
+	Subjects       []Ref `json:"subjects,omitempty"`
+	Subject        Ref   `json:"subject"`
+	Groups         []Ref `json:"groups"`
+	Teachers       []Ref `json:"teachers"`
+	PreferredRooms []Ref `json:"preferredRooms,omitempty"`
 	// Not in W365:
 	Room Ref // Room, RoomGroup or RoomChoiceGroup Element
 }
 
 type SuperCourse struct {
-	Id      Ref
-	Subject Ref
+	Id        Ref `json:"id"`
+	Subject   Ref `json:"subject"`
+	EpochPlan Ref `json:"epochPlan,omitempty"`
 }
 
 type SubCourse struct {
+	Id0            Ref `json:"id"`
 	Id             Ref
-	SuperCourse    Ref
-	Subjects       []Ref `json:",omitempty"`
-	Subject        Ref
-	Groups         []Ref
-	Teachers       []Ref
-	PreferredRooms []Ref `json:",omitempty"`
+	SuperCourse    Ref   `json:"superCourse"`
+	Subjects       []Ref `json:"subjects,omitempty"`
+	Subject        Ref   `json:"subject"`
+	Groups         []Ref `json:"groups"`
+	Teachers       []Ref `json:"teachers"`
+	PreferredRooms []Ref `json:"preferredRooms,omitempty"`
 	// Not in W365:
 	Room Ref // Room, RoomGroup or RoomChoiceGroup Element
 }
 
 type Lesson struct {
-	Id       Ref
-	Course   Ref // Course or SuperCourse Elements
-	Duration int
-	Day      int
-	Hour     int
-	Fixed    bool
-	Rooms    []Ref `json:"LocalRooms"` // only Room Elements
+	Id       Ref   `json:"id"`
+	Course   Ref   `json:"course"` // Course or SuperCourse Elements
+	Duration int   `json:"duration"`
+	Day      int   `json:"day"`
+	Hour     int   `json:"hour"`
+	Fixed    bool  `json:"fixed"`
+	Rooms    []Ref `json:"localRooms"` // only Room Elements
+}
+
+type EpochPlan struct {
+	Id   Ref    `json:"id"`
+	Tag  string `json:"shortcut"`
+	Name string `json:"name"`
 }
 
 type DbTopLevel struct {
-	Info             Info `json:"W365TT"`
-	Days             []Day
-	Hours            []Hour
-	Teachers         []Teacher
-	Subjects         []Subject
-	Rooms            []Room
-	RoomGroups       []RoomGroup
-	RoomChoiceGroups []RoomChoiceGroup
-	Classes          []Class
-	Groups           []Group
-	Courses          []Course
-	SuperCourses     []SuperCourse
-	SubCourses       []SubCourse
-	Lessons          []Lesson
-	Constraints      map[string]interface{}
+	Info             Info                   `json:"w365TT"`
+	Days             []Day                  `json:"days"`
+	Hours            []Hour                 `json:"hours"`
+	Teachers         []Teacher              `json:"teachers"`
+	Subjects         []Subject              `json:"subjects"`
+	Rooms            []Room                 `json:"rooms"`
+	RoomGroups       []RoomGroup            `json:"roomGroups"`
+	RoomChoiceGroups []RoomChoiceGroup      `json:"roomChoiceGroups"`
+	Classes          []Class                `json:"classes"`
+	Groups           []Group                `json:"groups"`
+	Courses          []Course               `json:"courses"`
+	SuperCourses     []SuperCourse          `json:"superCourses"`
+	SubCourses       []SubCourse            `json:"subCourses"`
+	Lessons          []Lesson               `json:"lessons"`
+	EpochPlans       []EpochPlan            `json:"epochPlans,omitempty"`
+	Constraints      map[string]interface{} `json:"constraints"`
 
 	// These fields do not belong in the JSON object.
 	Elements        map[Ref]interface{} `json:"-"`
@@ -190,7 +189,8 @@ func (db *DbTopLevel) NewId() Ref {
 func (db *DbTopLevel) AddElement(ref Ref, element interface{}) {
 	_, nok := db.Elements[ref]
 	if nok {
-		log.Fatalf("*ERROR* Element Id defined more than once:\n  %s\n", ref)
+		logging.Error.Printf("Element Id defined more than once:\n  %s\n", ref)
+		return
 	}
 	db.Elements[ref] = element
 	// Special handling if it is an "indexed" Id.
@@ -214,7 +214,7 @@ func (db *DbTopLevel) checkDb() {
 		slices.Sort(db.Info.MiddayBreak)
 		mb := db.Info.MiddayBreak
 		if mb[len(mb)-1]-mb[0] >= len(mb) {
-			log.Fatalln("*ERROR* MiddayBreak hours not contiguous")
+			logging.Error.Fatalln("MiddayBreak hours not contiguous")
 		}
 
 	}
@@ -225,22 +225,22 @@ func (db *DbTopLevel) checkDb() {
 	// Initialize the Ref -> Element mapping
 	db.Elements = make(map[Ref]interface{})
 	if len(db.Days) == 0 {
-		log.Fatalln("*ERROR* No Days")
+		logging.Error.Fatalln("No Days")
 	}
 	if len(db.Hours) == 0 {
-		log.Fatalln("*ERROR* No Hours")
+		logging.Error.Fatalln("No Hours")
 	}
 	if len(db.Teachers) == 0 {
-		log.Fatalln("*ERROR* No Teachers")
+		logging.Error.Fatalln("No Teachers")
 	}
 	if len(db.Subjects) == 0 {
-		log.Fatalln("*ERROR* No Subjects")
+		logging.Error.Fatalln("No Subjects")
 	}
 	if len(db.Rooms) == 0 {
-		log.Fatalln("*ERROR* No Rooms")
+		logging.Error.Fatalln("No Rooms")
 	}
 	if len(db.Classes) == 0 {
-		log.Fatalln("*ERROR* No Classes")
+		logging.Error.Fatalln("No Classes")
 	}
 	for i, n := range db.Days {
 		db.AddElement(n.Id, &db.Days[i])
@@ -299,7 +299,9 @@ func (db *DbTopLevel) checkDb() {
 		db.SubCourses = []SubCourse{}
 	} else {
 		for i, n := range db.SubCourses {
-			db.AddElement(n.Id, &db.SubCourses[i])
+			nid := "$$" + n.Id0
+			db.SubCourses[i].Id = nid
+			db.AddElement(nid, &db.SubCourses[i])
 		}
 	}
 	if db.Lessons == nil {
@@ -311,6 +313,66 @@ func (db *DbTopLevel) checkDb() {
 	}
 	if db.Constraints == nil {
 		db.Constraints = make(map[string]interface{})
+	}
+}
+
+func (dbp *DbTopLevel) newSubjectTag() string {
+	// A rather primitive new-subject-tag generator
+	i := 0
+	for {
+		i++
+		tag := "X" + strconv.Itoa(i)
+		_, nok := dbp.SubjectTags[tag]
+		if !nok {
+			return tag
+		}
+	}
+}
+
+func (dbp *DbTopLevel) makeNewSubject(tag, name string) Ref {
+	stag := tag
+	if stag == "" {
+		stag = dbp.newSubjectTag()
+	}
+
+	sref := dbp.NewId()
+	i := len(dbp.Subjects)
+	dbp.Subjects = append(dbp.Subjects, Subject{
+		Id:   sref,
+		Tag:  stag,
+		Name: name,
+	})
+	dbp.AddElement(sref, &dbp.Subjects[i])
+	dbp.SubjectTags[stag] = sref
+	if tag == "" && name != "" {
+		dbp.SubjectNames[name] = stag
+	}
+	return sref
+}
+
+// Block all afternoons.
+func (dbp *DbTopLevel) handleZeroAfternoons(notAvailable *[]TimeSlot) {
+	// Make an array and fill this in two passes, then remake list
+	namap := make([][]bool, len(dbp.Days))
+	nhours := len(dbp.Hours)
+	for i := range namap {
+		namap[i] = make([]bool, nhours)
+		for h := dbp.Info.FirstAfternoonHour; h < nhours; h++ {
+			namap[i][h] = true
+		}
+	}
+	for _, ts := range *notAvailable {
+		namap[ts.Day][ts.Hour] = true
+	}
+	*notAvailable = []TimeSlot{}
+	//nalist := []TimeSlot{}
+	for d, naday := range namap {
+		for h, nahour := range naday {
+			if nahour {
+				//nalist = append(nalist, TimeSlot{d, h})
+				*notAvailable = append(*notAvailable, TimeSlot{d, h})
+			}
+		}
 	}
 }
 

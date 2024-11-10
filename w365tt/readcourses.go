@@ -1,8 +1,7 @@
 package w365tt
 
 import (
-	"log"
-	"strconv"
+	"W365toFET/logging"
 	"strings"
 )
 
@@ -10,30 +9,17 @@ func (dbp *DbTopLevel) readSubjects() {
 	for _, n := range dbp.Subjects {
 		_, nok := dbp.SubjectTags[n.Tag]
 		if nok {
-			log.Fatalf("*ERROR* Subject Tag (Shortcut) defined twice: %s\n",
+			logging.Error.Fatalf("Subject Tag (Shortcut) defined twice: %s\n",
 				n.Tag)
 		}
 		t, nok := dbp.SubjectNames[n.Name]
 		if nok {
-			log.Printf("*WARNING* Subject Name defined twice (different"+
+			logging.Warning.Printf("Subject Name defined twice (different"+
 				" Tag/Shortcut):\n  %s (%s/%s)\n", n.Name, t, n.Tag)
 		} else {
 			dbp.SubjectNames[n.Name] = n.Tag
 		}
 		dbp.SubjectTags[n.Tag] = n.Id
-	}
-}
-
-func (dbp *DbTopLevel) newSubject() string {
-	// A rather primitive new-subject-tag generator
-	i := 0
-	for {
-		i++
-		tag := "X" + strconv.Itoa(i)
-		_, nok := dbp.SubjectTags[tag]
-		if !nok {
-			return tag
-		}
 	}
 }
 
@@ -45,19 +31,23 @@ func (dbp *DbTopLevel) readCourses() {
 }
 
 func (dbp *DbTopLevel) readSuperCourses() {
-	for _, n := range dbp.SuperCourses {
-		s, ok := dbp.Elements[n.Subject]
-		if !ok {
-			log.Fatalf(
-				"*ERROR* SuperCourse %s:\n  Unknown Subject: %s\n",
-				n.Id, n.Subject)
+	// The SuperCourse Subjects come from the EpochPlans, which are then
+	// no longer needed.
+	epochPlanSubjects := map[Ref]Ref{}
+	if dbp.EpochPlans != nil {
+		for _, n := range dbp.EpochPlans {
+			sref, ok := dbp.SubjectTags[n.Tag]
+			if !ok {
+				sref = dbp.makeNewSubject(n.Tag, n.Name)
+			}
+			epochPlanSubjects[n.Id] = sref
 		}
-		_, ok = s.(*Subject)
-		if !ok {
-			log.Fatalf(
-				"*ERROR* SuperCourse %s:\n  Not a Subject: %s\n",
-				n.Id, n.Subject)
-		}
+	}
+	dbp.EpochPlans = nil
+
+	for i := 0; i < len(dbp.SuperCourses); i++ {
+		n := &dbp.SuperCourses[i]
+		n.Subject = epochPlanSubjects[n.EpochPlan]
 	}
 }
 
@@ -66,14 +56,14 @@ func (dbp *DbTopLevel) readSubCourses() {
 		n := &dbp.SubCourses[i]
 		s, ok := dbp.Elements[n.SuperCourse]
 		if !ok {
-			log.Fatalf(
-				"*ERROR* SubCourse %s:\n  Unknown SuperCourse: %s\n",
+			logging.Error.Fatalf(
+				"SubCourse %s:\n  Unknown SuperCourse: %s\n",
 				n.Id, n.SuperCourse)
 		}
 		_, ok = s.(*SuperCourse)
 		if !ok {
-			log.Fatalf(
-				"*ERROR* SubCourse %s:\n  Not a SuperCourse: %s\n",
+			logging.Error.Fatalf(
+				"SubCourse %s:\n  Not a SuperCourse: %s\n",
 				n.Id, n.SuperCourse)
 		}
 		dbp.readCourse(n)
@@ -84,17 +74,17 @@ func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 	//
 	// Deal with the subject(s) fields
 	//
-	msg1 := "*ERROR* Course %s:\n  Unknown Subject: %s\n"
-	msg2 := "*ERROR* Course %s:\n  Not a Subject: %s\n"
+	msg1 := "Course %s:\n  Unknown Subject: %s\n"
+	msg2 := "Course %s:\n  Not a Subject: %s\n"
 	if course.GetSubject() == "" {
 		if len(course.getSubjects()) == 1 {
 			wsid := course.getSubjects()[0]
 			s0, ok := dbp.Elements[wsid]
 			if !ok {
-				log.Fatalf(msg1, course.GetId(), wsid)
+				logging.Error.Fatalf(msg1, course.GetId(), wsid)
 			}
 			if _, ok = s0.(*Subject); !ok {
-				log.Fatalf(msg2, course.GetId(), wsid)
+				logging.Error.Fatalf(msg2, course.GetId(), wsid)
 			}
 			course.setSubject(wsid)
 		} else if len(course.getSubjects()) > 1 {
@@ -106,11 +96,11 @@ func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 				if ok {
 					s, ok := s0.(*Subject)
 					if !ok {
-						log.Fatalf(msg2, course.GetId(), wsid)
+						logging.Error.Fatalf(msg2, course.GetId(), wsid)
 					}
 					sklist = append(sklist, s.Tag)
 				} else {
-					log.Fatalf(msg1, course.GetId(), wsid)
+					logging.Error.Fatalf(msg1, course.GetId(), wsid)
 				}
 			}
 			skname := strings.Join(sklist, ",")
@@ -120,23 +110,12 @@ func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 				course.setSubject(dbp.SubjectTags[stag])
 			} else {
 				// Need a new Subject.
-				stag = dbp.newSubject()
-				sref := dbp.NewId()
-				i := len(dbp.Subjects)
-				dbp.Subjects = append(dbp.Subjects, Subject{
-					Id:   sref,
-					Tag:  stag,
-					Name: skname,
-				})
-				dbp.AddElement(sref, &dbp.Subjects[i])
-				dbp.SubjectTags[stag] = sref
-				dbp.SubjectNames[skname] = stag
-				course.setSubject(sref)
+				course.setSubject(dbp.makeNewSubject("", skname))
 			}
 		}
 	} else {
 		if len(course.getSubjects()) != 0 {
-			log.Printf("*ERROR* Course has both Subject AND Subjects: %s\n",
+			logging.Error.Printf("Course has both Subject AND Subjects: %s\n",
 				course.GetId())
 		}
 		wsid := course.GetSubject()
@@ -144,10 +123,10 @@ func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 		if ok {
 			_, ok = s0.(*Subject)
 			if !ok {
-				log.Fatalf(msg2, course.GetId(), wsid)
+				logging.Error.Fatalf(msg2, course.GetId(), wsid)
 			}
 		} else {
-			log.Fatalf(msg1, course.GetId(), wsid)
+			logging.Error.Fatalf(msg1, course.GetId(), wsid)
 		}
 	}
 	// Clear Subjects field.
@@ -160,7 +139,7 @@ func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 	for _, gref := range course.GetGroups() {
 		g, ok := dbp.Elements[gref]
 		if !ok {
-			log.Fatalf("*ERROR* Unknown group in Course %s:\n  %s\n",
+			logging.Error.Fatalf("Unknown group in Course %s:\n  %s\n",
 				course.GetId(), gref)
 			//continue
 		}
@@ -170,7 +149,7 @@ func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 			// Check for class.
 			_, ok = g.(*Class)
 			if !ok {
-				log.Fatalf("*ERROR* Invalid group in Course %s:\n  %s\n",
+				logging.Error.Fatalf("Invalid group in Course %s:\n  %s\n",
 					course.GetId(), gref)
 				//continue
 			}
@@ -185,13 +164,13 @@ func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 	for _, tref := range course.GetTeachers() {
 		t, ok := dbp.Elements[tref]
 		if !ok {
-			log.Fatalf("*ERROR* Unknown teacher in Course %s:\n  %s\n",
+			logging.Error.Fatalf("Unknown teacher in Course %s:\n  %s\n",
 				course.GetId(), tref)
 			//continue
 		}
 		_, ok = t.(*Teacher)
 		if !ok {
-			log.Fatalf("*ERROR* Invalid teacher in Course %s:\n  %s\n",
+			logging.Error.Fatalf("Invalid teacher in Course %s:\n  %s\n",
 				course.GetId(), tref)
 			//continue
 		}
@@ -207,7 +186,7 @@ func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 		var estr string
 		rref, estr = dbp.makeRoomChoiceGroup(course.getPreferredRooms())
 		if estr != "" {
-			log.Printf("*ERROR* In Course %s:\n%s", course.GetId(), estr)
+			logging.Error.Printf("In Course %s:\n%s", course.GetId(), estr)
 		}
 	} else if len(course.getPreferredRooms()) == 1 {
 		// Check that room is Room or RoomGroup.
@@ -222,19 +201,19 @@ func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 				if ok {
 					rref = rref0
 				} else {
-					log.Printf("*ERROR* Invalid room in Course %s:\n  %s\n",
+					logging.Error.Printf("Invalid room in Course %s:\n  %s\n",
 						course.GetId(), rref0)
 				}
 			}
 		} else {
-			log.Printf("*ERROR* Unknown room in Course %s:\n  %s\n",
+			logging.Error.Printf("Unknown room in Course %s:\n  %s\n",
 				course.GetId(), rref0)
 		}
 	}
 	if course.GetRoom() != "" {
 		if rref != "" {
-			log.Printf(
-				"*ERROR* Course has both Room and Rooms entries:\n %s\n",
+			logging.Error.Printf(
+				"Course has both Room and Rooms entries:\n %s\n",
 				course.GetId())
 		}
 		r, ok := dbp.Elements[course.GetRoom()]
@@ -245,8 +224,8 @@ func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 				if !ok {
 					_, ok = r.(*RoomChoiceGroup)
 					if !ok {
-						log.Printf(
-							"*ERROR* Invalid room in Course %s:\n  %s\n",
+						logging.Error.Printf(
+							"Invalid room in Course %s:\n  %s\n",
 							course.GetId(), course.GetRoom())
 						course.setRoom("")
 					}
@@ -254,7 +233,7 @@ func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 			}
 
 		} else {
-			log.Printf("*ERROR* Unknown room in Course %s:\n  %s\n",
+			logging.Error.Printf("Unknown room in Course %s:\n  %s\n",
 				course.GetId(), course.GetRoom())
 			course.setRoom("")
 		}

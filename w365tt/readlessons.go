@@ -1,6 +1,6 @@
 package w365tt
 
-import "log"
+import "W365toFET/logging"
 
 func (dbp *DbTopLevel) readLessons() {
 	for i := 0; i < len(dbp.Lessons); i++ {
@@ -8,16 +8,16 @@ func (dbp *DbTopLevel) readLessons() {
 		// The course must be Course or Supercourse.
 		c, ok := dbp.Elements[n.Course]
 		if !ok {
-			log.Fatalf(
-				"*ERROR* Lesson %s:\n  Unknown course: %s\n",
+			logging.Error.Fatalf(
+				"Lesson %s:\n  Unknown course: %s\n",
 				n.Id, n.Course)
 		}
 		_, ok = c.(*Course)
 		if !ok {
 			_, ok = c.(*SuperCourse)
 			if !ok {
-				log.Fatalf(
-					"*ERROR* Lesson %s:\n  Not a SuperCourse: %s\n",
+				logging.Error.Fatalf(
+					"Lesson %s:\n  Not a SuperCourse: %s\n",
 					n.Id, n.Course)
 			}
 		}
@@ -32,8 +32,8 @@ func (dbp *DbTopLevel) readLessons() {
 					continue
 				}
 			}
-			log.Printf(
-				"*ERROR* Invalid Room in Lesson %s:\n  %s\n",
+			logging.Error.Printf(
+				"Invalid Room in Lesson %s:\n  %s\n",
 				n.Id, rref)
 		}
 		n.Rooms = reflist

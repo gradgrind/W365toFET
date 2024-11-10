@@ -2,9 +2,9 @@ package main
 
 import (
 	"W365toFET/fet"
+	"W365toFET/logging"
 	"W365toFET/w365tt"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -25,31 +25,56 @@ func main() {
 	//fmt.Println("numb:", *numbPtr)
 	//fmt.Println("fork:", *forkPtr)
 	//fmt.Println("svar:", svar)
-	fmt.Println("args:", flag.Args())
+	//fmt.Println("args:", flag.Args())
 
 	args := flag.Args()
 	if len(args) != 1 {
+		if len(args) == 0 {
+			log.Fatalln("ERROR* No input file")
+		}
 		log.Fatalf("*ERROR* Too many command-line arguments:\n  %+v\n", args)
 	}
 	abspath, err := filepath.Abs(args[0])
 	if err != nil {
 		log.Fatalf("*ERROR* Couldn't resolve file path: %s\n", args[0])
 	}
+
+	stempath := strings.TrimSuffix(abspath, filepath.Ext(abspath))
+	logpath := stempath + ".log"
+	logging.OpenLog(logpath)
+
 	data := w365tt.LoadJSON(abspath)
 
 	// ********** Build the fet file **********
-	//xmlitem := make_fet_file(&data, alist, course2activities, sgalist)
-	xmlitem := fet.MakeFetFile(data)
-	//fmt.Printf("\n*** fet:\n%v\n", xmlitem)
-	fetfile := strings.TrimSuffix(abspath, filepath.Ext(abspath)) + ".fet"
+	stempath = strings.TrimSuffix(stempath, "_w365")
+
+	xmlitem, lessonIdMap := fet.MakeFetFile(data)
+
+	// Write FET file
+	fetfile := stempath + ".fet"
 	f, err := os.Create(fetfile)
 	if err != nil {
-		log.Fatalf("Couldn't open output file: %s\n", fetfile)
+		logging.Bug.Fatalf("Couldn't open output file: %s\n", fetfile)
 	}
 	defer f.Close()
 	_, err = f.WriteString(xmlitem)
 	if err != nil {
-		log.Fatalf("Couldn't write fet output to: %s\n", fetfile)
+		logging.Bug.Fatalf("Couldn't write fet output to: %s\n", fetfile)
 	}
-	log.Printf("\nFET file written to: %s\n", fetfile)
+	logging.Message.Printf("FET file written to: %s\n", fetfile)
+
+	//TODO: Write Id-map file.
+	mapfile := stempath + ".map"
+	fm, err := os.Create(mapfile)
+	if err != nil {
+		logging.Bug.Fatalf("Couldn't open output file: %s\n", mapfile)
+	}
+	defer fm.Close()
+	_, err = fm.WriteString(lessonIdMap)
+	if err != nil {
+		logging.Bug.Fatalf("Couldn't write fet output to: %s\n", mapfile)
+	}
+	logging.Message.Printf("Id-map written to: %s\n", mapfile)
+
+	logging.Message.Println("OK")
 }
