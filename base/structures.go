@@ -91,6 +91,10 @@ func (e *Room) GetReferrers() []Element {
 	return e.Referrers
 }
 
+func (e *Room) AddReferrer(r Element) {
+	e.Referrers = append(e.Referrers, r)
+}
+
 func (r *Room) IsReal() bool {
 	return true
 }

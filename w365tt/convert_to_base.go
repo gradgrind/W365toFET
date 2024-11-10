@@ -4,6 +4,7 @@ import "W365toFET/base"
 
 func (db *DbTopLevel) ConvertToBase() *base.DbTopLevel {
 	newdb := &base.DbTopLevel{}
+	elements := map[Ref]any{}
 
 	newdb.Info = base.Info(db.Info)
 	for _, e := range db.Days {
@@ -48,6 +49,55 @@ func (db *DbTopLevel) ConvertToBase() *base.DbTopLevel {
 			Tag:  e.Tag,
 			Name: e.Name,
 		})
+	}
+	for _, e := range db.Rooms {
+		tsl := []base.TimeSlot{}
+		for _, ts := range e.NotAvailable {
+			tsl = append(tsl, base.TimeSlot(ts))
+		}
+		r := &base.Room{
+			Id:           base.Ref(e.Id),
+			Tag:          e.Tag,
+			Name:         e.Name,
+			NotAvailable: tsl,
+		}
+		elements[e.Id] = r
+		newdb.Rooms = append(newdb.Rooms, r)
+	}
+	for _, e := range db.RoomGroups {
+		rg := &base.RoomGroup{
+			Id:   base.Ref(e.Id),
+			Tag:  e.Tag,
+			Name: e.Name,
+		}
+		rl := []*base.Room{}
+		for _, r := range e.Rooms {
+			r2 := elements[r].(*base.Room)
+			rl = append(rl, elements[r].(*base.Room))
+			r2.AddReferrer(rg)
+		}
+		newdb.RoomGroups = append(newdb.RoomGroups,
+			&base.RoomGroup{
+				Id:    base.Ref(e.Id),
+				Tag:   e.Tag,
+				Name:  e.Name,
+				Rooms: rl,
+			})
+	}
+	for _, e := range db.RoomChoiceGroups {
+		rcg := &base.RoomChoiceGroup{
+			Id:   base.Ref(e.Id),
+			Tag:  e.Tag,
+			Name: e.Name,
+		}
+		rl := []*base.Room{}
+		for _, r := range e.Rooms {
+			r2 := elements[r].(*base.Room)
+			rl = append(rl, r2)
+			r2.AddReferrer(rcg)
+		}
+		rcg.Rooms = rl
+		newdb.RoomChoiceGroups = append(newdb.RoomChoiceGroups, rcg)
 	}
 
 	//TODO
