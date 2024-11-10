@@ -64,55 +64,39 @@ func addTeacherConstraints(fetinfo *fetInfo) {
 			})
 		}
 
-		n = int(t.MaxGapsPerDay.(float64))
-		if n >= 0 {
-			tmaxgpd = append(tmaxgpd, maxGapsPerDayT{
-				Weight_Percentage: 100,
-				Teacher:           t.Tag,
-				Max_Gaps:          n,
-				Active:            true,
-			})
-		}
-
-		n = int(t.MaxGapsPerWeek.(float64))
-		if n >= 0 {
-			tmaxgpw = append(tmaxgpw, maxGapsPerWeekT{
-				Weight_Percentage: 100,
-				Teacher:           t.Tag,
-				Max_Gaps:          n,
-				Active:            true,
-			})
-		}
-
 		i := fetinfo.db.Info.FirstAfternoonHour
-		n = int(t.MaxAfternoons.(float64))
-		if n >= 0 && i > 0 {
+		maxpm := int(t.MaxAfternoons.(float64))
+		if maxpm >= 0 && i > 0 {
 			tmaxaft = append(tmaxaft, maxDaysinIntervalPerWeekT{
 				Weight_Percentage:   100,
 				Teacher:             t.Tag,
 				Interval_Start_Hour: fetinfo.hours[i],
 				Interval_End_Hour:   "", // end of day
-				Max_Days_Per_Week:   n,
+				Max_Days_Per_Week:   maxpm,
 				Active:              true,
 			})
 		}
+
+		// The lunch-break constraint may require adjustment of these:
+		mgpday := int(t.MaxGapsPerDay.(float64))
+		mgpweek := int(t.MaxGapsPerWeek.(float64))
 
 		if t.LunchBreak {
 			// Generate the constraint unless all days have a blocked lesson
 			// at lunchtime.
 			mbhours := fetinfo.db.Info.MiddayBreak
-			ndays := 0
+			lbdays := ndays
 			d := 0
 			for _, ts := range t.NotAvailable {
 				if ts.Day < d {
 					continue
 				}
 				if slices.Contains(mbhours, ts.Hour) {
-					ndays++
+					lbdays--
 					d = ts.Day + 1
 				}
 			}
-			if ndays < len(fetinfo.days) {
+			if lbdays != 0 {
 				// Add a lunch-break constraint.
 				tlblist = append(tlblist, lunchBreakT{
 					Weight_Percentage:   100,
@@ -122,8 +106,35 @@ func addTeacherConstraints(fetinfo *fetInfo) {
 					Maximum_Hours_Daily: len(mbhours) - 1,
 					Active:              true,
 				})
+				// Adjust gaps
+				if maxpm < lbdays {
+					lbdays = maxpm
+				}
+				if mgpday == 0 {
+					mgpday = 1
+				}
+				mgpweek += lbdays
 			}
 		}
+
+		if mgpday >= 0 {
+			tmaxgpd = append(tmaxgpd, maxGapsPerDayT{
+				Weight_Percentage: 100,
+				Teacher:           t.Tag,
+				Max_Gaps:          mgpday,
+				Active:            true,
+			})
+		}
+
+		if mgpweek >= 0 {
+			tmaxgpw = append(tmaxgpw, maxGapsPerWeekT{
+				Weight_Percentage: 100,
+				Teacher:           t.Tag,
+				Max_Gaps:          mgpweek,
+				Active:            true,
+			})
+		}
+
 	}
 	fetinfo.fetdata.Time_Constraints_List.
 		ConstraintTeacherMaxDaysPerWeek = tmaxdpw
