@@ -1,14 +1,16 @@
 # W365toFET
 
 ```
-W365toFET path/to/sp001.json
+W365toFET path/to/sp001_w365.json
 
+    -> path/to/sp001_w365.log
     -> path/to/sp001.fet
+    -> path/to/sp001.map
 ```
 
 Die Stundenplan-Daten werden von der JSON-Datei eingelesen.
 
-Ausgegeben wird eine FET-Datei im selben Ordner.
+Ausgegeben wird eine FET-Datei im selben Ordner. Auch eine Logdatei (mit Fehlermeldungen, usw.) und eine Zuordnungsdatei für die FET-Activities werden erstellt. 
 
 ## Aktueller Stand (5.11.2024)
 
