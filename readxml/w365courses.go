@@ -147,10 +147,10 @@ func readCourses(
 				// Note the use of Id0 instead of Id (see w365tt.structures.go)
 				Id0:            sbc.Id,
 				SuperCourse:    scid,
-				Subjects:       sc.Subjects,
-				Groups:         sc.Groups,
-				Teachers:       sc.Teachers,
-				PreferredRooms: sc.PreferredRooms,
+				Subjects:       sbc.Subjects,
+				Groups:         sbc.Groups,
+				Teachers:       sbc.Teachers,
+				PreferredRooms: sbc.PreferredRooms,
 			})
 		}
 	}
