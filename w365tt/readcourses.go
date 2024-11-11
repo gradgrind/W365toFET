@@ -31,8 +31,8 @@ func (dbp *DbTopLevel) readCourses() {
 }
 
 func (dbp *DbTopLevel) readSuperCourses() {
-	// The SuperCourse Subjects come from the EpochPlans, which are then
-	// no longer needed.
+	// If there are SuperCourses without subjects, the subjects will be
+	// taken from the EpochPlans, which are then no longer needed.
 	epochPlanSubjects := map[Ref]Ref{}
 	if dbp.EpochPlans != nil {
 		for _, n := range dbp.EpochPlans {
@@ -47,7 +47,9 @@ func (dbp *DbTopLevel) readSuperCourses() {
 
 	for i := 0; i < len(dbp.SuperCourses); i++ {
 		n := &dbp.SuperCourses[i]
-		n.Subject = epochPlanSubjects[n.EpochPlan]
+		if n.Subject == "" {
+			n.Subject = epochPlanSubjects[n.EpochPlan]
+		}
 	}
 }
 
