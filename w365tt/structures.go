@@ -127,8 +127,8 @@ type SuperCourse struct {
 }
 
 type SubCourse struct {
-	Id0            Ref `json:"id"`
-	Id             Ref
+	Id0            Ref   `json:"id"`
+	Id             Ref   `json:"-"`
 	SuperCourse    Ref   `json:"superCourse"`
 	Subjects       []Ref `json:"subjects,omitempty"`
 	Subject        Ref   `json:"subject"`
