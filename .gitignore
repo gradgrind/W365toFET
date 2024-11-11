@@ -2,6 +2,7 @@
 # https://github.com/github/gitignore/blob/main/community/Golang/Go.AllowList.gitignore
 
 _*
+.vscode
 
 #
 # Binaries for programs and plugins
