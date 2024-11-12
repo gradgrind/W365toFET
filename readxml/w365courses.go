@@ -62,60 +62,43 @@ func readCourses(
 			llen = append(llen, int(n.HoursPerWeek))
 		} // else no lessons
 
-		if n.Categories != "" {
-			msg := fmt.Sprintf("Category in Course %s", nid)
-			reflist := GetRefList(id2node, n.Categories, msg)
-			if len(reflist) != 0 {
-				//fmt.Printf("Categories in Course %s:\n", nid)
-				for _, cat := range reflist {
-					catnode := id2node[cat].(*Category)
-					//fmt.Printf("  :: %+v\n", catnode)
-					if catnode.Role == 0 {
-						//fmt.Printf("\n *** Course:\n%+v\n\n", n)
-
-						// If catnode.Shortcut starts with "_", take this as
-						// a block, a SuperCourse or a SubCourse:
-						// If the Course has a SplitHoursPerWeek entry, this
-						// defines the lesson lengths. If not, and HoursPerWeek
-						// is given, take this as the length of a single lesson.
-						// If neither is present, take this as a SubCourse.
-						// Any teachers, groups or rooms of a SuperCourse will
-						// be ignored?
-						//
-						if strings.HasPrefix(catnode.Shortcut, "_") {
-							// Part of a block.
-							tcourse := &tmpCourse{
-								Id:             nid,
-								Subjects:       sbjs,
-								Groups:         grps,
-								Teachers:       tchs,
-								PreferredRooms: rms,
-							}
-
-							if len(llen) == 0 {
-								// A SubCourse.
-								xc := xcourses[catnode.Shortcut]
-								xc.subs = append(xc.subs, tcourse)
-								xcourses[catnode.Shortcut] = xc
-							} else {
-								// A SuperCourse
-								xc := xcourses[catnode.Shortcut]
-								if xc.super != nil {
-									log.Fatalf("*ERROR* Block with two"+
-										" SuperCourses: %s\n",
-										catnode.Shortcut)
-								}
-								xc.super = tcourse
-								xc.lessons = llen
-								xcourses[catnode.Shortcut] = xc
-							}
-							goto next_course
-						}
-					}
-				}
+		blockTag := getBlockTag(id2node, n.Categories, nid)
+		if blockTag != "" {
+			//
+			// The existence of  block tag makes this into a SuperCourse
+			// or a SubCourse:
+			// If the Course has a SplitHoursPerWeek entry, this
+			// defines the lesson lengths. If not, and HoursPerWeek
+			// is given, take this as the length of a single lesson.
+			// If neither is present, take this as a SubCourse.
+			// Any teachers, groups or rooms of a SuperCourse will
+			// be ignored?
+			//
+			tcourse := &tmpCourse{
+				Id:             nid,
+				Subjects:       sbjs,
+				Groups:         grps,
+				Teachers:       tchs,
+				PreferredRooms: rms,
 			}
-		}
-		if len(llen) != 0 {
+			if len(llen) == 0 {
+				// A SubCourse.
+				xc := xcourses[blockTag]
+				xc.subs = append(xc.subs, tcourse)
+				xcourses[blockTag] = xc
+			} else {
+				// A SuperCourse
+				xc := xcourses[blockTag]
+				if xc.super != nil {
+					log.Fatalf("*ERROR* Block with two"+
+						" SuperCourses: %s\n",
+						blockTag)
+				}
+				xc.super = tcourse
+				xc.lessons = llen
+				xcourses[blockTag] = xc
+			}
+		} else if len(llen) != 0 {
 			outdata.Courses = append(outdata.Courses, w365tt.Course{
 				Id:             nid,
 				Subjects:       sbjs,
@@ -125,7 +108,6 @@ func readCourses(
 			})
 			courseLessons[nid] = llen
 		} // else Course with no lessons
-	next_course:
 	}
 	for _, xc := range xcourses {
 		//for key, xc := range xcourses {

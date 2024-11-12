@@ -274,10 +274,29 @@ func readTeachers(
 		}
 		return 1
 	})
+	ndays := len(outdata.Days)
+	nhours := len(outdata.Hours)
 	for _, n := range items {
 		nid := addId(id2node, &n)
 		if nid == "" {
 			continue
+		}
+		maxdays := n.MaxDays
+		if maxdays >= ndays {
+			maxdays = -1
+		}
+		maxpm := n.MaxAfternoons
+		if maxpm >= ndays {
+			maxpm = -1
+		}
+		lb := withLunchBreak(id2node, n.Categories, nid)
+		maxlpd := n.MaxLessonsPerDay
+		if lb {
+			if maxlpd >= nhours-1 {
+				maxlpd = -1
+			}
+		} else if maxlpd >= nhours {
+			maxlpd = -1
 		}
 		r := w365tt.Teacher{
 			Id:               nid,
@@ -285,12 +304,12 @@ func readTeachers(
 			Tag:              n.Shortcut,
 			Firstname:        n.Firstname,
 			MinLessonsPerDay: n.MinLessonsPerDay,
-			MaxLessonsPerDay: n.MaxLessonsPerDay,
-			MaxDays:          n.MaxDays,
+			MaxLessonsPerDay: maxlpd,
+			MaxDays:          maxdays,
 			MaxGapsPerDay:    n.MaxGapsPerDay,
-			//MaxGapsPerWeek:   -1,
-			MaxAfternoons: n.MaxAfternoons,
-			LunchBreak:    true,
+			MaxGapsPerWeek:   -1,
+			MaxAfternoons:    maxpm,
+			LunchBreak:       lb,
 		}
 		msg := fmt.Sprintf("Teacher %s in Absences", nid)
 		for _, ai := range GetRefList(id2node, n.Absences, msg) {
@@ -351,10 +370,25 @@ func readClasses(
 		}
 		return 1
 	})
+	ndays := len(outdata.Days)
+	nhours := len(outdata.Hours)
 	for _, n := range items {
 		nid := addId(id2node, &n)
 		if nid == "" {
 			continue
+		}
+		maxpm := n.MaxAfternoons
+		if maxpm >= ndays {
+			maxpm = -1
+		}
+		lb := withLunchBreak(id2node, n.Categories, nid)
+		maxlpd := n.MaxLessonsPerDay
+		if lb {
+			if maxlpd >= nhours-1 {
+				maxlpd = -1
+			}
+		} else if maxlpd >= nhours {
+			maxlpd = -1
 		}
 		r := w365tt.Class{
 			Id:               nid,
@@ -363,12 +397,12 @@ func readClasses(
 			Letter:           n.Letter,
 			Tag:              fmt.Sprintf("%d%s", n.Level, n.Letter),
 			MinLessonsPerDay: n.MinLessonsPerDay,
-			MaxLessonsPerDay: n.MaxLessonsPerDay,
-			//MaxGapsPerDay:    -1,
-			MaxAfternoons: n.MaxAfternoons,
-			//MaxGapsPerWeek:   -1,
-			LunchBreak:     true,
-			ForceFirstHour: n.ForceFirstHour,
+			MaxLessonsPerDay: maxlpd,
+			MaxGapsPerDay:    -1,
+			MaxGapsPerWeek:   0,
+			MaxAfternoons:    maxpm,
+			LunchBreak:       lb,
+			ForceFirstHour:   n.ForceFirstHour,
 		}
 		msg := fmt.Sprintf("Class %s in Absences", nid)
 		for _, ai := range GetRefList(id2node, n.Absences, msg) {
