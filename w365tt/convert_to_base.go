@@ -29,18 +29,20 @@ func (db *DbTopLevel) ConvertToBase() *base.DbTopLevel {
 			tsl = append(tsl, base.TimeSlot(ts))
 		}
 		newdb.Teachers = append(newdb.Teachers, &base.Teacher{
-			Id:               base.Ref(e.Id),
-			Tag:              e.Tag,
-			Name:             e.Name,
-			Firstname:        e.Firstname,
-			NotAvailable:     tsl,
+			Id:           base.Ref(e.Id),
+			Tag:          e.Tag,
+			Name:         e.Name,
+			Firstname:    e.Firstname,
+			NotAvailable: tsl,
+			/* TODO++
 			MinLessonsPerDay: int(e.MinLessonsPerDay.(float64)),
 			MaxLessonsPerDay: int(e.MaxLessonsPerDay.(float64)),
 			MaxDays:          int(e.MaxDays.(float64)),
 			MaxGapsPerDay:    int(e.MaxDays.(float64)),
 			MaxGapsPerWeek:   int(e.MaxDays.(float64)),
 			MaxAfternoons:    int(e.MaxDays.(float64)),
-			LunchBreak:       e.LunchBreak,
+			*/
+			LunchBreak: e.LunchBreak,
 		})
 	}
 	for _, e := range db.Subjects {

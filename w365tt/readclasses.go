@@ -21,22 +21,9 @@ func (dbp *DbTopLevel) readClasses() {
 			// Avoid a null value
 			n.NotAvailable = []TimeSlot{}
 		}
-		if n.MinLessonsPerDay == nil {
-			n.MinLessonsPerDay = -1.0
-		}
-		if n.MaxLessonsPerDay == nil {
-			n.MaxLessonsPerDay = -1.0
-		}
-		if n.MaxGapsPerDay == nil {
-			n.MaxGapsPerDay = -1.0
-		}
-		if n.MaxGapsPerWeek == nil {
-			n.MaxGapsPerWeek = -1.0
-		}
-		if n.MaxAfternoons == nil {
-			n.MaxAfternoons = -1.0
-		} else if n.MaxAfternoons == 0.0 {
-			n.MaxAfternoons = -1.0
+		// MaxAfternoons = 0 has a special meaning (all blocked)
+		if n.MaxAfternoons == 0 {
+			n.MaxAfternoons = -1
 			dbp.handleZeroAfternoons(&n.NotAvailable)
 		}
 

@@ -2,6 +2,7 @@ package w365tt
 
 import (
 	"W365toFET/logging"
+	"encoding/json"
 	"fmt"
 	"slices"
 	"strconv"
@@ -40,18 +41,31 @@ type TimeSlot struct {
 }
 
 type Teacher struct {
-	Id               Ref         `json:"id"`
-	Name             string      `json:"name"`
-	Tag              string      `json:"shortcut"`
-	Firstname        string      `json:"firstname"`
-	NotAvailable     []TimeSlot  `json:"absences"`
-	MinLessonsPerDay interface{} `json:"minLessonsPerDay"`
-	MaxLessonsPerDay interface{} `json:"maxLessonsPerDay"`
-	MaxDays          interface{} `json:"maxDays"`
-	MaxGapsPerDay    interface{} `json:"maxGapsPerDay"`
-	MaxGapsPerWeek   interface{} `json:"maxGapsPerWeek"`
-	MaxAfternoons    interface{} `json:"maxAfternoons"`
-	LunchBreak       bool        `json:"lunchBreak"`
+	Id               Ref        `json:"id"`
+	Name             string     `json:"name"`
+	Tag              string     `json:"shortcut"`
+	Firstname        string     `json:"firstname"`
+	NotAvailable     []TimeSlot `json:"absences"`
+	MinLessonsPerDay int        `json:"minLessonsPerDay"`
+	MaxLessonsPerDay int        `json:"maxLessonsPerDay"`
+	MaxDays          int        `json:"maxDays"`
+	MaxGapsPerDay    int        `json:"maxGapsPerDay"`
+	MaxGapsPerWeek   int        `json:"maxGapsPerWeek"`
+	MaxAfternoons    int        `json:"maxAfternoons"`
+	LunchBreak       bool       `json:"lunchBreak"`
+}
+
+func (t *Teacher) UnmarshalJSON(data []byte) error {
+	// Customize defaults for Teacher
+	t.MinLessonsPerDay = -1
+	t.MaxLessonsPerDay = -1
+	t.MaxDays = -1
+	t.MaxGapsPerDay = -1
+	t.MaxGapsPerWeek = -1
+	t.MaxAfternoons = -1
+
+	type tempT Teacher
+	return json.Unmarshal(data, (*tempT)(t))
 }
 
 type Subject struct {
@@ -82,20 +96,32 @@ type RoomChoiceGroup struct {
 }
 
 type Class struct {
-	Id               Ref         `json:"id"`
-	Name             string      `json:"name"`
-	Tag              string      `json:"shortcut"`
-	Year             int         `json:"level"`
-	Letter           string      `json:"letter"`
-	NotAvailable     []TimeSlot  `json:"absences"`
-	Divisions        []Division  `json:"divisions"`
-	MinLessonsPerDay interface{} `json:"minLessonsPerDay"`
-	MaxLessonsPerDay interface{} `json:"maxLessonsPerDay"`
-	MaxGapsPerDay    interface{} `json:"maxGapsPerDay"`
-	MaxGapsPerWeek   interface{} `json:"maxGapsPerWeek"`
-	MaxAfternoons    interface{} `json:"maxAfternoons"`
-	LunchBreak       bool        `json:"lunchBreak"`
-	ForceFirstHour   bool        `json:"forceFirstHour"`
+	Id               Ref        `json:"id"`
+	Name             string     `json:"name"`
+	Tag              string     `json:"shortcut"`
+	Year             int        `json:"level"`
+	Letter           string     `json:"letter"`
+	NotAvailable     []TimeSlot `json:"absences"`
+	Divisions        []Division `json:"divisions"`
+	MinLessonsPerDay int        `json:"minLessonsPerDay"`
+	MaxLessonsPerDay int        `json:"maxLessonsPerDay"`
+	MaxGapsPerDay    int        `json:"maxGapsPerDay"`
+	MaxGapsPerWeek   int        `json:"maxGapsPerWeek"`
+	MaxAfternoons    int        `json:"maxAfternoons"`
+	LunchBreak       bool       `json:"lunchBreak"`
+	ForceFirstHour   bool       `json:"forceFirstHour"`
+}
+
+func (t *Class) UnmarshalJSON(data []byte) error {
+	// Customize defaults for Teacher
+	t.MinLessonsPerDay = -1
+	t.MaxLessonsPerDay = -1
+	t.MaxGapsPerDay = -1
+	t.MaxGapsPerWeek = -1
+	t.MaxAfternoons = -1
+
+	type tempT Class
+	return json.Unmarshal(data, (*tempT)(t))
 }
 
 type Group struct {
@@ -156,37 +182,37 @@ type EpochPlan struct {
 }
 
 type DbTopLevel struct {
-	Info             Info                   `json:"w365TT"`
-	Days             []Day                  `json:"days"`
-	Hours            []Hour                 `json:"hours"`
-	Teachers         []Teacher              `json:"teachers"`
-	Subjects         []Subject              `json:"subjects"`
-	Rooms            []Room                 `json:"rooms"`
-	RoomGroups       []RoomGroup            `json:"roomGroups"`
-	RoomChoiceGroups []RoomChoiceGroup      `json:"roomChoiceGroups"`
-	Classes          []Class                `json:"classes"`
-	Groups           []Group                `json:"groups"`
-	Courses          []Course               `json:"courses"`
-	SuperCourses     []SuperCourse          `json:"superCourses"`
-	SubCourses       []SubCourse            `json:"subCourses"`
-	Lessons          []Lesson               `json:"lessons"`
-	EpochPlans       []EpochPlan            `json:"epochPlans,omitempty"`
-	Constraints      map[string]interface{} `json:"constraints"`
+	Info             Info              `json:"w365TT"`
+	Days             []Day             `json:"days"`
+	Hours            []Hour            `json:"hours"`
+	Teachers         []Teacher         `json:"teachers"`
+	Subjects         []Subject         `json:"subjects"`
+	Rooms            []Room            `json:"rooms"`
+	RoomGroups       []RoomGroup       `json:"roomGroups"`
+	RoomChoiceGroups []RoomChoiceGroup `json:"roomChoiceGroups"`
+	Classes          []Class           `json:"classes"`
+	Groups           []Group           `json:"groups"`
+	Courses          []Course          `json:"courses"`
+	SuperCourses     []SuperCourse     `json:"superCourses"`
+	SubCourses       []SubCourse       `json:"subCourses"`
+	Lessons          []Lesson          `json:"lessons"`
+	EpochPlans       []EpochPlan       `json:"epochPlans,omitempty"`
+	Constraints      map[string]any    `json:"constraints"`
 
 	// These fields do not belong in the JSON object.
-	Elements        map[Ref]interface{} `json:"-"`
-	MaxId           int                 `json:"-"` // for "indexed" Ids only
-	SubjectTags     map[string]Ref      `json:"-"`
-	SubjectNames    map[string]string   `json:"-"`
-	RoomTags        map[string]Ref      `json:"-"`
-	RoomChoiceNames map[string]Ref      `json:"-"`
+	Elements        map[Ref]any       `json:"-"`
+	MaxId           int               `json:"-"` // for "indexed" Ids only
+	SubjectTags     map[string]Ref    `json:"-"`
+	SubjectNames    map[string]string `json:"-"`
+	RoomTags        map[string]Ref    `json:"-"`
+	RoomChoiceNames map[string]Ref    `json:"-"`
 }
 
 func (db *DbTopLevel) NewId() Ref {
 	return Ref(fmt.Sprintf("#%d", db.MaxId+1))
 }
 
-func (db *DbTopLevel) AddElement(ref Ref, element interface{}) {
+func (db *DbTopLevel) AddElement(ref Ref, element any) {
 	_, nok := db.Elements[ref]
 	if nok {
 		logging.Error.Printf("Element Id defined more than once:\n  %s\n", ref)
@@ -223,7 +249,7 @@ func (db *DbTopLevel) checkDb() {
 	db.RoomTags = map[string]Ref{}
 	db.RoomChoiceNames = map[string]Ref{}
 	// Initialize the Ref -> Element mapping
-	db.Elements = make(map[Ref]interface{})
+	db.Elements = make(map[Ref]any)
 
 	// Checks
 	if len(db.Days) == 0 {
@@ -318,7 +344,7 @@ func (db *DbTopLevel) checkDb() {
 		}
 	}
 	if db.Constraints == nil {
-		db.Constraints = make(map[string]interface{})
+		db.Constraints = make(map[string]any)
 	}
 }
 

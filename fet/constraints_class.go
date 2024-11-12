@@ -39,7 +39,7 @@ func addClassConstraints(fetinfo *fetInfo) {
 			continue
 		}
 
-		n := int(cl.MinLessonsPerDay.(float64))
+		n := cl.MinLessonsPerDay
 		if n >= 2 && n <= nhours {
 			cminlpd = append(cminlpd, minLessonsPerDay{
 				Weight_Percentage:   100,
@@ -50,7 +50,7 @@ func addClassConstraints(fetinfo *fetInfo) {
 			})
 		}
 
-		n = int(cl.MaxLessonsPerDay.(float64))
+		n = cl.MaxLessonsPerDay
 		if n >= 0 && n < nhours {
 			cmaxlpd = append(cmaxlpd, maxLessonsPerDay{
 				Weight_Percentage:   100,
@@ -61,7 +61,7 @@ func addClassConstraints(fetinfo *fetInfo) {
 		}
 
 		i := fetinfo.db.Info.FirstAfternoonHour
-		maxpm := int(cl.MaxAfternoons.(float64))
+		maxpm := cl.MaxAfternoons
 		if maxpm >= 0 && i > 0 {
 			cmaxaft = append(cmaxaft, maxDaysinIntervalPerWeek{
 				Weight_Percentage:   100,
@@ -83,8 +83,8 @@ func addClassConstraints(fetinfo *fetInfo) {
 		}
 
 		// The lunch-break constraint may require adjustment of these:
-		mgpday := int(cl.MaxGapsPerDay.(float64))
-		mgpweek := int(cl.MaxGapsPerWeek.(float64))
+		mgpday := cl.MaxGapsPerDay
+		mgpweek := cl.MaxGapsPerWeek
 		if mgpweek < 0 {
 			mgpweek = 0
 		}
