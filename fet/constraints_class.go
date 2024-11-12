@@ -85,6 +85,9 @@ func addClassConstraints(fetinfo *fetInfo) {
 		// The lunch-break constraint may require adjustment of these:
 		mgpday := int(cl.MaxGapsPerDay.(float64))
 		mgpweek := int(cl.MaxGapsPerWeek.(float64))
+		if mgpweek < 0 {
+			mgpweek = 0
+		}
 
 		if cl.LunchBreak {
 			// Generate the constraint unless all days have a blocked lesson
@@ -111,6 +114,8 @@ func addClassConstraints(fetinfo *fetInfo) {
 					Maximum_Hours_Daily: len(mbhours) - 1,
 					Active:              true,
 				})
+				//fmt.Printf("%s:: lbdays: %d maxpm: %d\n",
+				//  cl.Tag, lbdays, maxpm)
 				// Adjust gaps
 				if maxpm < lbdays {
 					lbdays = maxpm
@@ -118,9 +123,12 @@ func addClassConstraints(fetinfo *fetInfo) {
 				if mgpday == 0 {
 					mgpday = 1
 				}
-				mgpweek += lbdays
+				if mgpweek >= 0 {
+					mgpweek += lbdays
+				}
 			}
-
+			//fmt.Printf("  --> %s::GapsPerDay: %d GapsPerWeek: %d\n",
+			//	cl.Tag, mgpday, mgpweek)
 		}
 		if mgpday >= 0 {
 			cmaxgpd = append(cmaxgpd, maxGapsPerDay{

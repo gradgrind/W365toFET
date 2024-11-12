@@ -113,7 +113,9 @@ func addTeacherConstraints(fetinfo *fetInfo) {
 				if mgpday == 0 {
 					mgpday = 1
 				}
-				mgpweek += lbdays
+				if mgpweek >= 0 {
+					mgpweek += lbdays
+				}
 			}
 		}
 
