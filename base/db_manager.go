@@ -120,8 +120,6 @@ func (db *DbTopLevel) CheckDb() {
 	if len(db.Classes) == 0 {
 		Error.Fatalln("No Classes")
 	}
-
-	// Initializations
 }
 
 // Interface for Course and SubCourse elements
