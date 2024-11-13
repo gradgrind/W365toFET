@@ -16,7 +16,7 @@ func (dbp *DbTopLevel) readClasses() {
 	}
 
 	for i := 0; i < len(dbp.Classes); i++ {
-		n := &dbp.Classes[i]
+		n := dbp.Classes[i]
 
 		if n.NotAvailable == nil {
 			// Avoid a null value

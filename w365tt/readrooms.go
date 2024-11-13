@@ -9,7 +9,7 @@ import (
 
 func (dbp *DbTopLevel) readRooms() {
 	for i := 0; i < len(dbp.Rooms); i++ {
-		n := &dbp.Rooms[i]
+		n := dbp.Rooms[i]
 		_, nok := dbp.RoomTags[n.Tag]
 		if nok {
 			logging.Error.Fatalf(
@@ -28,7 +28,7 @@ func (dbp *DbTopLevel) readRooms() {
 // In the case of RoomGroups, cater for empty Tags/Shortcuts
 func (dbp *DbTopLevel) readRoomGroups() {
 	for i := 0; i < len(dbp.RoomGroups); i++ {
-		n := &dbp.RoomGroups[i]
+		n := dbp.RoomGroups[i]
 		if n.Tag != "" {
 			_, nok := dbp.RoomTags[n.Tag]
 			if nok {
@@ -44,7 +44,7 @@ func (dbp *DbTopLevel) readRoomGroups() {
 // Call this after all room types have been "read".
 func (dbp *DbTopLevel) checkRoomGroups() {
 	for i := 0; i < len(dbp.RoomGroups); i++ {
-		n := &dbp.RoomGroups[i]
+		n := dbp.RoomGroups[i]
 		// Collect the Ids and Tags of the component rooms.
 		taglist := []string{}
 		reflist := []Ref{}
@@ -92,7 +92,7 @@ func (dbp *DbTopLevel) checkRoomGroups() {
 // Here the Tags are not checked (there should always be one ...).
 func (dbp *DbTopLevel) readRoomChoiceGroups() {
 	for i := 0; i < len(dbp.RoomChoiceGroups); i++ {
-		n := &dbp.RoomChoiceGroups[i]
+		n := dbp.RoomChoiceGroups[i]
 		_, nok := dbp.RoomTags[n.Tag]
 		if nok {
 			logging.Error.Fatalf(
@@ -157,7 +157,7 @@ func (dbp *DbTopLevel) makeRoomChoiceGroup(rooms []Ref) (Ref, string) {
 		id = dbp.NewId()
 		rcglen := len(dbp.RoomChoiceGroups)
 		dbp.RoomChoiceGroups = append(dbp.RoomChoiceGroups,
-			RoomChoiceGroup{
+			&RoomChoiceGroup{
 				Id:    id,
 				Tag:   tag,
 				Name:  name,

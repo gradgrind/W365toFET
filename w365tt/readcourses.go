@@ -25,7 +25,7 @@ func (dbp *DbTopLevel) readSubjects() {
 
 func (dbp *DbTopLevel) readCourses() {
 	for i := 0; i < len(dbp.Courses); i++ {
-		n := &dbp.Courses[i]
+		n := dbp.Courses[i]
 		dbp.readCourse(n)
 	}
 }
@@ -46,7 +46,7 @@ func (dbp *DbTopLevel) readSuperCourses() {
 	dbp.EpochPlans = nil
 
 	for i := 0; i < len(dbp.SuperCourses); i++ {
-		n := &dbp.SuperCourses[i]
+		n := dbp.SuperCourses[i]
 		if n.Subject == "" {
 			n.Subject = epochPlanSubjects[n.EpochPlan]
 		}
@@ -55,7 +55,7 @@ func (dbp *DbTopLevel) readSuperCourses() {
 
 func (dbp *DbTopLevel) readSubCourses() {
 	for i := 0; i < len(dbp.SubCourses); i++ {
-		n := &dbp.SubCourses[i]
+		n := dbp.SubCourses[i]
 		s, ok := dbp.Elements[n.SuperCourse]
 		if !ok {
 			logging.Error.Fatalf(

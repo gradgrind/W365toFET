@@ -53,7 +53,7 @@ func LoadJSON(jsonpath string) *DbTopLevel {
 
 func (dbp *DbTopLevel) readHours() {
 	for i := 0; i < len(dbp.Hours); i++ {
-		n := &dbp.Hours[i]
+		n := dbp.Hours[i]
 		if n.Tag == "" {
 			n.Tag = fmt.Sprintf("(%d)", i+1)
 		}
@@ -62,7 +62,7 @@ func (dbp *DbTopLevel) readHours() {
 
 func (dbp *DbTopLevel) readTeachers() {
 	for i := 0; i < len(dbp.Teachers); i++ {
-		n := &dbp.Teachers[i]
+		n := dbp.Teachers[i]
 		if len(n.NotAvailable) == 0 {
 			// Avoid a null value
 			n.NotAvailable = []TimeSlot{}

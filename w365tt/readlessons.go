@@ -4,7 +4,7 @@ import "W365toFET/logging"
 
 func (dbp *DbTopLevel) readLessons() {
 	for i := 0; i < len(dbp.Lessons); i++ {
-		n := &dbp.Lessons[i]
+		n := dbp.Lessons[i]
 		// The course must be Course or Supercourse.
 		c, ok := dbp.Elements[n.Course]
 		if !ok {

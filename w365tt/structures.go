@@ -96,20 +96,20 @@ type RoomChoiceGroup struct {
 }
 
 type Class struct {
-	Id               Ref        `json:"id"`
-	Name             string     `json:"name"`
-	Tag              string     `json:"shortcut"`
-	Year             int        `json:"level"`
-	Letter           string     `json:"letter"`
-	NotAvailable     []TimeSlot `json:"absences"`
-	Divisions        []Division `json:"divisions"`
-	MinLessonsPerDay int        `json:"minLessonsPerDay"`
-	MaxLessonsPerDay int        `json:"maxLessonsPerDay"`
-	MaxGapsPerDay    int        `json:"maxGapsPerDay"`
-	MaxGapsPerWeek   int        `json:"maxGapsPerWeek"`
-	MaxAfternoons    int        `json:"maxAfternoons"`
-	LunchBreak       bool       `json:"lunchBreak"`
-	ForceFirstHour   bool       `json:"forceFirstHour"`
+	Id               Ref         `json:"id"`
+	Name             string      `json:"name"`
+	Tag              string      `json:"shortcut"`
+	Year             int         `json:"level"`
+	Letter           string      `json:"letter"`
+	NotAvailable     []TimeSlot  `json:"absences"`
+	Divisions        []*Division `json:"divisions"`
+	MinLessonsPerDay int         `json:"minLessonsPerDay"`
+	MaxLessonsPerDay int         `json:"maxLessonsPerDay"`
+	MaxGapsPerDay    int         `json:"maxGapsPerDay"`
+	MaxGapsPerWeek   int         `json:"maxGapsPerWeek"`
+	MaxAfternoons    int         `json:"maxAfternoons"`
+	LunchBreak       bool        `json:"lunchBreak"`
+	ForceFirstHour   bool        `json:"forceFirstHour"`
 }
 
 func (t *Class) UnmarshalJSON(data []byte) error {
@@ -182,22 +182,22 @@ type EpochPlan struct {
 }
 
 type DbTopLevel struct {
-	Info             Info              `json:"w365TT"`
-	Days             []Day             `json:"days"`
-	Hours            []Hour            `json:"hours"`
-	Teachers         []Teacher         `json:"teachers"`
-	Subjects         []Subject         `json:"subjects"`
-	Rooms            []Room            `json:"rooms"`
-	RoomGroups       []RoomGroup       `json:"roomGroups"`
-	RoomChoiceGroups []RoomChoiceGroup `json:"roomChoiceGroups"`
-	Classes          []Class           `json:"classes"`
-	Groups           []Group           `json:"groups"`
-	Courses          []Course          `json:"courses"`
-	SuperCourses     []SuperCourse     `json:"superCourses"`
-	SubCourses       []SubCourse       `json:"subCourses"`
-	Lessons          []Lesson          `json:"lessons"`
-	EpochPlans       []EpochPlan       `json:"epochPlans,omitempty"`
-	Constraints      map[string]any    `json:"constraints"`
+	Info             Info               `json:"w365TT"`
+	Days             []*Day             `json:"days"`
+	Hours            []*Hour            `json:"hours"`
+	Teachers         []*Teacher         `json:"teachers"`
+	Subjects         []*Subject         `json:"subjects"`
+	Rooms            []*Room            `json:"rooms"`
+	RoomGroups       []*RoomGroup       `json:"roomGroups"`
+	RoomChoiceGroups []*RoomChoiceGroup `json:"roomChoiceGroups"`
+	Classes          []*Class           `json:"classes"`
+	Groups           []*Group           `json:"groups"`
+	Courses          []*Course          `json:"courses"`
+	SuperCourses     []*SuperCourse     `json:"superCourses"`
+	SubCourses       []*SubCourse       `json:"subCourses"`
+	Lessons          []*Lesson          `json:"lessons"`
+	EpochPlans       []*EpochPlan       `json:"epochPlans,omitempty"`
+	Constraints      map[string]any     `json:"constraints"`
 
 	// These fields do not belong in the JSON object.
 	Elements        map[Ref]any       `json:"-"`
@@ -273,74 +273,74 @@ func (db *DbTopLevel) checkDb() {
 
 	// More initializations
 	for i, n := range db.Days {
-		db.AddElement(n.Id, &db.Days[i])
+		db.AddElement(n.Id, db.Days[i])
 	}
 	for i, n := range db.Hours {
-		db.AddElement(n.Id, &db.Hours[i])
+		db.AddElement(n.Id, db.Hours[i])
 	}
 	for i, n := range db.Teachers {
-		db.AddElement(n.Id, &db.Teachers[i])
+		db.AddElement(n.Id, db.Teachers[i])
 	}
 	for i, n := range db.Subjects {
-		db.AddElement(n.Id, &db.Subjects[i])
+		db.AddElement(n.Id, db.Subjects[i])
 	}
 	for i, n := range db.Rooms {
-		db.AddElement(n.Id, &db.Rooms[i])
+		db.AddElement(n.Id, db.Rooms[i])
 	}
 	for i, n := range db.Classes {
-		db.AddElement(n.Id, &db.Classes[i])
+		db.AddElement(n.Id, db.Classes[i])
 	}
 	if db.RoomGroups == nil {
-		db.RoomGroups = []RoomGroup{}
+		db.RoomGroups = []*RoomGroup{}
 	} else {
 		for i, n := range db.RoomGroups {
-			db.AddElement(n.Id, &db.RoomGroups[i])
+			db.AddElement(n.Id, db.RoomGroups[i])
 		}
 	}
 	if db.RoomChoiceGroups == nil {
-		db.RoomChoiceGroups = []RoomChoiceGroup{}
+		db.RoomChoiceGroups = []*RoomChoiceGroup{}
 	} else {
 		for i, n := range db.RoomChoiceGroups {
-			db.AddElement(n.Id, &db.RoomChoiceGroups[i])
+			db.AddElement(n.Id, db.RoomChoiceGroups[i])
 		}
 	}
 	if db.Groups == nil {
-		db.Groups = []Group{}
+		db.Groups = []*Group{}
 	} else {
 		for i, n := range db.Groups {
-			db.AddElement(n.Id, &db.Groups[i])
+			db.AddElement(n.Id, db.Groups[i])
 		}
 	}
 	if db.Courses == nil {
-		db.Courses = []Course{}
+		db.Courses = []*Course{}
 	} else {
 		for i, n := range db.Courses {
-			db.AddElement(n.Id, &db.Courses[i])
+			db.AddElement(n.Id, db.Courses[i])
 		}
 	}
 	if db.SuperCourses == nil {
-		db.SuperCourses = []SuperCourse{}
+		db.SuperCourses = []*SuperCourse{}
 	} else {
 		for i, n := range db.SuperCourses {
-			db.AddElement(n.Id, &db.SuperCourses[i])
+			db.AddElement(n.Id, db.SuperCourses[i])
 		}
 	}
 	if db.SubCourses == nil {
-		db.SubCourses = []SubCourse{}
+		db.SubCourses = []*SubCourse{}
 	} else {
 		for i, n := range db.SubCourses {
 			// Add a prefix to the Id to avoid possible clashes with a
 			// Course having the same Id.
 			nid := "$$" + n.Id0
 			db.SubCourses[i].Id = nid
-			db.AddElement(nid, &db.SubCourses[i])
+			db.AddElement(nid, db.SubCourses[i])
 		}
 	}
 	if db.Lessons == nil {
-		db.Lessons = []Lesson{}
+		db.Lessons = []*Lesson{}
 	} else {
 		for i, n := range db.Lessons {
-			db.AddElement(n.Id, &db.Lessons[i])
+			db.AddElement(n.Id, db.Lessons[i])
 		}
 	}
 	if db.Constraints == nil {
@@ -368,13 +368,13 @@ func (dbp *DbTopLevel) makeNewSubject(tag, name string) Ref {
 	}
 
 	sref := dbp.NewId()
-	i := len(dbp.Subjects)
-	dbp.Subjects = append(dbp.Subjects, Subject{
+	sbj := &Subject{
 		Id:   sref,
 		Tag:  stag,
 		Name: name,
-	})
-	dbp.AddElement(sref, &dbp.Subjects[i])
+	}
+	dbp.Subjects = append(dbp.Subjects, sbj)
+	dbp.AddElement(sref, sbj)
 	dbp.SubjectTags[stag] = sref
 	if tag == "" && name != "" {
 		dbp.SubjectNames[name] = stag
