@@ -1,6 +1,7 @@
 package w365tt
 
 import (
+	"W365toFET/base"
 	"W365toFET/logging"
 	"encoding/json"
 	"fmt"
@@ -12,7 +13,7 @@ import (
 // The structures used for the "database", adapted to read from W365
 //TODO: Currently dealing only with the elements needed for the timetable
 
-type Ref string // Element reference
+type Ref = base.Ref // Element reference
 
 type Info struct {
 	Institution        string `json:"schoolName"`
@@ -96,20 +97,20 @@ type RoomChoiceGroup struct {
 }
 
 type Class struct {
-	Id               Ref         `json:"id"`
-	Name             string      `json:"name"`
-	Tag              string      `json:"shortcut"`
-	Year             int         `json:"level"`
-	Letter           string      `json:"letter"`
-	NotAvailable     []TimeSlot  `json:"absences"`
-	Divisions        []*Division `json:"divisions"`
-	MinLessonsPerDay int         `json:"minLessonsPerDay"`
-	MaxLessonsPerDay int         `json:"maxLessonsPerDay"`
-	MaxGapsPerDay    int         `json:"maxGapsPerDay"`
-	MaxGapsPerWeek   int         `json:"maxGapsPerWeek"`
-	MaxAfternoons    int         `json:"maxAfternoons"`
-	LunchBreak       bool        `json:"lunchBreak"`
-	ForceFirstHour   bool        `json:"forceFirstHour"`
+	Id               Ref        `json:"id"`
+	Name             string     `json:"name"`
+	Tag              string     `json:"shortcut"`
+	Year             int        `json:"level"`
+	Letter           string     `json:"letter"`
+	NotAvailable     []TimeSlot `json:"absences"`
+	Divisions        []Division `json:"divisions"`
+	MinLessonsPerDay int        `json:"minLessonsPerDay"`
+	MaxLessonsPerDay int        `json:"maxLessonsPerDay"`
+	MaxGapsPerDay    int        `json:"maxGapsPerDay"`
+	MaxGapsPerWeek   int        `json:"maxGapsPerWeek"`
+	MaxAfternoons    int        `json:"maxAfternoons"`
+	LunchBreak       bool       `json:"lunchBreak"`
+	ForceFirstHour   bool       `json:"forceFirstHour"`
 }
 
 func (t *Class) UnmarshalJSON(data []byte) error {
@@ -272,75 +273,75 @@ func (db *DbTopLevel) checkDb() {
 	}
 
 	// More initializations
-	for i, n := range db.Days {
-		db.AddElement(n.Id, db.Days[i])
+	for _, n := range db.Days {
+		db.AddElement(n.Id, n)
 	}
-	for i, n := range db.Hours {
-		db.AddElement(n.Id, db.Hours[i])
+	for _, n := range db.Hours {
+		db.AddElement(n.Id, n)
 	}
-	for i, n := range db.Teachers {
-		db.AddElement(n.Id, db.Teachers[i])
+	for _, n := range db.Teachers {
+		db.AddElement(n.Id, n)
 	}
-	for i, n := range db.Subjects {
-		db.AddElement(n.Id, db.Subjects[i])
+	for _, n := range db.Subjects {
+		db.AddElement(n.Id, n)
 	}
-	for i, n := range db.Rooms {
-		db.AddElement(n.Id, db.Rooms[i])
+	for _, n := range db.Rooms {
+		db.AddElement(n.Id, n)
 	}
-	for i, n := range db.Classes {
-		db.AddElement(n.Id, db.Classes[i])
+	for _, n := range db.Classes {
+		db.AddElement(n.Id, n)
 	}
 	if db.RoomGroups == nil {
 		db.RoomGroups = []*RoomGroup{}
 	} else {
-		for i, n := range db.RoomGroups {
-			db.AddElement(n.Id, db.RoomGroups[i])
+		for _, n := range db.RoomGroups {
+			db.AddElement(n.Id, n)
 		}
 	}
 	if db.RoomChoiceGroups == nil {
 		db.RoomChoiceGroups = []*RoomChoiceGroup{}
 	} else {
-		for i, n := range db.RoomChoiceGroups {
-			db.AddElement(n.Id, db.RoomChoiceGroups[i])
+		for _, n := range db.RoomChoiceGroups {
+			db.AddElement(n.Id, n)
 		}
 	}
 	if db.Groups == nil {
 		db.Groups = []*Group{}
 	} else {
-		for i, n := range db.Groups {
-			db.AddElement(n.Id, db.Groups[i])
+		for _, n := range db.Groups {
+			db.AddElement(n.Id, n)
 		}
 	}
 	if db.Courses == nil {
 		db.Courses = []*Course{}
 	} else {
-		for i, n := range db.Courses {
-			db.AddElement(n.Id, db.Courses[i])
+		for _, n := range db.Courses {
+			db.AddElement(n.Id, n)
 		}
 	}
 	if db.SuperCourses == nil {
 		db.SuperCourses = []*SuperCourse{}
 	} else {
-		for i, n := range db.SuperCourses {
-			db.AddElement(n.Id, db.SuperCourses[i])
+		for _, n := range db.SuperCourses {
+			db.AddElement(n.Id, n)
 		}
 	}
 	if db.SubCourses == nil {
 		db.SubCourses = []*SubCourse{}
 	} else {
-		for i, n := range db.SubCourses {
+		for _, n := range db.SubCourses {
 			// Add a prefix to the Id to avoid possible clashes with a
 			// Course having the same Id.
 			nid := "$$" + n.Id0
-			db.SubCourses[i].Id = nid
-			db.AddElement(nid, db.SubCourses[i])
+			n.Id = nid
+			db.AddElement(nid, n)
 		}
 	}
 	if db.Lessons == nil {
 		db.Lessons = []*Lesson{}
 	} else {
-		for i, n := range db.Lessons {
-			db.AddElement(n.Id, db.Lessons[i])
+		for _, n := range db.Lessons {
+			db.AddElement(n.Id, n)
 		}
 	}
 	if db.Constraints == nil {

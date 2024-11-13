@@ -9,14 +9,14 @@ func (db *DbTopLevel) ConvertToBase() *base.DbTopLevel {
 	newdb.Info = base.Info(db.Info)
 	for _, e := range db.Days {
 		newdb.Days = append(newdb.Days, &base.Day{
-			Id:   base.Ref(e.Id),
+			Id:   e.Id,
 			Tag:  e.Tag,
 			Name: e.Name,
 		})
 	}
 	for _, e := range db.Hours {
 		newdb.Hours = append(newdb.Hours, &base.Hour{
-			Id:    base.Ref(e.Id),
+			Id:    e.Id,
 			Tag:   e.Tag,
 			Name:  e.Name,
 			Start: e.Start,
@@ -29,7 +29,7 @@ func (db *DbTopLevel) ConvertToBase() *base.DbTopLevel {
 			tsl = append(tsl, base.TimeSlot(ts))
 		}
 		newdb.Teachers = append(newdb.Teachers, &base.Teacher{
-			Id:               base.Ref(e.Id),
+			Id:               e.Id,
 			Tag:              e.Tag,
 			Name:             e.Name,
 			Firstname:        e.Firstname,
@@ -45,7 +45,7 @@ func (db *DbTopLevel) ConvertToBase() *base.DbTopLevel {
 	}
 	for _, e := range db.Subjects {
 		newdb.Subjects = append(newdb.Subjects, &base.Subject{
-			Id:   base.Ref(e.Id),
+			Id:   e.Id,
 			Tag:  e.Tag,
 			Name: e.Name,
 		})
@@ -56,7 +56,7 @@ func (db *DbTopLevel) ConvertToBase() *base.DbTopLevel {
 			tsl = append(tsl, base.TimeSlot(ts))
 		}
 		r := &base.Room{
-			Id:           base.Ref(e.Id),
+			Id:           e.Id,
 			Tag:          e.Tag,
 			Name:         e.Name,
 			NotAvailable: tsl,
@@ -65,20 +65,13 @@ func (db *DbTopLevel) ConvertToBase() *base.DbTopLevel {
 		newdb.Rooms = append(newdb.Rooms, r)
 	}
 	for _, e := range db.RoomGroups {
-		rg := &base.RoomGroup{
-			Id:   base.Ref(e.Id),
-			Tag:  e.Tag,
-			Name: e.Name,
-		}
 		rl := []*base.Room{}
 		for _, r := range e.Rooms {
-			r2 := elements[r].(*base.Room)
 			rl = append(rl, elements[r].(*base.Room))
-			r2.AddReferrer(rg)
 		}
 		newdb.RoomGroups = append(newdb.RoomGroups,
 			&base.RoomGroup{
-				Id:    base.Ref(e.Id),
+				Id:    e.Id,
 				Tag:   e.Tag,
 				Name:  e.Name,
 				Rooms: rl,
@@ -86,7 +79,7 @@ func (db *DbTopLevel) ConvertToBase() *base.DbTopLevel {
 	}
 	for _, e := range db.RoomChoiceGroups {
 		rcg := &base.RoomChoiceGroup{
-			Id:   base.Ref(e.Id),
+			Id:   e.Id,
 			Tag:  e.Tag,
 			Name: e.Name,
 		}
@@ -94,7 +87,6 @@ func (db *DbTopLevel) ConvertToBase() *base.DbTopLevel {
 		for _, r := range e.Rooms {
 			r2 := elements[r].(*base.Room)
 			rl = append(rl, r2)
-			r2.AddReferrer(rcg)
 		}
 		rcg.Rooms = rl
 		newdb.RoomChoiceGroups = append(newdb.RoomChoiceGroups, rcg)
@@ -106,7 +98,7 @@ func (db *DbTopLevel) ConvertToBase() *base.DbTopLevel {
 			tsl = append(tsl, base.TimeSlot(ts))
 		}
 		celement := &base.Class{
-			Id:           base.Ref(e.Id),
+			Id:           e.Id,
 			Tag:          e.Tag,
 			Year:         e.Year,
 			Letter:       e.Letter,
@@ -131,7 +123,7 @@ func (db *DbTopLevel) ConvertToBase() *base.DbTopLevel {
 			for _, gref := range div.Groups {
 				g := db.Elements[gref].(*Group)
 				gelement := &base.Group{
-					Id:       base.Ref(gref),
+					Id:       gref,
 					Tag:      g.Tag,
 					Class:    celement,
 					Division: delement,
