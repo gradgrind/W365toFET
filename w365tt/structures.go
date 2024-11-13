@@ -329,7 +329,7 @@ func (db *DbTopLevel) checkDb() {
 		db.SubCourses = []SubCourse{}
 	} else {
 		for i, n := range db.SubCourses {
-			// Add a prefix to the Id to avoid possible clashe with a
+			// Add a prefix to the Id to avoid possible clashes with a
 			// Course having the same Id.
 			nid := "$$" + n.Id0
 			db.SubCourses[i].Id = nid

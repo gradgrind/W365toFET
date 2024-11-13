@@ -2,6 +2,7 @@ package w365tt
 
 import (
 	"W365toFET/logging"
+	"strconv"
 )
 
 func (dbp *DbTopLevel) readClasses() {
@@ -28,20 +29,19 @@ func (dbp *DbTopLevel) readClasses() {
 		}
 
 		// Handle special "classes" for stand-ins
-		if n.Year == 0 {
+		//TODO: Specification still unclear.
+		if n.Year <= 0 { //TODO: should be < 0
 			// Pending clarification of what exactly this should do, disregard
-			// any divisions.
-
-			n.Tag = "" // no students
-			//TODO
-
-			//
-
+			// any divisions – there shouldn't be any anyway.
+			n.Tag = "" // no students – should already be empty
 			continue
 		}
 
 		// Get the divisions and flag their Groups.
 		for i, wdiv := range n.Divisions {
+			if wdiv.Name == "" {
+				n.Divisions[i].Name = "#div" + strconv.Itoa(i+1)
+			}
 			glist := []Ref{}
 			for _, g := range wdiv.Groups {
 				// get Tag
