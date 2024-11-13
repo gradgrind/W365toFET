@@ -20,9 +20,9 @@ func getXMLfile() string {
 		}
 	*/
 
-	f365 := "../_testdata/x01_w365.xml"
+	//f365 := "../_testdata/x01_w365.xml"
 	//f365 := "../_testdata/fms1_w365.xml"
-	//f365 := "../_testdata/Demo1_w365.xml"
+	f365 := "../_testdata/Demo1_w365.xml"
 	return f365
 }
 
