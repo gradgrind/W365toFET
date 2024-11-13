@@ -82,6 +82,7 @@ func (db *DbTopLevel) ConvertToBase() *base.DbTopLevel {
 				Rooms: e.Rooms,
 			})
 	}
+
 	groups := []*base.Group{}
 	for _, e := range db.Classes {
 		tsl := []base.TimeSlot{}
@@ -115,15 +116,44 @@ func (db *DbTopLevel) ConvertToBase() *base.DbTopLevel {
 	}
 	newdb.Groups = groups
 
-	//TODO
+	for _, e := range db.Courses {
+		newdb.Courses = append(newdb.Courses, &base.Course{
+			Id:       e.Id,
+			Subject:  e.Subject,
+			Groups:   e.Groups,
+			Teachers: e.Teachers,
+			Room:     e.Room,
+		})
+	}
+	for _, e := range db.SuperCourses {
+		newdb.SuperCourses = append(newdb.SuperCourses, &base.SuperCourse{
+			Id:      e.Id,
+			Subject: e.Subject,
+		})
+	}
+	for _, e := range db.SubCourses {
+		newdb.SubCourses = append(newdb.SubCourses, &base.SubCourse{
+			Id:          e.Id,
+			SuperCourse: e.SuperCourse,
+			Subject:     e.Subject,
+			Groups:      e.Groups,
+			Teachers:    e.Teachers,
+			Room:        e.Room,
+		})
+	}
+	for _, e := range db.Lessons {
+		newdb.Lessons = append(newdb.Lessons, &base.Lesson{
+			Id:       e.Id,
+			Course:   e.Course,
+			Duration: e.Duration,
+			Day:      e.Day,
+			Hour:     e.Hour,
+			Fixed:    e.Fixed,
+			Rooms:    e.Rooms,
+		})
+	}
 
-	// Courses
-	// SuperCourses
-	// SubCourses
-	// Lessons
-	// Constraints
-
-	//
+	newdb.Constraints = db.Constraints
 
 	return newdb
 }
