@@ -381,28 +381,65 @@ func readClasses(
 		if maxpm >= ndays {
 			maxpm = -1
 		}
-		lb := withLunchBreak(id2node, n.Categories, nid)
-		maxlpd := n.MaxLessonsPerDay
-		if lb {
-			if maxlpd >= nhours-1 {
+		var r w365tt.Class
+		if isStandIns(id2node, n.Categories, nid) {
+			r = w365tt.Class{
+				Id:               nid,
+				Name:             n.Name,
+				Year:             -1,
+				Letter:           "",
+				Tag:              "",
+				Divisions:        []w365tt.Division{},
+				MinLessonsPerDay: -1,
+				MaxLessonsPerDay: -1,
+				MaxGapsPerDay:    -1,
+				MaxGapsPerWeek:   -1,
+				MaxAfternoons:    -1,
+				LunchBreak:       false,
+				ForceFirstHour:   false,
+			}
+		} else {
+			lb := withLunchBreak(id2node, n.Categories, nid)
+			maxlpd := n.MaxLessonsPerDay
+			if lb {
+				if maxlpd >= nhours-1 {
+					maxlpd = -1
+				}
+			} else if maxlpd >= nhours {
 				maxlpd = -1
 			}
-		} else if maxlpd >= nhours {
-			maxlpd = -1
-		}
-		r := w365tt.Class{
-			Id:               nid,
-			Name:             n.Name,
-			Year:             n.Level,
-			Letter:           n.Letter,
-			Tag:              fmt.Sprintf("%d%s", n.Level, n.Letter),
-			MinLessonsPerDay: n.MinLessonsPerDay,
-			MaxLessonsPerDay: maxlpd,
-			MaxGapsPerDay:    -1,
-			MaxGapsPerWeek:   0,
-			MaxAfternoons:    maxpm,
-			LunchBreak:       lb,
-			ForceFirstHour:   n.ForceFirstHour,
+			r = w365tt.Class{
+				Id:               nid,
+				Name:             n.Name,
+				Year:             n.Level,
+				Letter:           n.Letter,
+				Tag:              fmt.Sprintf("%d%s", n.Level, n.Letter),
+				MinLessonsPerDay: n.MinLessonsPerDay,
+				MaxLessonsPerDay: maxlpd,
+				MaxGapsPerDay:    -1,
+				MaxGapsPerWeek:   0,
+				MaxAfternoons:    maxpm,
+				LunchBreak:       lb,
+				ForceFirstHour:   n.ForceFirstHour,
+			}
+			// Initialize Divisions to get [] instead of null, when empty
+			r.Divisions = []w365tt.Division{}
+			msg := fmt.Sprintf("Class %s in Divisions", nid)
+			for i, d := range GetRefList(id2node, n.Divisions, msg) {
+				dn := id2node[d].(Division)
+				msg = fmt.Sprintf("Division %s in Groups", d)
+				glist := GetRefList(id2node, dn.Groups, msg)
+				if len(glist) != 0 {
+					nm := dn.Name
+					if nm == "" {
+						nm = fmt.Sprintf("#div%d", i)
+					}
+					r.Divisions = append(r.Divisions, w365tt.Division{
+						Name:   nm,
+						Groups: glist,
+					})
+				}
+			}
 		}
 		msg := fmt.Sprintf("Class %s in Absences", nid)
 		for _, ai := range GetRefList(id2node, n.Absences, msg) {
@@ -413,24 +450,6 @@ func readClasses(
 			})
 		}
 		sortAbsences(r.NotAvailable)
-		// Initialize Divisions to get [] instead of null, when empty
-		r.Divisions = []w365tt.Division{}
-		msg = fmt.Sprintf("Class %s in Divisions", nid)
-		for i, d := range GetRefList(id2node, n.Divisions, msg) {
-			dn := id2node[d].(Division)
-			msg = fmt.Sprintf("Division %s in Groups", d)
-			glist := GetRefList(id2node, dn.Groups, msg)
-			if len(glist) != 0 {
-				nm := dn.Name
-				if nm == "" {
-					nm = fmt.Sprintf("#div%d", i)
-				}
-				r.Divisions = append(r.Divisions, w365tt.Division{
-					Name:   nm,
-					Groups: glist,
-				})
-			}
-		}
 		outdata.Classes = append(outdata.Classes, r)
 	}
 }

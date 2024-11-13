@@ -29,6 +29,27 @@ func withLunchBreak(
 	return true
 }
 
+// A class can have a "flag" (implemented here as a Category) to indicate
+// that it is not a real class, but a collection of stand-in "lessons".
+// Return true if the flag is set.
+func isStandIns(
+	id2node map[w365tt.Ref]any,
+	refs RefList,
+	nodeId w365tt.Ref,
+) bool {
+	msg := fmt.Sprintf("Category in Class %s", nodeId)
+	reflist := GetRefList(id2node, refs, msg)
+	//fmt.Printf("Categories for Class %s:\n", nodeId)
+	for _, cat := range reflist {
+		catnode := id2node[cat].(*Category)
+		//fmt.Printf("  :: %+v\n", catnode)
+		if catnode.Role == 7 {
+			return true
+		}
+	}
+	return false
+}
+
 // Look for a block tag in the Categories. Only the one will be recognized,
 // the first one.
 func getBlockTag(
