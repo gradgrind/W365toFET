@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"os"
+	"slices"
 	"strconv"
 )
 
@@ -29,33 +30,46 @@ func ReadJSON(jsonpath string) *DbTopLevel {
 	return &v
 }
 
-func LoadJSON(jsonpath string) *DbTopLevel {
+func LoadJSON(jsonpath string) *base.DbTopLevel {
 	db := ReadJSON(jsonpath)
+	db.checkDb()
 	newdb := &base.DbTopLevel{}
 	newdb.Info = base.Info(db.Info)
+	if newdb.Info.MiddayBreak == nil {
+		newdb.Info.MiddayBreak = []int{}
+	} else {
+		// Sort and check contiguity.
+		mb := newdb.Info.MiddayBreak
+		slices.Sort(mb)
+		if mb[len(mb)-1]-mb[0] >= len(mb) {
+			logging.Error.Fatalln("MiddayBreak hours not contiguous")
+		}
+	}
 	db.readDays(newdb)
 	db.readHours(newdb)
 	db.readTeachers(newdb)
 	db.readSubjects(newdb)
 	db.readRooms(newdb)
-
-	dbdata.checkDb()
-	dbdata.readTeachers()
-	dbdata.readSubjects()
-	dbdata.readRooms()
-	dbdata.readRoomGroups()
-	dbdata.readRoomChoiceGroups()
-	// W365 has no RoomChoicesGroups: – they must be generated from the
-	// PreferredRooms lists of courses.
+	db.readRoomGroups(newdb)
 	// To manage potentially incomplete Tag and Name fields for RoomGroups
 	// from W365, perform the checking after all room types have been "read".
-	dbdata.checkRoomGroups()
-	dbdata.readClasses()
+	db.checkRoomGroups(newdb)
+	db.readClasses(newdb)
+
+	//TODO
+
 	dbdata.readCourses()
 	dbdata.readSuperCourses()
 	dbdata.readSubCourses()
 	dbdata.readLessons()
-	return dbdata
+
+	if db.Constraints == nil {
+		newdb.Constraints = make(map[string]any)
+	} else {
+		newdb.Constraints = db.Constraints
+	}
+
+	return newdb
 }
 
 func (db *DbTopLevel) readDays(newdb *base.DbTopLevel) {

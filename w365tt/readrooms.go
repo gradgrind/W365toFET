@@ -62,54 +62,55 @@ func (db *DbTopLevel) readRoomGroups(newdb *base.DbTopLevel) {
 
 // Call this after all room types have been "read".
 // TODO: But then, on the base db ...
-func (dbp *DbTopLevel) checkRoomGroups() {
-	for i := 0; i < len(dbp.RoomGroups); i++ {
-		n := dbp.RoomGroups[i]
+func (db *DbTopLevel) checkRoomGroups(newdb *base.DbTopLevel) {
+	for _, e := range newdb.RoomGroups {
+
 		// Collect the Ids and Tags of the component rooms.
 		taglist := []string{}
 		reflist := []Ref{}
-		for _, rref := range n.Rooms {
-			r, ok := dbp.Elements[rref]
+		for _, rref := range e.Rooms {
+			r, ok := db.RealRooms[rref]
 			if ok {
-				rm, ok := r.(*Room)
-				if ok {
-					reflist = append(reflist, rref)
-					taglist = append(taglist, rm.Tag)
-					continue
-				}
+				reflist = append(reflist, rref)
+				taglist = append(taglist, r.Tag)
+				continue
+
 			}
 			logging.Error.Printf(
 				"Invalid Room in RoomGroup %s:\n  %s\n",
-				n.Tag, rref)
+				e.Tag, rref)
 		}
-		if n.Tag == "" {
+		if e.Tag == "" {
 			// Make a new Tag
 			var tag string
 			i := 0
 			for {
 				i++
 				tag = "{" + strconv.Itoa(i) + "}"
-				_, nok := dbp.RoomTags[tag]
+				_, nok := db.RoomTags[tag]
 				if !nok {
 					break
 				}
 			}
-			n.Tag = tag
-			dbp.RoomTags[tag] = n.Id
+			e.Tag = tag
+			db.RoomTags[tag] = e.Id
 			// Also extend the name
-			if n.Name == "" {
-				n.Name = strings.Join(taglist, ",")
+			if e.Name == "" {
+				e.Name = strings.Join(taglist, ",")
 			} else {
-				n.Name = strings.Join(taglist, ",") + ":: " + n.Name
+				e.Name = strings.Join(taglist, ",") + ":: " + e.Name
 			}
-		} else if n.Name == "" {
-			n.Name = strings.Join(taglist, ",")
+		} else if e.Name == "" {
+			e.Name = strings.Join(taglist, ",")
 		}
-		n.Rooms = reflist
+		e.Rooms = reflist
 	}
 }
 
-func (db *DbTopLevel) makeRoomChoiceGroup(rooms []Ref) (Ref, string) {
+func (db *DbTopLevel) makeRoomChoiceGroup(
+	newdb *base.DbTopLevel,
+	rooms []Ref,
+) (Ref, string) {
 	erlist := []string{} // Error messages
 	// Collect the Ids and Tags of the component rooms.
 	taglist := []string{}
@@ -142,16 +143,15 @@ func (db *DbTopLevel) makeRoomChoiceGroup(rooms []Ref) (Ref, string) {
 		}
 		// Add new Element
 		id = db.NewId()
-		r := &base.RoomChoiceGroup{
-			Id:    id,
-			Tag:   tag,
-			Name:  name,
-			Rooms: reflist,
-		}
 		db.RoomTags[tag] = id
 		db.RoomChoiceNames[name] = id
-		//TODO
-		newdb.RoomChoiceGroups = append(newdb.RoomChoiceGroups, r)
+		newdb.RoomChoiceGroups = append(newdb.RoomChoiceGroups,
+			&base.RoomChoiceGroup{
+				Id:    id,
+				Tag:   tag,
+				Name:  name,
+				Rooms: reflist,
+			})
 	}
 	return id, strings.Join(erlist, "")
 }

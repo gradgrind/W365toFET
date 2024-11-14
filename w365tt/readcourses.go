@@ -7,6 +7,9 @@ import (
 )
 
 func (db *DbTopLevel) readSubjects(newdb *base.DbTopLevel) {
+	db.SubjectMap = map[Ref]*base.Subject{}
+	db.SubjectTags = map[string]Ref{}
+	db.SubjectNames = map[string]string{}
 	for _, e := range db.Subjects {
 		// Perform some checks and add to the SubjectNames
 		// and SubjectTags maps.
@@ -24,19 +27,30 @@ func (db *DbTopLevel) readSubjects(newdb *base.DbTopLevel) {
 		}
 		db.SubjectTags[e.Tag] = e.Id
 		//Copy data to base db.
-		newdb.Subjects = append(newdb.Subjects, &base.Subject{
+		s := &base.Subject{
 			Id:   e.Id,
 			Tag:  e.Tag,
 			Name: e.Name,
-		})
+		}
+		newdb.Subjects = append(newdb.Subjects, s)
+		db.SubjectMap[e.Id] = s
 	}
 }
 
-func (dbp *DbTopLevel) readCourses() {
-	for i := 0; i < len(dbp.Courses); i++ {
-		n := dbp.Courses[i]
-		dbp.readCourse(n)
+func (db *DbTopLevel) readCourses(newdb *base.DbTopLevel) {
+	for _, e := range db.Courses {
+		subject := db.getCourseSubject(newdb, e.Subjects, e.Id)
+		room := db.getCourseRoom(newdb, e.PreferredRooms, e.Id)
+		newdb.Courses = append(newdb.Courses, &base.Course{
+			Id:       e.Id,
+			Subject:  subject,
+			Groups:   e.Groups,
+			Teachers: e.Teachers,
+			Room:     room,
+		})
 	}
+	// TODO?
+	// dbp.readCourse(n)
 }
 
 func (dbp *DbTopLevel) readSuperCourses() {
@@ -83,73 +97,102 @@ func (dbp *DbTopLevel) readSubCourses() {
 	}
 }
 
-func (dbp *DbTopLevel) readCourse(course CourseInterface) {
+func (db *DbTopLevel) getCourseSubject(
+	newdb *base.DbTopLevel,
+	srefs []base.Ref,
+	courseId base.Ref,
+) base.Ref {
 	//
-	// Deal with the subject(s) fields. W365 allows multiple subjects, hence
-	// the field "Subjects". For the interface there should only be a single
-	// subject – in the "Subject"-field. If there is a "Subjects" entry, this
-	// is converted to a single subject in the "Subject" field, if necessary
-	// creating a new subject. Repeated use of the same subject list will
-	// reuse the created subject. There should not be an entry in both
-	// "Subject" and "Subjects" field.
+	// Deal with the Subjects field of a Course (or SuperCourse) – W365
+	// allows multiple subjects.
+	// The base db expects one and only one subject (in the Subject field).
+	// If there are multiple subjects in the input, these will be converted
+	// to a single "composite" subject, using all the subject tags.
+	// Repeated use of the same subject list will reuse the created subject.
 	//
-	msg1 := "Course %s:\n  Unknown Subject: %s\n"
-	msg2 := "Course %s:\n  Not a Subject: %s\n"
-	if course.GetSubject() == "" {
-		if len(course.getSubjects()) == 1 {
-			wsid := course.getSubjects()[0]
-			s0, ok := dbp.Elements[wsid]
-			if !ok {
-				logging.Error.Fatalf(msg1, course.GetId(), wsid)
-			}
-			if _, ok = s0.(*Subject); !ok {
-				logging.Error.Fatalf(msg2, course.GetId(), wsid)
-			}
-			course.setSubject(wsid)
-		} else if len(course.getSubjects()) > 1 {
-			// Make a subject name
-			sklist := []string{}
-			for _, wsid := range course.getSubjects() {
-				// Need Tag/Shortcut field
-				s0, ok := dbp.Elements[wsid]
-				if ok {
-					s, ok := s0.(*Subject)
-					if !ok {
-						logging.Error.Fatalf(msg2, course.GetId(), wsid)
-					}
-					sklist = append(sklist, s.Tag)
-				} else {
-					logging.Error.Fatalf(msg1, course.GetId(), wsid)
-				}
-			}
-			skname := strings.Join(sklist, ",")
-			stag, ok := dbp.SubjectNames[skname]
+	msg := "Course %s:\n  Not a Subject: %s\n"
+	var subject Ref
+	if len(srefs) == 1 {
+		wsid := srefs[0]
+		_, ok := db.SubjectMap[wsid]
+		if !ok {
+			logging.Error.Fatalf(msg, courseId, wsid)
+		}
+		subject = wsid
+	} else if len(srefs) > 1 {
+		// Make a subject name
+		sklist := []string{}
+		for _, wsid := range srefs {
+			// Need Tag/Shortcut field
+			s, ok := db.SubjectMap[wsid]
 			if ok {
-				// The Name has already been used.
-				course.setSubject(dbp.SubjectTags[stag])
+				sklist = append(sklist, s.Tag)
 			} else {
-				// Need a new Subject.
-				course.setSubject(dbp.makeNewSubject("", skname))
+				logging.Error.Fatalf(msg, courseId, wsid)
 			}
+		}
+		sktag := strings.Join(sklist, ",")
+		wsid, ok := db.SubjectTags[sktag]
+		if ok {
+			// The Name has already been used.
+			subject = wsid
+		} else {
+			// Need a new Subject.
+			subject := db.NewId()
+			sbj := &base.Subject{
+				Id:   subject,
+				Tag:  sktag,
+				Name: "Compound Subject",
+			}
+			newdb.Subjects = append(newdb.Subjects, sbj)
 		}
 	} else {
-		if len(course.getSubjects()) != 0 {
-			logging.Error.Printf("Course has both Subject AND Subjects: %s\n",
-				course.GetId())
-		}
-		wsid := course.GetSubject()
-		s0, ok := dbp.Elements[wsid]
-		if ok {
-			_, ok = s0.(*Subject)
-			if !ok {
-				logging.Error.Fatalf(msg2, course.GetId(), wsid)
-			}
-		} else {
-			logging.Error.Fatalf(msg1, course.GetId(), wsid)
-		}
+		logging.Error.Fatalf("Course has no subject: %s\n", courseId)
 	}
-	// Clear Subjects field.
-	course.setSubjects(nil)
+	return subject
+}
+
+func (db *DbTopLevel) getCourseRoom(
+	newdb *base.DbTopLevel,
+	rrefs []base.Ref,
+	courseId base.Ref,
+) base.Ref {
+	//
+	// Deal with rooms. W365 can have a single RoomGroup or a list of Rooms.
+	// If there is a list of Rooms, this is converted to a RoomChoiceGroup.
+	// In the end there should be a single Room, RoomChoiceGroup or RoomGroup
+	// in the "Room" field. The "PreferredRooms" field in cleared.
+	// If a list of rooms recurs, the same RoomChoiceGroup is used.
+	//
+	room := base.Ref{""}
+	if len(rrefs) > 1 {
+		// Make a RoomChoiceGroup
+		var estr string
+		room, estr = db.makeRoomChoiceGroup(newdb, rrefs)
+		if estr != "" {
+			logging.Error.Printf("In Course %s:\n%s", courseId, estr)
+		}
+	} else if len(rrefs) == 1 {
+		// Check that room is Room or RoomGroup.
+		rref0 := rrefs[0]
+		r, ok := db.RealRooms[rref0]
+		if ok {
+			room = rref0
+		} else {
+			//TODO: How to test for RoomGroup
+			
+			else {
+					logging.Error.Printf("Invalid room in Course %s:\n  %s\n",
+					course.GetId(), rref0)
+			}
+		}
+		
+	}
+
+	return room
+}
+
+func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 
 	//
 	// Deal with groups.

@@ -5,7 +5,6 @@ import (
 	"W365toFET/logging"
 	"encoding/json"
 	"fmt"
-	"slices"
 	"strconv"
 	"strings"
 )
@@ -211,10 +210,11 @@ type DbTopLevel struct {
 	Constraints  map[string]any `json:"constraints"`
 
 	// These fields do not belong in the JSON object.
-	RealRooms map[Ref]*base.Room `json:"-"`
+	RealRooms  map[Ref]*base.Room    `json:"-"`
+	SubjectMap map[Ref]*base.Subject `json:"-"`
 
 	//??
-	Elements        map[Ref]any       `json:"-"`
+	//Elements        map[Ref]any       `json:"-"`
 	MaxId           int               `json:"-"` // for "indexed" Ids only
 	SubjectTags     map[string]Ref    `json:"-"`
 	SubjectNames    map[string]string `json:"-"`
@@ -222,6 +222,7 @@ type DbTopLevel struct {
 	RoomChoiceNames map[string]Ref    `json:"-"`
 }
 
+// TODO: At present I am not maintaining  db.MaxId ...
 func (db *DbTopLevel) NewId() Ref {
 	return Ref(fmt.Sprintf("#%d", db.MaxId+1))
 }
@@ -246,26 +247,6 @@ func (db *DbTopLevel) AddElement(ref Ref, element any) {
 }
 
 func (db *DbTopLevel) checkDb() {
-	// Initializations
-	if db.Info.MiddayBreak == nil {
-		db.Info.MiddayBreak = []int{}
-	} else {
-		// Sort and check contiguity.
-		slices.Sort(db.Info.MiddayBreak)
-		mb := db.Info.MiddayBreak
-		if mb[len(mb)-1]-mb[0] >= len(mb) {
-			logging.Error.Fatalln("MiddayBreak hours not contiguous")
-		}
-
-	}
-	db.SubjectTags = map[string]Ref{}
-	db.SubjectNames = map[string]string{}
-	db.RoomTags = map[string]Ref{}
-	db.RoomChoiceNames = map[string]Ref{}
-	// Initialize the Ref -> Element mapping
-	db.Elements = make(map[Ref]any)
-
-	// Checks
 	if len(db.Days) == 0 {
 		logging.Error.Fatalln("No Days")
 	}
@@ -284,98 +265,6 @@ func (db *DbTopLevel) checkDb() {
 	if len(db.Classes) == 0 {
 		logging.Error.Fatalln("No Classes")
 	}
-
-	// More initializations
-	for _, n := range db.Days {
-		db.AddElement(n.Id, n)
-	}
-	for _, n := range db.Hours {
-		db.AddElement(n.Id, n)
-	}
-	for _, n := range db.Teachers {
-		db.AddElement(n.Id, n)
-	}
-	for _, n := range db.Subjects {
-		db.AddElement(n.Id, n)
-	}
-	for _, n := range db.Rooms {
-		db.AddElement(n.Id, n)
-	}
-	for _, n := range db.Classes {
-		db.AddElement(n.Id, n)
-	}
-	if db.RoomGroups == nil {
-		db.RoomGroups = []*RoomGroup{}
-	} else {
-		for _, n := range db.RoomGroups {
-			db.AddElement(n.Id, n)
-		}
-	}
-	if db.Groups == nil {
-		db.Groups = []*Group{}
-	} else {
-		for _, n := range db.Groups {
-			db.AddElement(n.Id, n)
-		}
-	}
-	if db.Courses == nil {
-		db.Courses = []*Course{}
-	} else {
-		for _, n := range db.Courses {
-			db.AddElement(n.Id, n)
-		}
-	}
-	if db.SuperCourses == nil {
-		db.SuperCourses = []*SuperCourse{}
-	} else {
-		for _, n := range db.SuperCourses {
-			db.AddElement(n.Id, n)
-		}
-	}
-	if db.Lessons == nil {
-		db.Lessons = []*Lesson{}
-	} else {
-		for _, n := range db.Lessons {
-			db.AddElement(n.Id, n)
-		}
-	}
-	if db.Constraints == nil {
-		db.Constraints = make(map[string]any)
-	}
-}
-
-func (dbp *DbTopLevel) newSubjectTag() string {
-	// A rather primitive new-subject-tag generator
-	i := 0
-	for {
-		i++
-		tag := "X" + strconv.Itoa(i)
-		_, nok := dbp.SubjectTags[tag]
-		if !nok {
-			return tag
-		}
-	}
-}
-
-func (dbp *DbTopLevel) makeNewSubject(tag, name string) Ref {
-	stag := tag
-	if stag == "" {
-		stag = dbp.newSubjectTag()
-	}
-
-	sref := dbp.NewId()
-	sbj := &Subject{
-		Id:   sref,
-		Tag:  stag,
-		Name: name,
-	}
-	dbp.Subjects = append(dbp.Subjects, sbj)
-	dbp.AddElement(sref, sbj)
-	dbp.SubjectTags[stag] = sref
-	if tag == "" && name != "" {
-		dbp.SubjectNames[name] = stag
-	}
-	return sref
 }
 
 // Block all afternoons if nAfternnons == 0.
