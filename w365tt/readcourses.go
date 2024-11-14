@@ -1,25 +1,34 @@
 package w365tt
 
 import (
+	"W365toFET/base"
 	"W365toFET/logging"
 	"strings"
 )
 
-func (dbp *DbTopLevel) readSubjects() {
-	for _, n := range dbp.Subjects {
-		_, nok := dbp.SubjectTags[n.Tag]
+func (db *DbTopLevel) readSubjects(newdb *base.DbTopLevel) {
+	for _, e := range db.Subjects {
+		// Perform some checks and add to the SubjectNames
+		// and SubjectTags maps.
+		_, nok := db.SubjectTags[e.Tag]
 		if nok {
 			logging.Error.Fatalf("Subject Tag (Shortcut) defined twice: %s\n",
-				n.Tag)
+				e.Tag)
 		}
-		t, nok := dbp.SubjectNames[n.Name]
+		t, nok := db.SubjectNames[e.Name]
 		if nok {
 			logging.Warning.Printf("Subject Name defined twice (different"+
-				" Tag/Shortcut):\n  %s (%s/%s)\n", n.Name, t, n.Tag)
+				" Tag/Shortcut):\n  %s (%s/%s)\n", e.Name, t, e.Tag)
 		} else {
-			dbp.SubjectNames[n.Name] = n.Tag
+			db.SubjectNames[e.Name] = e.Tag
 		}
-		dbp.SubjectTags[n.Tag] = n.Id
+		db.SubjectTags[e.Tag] = e.Id
+		//Copy data to base db.
+		newdb.Subjects = append(newdb.Subjects, &base.Subject{
+			Id:   e.Id,
+			Tag:  e.Tag,
+			Name: e.Name,
+		})
 	}
 }
 

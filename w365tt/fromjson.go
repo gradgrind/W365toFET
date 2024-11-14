@@ -1,11 +1,12 @@
 package w365tt
 
 import (
+	"W365toFET/base"
 	"W365toFET/logging"
 	"encoding/json"
-	"fmt"
 	"io"
 	"os"
+	"strconv"
 )
 
 // Read to the local, tweaked DbTopLevel
@@ -29,9 +30,15 @@ func ReadJSON(jsonpath string) *DbTopLevel {
 }
 
 func LoadJSON(jsonpath string) *DbTopLevel {
-	dbdata := ReadJSON(jsonpath)
-	// Days need no initialization.
-	dbdata.readHours()
+	db := ReadJSON(jsonpath)
+	newdb := &base.DbTopLevel{}
+	newdb.Info = base.Info(db.Info)
+	db.readDays(newdb)
+	db.readHours(newdb)
+	db.readTeachers(newdb)
+	db.readSubjects(newdb)
+	db.readRooms(newdb)
+
 	dbdata.checkDb()
 	dbdata.readTeachers()
 	dbdata.readSubjects()
@@ -51,27 +58,52 @@ func LoadJSON(jsonpath string) *DbTopLevel {
 	return dbdata
 }
 
-func (dbp *DbTopLevel) readHours() {
-	for i := 0; i < len(dbp.Hours); i++ {
-		n := dbp.Hours[i]
-		if n.Tag == "" {
-			n.Tag = fmt.Sprintf("(%d)", i+1)
-		}
+func (db *DbTopLevel) readDays(newdb *base.DbTopLevel) {
+	for _, e := range db.Days {
+		newdb.Days = append(newdb.Days, &base.Day{
+			Id:   e.Id,
+			Tag:  e.Tag,
+			Name: e.Name,
+		})
 	}
 }
 
-func (dbp *DbTopLevel) readTeachers() {
-	for i := 0; i < len(dbp.Teachers); i++ {
-		n := dbp.Teachers[i]
-		if len(n.NotAvailable) == 0 {
-			// Avoid a null value
-			n.NotAvailable = []TimeSlot{}
+func (db *DbTopLevel) readHours(newdb *base.DbTopLevel) {
+	for i, e := range db.Hours {
+		if e.Tag == "" {
+			e.Tag = "(" + strconv.Itoa(i+1) + ")"
 		}
-		// MaxAfternoons = 0 has a special meaning (all blocked)
-		if n.MaxAfternoons == 0 {
-			n.MaxAfternoons = -1
-			dbp.handleZeroAfternoons(&n.NotAvailable)
-		}
+		newdb.Hours = append(newdb.Hours, &base.Hour{
+			Id:    e.Id,
+			Tag:   e.Tag,
+			Name:  e.Name,
+			Start: e.Start,
+			End:   e.End,
+		})
+	}
+}
 
+func (db *DbTopLevel) readTeachers(newdb *base.DbTopLevel) {
+	for _, e := range db.Teachers {
+		// MaxAfternoons = 0 has a special meaning (all blocked)
+		amax := e.MaxAfternoons
+		tsl := db.handleZeroAfternoons(e.NotAvailable, amax)
+		if amax == 0 {
+			amax = -1
+		}
+		newdb.Teachers = append(newdb.Teachers, &base.Teacher{
+			Id:               e.Id,
+			Tag:              e.Tag,
+			Name:             e.Name,
+			Firstname:        e.Firstname,
+			NotAvailable:     tsl,
+			MinLessonsPerDay: e.MinLessonsPerDay,
+			MaxLessonsPerDay: e.MaxLessonsPerDay,
+			MaxDays:          e.MaxDays,
+			MaxGapsPerDay:    e.MaxGapsPerDay,
+			MaxGapsPerWeek:   e.MaxGapsPerWeek,
+			MaxAfternoons:    amax,
+			LunchBreak:       e.LunchBreak,
+		})
 	}
 }

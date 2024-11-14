@@ -149,20 +149,17 @@ type Division struct {
 type Course struct {
 	Id             Ref    `json:"id"`
 	Type           string `json:"type"`
-	Subjects       []Ref  `json:"subjects,omitempty"`
-	Subject        Ref    `json:"subject"`
+	Subjects       []Ref  `json:"subjects"`
 	Groups         []Ref  `json:"groups"`
 	Teachers       []Ref  `json:"teachers"`
 	PreferredRooms []Ref  `json:"preferredRooms,omitempty"`
-	// Not in W365:
-	Room Ref // Room, RoomGroup or RoomChoiceGroup Element
 }
 
 type SuperCourse struct {
 	Id         Ref         `json:"id"`
 	Type       string      `json:"type"`
 	Subject    Ref         `json:"subject"`
-	EpochPlan  Ref         `json:"epochPlan,omitempty"`
+	EpochPlan  Ref         `json:"epochPlan"`
 	SubCourses []SubCourse `json:"subCourses"`
 }
 
@@ -171,13 +168,11 @@ type SubCourse struct {
 	Id             Ref    `json:"-"`
 	Type           string `json:"type"`
 	SuperCourses   []Ref  `json:"superCourses"`
-	Subjects       []Ref  `json:"subjects,omitempty"`
+	Subjects       []Ref  `json:"subjects"`
 	Subject        Ref    `json:"subject"`
 	Groups         []Ref  `json:"groups"`
 	Teachers       []Ref  `json:"teachers"`
-	PreferredRooms []Ref  `json:"preferredRooms,omitempty"`
-	// Not in W365:
-	Room Ref // Room, RoomGroup or RoomChoiceGroup Element
+	PreferredRooms []Ref  `json:"preferredRooms"`
 }
 
 type Lesson struct {
@@ -200,24 +195,25 @@ type EpochPlan struct {
 }
 
 type DbTopLevel struct {
-	Info             Info               `json:"w365TT"`
-	Days             []*Day             `json:"days"`
-	Hours            []*Hour            `json:"hours"`
-	Teachers         []*Teacher         `json:"teachers"`
-	Subjects         []*Subject         `json:"subjects"`
-	Rooms            []*Room            `json:"rooms"`
-	RoomGroups       []*RoomGroup       `json:"roomGroups"`
-	RoomChoiceGroups []*RoomChoiceGroup `json:"roomChoiceGroups"`
-	Classes          []*Class           `json:"classes"`
-	Groups           []*Group           `json:"groups"`
-	Courses          []*Course          `json:"courses"`
-	SuperCourses     []*SuperCourse     `json:"superCourses"`
-	SubCourses       []*SubCourse       `json:"-"`
-	Lessons          []*Lesson          `json:"lessons"`
-	EpochPlans       []*EpochPlan       `json:"epochPlans,omitempty"`
-	Constraints      map[string]any     `json:"constraints"`
+	Info         Info           `json:"w365TT"`
+	Days         []*Day         `json:"days"`
+	Hours        []*Hour        `json:"hours"`
+	Teachers     []*Teacher     `json:"teachers"`
+	Subjects     []*Subject     `json:"subjects"`
+	Rooms        []*Room        `json:"rooms"`
+	RoomGroups   []*RoomGroup   `json:"roomGroups"`
+	Classes      []*Class       `json:"classes"`
+	Groups       []*Group       `json:"groups"`
+	Courses      []*Course      `json:"courses"`
+	SuperCourses []*SuperCourse `json:"superCourses"`
+	Lessons      []*Lesson      `json:"lessons"`
+	EpochPlans   []*EpochPlan   `json:"epochPlans"`
+	Constraints  map[string]any `json:"constraints"`
 
 	// These fields do not belong in the JSON object.
+	RealRooms map[Ref]*base.Room `json:"-"`
+
+	//??
 	Elements        map[Ref]any       `json:"-"`
 	MaxId           int               `json:"-"` // for "indexed" Ids only
 	SubjectTags     map[string]Ref    `json:"-"`
@@ -315,13 +311,6 @@ func (db *DbTopLevel) checkDb() {
 			db.AddElement(n.Id, n)
 		}
 	}
-	if db.RoomChoiceGroups == nil {
-		db.RoomChoiceGroups = []*RoomChoiceGroup{}
-	} else {
-		for _, n := range db.RoomChoiceGroups {
-			db.AddElement(n.Id, n)
-		}
-	}
 	if db.Groups == nil {
 		db.Groups = []*Group{}
 	} else {
@@ -341,19 +330,6 @@ func (db *DbTopLevel) checkDb() {
 	} else {
 		for _, n := range db.SuperCourses {
 			db.AddElement(n.Id, n)
-		}
-	}
-
-	//TODO: Get these from the SuperCourses
-	if db.SubCourses == nil {
-		db.SubCourses = []*SubCourse{}
-	} else {
-		for _, n := range db.SubCourses {
-			// Add a prefix to the Id to avoid possible clashes with a
-			// Course having the same Id.
-			nid := "$$" + n.Id0
-			n.Id = nid
-			db.AddElement(nid, n)
 		}
 	}
 	if db.Lessons == nil {
@@ -402,28 +378,37 @@ func (dbp *DbTopLevel) makeNewSubject(tag, name string) Ref {
 	return sref
 }
 
-// Block all afternoons.
-func (dbp *DbTopLevel) handleZeroAfternoons(notAvailable *[]TimeSlot) {
-	// Make an array and fill this in two passes, then remake list
+// Block all afternoons if nAfternnons == 0.
+func (dbp *DbTopLevel) handleZeroAfternoons(
+	notAvailable []TimeSlot,
+	nAfternoons int,
+) []base.TimeSlot {
+	// Make a bool array and fill this in two passes, then remake list
 	namap := make([][]bool, len(dbp.Days))
 	nhours := len(dbp.Hours)
+	// In the first pass, conditionally blocak afternoons
 	for i := range namap {
 		namap[i] = make([]bool, nhours)
-		for h := dbp.Info.FirstAfternoonHour; h < nhours; h++ {
-			namap[i][h] = true
-		}
-	}
-	for _, ts := range *notAvailable {
-		namap[ts.Day][ts.Hour] = true
-	}
-	*notAvailable = []TimeSlot{}
-	for d, naday := range namap {
-		for h, nahour := range naday {
-			if nahour {
-				*notAvailable = append(*notAvailable, TimeSlot{d, h})
+		if nAfternoons == 0 {
+			for h := dbp.Info.FirstAfternoonHour; h < nhours; h++ {
+				namap[i][h] = true
 			}
 		}
 	}
+	// In the second pass, include existing blocked hours.
+	for _, ts := range notAvailable {
+		namap[ts.Day][ts.Hour] = true
+	}
+	// Build a new base.TimeSlot list
+	na := []base.TimeSlot{}
+	for d, naday := range namap {
+		for h, nahour := range naday {
+			if nahour {
+				na = append(na, base.TimeSlot{Day: d, Hour: h})
+			}
+		}
+	}
+	return na
 }
 
 // Interface for Course and SubCourse elements
