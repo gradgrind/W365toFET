@@ -150,12 +150,12 @@ func (c *SuperCourse) AddLesson(lref Ref) {
 }
 
 type SubCourse struct {
-	Id          Ref
-	SuperCourse Ref
-	Subject     Ref
-	Groups      []Ref
-	Teachers    []Ref
-	Room        Ref // Room, RoomGroup or RoomChoiceGroup Element
+	Id           Ref
+	SuperCourses []Ref
+	Subject      Ref
+	Groups       []Ref
+	Teachers     []Ref
+	Room         Ref // Room, RoomGroup or RoomChoiceGroup Element
 }
 
 type GeneralRoom interface {

@@ -99,7 +99,7 @@ func readCourses(
 				xcourses[blockTag] = xc
 			}
 		} else if len(llen) != 0 {
-			outdata.Courses = append(outdata.Courses, w365tt.Course{
+			outdata.Courses = append(outdata.Courses, &w365tt.Course{
 				Id:             nid,
 				Subjects:       sbjs,
 				Groups:         grps,
@@ -113,10 +113,12 @@ func readCourses(
 		//for key, xc := range xcourses {
 		//fmt.Printf("\n *** XCOURSE: %s\n  %+v\n", key, xc)
 
+		//TODO: Multiple SuperCourses in a SubCourse
+
 		sc := xc.super
 		scid := sc.Id
 		//TODO: The SuperCourse may have only one subject
-		outdata.SuperCourses = append(outdata.SuperCourses, w365tt.SuperCourse{
+		outdata.SuperCourses = append(outdata.SuperCourses, &w365tt.SuperCourse{
 			Id:      scid,
 			Subject: sc.Subjects[0],
 			// All other fields are ignored.
@@ -125,10 +127,10 @@ func readCourses(
 
 		// Now the SubCourses
 		for _, sbc := range xc.subs {
-			outdata.SubCourses = append(outdata.SubCourses, w365tt.SubCourse{
+			outdata.SubCourses = append(outdata.SubCourses, &w365tt.SubCourse{
 				// Note the use of Id0 instead of Id (see w365tt.structures.go)
 				Id0:            sbc.Id,
-				SuperCourse:    scid,
+				SuperCourses:   []w365tt.Ref{scid},
 				Subjects:       sbc.Subjects,
 				Groups:         sbc.Groups,
 				Teachers:       sbc.Teachers,

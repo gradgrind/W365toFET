@@ -108,7 +108,7 @@ func makeLessons(
 			}
 		add_lesson:
 			lid := "#l#" + strconv.Itoa(len(outdata.Lessons))
-			outdata.Lessons = append(outdata.Lessons, w365tt.Lesson{
+			outdata.Lessons = append(outdata.Lessons, &w365tt.Lesson{
 				Id:       w365tt.Ref(lid),
 				Course:   cref,
 				Duration: llen,

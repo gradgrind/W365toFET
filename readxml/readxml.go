@@ -122,7 +122,7 @@ func readDays(
 		if nid == "" {
 			continue
 		}
-		outdata.Days = append(outdata.Days, w365tt.Day{
+		outdata.Days = append(outdata.Days, &w365tt.Day{
 			Id:   nid,
 			Name: n.Name,
 			Tag:  n.Shortcut,
@@ -146,7 +146,7 @@ func readHours(
 		if nid == "" {
 			continue
 		}
-		r := w365tt.Hour{
+		r := &w365tt.Hour{
 			Id:   nid,
 			Name: n.Name,
 			Tag:  n.Shortcut,
@@ -202,7 +202,7 @@ func readSubjects(
 		if nid == "" {
 			continue
 		}
-		outdata.Subjects = append(outdata.Subjects, w365tt.Subject{
+		outdata.Subjects = append(outdata.Subjects, &w365tt.Subject{
 			Id:   nid,
 			Name: n.Name,
 			Tag:  n.Shortcut,
@@ -233,7 +233,7 @@ func readRooms(
 			continue
 		}
 		// Normal Room
-		r := w365tt.Room{
+		r := &w365tt.Room{
 			Id:   nid,
 			Name: n.Name,
 			Tag:  n.Shortcut,
@@ -253,7 +253,7 @@ func readRooms(
 	for nid, n := range rglist {
 		msg := fmt.Sprintf("Room %s in RoomGroups", nid)
 		rg := GetRefList(id2node, n.RoomGroups, msg)
-		r := w365tt.RoomGroup{
+		r := &w365tt.RoomGroup{
 			Id:   nid,
 			Name: n.Shortcut, // !
 			//Tag: n.Shortcut,
@@ -298,7 +298,7 @@ func readTeachers(
 		} else if maxlpd >= nhours {
 			maxlpd = -1
 		}
-		r := w365tt.Teacher{
+		r := &w365tt.Teacher{
 			Id:               nid,
 			Name:             n.Name,
 			Tag:              n.Shortcut,
@@ -352,7 +352,7 @@ func readGroups(
 		if nid == "" {
 			continue
 		}
-		outdata.Groups = append(outdata.Groups, w365tt.Group{
+		outdata.Groups = append(outdata.Groups, &w365tt.Group{
 			Id:  nid,
 			Tag: n.Shortcut,
 		})
@@ -381,9 +381,9 @@ func readClasses(
 		if maxpm >= ndays {
 			maxpm = -1
 		}
-		var r w365tt.Class
+		var r *w365tt.Class
 		if isStandIns(id2node, n.Categories, nid) {
-			r = w365tt.Class{
+			r = &w365tt.Class{
 				Id:               nid,
 				Name:             n.Name,
 				Year:             -1,
@@ -408,7 +408,7 @@ func readClasses(
 			} else if maxlpd >= nhours {
 				maxlpd = -1
 			}
-			r = w365tt.Class{
+			r = &w365tt.Class{
 				Id:               nid,
 				Name:             n.Name,
 				Year:             n.Level,

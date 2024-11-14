@@ -133,12 +133,12 @@ func (db *DbTopLevel) ConvertToBase() *base.DbTopLevel {
 	}
 	for _, e := range db.SubCourses {
 		newdb.SubCourses = append(newdb.SubCourses, &base.SubCourse{
-			Id:          e.Id,
-			SuperCourse: e.SuperCourse,
-			Subject:     e.Subject,
-			Groups:      e.Groups,
-			Teachers:    e.Teachers,
-			Room:        e.Room,
+			Id:           e.Id,
+			SuperCourses: e.SuperCourses,
+			Subject:      e.Subject,
+			Groups:       e.Groups,
+			Teachers:     e.Teachers,
+			Room:         e.Room,
 		})
 	}
 	for _, e := range db.Lessons {

@@ -56,17 +56,19 @@ func (dbp *DbTopLevel) readSuperCourses() {
 func (dbp *DbTopLevel) readSubCourses() {
 	for i := 0; i < len(dbp.SubCourses); i++ {
 		n := dbp.SubCourses[i]
-		s, ok := dbp.Elements[n.SuperCourse]
-		if !ok {
-			logging.Error.Fatalf(
-				"SubCourse %s:\n  Unknown SuperCourse: %s\n",
-				n.Id, n.SuperCourse)
-		}
-		_, ok = s.(*SuperCourse)
-		if !ok {
-			logging.Error.Fatalf(
-				"SubCourse %s:\n  Not a SuperCourse: %s\n",
-				n.Id, n.SuperCourse)
+		for _, spcref := range n.SuperCourses {
+			s, ok := dbp.Elements[spcref]
+			if !ok {
+				logging.Error.Fatalf(
+					"SubCourse %s:\n  Unknown SuperCourse: %s\n",
+					n.Id, spcref)
+			}
+			_, ok = s.(*SuperCourse)
+			if !ok {
+				logging.Error.Fatalf(
+					"SubCourse %s:\n  Not a SuperCourse: %s\n",
+					n.Id, spcref)
+			}
 		}
 		dbp.readCourse(n)
 	}

@@ -67,9 +67,10 @@ func (db *DbTopLevel) InitDb() {
 
 	// Collect the SubCourses for each SuperCourse
 	for _, sbc := range db.SubCourses {
-		spcref := sbc.SuperCourse
-		spc := db.Elements[spcref].(*SuperCourse)
-		spc.SubCourses = append(spc.SubCourses, sbc.Id)
+		for _, spcref := range sbc.SuperCourses {
+			spc := db.Elements[spcref].(*SuperCourse)
+			spc.SubCourses = append(spc.SubCourses, sbc.Id)
+		}
 	}
 
 	// Collect the Lessons for each Course and SuperCourse
