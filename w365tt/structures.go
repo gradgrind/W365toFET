@@ -24,12 +24,14 @@ type Info struct {
 
 type Day struct {
 	Id   Ref    `json:"id"`
+	Type string `json:"type"`
 	Name string `json:"name"`
 	Tag  string `json:"shortcut"`
 }
 
 type Hour struct {
 	Id    Ref    `json:"id"`
+	Type  string `json:"type"`
 	Name  string `json:"name"`
 	Tag   string `json:"shortcut"`
 	Start string `json:"start"`
@@ -43,6 +45,7 @@ type TimeSlot struct {
 
 type Teacher struct {
 	Id               Ref        `json:"id"`
+	Type             string     `json:"type"`
 	Name             string     `json:"name"`
 	Tag              string     `json:"shortcut"`
 	Firstname        string     `json:"firstname"`
@@ -71,12 +74,14 @@ func (t *Teacher) UnmarshalJSON(data []byte) error {
 
 type Subject struct {
 	Id   Ref    `json:"id"`
+	Type string `json:"type"`
 	Name string `json:"name"`
 	Tag  string `json:"shortcut"`
 }
 
 type Room struct {
 	Id           Ref        `json:"id"`
+	Type         string     `json:"type"`
 	Name         string     `json:"name"`
 	Tag          string     `json:"shortcut"`
 	NotAvailable []TimeSlot `json:"absences"`
@@ -84,6 +89,7 @@ type Room struct {
 
 type RoomGroup struct {
 	Id    Ref    `json:"id"`
+	Type  string `json:"type"`
 	Name  string `json:"name"`
 	Tag   string `json:"shortcut"`
 	Rooms []Ref  `json:"rooms"`
@@ -91,6 +97,7 @@ type RoomGroup struct {
 
 type RoomChoiceGroup struct {
 	Id    Ref    `json:"id"`
+	Type  string `json:"type"`
 	Name  string `json:"name"`
 	Tag   string `json:"shortcut"`
 	Rooms []Ref  `json:"rooms"`
@@ -98,6 +105,7 @@ type RoomChoiceGroup struct {
 
 type Class struct {
 	Id               Ref        `json:"id"`
+	Type             string     `json:"type"`
 	Name             string     `json:"name"`
 	Tag              string     `json:"shortcut"`
 	Year             int        `json:"level"`
@@ -126,58 +134,67 @@ func (t *Class) UnmarshalJSON(data []byte) error {
 }
 
 type Group struct {
-	Id  Ref    `json:"id"`
-	Tag string `json:"shortcut"`
+	Id   Ref    `json:"id"`
+	Type string `json:"type"`
+	Tag  string `json:"shortcut"`
 }
 
 type Division struct {
 	Id     Ref    `json:"id"`
+	Type   string `json:"type"`
 	Name   string `json:"name"`
 	Groups []Ref  `json:"groups"`
 }
 
 type Course struct {
-	Id             Ref   `json:"id"`
-	Subjects       []Ref `json:"subjects,omitempty"`
-	Subject        Ref   `json:"subject"`
-	Groups         []Ref `json:"groups"`
-	Teachers       []Ref `json:"teachers"`
-	PreferredRooms []Ref `json:"preferredRooms,omitempty"`
+	Id             Ref    `json:"id"`
+	Type           string `json:"type"`
+	Subjects       []Ref  `json:"subjects,omitempty"`
+	Subject        Ref    `json:"subject"`
+	Groups         []Ref  `json:"groups"`
+	Teachers       []Ref  `json:"teachers"`
+	PreferredRooms []Ref  `json:"preferredRooms,omitempty"`
 	// Not in W365:
 	Room Ref // Room, RoomGroup or RoomChoiceGroup Element
 }
 
 type SuperCourse struct {
-	Id        Ref `json:"id"`
-	Subject   Ref `json:"subject"`
-	EpochPlan Ref `json:"epochPlan,omitempty"`
+	Id         Ref         `json:"id"`
+	Type       string      `json:"type"`
+	Subject    Ref         `json:"subject"`
+	EpochPlan  Ref         `json:"epochPlan,omitempty"`
+	SubCourses []SubCourse `json:"subCourses"`
 }
 
 type SubCourse struct {
-	Id0            Ref   `json:"id"`
-	Id             Ref   `json:"-"`
-	SuperCourses   []Ref `json:"superCourses"`
-	Subjects       []Ref `json:"subjects,omitempty"`
-	Subject        Ref   `json:"subject"`
-	Groups         []Ref `json:"groups"`
-	Teachers       []Ref `json:"teachers"`
-	PreferredRooms []Ref `json:"preferredRooms,omitempty"`
+	Id0            Ref    `json:"id"`
+	Id             Ref    `json:"-"`
+	Type           string `json:"type"`
+	SuperCourses   []Ref  `json:"superCourses"`
+	Subjects       []Ref  `json:"subjects,omitempty"`
+	Subject        Ref    `json:"subject"`
+	Groups         []Ref  `json:"groups"`
+	Teachers       []Ref  `json:"teachers"`
+	PreferredRooms []Ref  `json:"preferredRooms,omitempty"`
 	// Not in W365:
 	Room Ref // Room, RoomGroup or RoomChoiceGroup Element
 }
 
 type Lesson struct {
-	Id       Ref   `json:"id"`
-	Course   Ref   `json:"course"` // Course or SuperCourse Elements
-	Duration int   `json:"duration"`
-	Day      int   `json:"day"`
-	Hour     int   `json:"hour"`
-	Fixed    bool  `json:"fixed"`
-	Rooms    []Ref `json:"localRooms"` // only Room Elements
+	Id       Ref      `json:"id"`
+	Type     string   `json:"type"`
+	Course   Ref      `json:"course"` // Course or SuperCourse Elements
+	Duration int      `json:"duration"`
+	Day      int      `json:"day"`
+	Hour     int      `json:"hour"`
+	Fixed    bool     `json:"fixed"`
+	Rooms    []Ref    `json:"localRooms"` // only Room Elements
+	Flags    []string `json:"flags"`
 }
 
 type EpochPlan struct {
 	Id   Ref    `json:"id"`
+	Type string `json:"type"`
 	Tag  string `json:"shortcut"`
 	Name string `json:"name"`
 }
@@ -195,7 +212,7 @@ type DbTopLevel struct {
 	Groups           []*Group           `json:"groups"`
 	Courses          []*Course          `json:"courses"`
 	SuperCourses     []*SuperCourse     `json:"superCourses"`
-	SubCourses       []*SubCourse       `json:"subCourses"`
+	SubCourses       []*SubCourse       `json:"-"`
 	Lessons          []*Lesson          `json:"lessons"`
 	EpochPlans       []*EpochPlan       `json:"epochPlans,omitempty"`
 	Constraints      map[string]any     `json:"constraints"`
@@ -326,6 +343,8 @@ func (db *DbTopLevel) checkDb() {
 			db.AddElement(n.Id, n)
 		}
 	}
+
+	//TODO: Get these from the SuperCourses
 	if db.SubCourses == nil {
 		db.SubCourses = []*SubCourse{}
 	} else {
