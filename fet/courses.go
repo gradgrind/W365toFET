@@ -49,8 +49,7 @@ func gatherCourseInfo(fetinfo *fetInfo) {
 	roomData := map[Ref][]Ref{} // course-Ref -> []room-Ref (any sort of "room")
 
 	// Collect Courses with Lessons.
-	for i := 0; i < len(db.Lessons); i++ {
-		l := &db.Lessons[i]
+	for _, l := range db.Lessons {
 		lcref := l.Course
 		cinfo, ok := fetinfo.courseInfo[lcref]
 		if ok {
@@ -103,39 +102,40 @@ func gatherCourseInfo(fetinfo *fetInfo) {
 
 	// Now find the SubCourses, adding their groups, teachers and rooms.
 	for _, sbc := range db.SubCourses {
-		spc := sbc.SuperCourse
-		// Only fill SuperCourses which have Lessons
-		cinfo, ok := fetinfo.courseInfo[spc]
-		if ok {
-			fetinfo.superSubs[spc] = append(fetinfo.superSubs[spc], sbc.Id)
+		for _, spc := range sbc.SuperCourses {
+			// Only fill SuperCourses which have Lessons
+			cinfo, ok := fetinfo.courseInfo[spc]
+			if ok {
+				fetinfo.superSubs[spc] = append(fetinfo.superSubs[spc], sbc.Id)
 
-			// Add groups
-			if len(sbc.Groups) != 0 {
-				cglist := append(cinfo.groups, sbc.Groups...)
-				slices.Sort(cglist)
-				cglist = slices.Compact(cglist)
-				cinfo.groups = make([]Ref, len(cglist))
-				copy(cinfo.groups, cglist)
+				// Add groups
+				if len(sbc.Groups) != 0 {
+					cglist := append(cinfo.groups, sbc.Groups...)
+					slices.Sort(cglist)
+					cglist = slices.Compact(cglist)
+					cinfo.groups = make([]Ref, len(cglist))
+					copy(cinfo.groups, cglist)
+				}
+
+				// Add teachers
+				if len(sbc.Teachers) != 0 {
+					ctlist := append(cinfo.teachers, sbc.Teachers...)
+					slices.Sort(ctlist)
+					ctlist = slices.Compact(ctlist)
+					cinfo.teachers = make([]Ref, len(ctlist))
+					copy(cinfo.teachers, ctlist)
+				}
+
+				// Add rooms
+				if sbc.Room != "" {
+					crlist := append(roomData[spc], sbc.Room)
+					slices.Sort(crlist)
+					crlist = slices.Compact(crlist)
+					roomData[spc] = crlist
+				}
+
+				fetinfo.courseInfo[spc] = cinfo
 			}
-
-			// Add teachers
-			if len(sbc.Teachers) != 0 {
-				ctlist := append(cinfo.teachers, sbc.Teachers...)
-				slices.Sort(ctlist)
-				ctlist = slices.Compact(ctlist)
-				cinfo.teachers = make([]Ref, len(ctlist))
-				copy(cinfo.teachers, ctlist)
-			}
-
-			// Add rooms
-			if sbc.Room != "" {
-				crlist := append(roomData[spc], sbc.Room)
-				slices.Sort(crlist)
-				crlist = slices.Compact(crlist)
-				roomData[spc] = crlist
-			}
-
-			fetinfo.courseInfo[spc] = cinfo
 		}
 	}
 

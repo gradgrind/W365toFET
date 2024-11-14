@@ -163,7 +163,7 @@ func (dbp *DbTopLevel) makeRoomChoiceGroup(rooms []Ref) (Ref, string) {
 				Name:  name,
 				Rooms: reflist,
 			})
-		dbp.AddElement(id, &dbp.RoomChoiceGroups[rcglen])
+		dbp.AddElement(id, dbp.RoomChoiceGroups[rcglen])
 		dbp.RoomTags[tag] = id
 		dbp.RoomChoiceNames[name] = id
 	}

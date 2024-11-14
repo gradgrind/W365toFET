@@ -31,8 +31,7 @@ func addTeacherConstraints(fetinfo *fetInfo) {
 	ndays := len(fetinfo.days)
 	nhours := len(fetinfo.hours)
 
-	for tix := 0; tix < len(fetinfo.db.Teachers); tix++ {
-		t := &fetinfo.db.Teachers[tix]
+	for _, t := range fetinfo.db.Teachers {
 		n := t.MaxDays
 		if n >= 0 && n < ndays {
 			tmaxdpw = append(tmaxdpw, maxDaysT{

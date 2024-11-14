@@ -33,8 +33,7 @@ func addClassConstraints(fetinfo *fetInfo) {
 	ndays := len(fetinfo.days)
 	nhours := len(fetinfo.hours)
 
-	for clix := 0; clix < len(fetinfo.db.Classes); clix++ {
-		cl := &fetinfo.db.Classes[clix]
+	for _, cl := range fetinfo.db.Classes {
 		if cl.Tag == "" {
 			continue
 		}
