@@ -54,10 +54,10 @@ func LoadJSON(jsonpath string) *base.DbTopLevel {
 	// from W365, perform the checking after all room types have been "read".
 	db.checkRoomGroups(newdb)
 	db.readClasses(newdb)
+	db.readCourses(newdb)
 
 	//TODO
 
-	dbdata.readCourses()
 	dbdata.readSuperCourses()
 	dbdata.readSubCourses()
 	dbdata.readLessons()
@@ -97,6 +97,7 @@ func (db *DbTopLevel) readHours(newdb *base.DbTopLevel) {
 }
 
 func (db *DbTopLevel) readTeachers(newdb *base.DbTopLevel) {
+	db.TeacherMap = map[base.Ref]bool{}
 	for _, e := range db.Teachers {
 		// MaxAfternoons = 0 has a special meaning (all blocked)
 		amax := e.MaxAfternoons
@@ -118,5 +119,6 @@ func (db *DbTopLevel) readTeachers(newdb *base.DbTopLevel) {
 			MaxAfternoons:    amax,
 			LunchBreak:       e.LunchBreak,
 		})
+		db.TeacherMap[e.Id] = true
 	}
 }

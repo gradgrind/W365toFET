@@ -58,6 +58,16 @@ func (db *DbTopLevel) readClasses(newdb *base.DbTopLevel) {
 				Groups: glist,
 			})
 		}
+
+		// Add a Group for the whole class (not provided by W365).
+		cgid := db.NewId()
+		classGroup := &base.Group{
+			Id:  cgid,
+			Tag: "",
+		}
+		newdb.Groups = append(newdb.Groups, classGroup)
+		db.GroupRefMap[e.Id] = cgid
+
 		newdb.Classes = append(newdb.Classes, &base.Class{
 			Id:               e.Id,
 			Tag:              e.Tag,
@@ -73,6 +83,7 @@ func (db *DbTopLevel) readClasses(newdb *base.DbTopLevel) {
 			MaxAfternoons:    e.MaxAfternoons,
 			LunchBreak:       e.LunchBreak,
 			ForceFirstHour:   e.ForceFirstHour,
+			ClassGroup:       classGroup.Id,
 		})
 	}
 
@@ -84,6 +95,8 @@ func (db *DbTopLevel) readClasses(newdb *base.DbTopLevel) {
 				Id:  n.Id,
 				Tag: n.Tag,
 			})
+			db.GroupRefMap[n.Id] = n.Id // mapping to itself is correct!
+
 		} else {
 			base.Error.Printf("Group not in Division, removing:\n  %s,",
 				n.Id)

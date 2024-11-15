@@ -156,7 +156,6 @@ type Course struct {
 type SuperCourse struct {
 	Id         Ref         `json:"id"`
 	Type       string      `json:"type"`
-	Subject    Ref         `json:"subject"`
 	EpochPlan  Ref         `json:"epochPlan"`
 	SubCourses []SubCourse `json:"subCourses"`
 }
@@ -212,6 +211,8 @@ type DbTopLevel struct {
 	RealRooms    map[Ref]*base.Room      `json:"-"`
 	RoomGroupMap map[Ref]*base.RoomGroup `json:"-"`
 	SubjectMap   map[Ref]*base.Subject   `json:"-"`
+	GroupRefMap  map[Ref]base.Ref        `json:"-"`
+	TeacherMap   map[Ref]bool            `json:"-"`
 
 	//??
 	MaxId           int               `json:"-"` // for "indexed" Ids only
