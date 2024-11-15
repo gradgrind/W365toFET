@@ -2,7 +2,6 @@ package w365tt
 
 import (
 	"W365toFET/base"
-	"W365toFET/logging"
 	"fmt"
 	"strconv"
 	"strings"
@@ -16,7 +15,7 @@ func (db *DbTopLevel) readRooms(newdb *base.DbTopLevel) {
 		// Perform some checks and add to the RoomTags map.
 		_, nok := db.RoomTags[e.Tag]
 		if nok {
-			logging.Error.Fatalf(
+			base.Error.Fatalf(
 				"Room Tag (Shortcut) defined twice: %s\n",
 				e.Tag)
 		}
@@ -39,32 +38,32 @@ func (db *DbTopLevel) readRooms(newdb *base.DbTopLevel) {
 
 // In the case of RoomGroups, cater for empty Tags (Shortcuts).
 func (db *DbTopLevel) readRoomGroups(newdb *base.DbTopLevel) {
+	db.RoomGroupMap = map[Ref]*base.RoomGroup{}
 	for _, e := range db.RoomGroups {
 		if e.Tag != "" {
 			_, nok := db.RoomTags[e.Tag]
 			if nok {
-				logging.Error.Fatalf(
+				base.Error.Fatalf(
 					"Room Tag (Shortcut) defined twice: %s\n",
 					e.Tag)
 			}
 			db.RoomTags[e.Tag] = e.Id
 		}
 		// Copy to base db.
-		newdb.RoomGroups = append(newdb.RoomGroups,
-			&base.RoomGroup{
-				Id:    e.Id,
-				Tag:   e.Tag,
-				Name:  e.Name,
-				Rooms: e.Rooms,
-			})
+		r := &base.RoomGroup{
+			Id:    e.Id,
+			Tag:   e.Tag,
+			Name:  e.Name,
+			Rooms: e.Rooms,
+		}
+		newdb.RoomGroups = append(newdb.RoomGroups, r)
+		db.RoomGroupMap[e.Id] = r
 	}
 }
 
 // Call this after all room types have been "read".
-// TODO: But then, on the base db ...
 func (db *DbTopLevel) checkRoomGroups(newdb *base.DbTopLevel) {
 	for _, e := range newdb.RoomGroups {
-
 		// Collect the Ids and Tags of the component rooms.
 		taglist := []string{}
 		reflist := []Ref{}
@@ -76,7 +75,7 @@ func (db *DbTopLevel) checkRoomGroups(newdb *base.DbTopLevel) {
 				continue
 
 			}
-			logging.Error.Printf(
+			base.Error.Printf(
 				"Invalid Room in RoomGroup %s:\n  %s\n",
 				e.Tag, rref)
 		}

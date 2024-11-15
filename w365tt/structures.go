@@ -2,7 +2,6 @@ package w365tt
 
 import (
 	"W365toFET/base"
-	"W365toFET/logging"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -210,11 +209,11 @@ type DbTopLevel struct {
 	Constraints  map[string]any `json:"constraints"`
 
 	// These fields do not belong in the JSON object.
-	RealRooms  map[Ref]*base.Room    `json:"-"`
-	SubjectMap map[Ref]*base.Subject `json:"-"`
+	RealRooms    map[Ref]*base.Room      `json:"-"`
+	RoomGroupMap map[Ref]*base.RoomGroup `json:"-"`
+	SubjectMap   map[Ref]*base.Subject   `json:"-"`
 
 	//??
-	//Elements        map[Ref]any       `json:"-"`
 	MaxId           int               `json:"-"` // for "indexed" Ids only
 	SubjectTags     map[string]Ref    `json:"-"`
 	SubjectNames    map[string]string `json:"-"`
@@ -227,10 +226,11 @@ func (db *DbTopLevel) NewId() Ref {
 	return Ref(fmt.Sprintf("#%d", db.MaxId+1))
 }
 
+// TODO--
 func (db *DbTopLevel) AddElement(ref Ref, element any) {
 	_, nok := db.Elements[ref]
 	if nok {
-		logging.Error.Printf("Element Id defined more than once:\n  %s\n", ref)
+		base.Error.Printf("Element Id defined more than once:\n  %s\n", ref)
 		return
 	}
 	db.Elements[ref] = element
@@ -248,22 +248,22 @@ func (db *DbTopLevel) AddElement(ref Ref, element any) {
 
 func (db *DbTopLevel) checkDb() {
 	if len(db.Days) == 0 {
-		logging.Error.Fatalln("No Days")
+		base.Error.Fatalln("No Days")
 	}
 	if len(db.Hours) == 0 {
-		logging.Error.Fatalln("No Hours")
+		base.Error.Fatalln("No Hours")
 	}
 	if len(db.Teachers) == 0 {
-		logging.Error.Fatalln("No Teachers")
+		base.Error.Fatalln("No Teachers")
 	}
 	if len(db.Subjects) == 0 {
-		logging.Error.Fatalln("No Subjects")
+		base.Error.Fatalln("No Subjects")
 	}
 	if len(db.Rooms) == 0 {
-		logging.Error.Fatalln("No Rooms")
+		base.Error.Fatalln("No Rooms")
 	}
 	if len(db.Classes) == 0 {
-		logging.Error.Fatalln("No Classes")
+		base.Error.Fatalln("No Classes")
 	}
 }
 
@@ -299,41 +299,3 @@ func (dbp *DbTopLevel) handleZeroAfternoons(
 	}
 	return na
 }
-
-// Interface for Course and SubCourse elements
-type CourseInterface interface {
-	GetId() Ref
-	GetGroups() []Ref
-	GetTeachers() []Ref
-	GetSubject() Ref
-	getSubjects() []Ref       // not available externally
-	getPreferredRooms() []Ref // not available externally
-	GetRoom() Ref
-	setSubject(Ref)
-	setSubjects([]Ref)
-	setPreferredRooms([]Ref)
-	setRoom(Ref)
-}
-
-func (c *Course) GetId() Ref                    { return c.Id }
-func (c *SubCourse) GetId() Ref                 { return c.Id }
-func (c *Course) GetGroups() []Ref              { return c.Groups }
-func (c *SubCourse) GetGroups() []Ref           { return c.Groups }
-func (c *Course) GetTeachers() []Ref            { return c.Teachers }
-func (c *SubCourse) GetTeachers() []Ref         { return c.Teachers }
-func (c *Course) GetSubject() Ref               { return c.Subject }
-func (c *SubCourse) GetSubject() Ref            { return c.Subject }
-func (c *Course) getSubjects() []Ref            { return c.Subjects }
-func (c *SubCourse) getSubjects() []Ref         { return c.Subjects }
-func (c *Course) getPreferredRooms() []Ref      { return c.PreferredRooms }
-func (c *SubCourse) getPreferredRooms() []Ref   { return c.PreferredRooms }
-func (c *Course) GetRoom() Ref                  { return c.Room }
-func (c *SubCourse) GetRoom() Ref               { return c.Room }
-func (c *Course) setSubject(r Ref)              { c.Subject = r }
-func (c *SubCourse) setSubject(r Ref)           { c.Subject = r }
-func (c *Course) setSubjects(rr []Ref)          { c.Subjects = rr }
-func (c *SubCourse) setSubjects(rr []Ref)       { c.Subjects = rr }
-func (c *Course) setPreferredRooms(rr []Ref)    { c.PreferredRooms = rr }
-func (c *SubCourse) setPreferredRooms(rr []Ref) { c.PreferredRooms = rr }
-func (c *Course) setRoom(r Ref)                 { c.Room = r }
-func (c *SubCourse) setRoom(r Ref)              { c.Room = r }

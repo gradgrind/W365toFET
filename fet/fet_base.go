@@ -2,7 +2,7 @@
 package fet
 
 import (
-	"W365toFET/logging"
+	"W365toFET/base"
 	"W365toFET/w365tt"
 	"encoding/json"
 	"encoding/xml"
@@ -29,7 +29,7 @@ func makeXML(data interface{}, indent_level int) string {
 	prefix := strings.Repeat(indent, indent_level)
 	xmlData, err := xml.MarshalIndent(data, prefix, indent)
 	if err != nil {
-		logging.Error.Fatalf("%v\n", err)
+		base.Error.Fatalf("%v\n", err)
 	}
 	return string(xmlData)
 }

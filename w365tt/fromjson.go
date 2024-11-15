@@ -2,7 +2,6 @@ package w365tt
 
 import (
 	"W365toFET/base"
-	"W365toFET/logging"
 	"encoding/json"
 	"io"
 	"os"
@@ -15,17 +14,17 @@ func ReadJSON(jsonpath string) *DbTopLevel {
 	// Open the  JSON file
 	jsonFile, err := os.Open(jsonpath)
 	if err != nil {
-		logging.Error.Fatal(err)
+		base.Error.Fatal(err)
 	}
 	// Remember to close the file at the end of the function
 	defer jsonFile.Close()
 	// read the opened XML file as a byte array.
 	byteValue, _ := io.ReadAll(jsonFile)
-	logging.Message.Printf("*+ Reading: %s\n", jsonpath)
+	base.Message.Printf("*+ Reading: %s\n", jsonpath)
 	v := DbTopLevel{}
 	err = json.Unmarshal(byteValue, &v)
 	if err != nil {
-		logging.Error.Fatalf("Could not unmarshal json: %s\n", err)
+		base.Error.Fatalf("Could not unmarshal json: %s\n", err)
 	}
 	return &v
 }
@@ -42,7 +41,7 @@ func LoadJSON(jsonpath string) *base.DbTopLevel {
 		mb := newdb.Info.MiddayBreak
 		slices.Sort(mb)
 		if mb[len(mb)-1]-mb[0] >= len(mb) {
-			logging.Error.Fatalln("MiddayBreak hours not contiguous")
+			base.Error.Fatalln("MiddayBreak hours not contiguous")
 		}
 	}
 	db.readDays(newdb)

@@ -2,7 +2,6 @@ package w365tt
 
 import (
 	"W365toFET/base"
-	"W365toFET/logging"
 	"strconv"
 )
 
@@ -37,20 +36,20 @@ func (db *DbTopLevel) readClasses(newdb *base.DbTopLevel) {
 				flag, ok := pregroups[g]
 				if ok {
 					if flag {
-						logging.Error.Fatalf("Group Defined in"+
+						base.Error.Fatalf("Group Defined in"+
 							" multiple Divisions:\n  -- %s\n", g)
 					}
 					// Flag Group and add to division's group list
 					pregroups[g] = true
 					glist = append(glist, g)
 				} else {
-					logging.Error.Printf("Unknown Group in Class %s,"+
+					base.Error.Printf("Unknown Group in Class %s,"+
 						" Division %s:\n  %s\n", e.Tag, wdiv.Name, g)
 				}
 			}
 			// Accept Divisions which have too few Groups at this stage.
 			if len(glist) < 2 {
-				logging.Warning.Printf("In Class %s,"+
+				base.Warning.Printf("In Class %s,"+
 					" not enough valid Groups (>1) in Division %s\n",
 					e.Tag, wdiv.Name)
 			}
@@ -86,7 +85,7 @@ func (db *DbTopLevel) readClasses(newdb *base.DbTopLevel) {
 				Tag: n.Tag,
 			})
 		} else {
-			logging.Error.Printf("Group not in Division, removing:\n  %s,",
+			base.Error.Printf("Group not in Division, removing:\n  %s,",
 				n.Id)
 		}
 	}

@@ -1,7 +1,7 @@
 package w365tt
 
 import (
-	"W365toFET/logging"
+	"W365toFET/base"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -38,7 +38,7 @@ func TestFromJSON(t *testing.T) {
 
 	stempath := strings.TrimSuffix(fjson, filepath.Ext(fjson))
 	logpath := stempath + ".log"
-	logging.OpenLog(logpath)
+	base.OpenLog(logpath)
 
 	data := ReadJSON(fjson)
 
@@ -63,7 +63,7 @@ func TestToDb(t *testing.T) {
 
 	stempath := strings.TrimSuffix(fjson, filepath.Ext(fjson))
 	logpath := stempath + ".log"
-	logging.OpenLog(logpath)
+	base.OpenLog(logpath)
 
 	data := LoadJSON(fjson)
 
@@ -79,6 +79,4 @@ func TestToDb(t *testing.T) {
 		log.Fatal(err)
 	}
 	fmt.Printf("\n ***** JSON written to %s *****\n", f)
-
-	data.ConvertToBase()
 }

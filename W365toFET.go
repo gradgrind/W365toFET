@@ -1,8 +1,8 @@
 package main
 
 import (
+	"W365toFET/base"
 	"W365toFET/fet"
-	"W365toFET/logging"
 	"W365toFET/w365tt"
 	"flag"
 	"log"
@@ -41,7 +41,7 @@ func main() {
 
 	stempath := strings.TrimSuffix(abspath, filepath.Ext(abspath))
 	logpath := stempath + ".log"
-	logging.OpenLog(logpath)
+	base.OpenLog(logpath)
 
 	data := w365tt.LoadJSON(abspath)
 
@@ -54,27 +54,27 @@ func main() {
 	fetfile := stempath + ".fet"
 	f, err := os.Create(fetfile)
 	if err != nil {
-		logging.Bug.Fatalf("Couldn't open output file: %s\n", fetfile)
+		base.Bug.Fatalf("Couldn't open output file: %s\n", fetfile)
 	}
 	defer f.Close()
 	_, err = f.WriteString(xmlitem)
 	if err != nil {
-		logging.Bug.Fatalf("Couldn't write fet output to: %s\n", fetfile)
+		base.Bug.Fatalf("Couldn't write fet output to: %s\n", fetfile)
 	}
-	logging.Message.Printf("FET file written to: %s\n", fetfile)
+	base.Message.Printf("FET file written to: %s\n", fetfile)
 
 	//TODO: Write Id-map file.
 	mapfile := stempath + ".map"
 	fm, err := os.Create(mapfile)
 	if err != nil {
-		logging.Bug.Fatalf("Couldn't open output file: %s\n", mapfile)
+		base.Bug.Fatalf("Couldn't open output file: %s\n", mapfile)
 	}
 	defer fm.Close()
 	_, err = fm.WriteString(lessonIdMap)
 	if err != nil {
-		logging.Bug.Fatalf("Couldn't write fet output to: %s\n", mapfile)
+		base.Bug.Fatalf("Couldn't write fet output to: %s\n", mapfile)
 	}
-	logging.Message.Printf("Id-map written to: %s\n", mapfile)
+	base.Message.Printf("Id-map written to: %s\n", mapfile)
 
-	logging.Message.Println("OK")
+	base.Message.Println("OK")
 }

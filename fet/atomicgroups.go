@@ -1,7 +1,7 @@
 package fet
 
 import (
-	"W365toFET/logging"
+	"W365toFET/base"
 	"fmt"
 	"strings"
 )
@@ -58,7 +58,7 @@ func makeAtomicGroups(fetinfo *fetInfo) {
 	for _, cl := range fetinfo.db.Classes {
 		divs, ok := fetinfo.classDivisions[cl.Id]
 		if !ok {
-			logging.Bug.Fatalf("fetinfo.classDivisions[%s]\n", cl.Id)
+			base.Bug.Fatalf("fetinfo.classDivisions[%s]\n", cl.Id)
 		}
 		// The atomic groups will be built as a list of lists of Refs.
 		agrefs := [][]Ref{{}}
