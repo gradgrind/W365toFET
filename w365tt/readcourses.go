@@ -52,6 +52,7 @@ func (db *DbTopLevel) makeNewSubject(
 }
 
 func (db *DbTopLevel) readCourses(newdb *base.DbTopLevel) {
+	db.CourseMap = map[Ref]bool{}
 	for _, e := range db.Courses {
 		subject := db.getCourseSubject(newdb, e.Subjects, e.Id)
 		room := db.getCourseRoom(newdb, e.PreferredRooms, e.Id)
@@ -64,6 +65,7 @@ func (db *DbTopLevel) readCourses(newdb *base.DbTopLevel) {
 			Teachers: teachers,
 			Room:     room,
 		})
+		db.CourseMap[e.Id] = true
 	}
 }
 
@@ -104,6 +106,7 @@ func (db *DbTopLevel) readSuperCourses(newdb *base.DbTopLevel) {
 					Teachers:     teachers,
 					Room:         room,
 				})
+				db.CourseMap[e.Id] = true
 			}
 		}
 

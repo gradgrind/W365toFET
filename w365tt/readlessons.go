@@ -4,41 +4,35 @@ import (
 	"W365toFET/base"
 )
 
-func (dbp *DbTopLevel) readLessons() {
-	for i := 0; i < len(dbp.Lessons); i++ {
-		n := dbp.Lessons[i]
+func (db *DbTopLevel) readLessons(newdb *base.DbTopLevel) {
+	for _, e := range db.Lessons {
 		// The course must be Course or Supercourse.
-		c, ok := dbp.Elements[n.Course]
+		_, ok := db.CourseMap[e.Course]
 		if !ok {
 			base.Error.Fatalf(
-				"Lesson %s:\n  Unknown course: %s\n",
-				n.Id, n.Course)
-		}
-		_, ok = c.(*Course)
-		if !ok {
-			_, ok = c.(*SuperCourse)
-			if !ok {
-				base.Error.Fatalf(
-					"Lesson %s:\n  Not a SuperCourse: %s\n",
-					n.Id, n.Course)
-			}
+				"Lesson %s:\n  Invalid course: %s\n",
+				e.Id, e.Course)
 		}
 		// Check the Rooms.
-		reflist := []Ref{}
-		for _, rref := range n.Rooms {
-			r, ok := dbp.Elements[rref]
+		reflist := []base.Ref{}
+		for _, rref := range e.Rooms {
+			_, ok := db.RealRooms[rref]
 			if ok {
-				_, ok = r.(*Room)
-				if ok {
-					reflist = append(reflist, rref)
-					continue
-				}
+				reflist = append(reflist, rref)
+			} else {
+				base.Error.Printf(
+					"Invalid Room in Lesson %s:\n  %s\n",
+					e.Id, rref)
 			}
-			base.Error.Printf(
-				"Invalid Room in Lesson %s:\n  %s\n",
-				n.Id, rref)
 		}
-		n.Rooms = reflist
+		newdb.Lessons = append(newdb.Lessons, &base.Lesson{
+			Course:   e.Course,
+			Duration: e.Duration,
+			Day:      e.Day,
+			Hour:     e.Hour,
+			Fixed:    e.Fixed,
+			Rooms:    reflist,
+		})
 
 	}
 }

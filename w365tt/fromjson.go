@@ -55,12 +55,8 @@ func LoadJSON(jsonpath string) *base.DbTopLevel {
 	db.checkRoomGroups(newdb)
 	db.readClasses(newdb)
 	db.readCourses(newdb)
-
-	//TODO
-
-	dbdata.readSuperCourses()
-	dbdata.readSubCourses()
-	dbdata.readLessons()
+	db.readSuperCourses(newdb)
+	db.readLessons(newdb)
 
 	if db.Constraints == nil {
 		newdb.Constraints = make(map[string]any)

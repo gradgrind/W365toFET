@@ -213,9 +213,10 @@ type DbTopLevel struct {
 	SubjectMap   map[Ref]*base.Subject   `json:"-"`
 	GroupRefMap  map[Ref]base.Ref        `json:"-"`
 	TeacherMap   map[Ref]bool            `json:"-"`
+	CourseMap    map[Ref]bool            `json:"-"`
 
 	//??
-	MaxId           int               `json:"-"` // for "indexed" Ids only
+	//MaxId           int               `json:"-"` // for "indexed" Ids only
 	SubjectTags     map[string]Ref    `json:"-"`
 	SubjectNames    map[string]string `json:"-"`
 	RoomTags        map[string]Ref    `json:"-"`
