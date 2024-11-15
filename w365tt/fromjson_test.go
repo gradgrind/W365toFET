@@ -67,6 +67,7 @@ func TestToDb(t *testing.T) {
 
 	db := base.NewDb()
 	LoadJSON(db, fjson)
+	db.PrepareDb()
 
 	// Save as JSON
 	stempath = strings.TrimSuffix(stempath, "_w365")

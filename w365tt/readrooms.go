@@ -25,14 +25,11 @@ func (db *DbTopLevel) readRooms(newdb *base.DbTopLevel) {
 		for _, ts := range e.NotAvailable {
 			tsl = append(tsl, base.TimeSlot(ts))
 		}
-		r := &base.Room{
-			Id:           e.Id,
-			Tag:          e.Tag,
-			Name:         e.Name,
-			NotAvailable: tsl,
-		}
+		r := newdb.NewRoom(e.Id)
+		r.Tag = e.Tag
+		r.Name = e.Name
+		r.NotAvailable = tsl
 		db.RealRooms[e.Id] = r
-		newdb.Rooms = append(newdb.Rooms, r)
 	}
 }
 
@@ -50,13 +47,10 @@ func (db *DbTopLevel) readRoomGroups(newdb *base.DbTopLevel) {
 			db.RoomTags[e.Tag] = e.Id
 		}
 		// Copy to base db.
-		r := &base.RoomGroup{
-			Id:    e.Id,
-			Tag:   e.Tag,
-			Name:  e.Name,
-			Rooms: e.Rooms,
-		}
-		newdb.RoomGroups = append(newdb.RoomGroups, r)
+		r := newdb.NewRoomGroup(e.Id)
+		r.Tag = e.Tag
+		r.Name = e.Name
+		r.Rooms = e.Rooms
 		db.RoomGroupMap[e.Id] = r
 	}
 }
@@ -141,16 +135,12 @@ func (db *DbTopLevel) makeRoomChoiceGroup(
 			}
 		}
 		// Add new Element
-		id = db.NewId()
+		r := newdb.NewRoomChoiceGroup("")
+		r.Tag = tag
+		r.Name = name
+		r.Rooms = reflist
 		db.RoomTags[tag] = id
 		db.RoomChoiceNames[name] = id
-		newdb.RoomChoiceGroups = append(newdb.RoomChoiceGroups,
-			&base.RoomChoiceGroup{
-				Id:    id,
-				Tag:   tag,
-				Name:  name,
-				Rooms: reflist,
-			})
 	}
 	return id, strings.Join(erlist, "")
 }

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"io"
 	"os"
-	"slices"
 	"strconv"
 )
 
@@ -31,18 +30,7 @@ func ReadJSON(jsonpath string) *DbTopLevel {
 
 func LoadJSON(newdb *base.DbTopLevel, jsonpath string) {
 	db := ReadJSON(jsonpath)
-	db.checkDb()
 	newdb.Info = base.Info(db.Info)
-	if newdb.Info.MiddayBreak == nil {
-		newdb.Info.MiddayBreak = []int{}
-	} else {
-		// Sort and check contiguity.
-		mb := newdb.Info.MiddayBreak
-		slices.Sort(mb)
-		if mb[len(mb)-1]-mb[0] >= len(mb) {
-			base.Error.Fatalln("MiddayBreak hours not contiguous")
-		}
-	}
 	db.readDays(newdb)
 	db.readHours(newdb)
 	db.readTeachers(newdb)
@@ -56,36 +44,28 @@ func LoadJSON(newdb *base.DbTopLevel, jsonpath string) {
 	db.readCourses(newdb)
 	db.readSuperCourses(newdb)
 	db.readLessons(newdb)
-
-	if db.Constraints == nil {
-		newdb.Constraints = make(map[string]any)
-	} else {
-		newdb.Constraints = db.Constraints
-	}
+	db.readConstraints(newdb)
 }
 
 func (db *DbTopLevel) readDays(newdb *base.DbTopLevel) {
 	for _, e := range db.Days {
-		newdb.Days = append(newdb.Days, &base.Day{
-			Id:   e.Id,
-			Tag:  e.Tag,
-			Name: e.Name,
-		})
+		n := newdb.NewDay(e.Id)
+		n.Tag = e.Tag
+		n.Name = e.Name
 	}
 }
 
 func (db *DbTopLevel) readHours(newdb *base.DbTopLevel) {
 	for i, e := range db.Hours {
-		if e.Tag == "" {
-			e.Tag = "(" + strconv.Itoa(i+1) + ")"
+		tag := e.Tag
+		if tag == "" {
+			tag = "(" + strconv.Itoa(i+1) + ")"
 		}
-		newdb.Hours = append(newdb.Hours, &base.Hour{
-			Id:    e.Id,
-			Tag:   e.Tag,
-			Name:  e.Name,
-			Start: e.Start,
-			End:   e.End,
-		})
+		n := newdb.NewHour(e.Id)
+		n.Tag = tag
+		n.Name = e.Name
+		n.Start = e.Start
+		n.End = e.End
 	}
 }
 
@@ -98,20 +78,19 @@ func (db *DbTopLevel) readTeachers(newdb *base.DbTopLevel) {
 		if amax == 0 {
 			amax = -1
 		}
-		newdb.Teachers = append(newdb.Teachers, &base.Teacher{
-			Id:               e.Id,
-			Tag:              e.Tag,
-			Name:             e.Name,
-			Firstname:        e.Firstname,
-			NotAvailable:     tsl,
-			MinLessonsPerDay: e.MinLessonsPerDay,
-			MaxLessonsPerDay: e.MaxLessonsPerDay,
-			MaxDays:          e.MaxDays,
-			MaxGapsPerDay:    e.MaxGapsPerDay,
-			MaxGapsPerWeek:   e.MaxGapsPerWeek,
-			MaxAfternoons:    amax,
-			LunchBreak:       e.LunchBreak,
-		})
+		n := newdb.NewTeacher(e.Id)
+		n.Tag = e.Tag
+		n.Name = e.Name
+		n.Firstname = e.Firstname
+		n.NotAvailable = tsl
+		n.MinLessonsPerDay = e.MinLessonsPerDay
+		n.MaxLessonsPerDay = e.MaxLessonsPerDay
+		n.MaxDays = e.MaxDays
+		n.MaxGapsPerDay = e.MaxGapsPerDay
+		n.MaxGapsPerWeek = e.MaxGapsPerWeek
+		n.MaxAfternoons = amax
+		n.LunchBreak = e.LunchBreak
+
 		db.TeacherMap[e.Id] = true
 	}
 }

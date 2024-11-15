@@ -15,6 +15,7 @@ func (db *DbTopLevel) readClasses(newdb *base.DbTopLevel) {
 		pregroups[n.Id] = false
 	}
 
+	db.GroupRefMap = map[base.Ref]base.Ref{}
 	for _, e := range db.Classes {
 		// MaxAfternoons = 0 has a special meaning (all blocked)
 		amax := e.MaxAfternoons
@@ -60,43 +61,33 @@ func (db *DbTopLevel) readClasses(newdb *base.DbTopLevel) {
 		}
 
 		// Add a Group for the whole class (not provided by W365).
-		cgid := db.NewId()
-		classGroup := &base.Group{
-			Id:  cgid,
-			Tag: "",
-		}
-		newdb.Groups = append(newdb.Groups, classGroup)
-		db.GroupRefMap[e.Id] = cgid
+		classGroup := newdb.NewGroup("")
+		classGroup.Tag = ""
+		db.GroupRefMap[e.Id] = classGroup.Id
 
-		newdb.Classes = append(newdb.Classes, &base.Class{
-			Id:               e.Id,
-			Tag:              e.Tag,
-			Year:             e.Year,
-			Letter:           e.Letter,
-			Name:             e.Name,
-			NotAvailable:     tsl,
-			Divisions:        divs,
-			MinLessonsPerDay: e.MinLessonsPerDay,
-			MaxLessonsPerDay: e.MaxLessonsPerDay,
-			MaxGapsPerDay:    e.MaxGapsPerDay,
-			MaxGapsPerWeek:   e.MaxGapsPerWeek,
-			MaxAfternoons:    e.MaxAfternoons,
-			LunchBreak:       e.LunchBreak,
-			ForceFirstHour:   e.ForceFirstHour,
-			ClassGroup:       classGroup.Id,
-		})
+		n := newdb.NewClass(e.Id)
+		n.Tag = e.Tag
+		n.Year = e.Year
+		n.Letter = e.Letter
+		n.Name = e.Name
+		n.NotAvailable = tsl
+		n.Divisions = divs
+		n.MinLessonsPerDay = e.MinLessonsPerDay
+		n.MaxLessonsPerDay = e.MaxLessonsPerDay
+		n.MaxGapsPerDay = e.MaxGapsPerDay
+		n.MaxGapsPerWeek = e.MaxGapsPerWeek
+		n.MaxAfternoons = e.MaxAfternoons
+		n.LunchBreak = e.LunchBreak
+		n.ForceFirstHour = e.ForceFirstHour
+		n.ClassGroup = classGroup.Id
 	}
 
 	// Copy Groups.
-	newdb.Groups = []*base.Group{}
 	for _, n := range db.Groups {
 		if pregroups[n.Id] {
-			newdb.Groups = append(newdb.Groups, &base.Group{
-				Id:  n.Id,
-				Tag: n.Tag,
-			})
+			g := newdb.NewGroup(n.Id)
+			g.Tag = n.Tag
 			db.GroupRefMap[n.Id] = n.Id // mapping to itself is correct!
-
 		} else {
 			base.Error.Printf("Group not in Division, removing:\n  %s,",
 				n.Id)

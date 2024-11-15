@@ -8,31 +8,19 @@ import (
 func (db *DbTopLevel) readSubjects(newdb *base.DbTopLevel) {
 	db.SubjectMap = map[Ref]*base.Subject{}
 	db.SubjectTags = map[string]Ref{}
-	db.SubjectNames = map[string]string{}
 	for _, e := range db.Subjects {
-		// Perform some checks and add to the SubjectNames
-		// and SubjectTags maps.
+		// Perform some checks and add to the SubjectTags map.
 		_, nok := db.SubjectTags[e.Tag]
 		if nok {
 			base.Error.Fatalf("Subject Tag (Shortcut) defined twice: %s\n",
 				e.Tag)
 		}
-		t, nok := db.SubjectNames[e.Name]
-		if nok {
-			base.Warning.Printf("Subject Name defined twice (different"+
-				" Tag/Shortcut):\n  %s (%s/%s)\n", e.Name, t, e.Tag)
-		} else {
-			db.SubjectNames[e.Name] = e.Tag
-		}
 		db.SubjectTags[e.Tag] = e.Id
 		//Copy data to base db.
-		s := &base.Subject{
-			Id:   e.Id,
-			Tag:  e.Tag,
-			Name: e.Name,
-		}
-		newdb.Subjects = append(newdb.Subjects, s)
-		db.SubjectMap[e.Id] = s
+		n := newdb.NewSubject(e.Id)
+		n.Tag = e.Tag
+		n.Name = e.Name
+		db.SubjectMap[e.Id] = n
 	}
 }
 
@@ -41,14 +29,10 @@ func (db *DbTopLevel) makeNewSubject(
 	tag string,
 	name string,
 ) base.Ref {
-	sref := db.NewId()
-	s := &base.Subject{
-		Id:   sref,
-		Tag:  tag,
-		Name: name,
-	}
-	newdb.Subjects = append(newdb.Subjects, s)
-	return sref
+	s := newdb.NewSubject("")
+	s.Tag = tag
+	s.Name = name
+	return s.Id
 }
 
 func (db *DbTopLevel) readCourses(newdb *base.DbTopLevel) {
@@ -58,13 +42,11 @@ func (db *DbTopLevel) readCourses(newdb *base.DbTopLevel) {
 		room := db.getCourseRoom(newdb, e.PreferredRooms, e.Id)
 		groups := db.getCourseGroups(e.Groups, e.Id)
 		teachers := db.getCourseTeachers(e.Teachers, e.Id)
-		newdb.Courses = append(newdb.Courses, &base.Course{
-			Id:       e.Id,
-			Subject:  subject,
-			Groups:   groups,
-			Teachers: teachers,
-			Room:     room,
-		})
+		n := newdb.NewCourse(e.Id)
+		n.Subject = subject
+		n.Groups = groups
+		n.Teachers = teachers
+		n.Room = room
 		db.CourseMap[e.Id] = true
 	}
 }
@@ -84,7 +66,6 @@ func (db *DbTopLevel) readSuperCourses(newdb *base.DbTopLevel) {
 		}
 	}
 
-	newdb.SubCourses = []*base.SubCourse{}
 	sbcMap := map[Ref]*base.SubCourse{}
 	for _, spc := range db.SuperCourses {
 		// Read the SubCourses.
@@ -98,28 +79,26 @@ func (db *DbTopLevel) readSuperCourses(newdb *base.DbTopLevel) {
 				room := db.getCourseRoom(newdb, e.PreferredRooms, e.Id)
 				groups := db.getCourseGroups(e.Groups, e.Id)
 				teachers := db.getCourseTeachers(e.Teachers, e.Id)
-				newdb.SubCourses = append(newdb.SubCourses, &base.SubCourse{
-					Id:           e.Id,
-					SuperCourses: []base.Ref{spc.Id},
-					Subject:      subject,
-					Groups:       groups,
-					Teachers:     teachers,
-					Room:         room,
-				})
+				n := newdb.NewSubCourse(e.Id)
+				n.SuperCourses = []base.Ref{spc.Id}
+				n.Subject = subject
+				n.Groups = groups
+				n.Teachers = teachers
+				n.Room = room
 				db.CourseMap[e.Id] = true
 			}
 		}
 
-		//TODO: The SuperCourse!
+		// Now add the SuperCourse.
+
+		//TODO: failing
 		subject, ok := epochPlanSubjects[spc.EpochPlan]
 		if !ok {
 			base.Error.Fatalf("Unknown EpochPlan in SuperCourse %s:\n  %s\n",
 				spc.Id, spc.EpochPlan)
 		}
-		newdb.SuperCourses = append(newdb.SuperCourses, &base.SuperCourse{
-			Id:      spc.Id,
-			Subject: subject,
-		})
+		n := newdb.NewSuperCourse(spc.Id)
+		n.Subject = subject
 	}
 }
 

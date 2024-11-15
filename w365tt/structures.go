@@ -205,41 +205,15 @@ type DbTopLevel struct {
 	Constraints  map[string]any `json:"constraints"`
 
 	// These fields do not belong in the JSON object.
-	RealRooms    map[Ref]*base.Room      `json:"-"`
-	RoomGroupMap map[Ref]*base.RoomGroup `json:"-"`
-	SubjectMap   map[Ref]*base.Subject   `json:"-"`
-	GroupRefMap  map[Ref]base.Ref        `json:"-"`
-	TeacherMap   map[Ref]bool            `json:"-"`
-	CourseMap    map[Ref]bool            `json:"-"`
-
-	//??
-	//TODO:MaxId and NewId should be in base!
-	//MaxId           int               `json:"-"` // for "indexed" Ids only
-	SubjectTags     map[string]Ref    `json:"-"`
-	SubjectNames    map[string]string `json:"-"`
-	RoomTags        map[string]Ref    `json:"-"`
-	RoomChoiceNames map[string]Ref    `json:"-"`
-}
-
-func (db *DbTopLevel) checkDb() {
-	if len(db.Days) == 0 {
-		base.Error.Fatalln("No Days")
-	}
-	if len(db.Hours) == 0 {
-		base.Error.Fatalln("No Hours")
-	}
-	if len(db.Teachers) == 0 {
-		base.Error.Fatalln("No Teachers")
-	}
-	if len(db.Subjects) == 0 {
-		base.Error.Fatalln("No Subjects")
-	}
-	if len(db.Rooms) == 0 {
-		base.Error.Fatalln("No Rooms")
-	}
-	if len(db.Classes) == 0 {
-		base.Error.Fatalln("No Classes")
-	}
+	RealRooms       map[Ref]*base.Room      `json:"-"`
+	RoomGroupMap    map[Ref]*base.RoomGroup `json:"-"`
+	SubjectMap      map[Ref]*base.Subject   `json:"-"`
+	GroupRefMap     map[Ref]base.Ref        `json:"-"`
+	TeacherMap      map[Ref]bool            `json:"-"`
+	CourseMap       map[Ref]bool            `json:"-"`
+	SubjectTags     map[string]Ref          `json:"-"`
+	RoomTags        map[string]Ref          `json:"-"`
+	RoomChoiceNames map[string]Ref          `json:"-"`
 }
 
 // Block all afternoons if nAfternnons == 0.

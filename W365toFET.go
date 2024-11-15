@@ -45,6 +45,7 @@ func main() {
 
 	db := base.NewDb()
 	w365tt.LoadJSON(db, abspath)
+	db.PrepareDb()
 
 	// ********** Build the fet file **********
 	stempath = strings.TrimSuffix(stempath, "_w365")

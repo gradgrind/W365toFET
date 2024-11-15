@@ -25,14 +25,12 @@ func (db *DbTopLevel) readLessons(newdb *base.DbTopLevel) {
 					e.Id, rref)
 			}
 		}
-		newdb.Lessons = append(newdb.Lessons, &base.Lesson{
-			Course:   e.Course,
-			Duration: e.Duration,
-			Day:      e.Day,
-			Hour:     e.Hour,
-			Fixed:    e.Fixed,
-			Rooms:    reflist,
-		})
-
+		n := newdb.NewLesson(e.Id)
+		n.Course = e.Course
+		n.Duration = e.Duration
+		n.Day = e.Day
+		n.Hour = e.Hour
+		n.Fixed = e.Fixed
+		n.Rooms = reflist
 	}
 }
