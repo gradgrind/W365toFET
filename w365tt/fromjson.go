@@ -29,10 +29,9 @@ func ReadJSON(jsonpath string) *DbTopLevel {
 	return &v
 }
 
-func LoadJSON(jsonpath string) *base.DbTopLevel {
+func LoadJSON(newdb *base.DbTopLevel, jsonpath string) {
 	db := ReadJSON(jsonpath)
 	db.checkDb()
-	newdb := &base.DbTopLevel{}
 	newdb.Info = base.Info(db.Info)
 	if newdb.Info.MiddayBreak == nil {
 		newdb.Info.MiddayBreak = []int{}
@@ -63,8 +62,6 @@ func LoadJSON(jsonpath string) *base.DbTopLevel {
 	} else {
 		newdb.Constraints = db.Constraints
 	}
-
-	return newdb
 }
 
 func (db *DbTopLevel) readDays(newdb *base.DbTopLevel) {

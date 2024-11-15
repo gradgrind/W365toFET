@@ -1,59 +1,131 @@
 package base
 
-import "slices"
+import (
+	"slices"
 
-/* TODO
-func (db *DbTopLevel) NewId() Ref {
-	return Ref(fmt.Sprintf("#%d", db.MaxId+1))
+	"github.com/gofrs/uuid/v5"
+)
+
+func NewDb() *DbTopLevel {
+	db := &DbTopLevel{}
+	db.Elements = map[Ref]any{}
+	return db
 }
-*/
 
-func (db *DbTopLevel) InitDb() {
+func (db *DbTopLevel) NewDay(ref Ref) *Day {
+	e := &Day{}
+	e.Id = db.addElement(ref, e)
+	db.Days = append(db.Days, e)
+	return e
+}
 
-	// Build the Element reference map.
+func (db *DbTopLevel) NewHour(ref Ref) *Hour {
+	e := &Hour{}
+	e.Id = db.addElement(ref, e)
+	db.Hours = append(db.Hours, e)
+	return e
+}
 
-	for _, n := range db.Days {
-		db.Elements[n.Id] = n
-	}
-	for _, n := range db.Hours {
-		db.Elements[n.Id] = n
-	}
-	for _, n := range db.Teachers {
-		db.Elements[n.Id] = n
-	}
-	for _, n := range db.Subjects {
-		db.Elements[n.Id] = n
-	}
-	for _, n := range db.Rooms {
-		db.Elements[n.Id] = n
-	}
-	for _, n := range db.RoomGroups {
-		db.Elements[n.Id] = n
-	}
-	for _, n := range db.RoomChoiceGroups {
-		db.Elements[n.Id] = n
-	}
-	for _, n := range db.Classes {
-		db.Elements[n.Id] = n
-	}
-	for _, n := range db.Groups {
-		db.Elements[n.Id] = n
-	}
-	for _, n := range db.Courses {
-		db.Elements[n.Id] = n
-	}
-	for _, n := range db.SuperCourses {
-		db.Elements[n.Id] = n
-	}
-	for _, n := range db.SubCourses {
-		db.Elements[n.Id] = n
-	}
-	for _, n := range db.Lessons {
-		db.Elements[n.Id] = n
-	}
+func (db *DbTopLevel) NewTeacher(ref Ref) *Teacher {
+	e := &Teacher{}
+	e.Id = db.addElement(ref, e)
+	db.Teachers = append(db.Teachers, e)
+	return e
+}
 
-	// *** Initializations
+func (db *DbTopLevel) NewSubject(ref Ref) *Subject {
+	e := &Subject{}
+	e.Id = db.addElement(ref, e)
+	db.Subjects = append(db.Subjects, e)
+	return e
+}
 
+func (db *DbTopLevel) NewRoom(ref Ref) *Room {
+	e := &Room{}
+	e.Id = db.addElement(ref, e)
+	db.Rooms = append(db.Rooms, e)
+	return e
+}
+
+func (db *DbTopLevel) NewRoomGroup(ref Ref) *RoomGroup {
+	e := &RoomGroup{}
+	e.Id = db.addElement(ref, e)
+	db.RoomGroups = append(db.RoomGroups, e)
+	return e
+}
+
+func (db *DbTopLevel) NewRoomChoiceGroup(ref Ref) *RoomChoiceGroup {
+	e := &RoomChoiceGroup{}
+	e.Id = db.addElement(ref, e)
+	db.RoomChoiceGroups = append(db.RoomChoiceGroups, e)
+	return e
+}
+
+func (db *DbTopLevel) NewClass(ref Ref) *Class {
+	e := &Class{}
+	e.Id = db.addElement(ref, e)
+	db.Classes = append(db.Classes, e)
+	return e
+}
+
+func (db *DbTopLevel) NewGroup(ref Ref) *Group {
+	e := &Group{}
+	e.Id = db.addElement(ref, e)
+	db.Groups = append(db.Groups, e)
+	return e
+}
+
+func (db *DbTopLevel) NewCourse(ref Ref) *Course {
+	e := &Course{}
+	e.Id = db.addElement(ref, e)
+	db.Courses = append(db.Courses, e)
+	return e
+}
+
+func (db *DbTopLevel) NewSuperCourse(ref Ref) *SuperCourse {
+	e := &SuperCourse{}
+	e.Id = db.addElement(ref, e)
+	db.SuperCourses = append(db.SuperCourses, e)
+	return e
+}
+
+func (db *DbTopLevel) NewSubCourse(ref Ref) *SubCourse {
+	e := &SubCourse{}
+	e.Id = db.addElement(ref, e)
+	db.SubCourses = append(db.SubCourses, e)
+	return e
+}
+
+func (db *DbTopLevel) NewLesson(ref Ref) *Lesson {
+	e := &Lesson{}
+	e.Id = db.addElement(ref, e)
+	db.Lessons = append(db.Lessons, e)
+	return e
+}
+
+func (db *DbTopLevel) newId() Ref {
+	// Create a Version 4 UUID.
+	u2, err := uuid.NewV4()
+	if err != nil {
+		Error.Fatalf("Failed to generate UUID: %v", err)
+	}
+	return Ref(u2.String())
+}
+
+func (db *DbTopLevel) addElement(ref Ref, element any) Ref {
+	if ref == "" {
+		ref = db.newId()
+	}
+	_, nok := db.Elements[ref]
+	if nok {
+		Error.Fatalf("Element Id defined more than once:\n  %s\n", ref)
+	}
+	db.Elements[ref] = element
+	return ref
+}
+
+// TODO???
+func (db *DbTopLevel) PrepareDb() {
 	if db.Info.MiddayBreak == nil {
 		db.Info.MiddayBreak = []int{}
 	} else {
@@ -78,10 +150,6 @@ func (db *DbTopLevel) InitDb() {
 		db.Elements[l.Course].(LessonCourse).AddLesson(l.Id)
 	}
 
-	if db.Constraints == nil {
-		db.Constraints = make(map[string]any)
-	}
-
 	// Expand Group information
 	for _, c := range db.Classes {
 		db.Elements[c.ClassGroup].(*Group).Class = c.Id // Tag is empty.
@@ -94,15 +162,15 @@ func (db *DbTopLevel) InitDb() {
 	// Check that all groups belong to a class
 	for _, g := range db.Groups {
 		if g.Class == "" {
-			Error.Printf("Group not in Class: %s\n", g.Id)
-			//TODO: Remove it?
+			// This is a loader failure, it should not be possible.
+			Bug.Fatalf("Group not in Class: %s\n", g.Id)
 		}
 	}
 }
 
-func (db *DbTopLevel) CheckDb() {
-	// Checks
-	//TODO: Should these really be fatal?
+func (db *DbTopLevel) CheckDbBasics() {
+	// This function is provided for use by code which needs the following
+	// Elements to be provided.
 	if len(db.Days) == 0 {
 		Error.Fatalln("No Days")
 	}

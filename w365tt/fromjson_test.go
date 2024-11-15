@@ -65,13 +65,13 @@ func TestToDb(t *testing.T) {
 	logpath := stempath + ".log"
 	base.OpenLog(logpath)
 
-	data := LoadJSON(fjson)
-
-	//fmt.Printf("JSON struct: %#v\n", data)
+	db := base.NewDb()
+	LoadJSON(db, fjson)
 
 	// Save as JSON
-	f := strings.TrimSuffix(fjson, filepath.Ext(fjson)) + "_db.json"
-	j, err := json.MarshalIndent(data, "", "  ")
+	stempath = strings.TrimSuffix(stempath, "_w365")
+	f := stempath + "_db.json"
+	j, err := json.MarshalIndent(db, "", "  ")
 	if err != nil {
 		log.Fatal(err)
 	}

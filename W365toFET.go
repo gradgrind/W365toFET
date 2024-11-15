@@ -43,12 +43,13 @@ func main() {
 	logpath := stempath + ".log"
 	base.OpenLog(logpath)
 
-	data := w365tt.LoadJSON(abspath)
+	db := base.NewDb()
+	w365tt.LoadJSON(db, abspath)
 
 	// ********** Build the fet file **********
 	stempath = strings.TrimSuffix(stempath, "_w365")
 
-	xmlitem, lessonIdMap := fet.MakeFetFile(data)
+	xmlitem, lessonIdMap := fet.MakeFetFile(db)
 
 	// Write FET file
 	fetfile := stempath + ".fet"

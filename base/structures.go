@@ -177,6 +177,11 @@ type LessonCourse interface {
 	AddLesson(Ref)
 }
 
+// TODO: Constraints could alternatively be implemented as map[string]any.
+type Constraint interface {
+	Id() Ref
+}
+
 type DbTopLevel struct {
 	Info             Info
 	Days             []*Day
@@ -192,8 +197,7 @@ type DbTopLevel struct {
 	SuperCourses     []*SuperCourse
 	SubCourses       []*SubCourse
 	Lessons          []*Lesson
-	//TODO:
-	Constraints map[string]any
+	Constraints      []Constraint
 
 	// These fields do not belong in the JSON object:
 	Elements map[Ref]any `json:"-"`

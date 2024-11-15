@@ -3,9 +3,6 @@ package w365tt
 import (
 	"W365toFET/base"
 	"encoding/json"
-	"fmt"
-	"strconv"
-	"strings"
 )
 
 // The structures used for the "database", adapted to read from W365
@@ -216,36 +213,12 @@ type DbTopLevel struct {
 	CourseMap    map[Ref]bool            `json:"-"`
 
 	//??
+	//TODO:MaxId and NewId should be in base!
 	//MaxId           int               `json:"-"` // for "indexed" Ids only
 	SubjectTags     map[string]Ref    `json:"-"`
 	SubjectNames    map[string]string `json:"-"`
 	RoomTags        map[string]Ref    `json:"-"`
 	RoomChoiceNames map[string]Ref    `json:"-"`
-}
-
-// TODO: At present I am not maintaining  db.MaxId ...
-func (db *DbTopLevel) NewId() Ref {
-	return Ref(fmt.Sprintf("#%d", db.MaxId+1))
-}
-
-// TODO--
-func (db *DbTopLevel) AddElement(ref Ref, element any) {
-	_, nok := db.Elements[ref]
-	if nok {
-		base.Error.Printf("Element Id defined more than once:\n  %s\n", ref)
-		return
-	}
-	db.Elements[ref] = element
-	// Special handling if it is an "indexed" Id.
-	if strings.HasPrefix(string(ref), "#") {
-		s := strings.TrimPrefix(string(ref), "#")
-		i, err := strconv.Atoi(s)
-		if err == nil {
-			if i > db.MaxId {
-				db.MaxId = i
-			}
-		}
-	}
 }
 
 func (db *DbTopLevel) checkDb() {
