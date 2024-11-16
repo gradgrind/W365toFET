@@ -65,6 +65,36 @@ type courseInfo struct {
 	activities []int
 }
 
+func weight2fet(w int) string {
+	if w == 0 {
+		return "0"
+	}
+	if w == 100 {
+		return "100"
+	}
+	//wfet := 100.0 - 0.1*math.Pow(1.065, float64(100-w))
+	wfet := 99.6 - 50.0/float64(w)
+	return strconv.FormatFloat(wfet, 'f', 3, 64)
+}
+
+// Possibly helpful when testing
+func (fetinfo *fetInfo) View(cinfo *courseInfo) string {
+	tlist := []string{}
+	for _, t := range cinfo.teachers {
+		tlist = append(tlist, fetinfo.ref2fet[t])
+	}
+	glist := []string{}
+	for _, g := range cinfo.groups {
+		glist = append(glist, fetinfo.ref2fet[g])
+	}
+
+	return fmt.Sprintf("<Course %s/%s:%s>\n",
+		strings.Join(glist, ","),
+		strings.Join(tlist, ","),
+		fetinfo.ref2fet[cinfo.subject],
+	)
+}
+
 type idMap struct {
 	activityId int
 	baseId     Ref
@@ -103,6 +133,7 @@ type timeConstraints struct {
 	ConstraintActivityPreferredStartingTime []startingTime
 	ConstraintActivitiesPreferredTimeSlots  []preferredSlots
 	ConstraintMinDaysBetweenActivities      []minDaysBetweenActivities
+	ConstraintActivityEndsStudentsDay       []lessonEndsDay
 
 	ConstraintStudentsSetMaxGapsPerDay                  []maxGapsPerDay
 	ConstraintStudentsSetMaxGapsPerWeek                 []maxGapsPerWeek
@@ -143,6 +174,10 @@ type basicSpaceConstraint struct {
 func MakeFetFile(dbdata *base.DbTopLevel) (string, string) {
 	//fmt.Printf("\n????? %+v\n", dbdata.Info)
 
+	for i := 0; i <= 100; i++ {
+		fmt.Printf("%02d : %s\n", i, weight2fet(i))
+	}
+
 	// Build ref-index -> fet-key mapping
 	ref2fet := map[Ref]string{}
 	for _, r := range dbdata.Subjects {
@@ -156,10 +191,13 @@ func MakeFetFile(dbdata *base.DbTopLevel) (string, string) {
 	}
 	ref2grouponly := map[Ref]string{}
 	for _, r := range dbdata.Groups {
-		ref2grouponly[r.Id] = r.Tag
+		if r.Tag != "" {
+			ref2grouponly[r.Id] = r.Tag
+		}
 	}
 	for _, r := range dbdata.Classes {
 		ref2fet[r.Id] = r.Tag
+		ref2fet[r.ClassGroup] = r.Tag
 		// Handle the groups
 		for _, d := range r.Divisions {
 			for _, g := range d.Groups {
@@ -212,6 +250,8 @@ func MakeFetFile(dbdata *base.DbTopLevel) (string, string) {
 
 	addTeacherConstraints(&fetinfo)
 	addClassConstraints(&fetinfo)
+
+	getExtraConstraints(&fetinfo)
 
 	// Convert lessonIdMap to string
 	idmlines := []string{}

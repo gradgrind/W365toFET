@@ -68,8 +68,12 @@ func gatherCourseInfo(fetinfo *fetInfo) {
 		c := db.Elements[lcref] // can be Course or SuperCourse
 		cnode, ok := c.(*base.Course)
 		if ok {
+			if slices.Contains(l.Flags, "SubstitutionService") {
+				groups = nil
+			} else {
+				groups = cnode.Groups
+			}
 			subject = cnode.Subject
-			groups = cnode.Groups
 			teachers = cnode.Teachers
 			rooms = []Ref{}
 			if cnode.Room != "" {

@@ -170,6 +170,7 @@ type Lesson struct {
 	Hour     int
 	Fixed    bool
 	Rooms    []Ref
+	Flags    []string
 }
 
 type LessonCourse interface {
