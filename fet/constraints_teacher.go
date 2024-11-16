@@ -31,9 +31,8 @@ func addTeacherConstraints(fetinfo *fetInfo) {
 	ndays := len(fetinfo.days)
 	nhours := len(fetinfo.hours)
 
-	for tix := 0; tix < len(fetinfo.db.Teachers); tix++ {
-		t := &fetinfo.db.Teachers[tix]
-		n := int(t.MaxDays.(float64))
+	for _, t := range fetinfo.db.Teachers {
+		n := t.MaxDays
 		if n >= 0 && n < ndays {
 			tmaxdpw = append(tmaxdpw, maxDaysT{
 				Weight_Percentage: 100,
@@ -43,7 +42,7 @@ func addTeacherConstraints(fetinfo *fetInfo) {
 			})
 		}
 
-		n = int(t.MinLessonsPerDay.(float64))
+		n = t.MinLessonsPerDay
 		if n >= 2 && n <= nhours {
 			tminlpd = append(tminlpd, minLessonsPerDayT{
 				Weight_Percentage:   100,
@@ -54,7 +53,7 @@ func addTeacherConstraints(fetinfo *fetInfo) {
 			})
 		}
 
-		n = int(t.MaxLessonsPerDay.(float64))
+		n = t.MaxLessonsPerDay
 		if n >= 0 && n < nhours {
 			tmaxlpd = append(tmaxlpd, maxLessonsPerDayT{
 				Weight_Percentage:   100,
@@ -65,7 +64,7 @@ func addTeacherConstraints(fetinfo *fetInfo) {
 		}
 
 		i := fetinfo.db.Info.FirstAfternoonHour
-		maxpm := int(t.MaxAfternoons.(float64))
+		maxpm := t.MaxAfternoons
 		if maxpm >= 0 && i > 0 {
 			tmaxaft = append(tmaxaft, maxDaysinIntervalPerWeekT{
 				Weight_Percentage:   100,
@@ -78,8 +77,8 @@ func addTeacherConstraints(fetinfo *fetInfo) {
 		}
 
 		// The lunch-break constraint may require adjustment of these:
-		mgpday := int(t.MaxGapsPerDay.(float64))
-		mgpweek := int(t.MaxGapsPerWeek.(float64))
+		mgpday := t.MaxGapsPerDay
+		mgpweek := t.MaxGapsPerWeek
 
 		if t.LunchBreak {
 			// Generate the constraint unless all days have a blocked lesson
@@ -113,7 +112,9 @@ func addTeacherConstraints(fetinfo *fetInfo) {
 				if mgpday == 0 {
 					mgpday = 1
 				}
-				mgpweek += lbdays
+				if mgpweek >= 0 {
+					mgpweek += lbdays
+				}
 			}
 		}
 

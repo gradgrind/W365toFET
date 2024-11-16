@@ -1,188 +1,163 @@
 package w365tt
 
 import (
-	"W365toFET/logging"
+	"W365toFET/base"
 	"strings"
 )
 
-func (dbp *DbTopLevel) readSubjects() {
-	for _, n := range dbp.Subjects {
-		_, nok := dbp.SubjectTags[n.Tag]
+func (db *DbTopLevel) readSubjects(newdb *base.DbTopLevel) {
+	db.SubjectMap = map[Ref]*base.Subject{}
+	db.SubjectTags = map[string]Ref{}
+	for _, e := range db.Subjects {
+		// Perform some checks and add to the SubjectTags map.
+		_, nok := db.SubjectTags[e.Tag]
 		if nok {
-			logging.Error.Fatalf("Subject Tag (Shortcut) defined twice: %s\n",
-				n.Tag)
+			base.Error.Fatalf("Subject Tag (Shortcut) defined twice: %s\n",
+				e.Tag)
 		}
-		t, nok := dbp.SubjectNames[n.Name]
-		if nok {
-			logging.Warning.Printf("Subject Name defined twice (different"+
-				" Tag/Shortcut):\n  %s (%s/%s)\n", n.Name, t, n.Tag)
-		} else {
-			dbp.SubjectNames[n.Name] = n.Tag
-		}
-		dbp.SubjectTags[n.Tag] = n.Id
+		db.SubjectTags[e.Tag] = e.Id
+		//Copy data to base db.
+		n := newdb.NewSubject(e.Id)
+		n.Tag = e.Tag
+		n.Name = e.Name
+		db.SubjectMap[e.Id] = n
 	}
 }
 
-func (dbp *DbTopLevel) readCourses() {
-	for i := 0; i < len(dbp.Courses); i++ {
-		n := &dbp.Courses[i]
-		dbp.readCourse(n)
+func (db *DbTopLevel) makeNewSubject(
+	newdb *base.DbTopLevel,
+	tag string,
+	name string,
+) base.Ref {
+	s := newdb.NewSubject("")
+	s.Tag = tag
+	s.Name = name
+	return s.Id
+}
+
+func (db *DbTopLevel) readCourses(newdb *base.DbTopLevel) {
+	db.CourseMap = map[Ref]bool{}
+	for _, e := range db.Courses {
+		subject := db.getCourseSubject(newdb, e.Subjects, e.Id)
+		room := db.getCourseRoom(newdb, e.PreferredRooms, e.Id)
+		groups := db.getCourseGroups(e.Groups, e.Id)
+		teachers := db.getCourseTeachers(e.Teachers, e.Id)
+		n := newdb.NewCourse(e.Id)
+		n.Subject = subject
+		n.Groups = groups
+		n.Teachers = teachers
+		n.Room = room
+		db.CourseMap[e.Id] = true
 	}
 }
 
-func (dbp *DbTopLevel) readSuperCourses() {
-	// The SuperCourse Subjects come from the EpochPlans, which are then
-	// no longer needed.
-	epochPlanSubjects := map[Ref]Ref{}
-	if dbp.EpochPlans != nil {
-		for _, n := range dbp.EpochPlans {
-			sref, ok := dbp.SubjectTags[n.Tag]
+func (db *DbTopLevel) readSuperCourses(newdb *base.DbTopLevel) {
+	// In the input from W365 the subjects for the SuperCourses must be
+	// taken from the linked EpochPlan.
+	// The EpochPlans are otherwise not needed.
+	epochPlanSubjects := map[Ref]base.Ref{}
+	if db.EpochPlans != nil {
+		for _, n := range db.EpochPlans {
+			sref, ok := db.SubjectTags[n.Tag]
 			if !ok {
-				sref = dbp.makeNewSubject(n.Tag, n.Name)
+				sref = db.makeNewSubject(newdb, n.Tag, n.Name)
 			}
 			epochPlanSubjects[n.Id] = sref
 		}
 	}
-	dbp.EpochPlans = nil
 
-	for i := 0; i < len(dbp.SuperCourses); i++ {
-		n := &dbp.SuperCourses[i]
-		n.Subject = epochPlanSubjects[n.EpochPlan]
-	}
-}
-
-func (dbp *DbTopLevel) readSubCourses() {
-	for i := 0; i < len(dbp.SubCourses); i++ {
-		n := &dbp.SubCourses[i]
-		s, ok := dbp.Elements[n.SuperCourse]
-		if !ok {
-			logging.Error.Fatalf(
-				"SubCourse %s:\n  Unknown SuperCourse: %s\n",
-				n.Id, n.SuperCourse)
-		}
-		_, ok = s.(*SuperCourse)
-		if !ok {
-			logging.Error.Fatalf(
-				"SubCourse %s:\n  Not a SuperCourse: %s\n",
-				n.Id, n.SuperCourse)
-		}
-		dbp.readCourse(n)
-	}
-}
-
-func (dbp *DbTopLevel) readCourse(course CourseInterface) {
-	//
-	// Deal with the subject(s) fields. W365 allows multiple subjects, hence
-	// the field "Subjects". For the interface there should only be a single
-	// subject – in the "Subject"-field. If there is a "Subjects" entry, this
-	// is converted to a single subject in the "Subject" field, if necessary
-	// creating a new subject. Repeated use of the same subject list will
-	// reuse the created subject. There should not be an entry in both
-	// "Subject" and "Subjects" field.
-	//
-	msg1 := "Course %s:\n  Unknown Subject: %s\n"
-	msg2 := "Course %s:\n  Not a Subject: %s\n"
-	if course.GetSubject() == "" {
-		if len(course.getSubjects()) == 1 {
-			wsid := course.getSubjects()[0]
-			s0, ok := dbp.Elements[wsid]
-			if !ok {
-				logging.Error.Fatalf(msg1, course.GetId(), wsid)
-			}
-			if _, ok = s0.(*Subject); !ok {
-				logging.Error.Fatalf(msg2, course.GetId(), wsid)
-			}
-			course.setSubject(wsid)
-		} else if len(course.getSubjects()) > 1 {
-			// Make a subject name
-			sklist := []string{}
-			for _, wsid := range course.getSubjects() {
-				// Need Tag/Shortcut field
-				s0, ok := dbp.Elements[wsid]
-				if ok {
-					s, ok := s0.(*Subject)
-					if !ok {
-						logging.Error.Fatalf(msg2, course.GetId(), wsid)
-					}
-					sklist = append(sklist, s.Tag)
-				} else {
-					logging.Error.Fatalf(msg1, course.GetId(), wsid)
-				}
-			}
-			skname := strings.Join(sklist, ",")
-			stag, ok := dbp.SubjectNames[skname]
+	sbcMap := map[Ref]*base.SubCourse{}
+	for _, spc := range db.SuperCourses {
+		// Read the SubCourses.
+		for _, e := range spc.SubCourses {
+			sbc, ok := sbcMap[e.Id]
 			if ok {
-				// The Name has already been used.
-				course.setSubject(dbp.SubjectTags[stag])
+				// Assume the SubCourse really is the same.
+				sbc.SuperCourses = append(sbc.SuperCourses, spc.Id)
 			} else {
-				// Need a new Subject.
-				course.setSubject(dbp.makeNewSubject("", skname))
+				subject := db.getCourseSubject(newdb, e.Subjects, e.Id)
+				room := db.getCourseRoom(newdb, e.PreferredRooms, e.Id)
+				groups := db.getCourseGroups(e.Groups, e.Id)
+				teachers := db.getCourseTeachers(e.Teachers, e.Id)
+				// Use a new Id for the SubCourse because it can also be
+				// the Id of a Course.
+				n := newdb.NewSubCourse("$$" + e.Id)
+				n.SuperCourses = []base.Ref{spc.Id}
+				n.Subject = subject
+				n.Groups = groups
+				n.Teachers = teachers
+				n.Room = room
+				sbcMap[e.Id] = n
 			}
+		}
+
+		// Now add the SuperCourse.
+		subject, ok := epochPlanSubjects[spc.EpochPlan]
+		if !ok {
+			base.Error.Fatalf("Unknown EpochPlan in SuperCourse %s:\n  %s\n",
+				spc.Id, spc.EpochPlan)
+		}
+		n := newdb.NewSuperCourse(spc.Id)
+		n.Subject = subject
+		db.CourseMap[n.Id] = true
+	}
+}
+
+func (db *DbTopLevel) getCourseSubject(
+	newdb *base.DbTopLevel,
+	srefs []base.Ref,
+	courseId base.Ref,
+) base.Ref {
+	//
+	// Deal with the Subjects field of a Course or SubCourse – W365
+	// allows multiple subjects.
+	// The base db expects one and only one subject (in the Subject field).
+	// If there are multiple subjects in the input, these will be converted
+	// to a single "composite" subject, using all the subject tags.
+	// Repeated use of the same subject list will reuse the created subject.
+	//
+	msg := "Course %s:\n  Not a Subject: %s\n"
+	var subject Ref
+	if len(srefs) == 1 {
+		wsid := srefs[0]
+		_, ok := db.SubjectMap[wsid]
+		if !ok {
+			base.Error.Fatalf(msg, courseId, wsid)
+		}
+		subject = wsid
+	} else if len(srefs) > 1 {
+		// Make a subject name
+		sklist := []string{}
+		for _, wsid := range srefs {
+			// Need Tag/Shortcut field
+			s, ok := db.SubjectMap[wsid]
+			if ok {
+				sklist = append(sklist, s.Tag)
+			} else {
+				base.Error.Fatalf(msg, courseId, wsid)
+			}
+		}
+		sktag := strings.Join(sklist, ",")
+		wsid, ok := db.SubjectTags[sktag]
+		if ok {
+			// The name has already been used.
+			subject = wsid
+		} else {
+			// Need a new Subject.
+			subject = db.makeNewSubject(newdb, sktag, "Compound Subject")
+			db.SubjectTags[sktag] = subject
 		}
 	} else {
-		if len(course.getSubjects()) != 0 {
-			logging.Error.Printf("Course has both Subject AND Subjects: %s\n",
-				course.GetId())
-		}
-		wsid := course.GetSubject()
-		s0, ok := dbp.Elements[wsid]
-		if ok {
-			_, ok = s0.(*Subject)
-			if !ok {
-				logging.Error.Fatalf(msg2, course.GetId(), wsid)
-			}
-		} else {
-			logging.Error.Fatalf(msg1, course.GetId(), wsid)
-		}
+		base.Error.Fatalf("Course/SubCourse has no subject: %s\n", courseId)
 	}
-	// Clear Subjects field.
-	course.setSubjects(nil)
+	return subject
+}
 
-	//
-	// Deal with groups.
-	//
-	//glist := []Ref{}
-	for _, gref := range course.GetGroups() {
-		g, ok := dbp.Elements[gref]
-		if !ok {
-			logging.Error.Fatalf("Unknown group in Course %s:\n  %s\n",
-				course.GetId(), gref)
-			//continue
-		}
-		// g can be a Group or a Class.
-		_, ok = g.(*Group)
-		if !ok {
-			// Check for class.
-			_, ok = g.(*Class)
-			if !ok {
-				logging.Error.Fatalf("Invalid group in Course %s:\n  %s\n",
-					course.GetId(), gref)
-				//continue
-			}
-		}
-		//glist = append(glist, gref)
-	}
-
-	//
-	// Deal with teachers
-	//
-	//tlist := []Ref{}
-	for _, tref := range course.GetTeachers() {
-		t, ok := dbp.Elements[tref]
-		if !ok {
-			logging.Error.Fatalf("Unknown teacher in Course %s:\n  %s\n",
-				course.GetId(), tref)
-			//continue
-		}
-		_, ok = t.(*Teacher)
-		if !ok {
-			logging.Error.Fatalf("Invalid teacher in Course %s:\n  %s\n",
-				course.GetId(), tref)
-			//continue
-		}
-		//tlist = append(tlist, tref)
-	}
-
+func (db *DbTopLevel) getCourseRoom(
+	newdb *base.DbTopLevel,
+	rrefs []base.Ref,
+	courseId base.Ref,
+) base.Ref {
 	//
 	// Deal with rooms. W365 can have a single RoomGroup or a list of Rooms.
 	// If there is a list of Rooms, this is converted to a RoomChoiceGroup.
@@ -190,65 +165,68 @@ func (dbp *DbTopLevel) readCourse(course CourseInterface) {
 	// in the "Room" field. The "PreferredRooms" field in cleared.
 	// If a list of rooms recurs, the same RoomChoiceGroup is used.
 	//
-	rref := Ref("")
-	if len(course.getPreferredRooms()) > 1 {
+	room := base.Ref("")
+	if len(rrefs) > 1 {
 		// Make a RoomChoiceGroup
 		var estr string
-		rref, estr = dbp.makeRoomChoiceGroup(course.getPreferredRooms())
+		room, estr = db.makeRoomChoiceGroup(newdb, rrefs)
 		if estr != "" {
-			logging.Error.Printf("In Course %s:\n%s", course.GetId(), estr)
+			base.Error.Printf("In Course %s:\n%s", courseId, estr)
 		}
-	} else if len(course.getPreferredRooms()) == 1 {
+	} else if len(rrefs) == 1 {
 		// Check that room is Room or RoomGroup.
-		rref0 := course.getPreferredRooms()[0]
-		r, ok := dbp.Elements[rref0]
+		rref0 := rrefs[0]
+		_, ok := db.RealRooms[rref0]
 		if ok {
-			_, ok = r.(*Room)
+			room = rref0
+		} else {
+			_, ok := db.RoomGroupMap[rref0]
 			if ok {
-				rref = rref0
+				room = rref0
 			} else {
-				_, ok = r.(*RoomGroup)
-				if ok {
-					rref = rref0
-				} else {
-					logging.Error.Printf("Invalid room in Course %s:\n  %s\n",
-						course.GetId(), rref0)
-				}
+				base.Error.Printf("Invalid room in Course/SubCourse %s:\n  %s\n",
+					courseId, rref0)
 			}
-		} else {
-			logging.Error.Printf("Unknown room in Course %s:\n  %s\n",
-				course.GetId(), rref0)
 		}
 	}
-	if course.GetRoom() != "" {
-		if rref != "" {
-			logging.Error.Printf(
-				"Course has both Room and Rooms entries:\n %s\n",
-				course.GetId())
-		}
-		r, ok := dbp.Elements[course.GetRoom()]
-		if ok {
-			_, ok = r.(*Room)
-			if !ok {
-				_, ok = r.(*RoomGroup)
-				if !ok {
-					_, ok = r.(*RoomChoiceGroup)
-					if !ok {
-						logging.Error.Printf(
-							"Invalid room in Course %s:\n  %s\n",
-							course.GetId(), course.GetRoom())
-						course.setRoom("")
-					}
-				}
-			}
+	return room
+}
 
-		} else {
-			logging.Error.Printf("Unknown room in Course %s:\n  %s\n",
-				course.GetId(), course.GetRoom())
-			course.setRoom("")
+func (db *DbTopLevel) getCourseGroups(
+	grefs []Ref,
+	courseId base.Ref,
+) []base.Ref {
+	//
+	// Check the group references and replace Class references by the
+	// corresponding whole-class base.Group references.
+	//
+	glist := []base.Ref{}
+	for _, gref := range grefs {
+		ngref, ok := db.GroupRefMap[gref]
+		if !ok {
+			base.Error.Fatalf("Invalid group in Course/SubCourse %s:\n  %s\n",
+				courseId, gref)
 		}
-	} else {
-		course.setRoom(rref)
+		glist = append(glist, ngref)
 	}
-	course.setPreferredRooms(nil)
+	return glist
+}
+
+func (db *DbTopLevel) getCourseTeachers(
+	trefs []Ref,
+	courseId base.Ref,
+) []base.Ref {
+	//
+	// Check the teacher references.
+	//
+	tlist := []base.Ref{}
+	for _, tref := range trefs {
+		_, ok := db.TeacherMap[tref]
+		if !ok {
+			base.Error.Fatalf("Unknown teacher in Course %s:\n  %s\n",
+				courseId, tref)
+		}
+		tlist = append(tlist, tref)
+	}
+	return tlist
 }

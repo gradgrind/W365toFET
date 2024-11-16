@@ -1,138 +1,119 @@
 package w365tt
 
 import (
-	"W365toFET/logging"
+	"W365toFET/base"
 	"fmt"
 	"strconv"
 	"strings"
 )
 
-func (dbp *DbTopLevel) readRooms() {
-	for i := 0; i < len(dbp.Rooms); i++ {
-		n := &dbp.Rooms[i]
-		_, nok := dbp.RoomTags[n.Tag]
+func (db *DbTopLevel) readRooms(newdb *base.DbTopLevel) {
+	db.RealRooms = map[base.Ref]*base.Room{}
+	db.RoomTags = map[string]base.Ref{}
+	db.RoomChoiceNames = map[string]base.Ref{}
+	for _, e := range db.Rooms {
+		// Perform some checks and add to the RoomTags map.
+		_, nok := db.RoomTags[e.Tag]
 		if nok {
-			logging.Error.Fatalf(
+			base.Error.Fatalf(
 				"Room Tag (Shortcut) defined twice: %s\n",
-				n.Tag)
+				e.Tag)
 		}
-		dbp.RoomTags[n.Tag] = n.Id
-
-		if len(n.NotAvailable) == 0 {
-			// Avoid a null value
-			n.NotAvailable = []TimeSlot{}
+		db.RoomTags[e.Tag] = e.Id
+		// Copy to base db.
+		tsl := []base.TimeSlot{}
+		for _, ts := range e.NotAvailable {
+			tsl = append(tsl, base.TimeSlot(ts))
 		}
+		r := newdb.NewRoom(e.Id)
+		r.Tag = e.Tag
+		r.Name = e.Name
+		r.NotAvailable = tsl
+		db.RealRooms[e.Id] = r
 	}
 }
 
-// In the case of RoomGroups, cater for empty Tags/Shortcuts
-func (dbp *DbTopLevel) readRoomGroups() {
-	for i := 0; i < len(dbp.RoomGroups); i++ {
-		n := &dbp.RoomGroups[i]
-		if n.Tag != "" {
-			_, nok := dbp.RoomTags[n.Tag]
+// In the case of RoomGroups, cater for empty Tags (Shortcuts).
+func (db *DbTopLevel) readRoomGroups(newdb *base.DbTopLevel) {
+	db.RoomGroupMap = map[Ref]*base.RoomGroup{}
+	for _, e := range db.RoomGroups {
+		if e.Tag != "" {
+			_, nok := db.RoomTags[e.Tag]
 			if nok {
-				logging.Error.Fatalf(
+				base.Error.Fatalf(
 					"Room Tag (Shortcut) defined twice: %s\n",
-					n.Tag)
+					e.Tag)
 			}
-			dbp.RoomTags[n.Tag] = n.Id
+			db.RoomTags[e.Tag] = e.Id
 		}
+		// Copy to base db.
+		r := newdb.NewRoomGroup(e.Id)
+		r.Tag = e.Tag
+		r.Name = e.Name
+		r.Rooms = e.Rooms
+		db.RoomGroupMap[e.Id] = r
 	}
 }
 
 // Call this after all room types have been "read".
-func (dbp *DbTopLevel) checkRoomGroups() {
-	for i := 0; i < len(dbp.RoomGroups); i++ {
-		n := &dbp.RoomGroups[i]
+func (db *DbTopLevel) checkRoomGroups(newdb *base.DbTopLevel) {
+	for _, e := range newdb.RoomGroups {
 		// Collect the Ids and Tags of the component rooms.
 		taglist := []string{}
 		reflist := []Ref{}
-		for _, rref := range n.Rooms {
-			r, ok := dbp.Elements[rref]
+		for _, rref := range e.Rooms {
+			r, ok := db.RealRooms[rref]
 			if ok {
-				rm, ok := r.(*Room)
-				if ok {
-					reflist = append(reflist, rref)
-					taglist = append(taglist, rm.Tag)
-					continue
-				}
+				reflist = append(reflist, rref)
+				taglist = append(taglist, r.Tag)
+				continue
+
 			}
-			logging.Error.Printf(
+			base.Error.Printf(
 				"Invalid Room in RoomGroup %s:\n  %s\n",
-				n.Tag, rref)
+				e.Tag, rref)
 		}
-		if n.Tag == "" {
+		if e.Tag == "" {
 			// Make a new Tag
 			var tag string
 			i := 0
 			for {
 				i++
 				tag = "{" + strconv.Itoa(i) + "}"
-				_, nok := dbp.RoomTags[tag]
+				_, nok := db.RoomTags[tag]
 				if !nok {
 					break
 				}
 			}
-			n.Tag = tag
-			dbp.RoomTags[tag] = n.Id
+			e.Tag = tag
+			db.RoomTags[tag] = e.Id
 			// Also extend the name
-			if n.Name == "" {
-				n.Name = strings.Join(taglist, ",")
+			if e.Name == "" {
+				e.Name = strings.Join(taglist, ",")
 			} else {
-				n.Name = strings.Join(taglist, ",") + ":: " + n.Name
+				e.Name = strings.Join(taglist, ",") + ":: " + e.Name
 			}
-		} else if n.Name == "" {
-			n.Name = strings.Join(taglist, ",")
+		} else if e.Name == "" {
+			e.Name = strings.Join(taglist, ",")
 		}
-		n.Rooms = reflist
+		e.Rooms = reflist
 	}
 }
 
-// Here the Tags are not checked (there should always be one ...).
-func (dbp *DbTopLevel) readRoomChoiceGroups() {
-	for i := 0; i < len(dbp.RoomChoiceGroups); i++ {
-		n := &dbp.RoomChoiceGroups[i]
-		_, nok := dbp.RoomTags[n.Tag]
-		if nok {
-			logging.Error.Fatalf(
-				"Room Tag (Shortcut) defined twice: %s\n",
-				n.Tag)
-		}
-		// Check component rooms.
-		reflist := []Ref{}
-		for _, rref := range n.Rooms {
-			r, ok := dbp.Elements[rref]
-			if ok {
-				_, ok = r.(*Room)
-				if ok {
-					reflist = append(reflist, rref)
-					continue
-				}
-			}
-			logging.Error.Printf(
-				"Invalid Room in RoomChoiceGroup %s:\n  %s\n",
-				n.Tag, rref)
-		}
-		n.Rooms = reflist
-		dbp.RoomTags[n.Tag] = n.Id
-	}
-}
-
-func (dbp *DbTopLevel) makeRoomChoiceGroup(rooms []Ref) (Ref, string) {
+func (db *DbTopLevel) makeRoomChoiceGroup(
+	newdb *base.DbTopLevel,
+	rooms []Ref,
+) (Ref, string) {
 	erlist := []string{} // Error messages
 	// Collect the Ids and Tags of the component rooms.
 	taglist := []string{}
 	reflist := []Ref{}
 	for _, rref := range rooms {
-		r, ok := dbp.Elements[rref]
+		r, ok := db.RealRooms[rref]
 		if ok {
-			rm, ok := r.(*Room)
-			if ok {
-				reflist = append(reflist, rref)
-				taglist = append(taglist, rm.Tag)
-				continue
-			}
+			reflist = append(reflist, rref)
+			taglist = append(taglist, r.Tag)
+			continue
 		}
 		erlist = append(erlist,
 			fmt.Sprintf(
@@ -140,7 +121,7 @@ func (dbp *DbTopLevel) makeRoomChoiceGroup(rooms []Ref) (Ref, string) {
 	}
 	name := strings.Join(taglist, ",")
 	// Reuse existing Element when the rooms match.
-	id, ok := dbp.RoomChoiceNames[name]
+	id, ok := db.RoomChoiceNames[name]
 	if !ok {
 		// Make a new Tag
 		var tag string
@@ -148,24 +129,18 @@ func (dbp *DbTopLevel) makeRoomChoiceGroup(rooms []Ref) (Ref, string) {
 		for {
 			i++
 			tag = "[" + strconv.Itoa(i) + "]"
-			_, nok := dbp.RoomTags[tag]
+			_, nok := db.RoomTags[tag]
 			if !nok {
 				break
 			}
 		}
 		// Add new Element
-		id = dbp.NewId()
-		rcglen := len(dbp.RoomChoiceGroups)
-		dbp.RoomChoiceGroups = append(dbp.RoomChoiceGroups,
-			RoomChoiceGroup{
-				Id:    id,
-				Tag:   tag,
-				Name:  name,
-				Rooms: reflist,
-			})
-		dbp.AddElement(id, &dbp.RoomChoiceGroups[rcglen])
-		dbp.RoomTags[tag] = id
-		dbp.RoomChoiceNames[name] = id
+		r := newdb.NewRoomChoiceGroup("")
+		r.Tag = tag
+		r.Name = name
+		r.Rooms = reflist
+		db.RoomTags[tag] = id
+		db.RoomChoiceNames[name] = id
 	}
 	return id, strings.Join(erlist, "")
 }

@@ -1,8 +1,7 @@
 package fet
 
 import (
-	"W365toFET/logging"
-	"W365toFET/w365tt"
+	"W365toFET/base"
 	"encoding/xml"
 	"slices"
 )
@@ -49,8 +48,7 @@ func gatherCourseInfo(fetinfo *fetInfo) {
 	roomData := map[Ref][]Ref{} // course-Ref -> []room-Ref (any sort of "room")
 
 	// Collect Courses with Lessons.
-	for i := 0; i < len(db.Lessons); i++ {
-		l := &db.Lessons[i]
+	for _, l := range db.Lessons {
 		lcref := l.Course
 		cinfo, ok := fetinfo.courseInfo[lcref]
 		if ok {
@@ -64,23 +62,27 @@ func gatherCourseInfo(fetinfo *fetInfo) {
 		var groups []Ref
 		var teachers []Ref
 		var rooms []Ref
-		lessons := []*w365tt.Lesson{l}
+		lessons := []*base.Lesson{l}
 		actids := []int{}
 
 		c := db.Elements[lcref] // can be Course or SuperCourse
-		cnode, ok := c.(*w365tt.Course)
+		cnode, ok := c.(*base.Course)
 		if ok {
+			if slices.Contains(l.Flags, "SubstitutionService") {
+				groups = nil
+			} else {
+				groups = cnode.Groups
+			}
 			subject = cnode.Subject
-			groups = cnode.Groups
 			teachers = cnode.Teachers
 			rooms = []Ref{}
 			if cnode.Room != "" {
 				rooms = append(rooms, cnode.Room)
 			}
 		} else {
-			spc, ok := c.(*w365tt.SuperCourse)
+			spc, ok := c.(*base.SuperCourse)
 			if !ok {
-				logging.Error.Fatalf(
+				base.Error.Fatalf(
 					"Invalid Course in Lesson %s:\n  %s\n",
 					l.Id, lcref)
 			}
@@ -103,39 +105,40 @@ func gatherCourseInfo(fetinfo *fetInfo) {
 
 	// Now find the SubCourses, adding their groups, teachers and rooms.
 	for _, sbc := range db.SubCourses {
-		spc := sbc.SuperCourse
-		// Only fill SuperCourses which have Lessons
-		cinfo, ok := fetinfo.courseInfo[spc]
-		if ok {
-			fetinfo.superSubs[spc] = append(fetinfo.superSubs[spc], sbc.Id)
+		for _, spc := range sbc.SuperCourses {
+			// Only fill SuperCourses which have Lessons
+			cinfo, ok := fetinfo.courseInfo[spc]
+			if ok {
+				fetinfo.superSubs[spc] = append(fetinfo.superSubs[spc], sbc.Id)
 
-			// Add groups
-			if len(sbc.Groups) != 0 {
-				cglist := append(cinfo.groups, sbc.Groups...)
-				slices.Sort(cglist)
-				cglist = slices.Compact(cglist)
-				cinfo.groups = make([]Ref, len(cglist))
-				copy(cinfo.groups, cglist)
+				// Add groups
+				if len(sbc.Groups) != 0 {
+					cglist := append(cinfo.groups, sbc.Groups...)
+					slices.Sort(cglist)
+					cglist = slices.Compact(cglist)
+					cinfo.groups = make([]Ref, len(cglist))
+					copy(cinfo.groups, cglist)
+				}
+
+				// Add teachers
+				if len(sbc.Teachers) != 0 {
+					ctlist := append(cinfo.teachers, sbc.Teachers...)
+					slices.Sort(ctlist)
+					ctlist = slices.Compact(ctlist)
+					cinfo.teachers = make([]Ref, len(ctlist))
+					copy(cinfo.teachers, ctlist)
+				}
+
+				// Add rooms
+				if sbc.Room != "" {
+					crlist := append(roomData[spc], sbc.Room)
+					slices.Sort(crlist)
+					crlist = slices.Compact(crlist)
+					roomData[spc] = crlist
+				}
+
+				fetinfo.courseInfo[spc] = cinfo
 			}
-
-			// Add teachers
-			if len(sbc.Teachers) != 0 {
-				ctlist := append(cinfo.teachers, sbc.Teachers...)
-				slices.Sort(ctlist)
-				ctlist = slices.Compact(ctlist)
-				cinfo.teachers = make([]Ref, len(ctlist))
-				copy(cinfo.teachers, ctlist)
-			}
-
-			// Add rooms
-			if sbc.Room != "" {
-				crlist := append(roomData[spc], sbc.Room)
-				slices.Sort(crlist)
-				crlist = slices.Compact(crlist)
-				roomData[spc] = crlist
-			}
-
-			fetinfo.courseInfo[spc] = cinfo
 		}
 	}
 
@@ -151,17 +154,17 @@ func gatherCourseInfo(fetinfo *fetInfo) {
 		roomChoices := [][]Ref{}
 		for _, rref := range crlist {
 			rx := fetinfo.db.Elements[rref]
-			_, ok := rx.(*w365tt.Room)
+			_, ok := rx.(*base.Room)
 			if ok {
 				rooms = append(rooms, rref)
 			} else {
-				rg, ok := rx.(*w365tt.RoomGroup)
+				rg, ok := rx.(*base.RoomGroup)
 				if ok {
 					rooms = append(rooms, rg.Rooms...)
 				} else {
-					rc, ok := rx.(*w365tt.RoomChoiceGroup)
+					rc, ok := rx.(*base.RoomChoiceGroup)
 					if !ok {
-						logging.Bug.Fatalf(
+						base.Bug.Fatalf(
 							"Invalid room in course %s:\n  %s\n",
 							cref, rref)
 					}
@@ -326,7 +329,7 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 				n, ok := fetinfo.fetVirtualRoomN[rooms[0]]
 				if ok {
 					if len(rlist) != n {
-						logging.Error.Printf(
+						base.Error.Printf(
 							"Lesson %s:\n  Number of Rooms doesn't"+
 								" match virtual room (%s) in course. \n",
 							l.Id, rooms[0])
@@ -349,7 +352,7 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 			}
 
 			if len(rlist) != 1 {
-				logging.Error.Printf(
+				base.Error.Printf(
 					"Course room is not virtual, but Lesson has"+
 						" more than one Room:\n  %s", l.Id)
 				continue

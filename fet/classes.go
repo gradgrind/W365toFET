@@ -1,7 +1,7 @@
 package fet
 
 import (
-	"W365toFET/logging"
+	"W365toFET/base"
 	"encoding/xml"
 	"strings"
 )
@@ -65,7 +65,7 @@ func getClasses(fetinfo *fetInfo) {
 		}
 		divs, ok := fetinfo.classDivisions[cl.Id]
 		if !ok {
-			logging.Bug.Fatalf(
+			base.Bug.Fatalf(
 				"Class %s has no entry in fetinfo.classDivisions\n",
 				cname)
 		}
@@ -122,7 +122,7 @@ func getClasses(fetinfo *fetInfo) {
 		for _, na := range cl.NotAvailable {
 			if na.Day != day {
 				if na.Day < day {
-					logging.Error.Fatalf(
+					base.Error.Fatalf(
 						"Class %s has unordered NotAvailable times.\n",
 						cname)
 				}
@@ -182,7 +182,7 @@ func getClasses(fetinfo *fetInfo) {
 			mlpd0 := cl.CONSTRAINTS["MinLessonsPerDay"]
 			mlpd, err := strconv.Atoi(mlpd0)
 			if err != nil {
-				logging.Error.Fatalf(
+				base.Error.Fatalf(
 					"INVALID MinLessonsPerDay: %s // %v\n", mlpd0, err)
 			}
 			minlessons = append(minlessons, minLessonsPerDay{

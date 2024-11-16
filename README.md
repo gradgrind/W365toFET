@@ -19,3 +19,5 @@ Bis auf die „Constraint“-Elemente werden alle Elemente in `docs/stundenplans
 In dieser Version haben Lehrer und Klassen den gleichen Ansatz für Mittagspausen: Eine der Mittagsstunden muss frei sein.
 
 Es wurde bisher nur wenig getestet!
+
+In dieser Version werden die Daten in eine etwas andere interne Struktur gebracht – W365-unabhängig – bevor die übersetzt werden, siehe „base-package“.

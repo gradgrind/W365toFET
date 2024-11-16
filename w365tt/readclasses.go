@@ -1,91 +1,96 @@
 package w365tt
 
 import (
-	"W365toFET/logging"
+	"W365toFET/base"
+	"strconv"
 )
 
-func (dbp *DbTopLevel) readClasses() {
+func (db *DbTopLevel) readClasses(newdb *base.DbTopLevel) {
 	// Every Class-Group must be within one – and only one – Class-Division.
 	// To handle that, the Group references are first gathered here. Then,
 	// when a Group is "used" it is flagged. At the end, any unused Groups
 	// can be found and reported.
 	pregroups := map[Ref]bool{}
-	for _, n := range dbp.Groups {
+	for _, n := range db.Groups {
 		pregroups[n.Id] = false
 	}
 
-	for i := 0; i < len(dbp.Classes); i++ {
-		n := &dbp.Classes[i]
-
-		if n.NotAvailable == nil {
-			// Avoid a null value
-			n.NotAvailable = []TimeSlot{}
-		}
-		if n.MinLessonsPerDay == nil {
-			n.MinLessonsPerDay = -1.0
-		}
-		if n.MaxLessonsPerDay == nil {
-			n.MaxLessonsPerDay = -1.0
-		}
-		if n.MaxGapsPerDay == nil {
-			n.MaxGapsPerDay = -1.0
-		}
-		if n.MaxGapsPerWeek == nil {
-			n.MaxGapsPerWeek = -1.0
-		}
-		if n.MaxAfternoons == nil {
-			n.MaxAfternoons = -1.0
-		} else if n.MaxAfternoons == 0.0 {
-			n.MaxAfternoons = -1.0
-			dbp.handleZeroAfternoons(&n.NotAvailable)
-		}
-
-		// Handle special "classes" for stand-ins
-		if n.Year == 0 {
-			// Pending clarification of what exactly this should do, disregard
-			// any divisions.
-
-			n.Tag = "" // no students
-			//TODO
-
-			//
-
-			continue
+	db.GroupRefMap = map[base.Ref]base.Ref{}
+	for _, e := range db.Classes {
+		// MaxAfternoons = 0 has a special meaning (all blocked)
+		amax := e.MaxAfternoons
+		tsl := db.handleZeroAfternoons(e.NotAvailable, amax)
+		if amax == 0 {
+			amax = -1
 		}
 
 		// Get the divisions and flag their Groups.
-		for i, wdiv := range n.Divisions {
+		divs := []base.Division{}
+		for i, wdiv := range e.Divisions {
+			dname := wdiv.Name
+			if dname == "" {
+				dname = "#div" + strconv.Itoa(i+1)
+			}
 			glist := []Ref{}
 			for _, g := range wdiv.Groups {
 				// get Tag
 				flag, ok := pregroups[g]
 				if ok {
 					if flag {
-						logging.Error.Fatalf("Group Defined in"+
+						base.Error.Fatalf("Group Defined in"+
 							" multiple Divisions:\n  -- %s\n", g)
 					}
 					// Flag Group and add to division's group list
 					pregroups[g] = true
 					glist = append(glist, g)
 				} else {
-					logging.Error.Printf("Unknown Group in Class %s,"+
-						" Division %s:\n  %s\n", n.Tag, wdiv.Name, g)
+					base.Error.Printf("Unknown Group in Class %s,"+
+						" Division %s:\n  %s\n", e.Tag, wdiv.Name, g)
 				}
 			}
 			// Accept Divisions which have too few Groups at this stage.
 			if len(glist) < 2 {
-				logging.Warning.Printf("In Class %s,"+
+				base.Warning.Printf("In Class %s,"+
 					" not enough valid Groups (>1) in Division %s\n",
-					n.Tag, wdiv.Name)
+					e.Tag, wdiv.Name)
 			}
-			n.Divisions[i].Groups = glist
+			divs = append(divs, base.Division{
+				Name:   dname,
+				Groups: glist,
+			})
 		}
+
+		// Add a Group for the whole class (not provided by W365).
+		classGroup := newdb.NewGroup("")
+		classGroup.Tag = ""
+		db.GroupRefMap[e.Id] = classGroup.Id
+
+		n := newdb.NewClass(e.Id)
+		n.Tag = e.Tag
+		n.Year = e.Year
+		n.Letter = e.Letter
+		n.Name = e.Name
+		n.NotAvailable = tsl
+		n.Divisions = divs
+		n.MinLessonsPerDay = e.MinLessonsPerDay
+		n.MaxLessonsPerDay = e.MaxLessonsPerDay
+		n.MaxGapsPerDay = e.MaxGapsPerDay
+		n.MaxGapsPerWeek = e.MaxGapsPerWeek
+		n.MaxAfternoons = e.MaxAfternoons
+		n.LunchBreak = e.LunchBreak
+		n.ForceFirstHour = e.ForceFirstHour
+		n.ClassGroup = classGroup.Id
 	}
-	for g, used := range pregroups {
-		if !used {
-			logging.Error.Printf("Group not in Division, removing:\n  %s,", g)
-			delete(dbp.Elements, g)
-			//TODO: Also remove from Groups list?
+
+	// Copy Groups.
+	for _, n := range db.Groups {
+		if pregroups[n.Id] {
+			g := newdb.NewGroup(n.Id)
+			g.Tag = n.Tag
+			db.GroupRefMap[n.Id] = n.Id // mapping to itself is correct!
+		} else {
+			base.Error.Printf("Group not in Division, removing:\n  %s,",
+				n.Id)
 		}
 	}
 }
