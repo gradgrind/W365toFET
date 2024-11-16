@@ -16,6 +16,8 @@ Ausgegeben wird eine FET-Datei im selben Ordner. Auch eine Logdatei (mit Fehlerm
 
 Bis auf die „Constraint“-Elemente werden alle Elemente in `docs/stundenplanschnittstelle.md` in einigermaßen entsprechende FET-Strukturen übertragen.
 
+In dieser Version haben Lehrer und Klassen den gleichen Ansatz für Mittagspausen: Eine der Mittagsstunden muss frei sein.
+
 Es wurde bisher nur wenig getestet!
 
 In dieser Version werden die Daten in eine etwas andere interne Struktur gebracht – W365-unabhängig – bevor die übersetzt werden, siehe „base-package“.

@@ -65,7 +65,7 @@ func main() {
 	}
 	base.Message.Printf("FET file written to: %s\n", fetfile)
 
-	//TODO: Write Id-map file.
+	// Write Id-map file.
 	mapfile := stempath + ".map"
 	fm, err := os.Create(mapfile)
 	if err != nil {
