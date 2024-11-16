@@ -13,9 +13,15 @@ var (
 )
 
 func OpenLog(logpath string) {
-	file, err := os.OpenFile(logpath, os.O_CREATE|os.O_WRONLY, 0666)
-	if err != nil {
-		log.Fatal(err)
+	var file *os.File
+	if logpath == "" {
+		file = os.Stderr
+	} else {
+		var err error
+		file, err = os.OpenFile(logpath, os.O_CREATE|os.O_WRONLY, 0666)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	Message = log.New(file, "*INFO* ", log.Lshortfile)

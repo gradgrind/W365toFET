@@ -11,73 +11,65 @@ import (
 	"testing"
 )
 
-func getJSONfile() string {
-	/*
-		const defaultPath = "../_testdata/*.json"
-		f365, err := zenity.SelectFile(
-			zenity.Filename(defaultPath),
-			zenity.FileFilter{
-				Name:     "Waldorf-365 TT-export",
-				Patterns: []string{"*.json"},
-				CaseFold: false,
-			})
-		if err != nil {
-			log.Fatal(err)
-		}
-	*/
-
-	//f365 := "../_testdata/fms1_w365.json"
-	f365 := "../_testdata/Demo1_w365.json"
-	return f365
+var inputfiles = []string{
+	"../_testdata/test1_w365.json",
+	"../_testdata/test2_w365.json",
+	"../_testdata/test3_w365.json",
 }
 
 func TestFromJSON(t *testing.T) {
 	// Test reading a _w365.json file without any processing.
-	fjson := getJSONfile()
-	fmt.Printf("\n ***** Reading %s *****\n", fjson)
+	for _, fjson := range inputfiles {
+		if _, err := os.Stat(fjson); err != nil {
+			break
+		}
 
-	stempath := strings.TrimSuffix(fjson, filepath.Ext(fjson))
-	logpath := stempath + ".log"
-	base.OpenLog(logpath)
+		//stempath := strings.TrimSuffix(fjson, filepath.Ext(fjson))
+		//logpath := stempath + ".log"
+		base.OpenLog("")
 
-	data := ReadJSON(fjson)
+		data := ReadJSON(fjson)
 
-	//fmt.Printf("JSON struct: %#v\n", data)
+		//fmt.Printf("JSON struct: %#v\n", data)
 
-	// Save as JSON
-	f := strings.TrimSuffix(fjson, filepath.Ext(fjson)) + "_2.json"
-	j, err := json.MarshalIndent(data, "", "  ")
-	if err != nil {
-		log.Fatal(err)
+		// Save as JSON
+		f := strings.TrimSuffix(fjson, filepath.Ext(fjson)) + "_2.json"
+		j, err := json.MarshalIndent(data, "", "  ")
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := os.WriteFile(f, j, 0666); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("\n ***** JSON written to %s *****\n", f)
 	}
-	if err := os.WriteFile(f, j, 0666); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("\n ***** JSON written to %s *****\n", f)
 }
 
 func TestToDb(t *testing.T) {
 	// Test reading a _w365.json file including initial processing.
-	fjson := getJSONfile()
-	fmt.Printf("\n ***** Reading %s *****\n", fjson)
+	for _, fjson := range inputfiles {
+		if _, err := os.Stat(fjson); err != nil {
+			break
+		}
 
-	stempath := strings.TrimSuffix(fjson, filepath.Ext(fjson))
-	logpath := stempath + ".log"
-	base.OpenLog(logpath)
+		stempath := strings.TrimSuffix(fjson, filepath.Ext(fjson))
+		//logpath := stempath + ".log"
+		base.OpenLog("")
 
-	db := base.NewDb()
-	LoadJSON(db, fjson)
-	db.PrepareDb()
+		db := base.NewDb()
+		LoadJSON(db, fjson)
+		db.PrepareDb()
 
-	// Save as JSON
-	stempath = strings.TrimSuffix(stempath, "_w365")
-	f := stempath + "_db.json"
-	j, err := json.MarshalIndent(db, "", "  ")
-	if err != nil {
-		log.Fatal(err)
+		// Save as JSON
+		stempath = strings.TrimSuffix(stempath, "_w365")
+		f := stempath + "_db.json"
+		j, err := json.MarshalIndent(db, "", "  ")
+		if err != nil {
+			log.Fatal(err)
+		}
+		if err := os.WriteFile(f, j, 0666); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Printf("\n ***** JSON written to %s *****\n", f)
 	}
-	if err := os.WriteFile(f, j, 0666); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("\n ***** JSON written to %s *****\n", f)
 }

@@ -79,19 +79,19 @@ func (db *DbTopLevel) readSuperCourses(newdb *base.DbTopLevel) {
 				room := db.getCourseRoom(newdb, e.PreferredRooms, e.Id)
 				groups := db.getCourseGroups(e.Groups, e.Id)
 				teachers := db.getCourseTeachers(e.Teachers, e.Id)
-				n := newdb.NewSubCourse(e.Id)
+				// Use a new Id for the SubCourse because it can also be
+				// the Id of a Course.
+				n := newdb.NewSubCourse("$$" + e.Id)
 				n.SuperCourses = []base.Ref{spc.Id}
 				n.Subject = subject
 				n.Groups = groups
 				n.Teachers = teachers
 				n.Room = room
-				db.CourseMap[e.Id] = true
+				sbcMap[e.Id] = n
 			}
 		}
 
 		// Now add the SuperCourse.
-
-		//TODO: failing
 		subject, ok := epochPlanSubjects[spc.EpochPlan]
 		if !ok {
 			base.Error.Fatalf("Unknown EpochPlan in SuperCourse %s:\n  %s\n",
@@ -99,6 +99,7 @@ func (db *DbTopLevel) readSuperCourses(newdb *base.DbTopLevel) {
 		}
 		n := newdb.NewSuperCourse(spc.Id)
 		n.Subject = subject
+		db.CourseMap[n.Id] = true
 	}
 }
 
