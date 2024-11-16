@@ -177,9 +177,8 @@ type LessonCourse interface {
 	AddLesson(Ref)
 }
 
-// TODO: Constraints could alternatively be implemented as map[string]any.
 type Constraint interface {
-	Id() Ref
+	CType() string
 }
 
 type DbTopLevel struct {

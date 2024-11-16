@@ -186,20 +186,20 @@ type EpochPlan struct {
 }
 
 type DbTopLevel struct {
-	Info         Info           `json:"w365TT"`
-	Days         []*Day         `json:"days"`
-	Hours        []*Hour        `json:"hours"`
-	Teachers     []*Teacher     `json:"teachers"`
-	Subjects     []*Subject     `json:"subjects"`
-	Rooms        []*Room        `json:"rooms"`
-	RoomGroups   []*RoomGroup   `json:"roomGroups"`
-	Classes      []*Class       `json:"classes"`
-	Groups       []*Group       `json:"groups"`
-	Courses      []*Course      `json:"courses"`
-	SuperCourses []*SuperCourse `json:"superCourses"`
-	Lessons      []*Lesson      `json:"lessons"`
-	EpochPlans   []*EpochPlan   `json:"epochPlans"`
-	Constraints  map[string]any `json:"constraints"`
+	Info         Info             `json:"w365TT"`
+	Days         []*Day           `json:"days"`
+	Hours        []*Hour          `json:"hours"`
+	Teachers     []*Teacher       `json:"teachers"`
+	Subjects     []*Subject       `json:"subjects"`
+	Rooms        []*Room          `json:"rooms"`
+	RoomGroups   []*RoomGroup     `json:"roomGroups"`
+	Classes      []*Class         `json:"classes"`
+	Groups       []*Group         `json:"groups"`
+	Courses      []*Course        `json:"courses"`
+	SuperCourses []*SuperCourse   `json:"superCourses"`
+	Lessons      []*Lesson        `json:"lessons"`
+	EpochPlans   []*EpochPlan     `json:"epochPlans"`
+	Constraints  []map[string]any `json:"constraints"`
 
 	// These fields do not belong in the JSON object.
 	RealRooms       map[Ref]*base.Room      `json:"-"`
