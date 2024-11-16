@@ -2,7 +2,6 @@ package fet
 
 import (
 	"W365toFET/base"
-	"W365toFET/w365tt"
 	"encoding/xml"
 	"slices"
 )
@@ -63,11 +62,11 @@ func gatherCourseInfo(fetinfo *fetInfo) {
 		var groups []Ref
 		var teachers []Ref
 		var rooms []Ref
-		lessons := []*w365tt.Lesson{l}
+		lessons := []*base.Lesson{l}
 		actids := []int{}
 
 		c := db.Elements[lcref] // can be Course or SuperCourse
-		cnode, ok := c.(*w365tt.Course)
+		cnode, ok := c.(*base.Course)
 		if ok {
 			subject = cnode.Subject
 			groups = cnode.Groups
@@ -77,7 +76,7 @@ func gatherCourseInfo(fetinfo *fetInfo) {
 				rooms = append(rooms, cnode.Room)
 			}
 		} else {
-			spc, ok := c.(*w365tt.SuperCourse)
+			spc, ok := c.(*base.SuperCourse)
 			if !ok {
 				base.Error.Fatalf(
 					"Invalid Course in Lesson %s:\n  %s\n",
@@ -151,15 +150,15 @@ func gatherCourseInfo(fetinfo *fetInfo) {
 		roomChoices := [][]Ref{}
 		for _, rref := range crlist {
 			rx := fetinfo.db.Elements[rref]
-			_, ok := rx.(*w365tt.Room)
+			_, ok := rx.(*base.Room)
 			if ok {
 				rooms = append(rooms, rref)
 			} else {
-				rg, ok := rx.(*w365tt.RoomGroup)
+				rg, ok := rx.(*base.RoomGroup)
 				if ok {
 					rooms = append(rooms, rg.Rooms...)
 				} else {
-					rc, ok := rx.(*w365tt.RoomChoiceGroup)
+					rc, ok := rx.(*base.RoomChoiceGroup)
 					if !ok {
 						base.Bug.Fatalf(
 							"Invalid room in course %s:\n  %s\n",

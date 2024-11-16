@@ -3,7 +3,6 @@ package fet
 
 import (
 	"W365toFET/base"
-	"W365toFET/w365tt"
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
@@ -11,7 +10,7 @@ import (
 	"strings"
 )
 
-type Ref = w365tt.Ref
+type Ref = base.Ref
 
 const CLASS_GROUP_SEP = "."
 const ATOMIC_GROUP_SEP1 = "#"
@@ -62,17 +61,17 @@ type courseInfo struct {
 	groups     []Ref
 	teachers   []Ref
 	room       virtualRoom
-	lessons    []*w365tt.Lesson
+	lessons    []*base.Lesson
 	activities []int
 }
 
 type idMap struct {
 	activityId int
-	w365Id     w365tt.Ref
+	baseId     Ref
 }
 
 type fetInfo struct {
-	db            *w365tt.DbTopLevel
+	db            *base.DbTopLevel
 	ref2fet       map[Ref]string
 	ref2grouponly map[Ref]string
 	days          []string
@@ -141,7 +140,7 @@ type basicSpaceConstraint struct {
 	Active            bool
 }
 
-func MakeFetFile(dbdata *w365tt.DbTopLevel) (string, string) {
+func MakeFetFile(dbdata *base.DbTopLevel) (string, string) {
 	//fmt.Printf("\n????? %+v\n", dbdata.Info)
 
 	// Build ref-index -> fet-key mapping
@@ -218,7 +217,7 @@ func MakeFetFile(dbdata *w365tt.DbTopLevel) (string, string) {
 	idmlines := []string{}
 	for _, idm := range lessonIdMap {
 		idmlines = append(idmlines,
-			strconv.Itoa(idm.activityId)+":"+string(idm.w365Id))
+			strconv.Itoa(idm.activityId)+":"+string(idm.baseId))
 	}
 	lidmap := strings.Join(idmlines, "\n")
 
