@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -72,8 +73,9 @@ func weight2fet(w int) string {
 	if w == 100 {
 		return "100"
 	}
-	//wfet := 100.0 - 0.1*math.Pow(1.065, float64(100-w))
-	wfet := 99.6 - 50.0/float64(w)
+	wf := float64(w)
+	n := wf + math.Pow(2, wf/12)
+	wfet := 100.0 - 100.0/n
 	return strconv.FormatFloat(wfet, 'f', 3, 64)
 }
 
@@ -172,12 +174,6 @@ type basicSpaceConstraint struct {
 }
 
 func MakeFetFile(dbdata *base.DbTopLevel) (string, string) {
-	//fmt.Printf("\n????? %+v\n", dbdata.Info)
-
-	for i := 0; i <= 100; i++ {
-		fmt.Printf("%02d : %s\n", i, weight2fet(i))
-	}
-
 	// Build ref-index -> fet-key mapping
 	ref2fet := map[Ref]string{}
 	for _, r := range dbdata.Subjects {

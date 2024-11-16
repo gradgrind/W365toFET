@@ -26,7 +26,7 @@ type preferredTime struct {
 
 type lessonEndsDay struct {
 	XMLName           xml.Name `xml:"ConstraintActivityEndsStudentsDay"`
-	Weight_Percentage int
+	Weight_Percentage string
 	Activity_Id       int
 	Active            bool
 }
@@ -45,7 +45,7 @@ func getExtraConstraints(fetinfo *fetInfo) {
 				tclist.ConstraintActivityEndsStudentsDay = append(
 					tclist.ConstraintActivityEndsStudentsDay,
 					lessonEndsDay{
-						Weight_Percentage: 100, //TODO: Transform cn.Weight,
+						Weight_Percentage: weight2fet(cn.Weight),
 						Activity_Id:       aid,
 						Active:            true,
 					})
