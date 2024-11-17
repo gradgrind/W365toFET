@@ -1,6 +1,7 @@
 package readxml
 
 import (
+	"W365toFET/base"
 	"fmt"
 	"slices"
 )
@@ -58,4 +59,26 @@ func (cdata *conversionData) readTeachers() {
 		e.MaxAfternoons = maxpm
 		e.LunchBreak = lb
 	}
+}
+
+func (cdata *conversionData) getCourseTeachers(c *Course) []Ref {
+	//
+	// Deal with the Groups field of a Course – in W365 the entries can
+	// be either a Group or a Class. For the base db they must all be
+	// base.Groups.
+	//
+	tlist := []Ref{}
+	for _, ref := range splitRefList(c.Groups) {
+		s, ok := cdata.db.Elements[ref]
+		if ok {
+			_, ok := s.(*base.Teacher)
+			if ok {
+				tlist = append(tlist, ref)
+				continue
+			}
+		}
+		base.Error.Fatalf("In Course %s:\n  -- Invalid Teacher: %s\n",
+			c.Id, ref)
+	}
+	return tlist
 }

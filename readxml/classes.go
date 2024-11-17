@@ -182,3 +182,30 @@ func (cdata *conversionData) readClasses() {
 		db.GroupRefMap[n.Id] = n.Id // mapping to itself is correct!
 	}
 }
+
+func (cdata *conversionData) getCourseGroups(c *Course) []Ref {
+	//
+	// Deal with the Groups field of a Course – in W365 the entries can
+	// be either a Group or a Class. For the base db they must all be
+	// base.Groups.
+	//
+	glist := []Ref{}
+	for _, ref := range splitRefList(c.Groups) {
+		s, ok := cdata.db.Elements[ref]
+		if ok {
+			_, ok := s.(*base.Group)
+			if ok {
+				glist = append(glist, ref)
+				continue
+			}
+			c, ok := s.(*base.Class)
+			if ok {
+				glist = append(glist, c.ClassGroup)
+				continue
+			}
+		}
+		base.Error.Fatalf("In Course %s:\n  -- Invalid Course Group: %s\n",
+			c.Id, ref)
+	}
+	return glist
+}

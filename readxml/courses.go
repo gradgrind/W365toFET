@@ -9,11 +9,11 @@ import (
 )
 
 type tmpCourse struct {
-	Id             Ref
-	Subjects       []Ref
-	Groups         []Ref
-	Teachers       []Ref
-	PreferredRooms []Ref
+	Id       Ref
+	Subject  Ref
+	Groups   []Ref
+	Teachers []Ref
+	Room     Ref
 }
 
 type xCourse struct {
@@ -60,6 +60,11 @@ func (cdata *conversionData) readCourses() map[Ref][]int {
 			}
 		} // else no lessons
 
+		subject := cdata.getCourseSubject(n)
+		groups := cdata.getCourseGroups(n)
+		teachers := cdata.getCourseTeachers(n)
+		room := cdata.getCourseRoom(n)
+
 		// Handle Block tags defined as Categories
 		blockTag := cdata.getBlockTag(n.Categories, n.Id)
 		if blockTag != "" {
@@ -71,11 +76,11 @@ func (cdata *conversionData) readCourses() map[Ref][]int {
 			// be ignored.
 			//
 			tcourse := &tmpCourse{
-				Id:             n.Id,
-				Subjects:       cdata.getCourseSubjects(n),
-				Groups:         grps,
-				Teachers:       tchs,
-				PreferredRooms: rms,
+				Id:       n.Id,
+				Subject:  subject,
+				Groups:   groups,
+				Teachers: teachers,
+				Room:     room,
 			}
 			if len(llen) == 0 {
 				// A SubCourse.
@@ -110,29 +115,6 @@ func (cdata *conversionData) readCourses() map[Ref][]int {
 	//TODO??
 
 	return courseLessons
-}
-
-func (cdata *conversionData) getCourseSubject(c *Course) Ref {
-	if c.Subjects == "" {
-		base.Error.Fatalf("In Course %s:\n  -- No Subject\n", c.Id)
-	}
-	slist := []Ref{}
-	for _, ref := range splitRefList(c.Subjects) {
-		s, ok := cdata.db.Elements[ref]
-		if ok {
-			_, ok := s.(*base.Subject)
-			if ok {
-				slist = append(slist, ref)
-				continue
-			}
-		}
-		base.Error.Fatalf("In Course %s:\n  -- Invalid Subject: %s\n",
-			c.Id, ref)
-	}
-	if len(slist) == 1 {
-		return slist[0]
-	}
-
 }
 
 // TODO: See courseSubject in subjects.go!

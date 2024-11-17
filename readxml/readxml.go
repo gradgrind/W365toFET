@@ -16,22 +16,26 @@ const SCHEDULE_NAME = "Vorlage"
 type Ref = base.Ref // Element reference
 
 type conversionData struct {
-	db          *base.DbTopLevel
-	xmlin       *Scenario
-	categories  map[Ref]*Category
-	absences    map[Ref]base.TimeSlot
-	divisions   map[Ref]*Division
-	subjectTags map[string]Ref
+	db              *base.DbTopLevel
+	xmlin           *Scenario
+	categories      map[Ref]*Category
+	absences        map[Ref]base.TimeSlot
+	divisions       map[Ref]*Division
+	subjectTags     map[string]Ref
+	roomChoiceNames map[string]Ref
+	roomTags        map[string]bool
 }
 
 func newConversionData(xmlin *Scenario) *conversionData {
 	return &conversionData{
-		db:          base.NewDb(),
-		xmlin:       xmlin,
-		categories:  map[Ref]*Category{},
-		absences:    map[Ref]base.TimeSlot{},
-		divisions:   map[Ref]*Division{},
-		subjectTags: map[string]Ref{},
+		db:              base.NewDb(),
+		xmlin:           xmlin,
+		categories:      map[Ref]*Category{},
+		absences:        map[Ref]base.TimeSlot{},
+		divisions:       map[Ref]*Division{},
+		subjectTags:     map[string]Ref{},
+		roomChoiceNames: map[string]Ref{},
+		roomTags:        map[string]bool{},
 	}
 }
 

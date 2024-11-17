@@ -22,10 +22,7 @@ func (cdata *conversionData) readSubjects() {
 	}
 }
 
-func courseSubject(
-	cdata *conversionData,
-	srefs []Ref,
-) Ref {
+func (cdata *conversionData) getCourseSubject(c *Course) Ref {
 	//
 	// Deal with the Subjects field of a Course – W365 allows multiple
 	// subjects.
@@ -34,43 +31,48 @@ func courseSubject(
 	// to a single "composite" subject, using all the subject tags.
 	// Repeated use of the same subject list will reuse the created subject.
 	//
-	db := cdata.db
-
-	msg := "Course %s:\n  Not a Subject: %s\n"
-	var subject Ref
-	if len(srefs) == 1 {
-		wsid := srefs[0]
-		_, ok := cdata.subjectMap[wsid]
-		if !ok {
-			base.Error.Fatalf(msg, courseId, wsid)
-		}
-		subject = wsid
-	} else if len(srefs) > 1 {
-		// Make a subject name
-		sklist := []string{}
-		for _, wsid := range srefs {
-			// Need Tag/Shortcut field
-			s, ok := db.subjectMap[wsid]
+	if c.Subjects == "" {
+		base.Error.Fatalf("In Course %s:\n  -- No Subject\n", c.Id)
+	}
+	slist := []Ref{}
+	for _, ref := range splitRefList(c.Subjects) {
+		s, ok := cdata.db.Elements[ref]
+		if ok {
+			_, ok := s.(*base.Subject)
 			if ok {
-				sklist = append(sklist, s.Tag)
-			} else {
-				base.Error.Fatalf(msg, courseId, wsid)
+				slist = append(slist, ref)
+				continue
 			}
 		}
-		sktag := strings.Join(sklist, ",")
-		wsid, ok := cdata.subjectTags[sktag]
-		if ok {
-			// The name has already been used.
-			subject = wsid
-		} else {
-			// Need a new Subject.
-			subject = cdata.makeNewSubject(sktag, "Compound Subject")
-			cdata.subjectTags[sktag] = subject
-		}
-	} else {
-		base.Error.Fatalf("Course/SubCourse has no subject: %s\n", courseId)
+		base.Error.Fatalf("In Course %s:\n  -- Invalid Subject: %s\n",
+			c.Id, ref)
 	}
-	return subject
+	if len(slist) == 1 {
+		return slist[0]
+	}
+	sklist := []string{}
+	for _, sref := range slist {
+		// Need Tag/Shortcut field
+		s, ok := cdata.db.Elements[sref]
+		if ok {
+			e, ok := s.(*base.Subject)
+			if ok {
+				sklist = append(sklist, e.Tag)
+				continue
+			}
+		}
+		base.Error.Fatalf("In Course %s:\n  -- Invalid Subject: %s\n",
+			c.Id, sref)
+	}
+	sktag := strings.Join(sklist, ",")
+	sref, ok := cdata.subjectTags[sktag]
+	if ok {
+		// The name has already been used.
+		return sref
+	} // Need a new Subject.
+	sref = cdata.makeNewSubject(sktag, "Compound Subject")
+	cdata.subjectTags[sktag] = sref
+	return sref
 }
 
 func (cdata *conversionData) makeNewSubject(
