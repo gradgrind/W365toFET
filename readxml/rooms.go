@@ -44,7 +44,7 @@ func (cdata *conversionData) checkRealRooms(
 	msg string,
 ) []Ref {
 	result := []Ref{}
-	for _, ref := range SplitRefList(reflist) {
+	for _, ref := range splitRefList(reflist) {
 		e, ok := cdata.db.Elements[ref]
 		if ok {
 			_, ok = e.(*base.Room)

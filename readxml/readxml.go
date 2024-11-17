@@ -79,8 +79,8 @@ func ConvertToDb(f365xml string) *base.DbTopLevel {
 	cdata.readDays()
 	cdata.readHours()
 	cdata.readSubjects()
-	readRooms(db, id2node, indata.Rooms)
-	readTeachers(db, id2node, indata.Teachers)
+	cdata.readRooms()
+	cdata.readTeachers()
 	readGroups(db, id2node, indata.Groups)
 	for _, n := range indata.Divisions {
 		id2node[n.IdStr()] = n
@@ -125,7 +125,7 @@ func (cdata *conversionData) getAbsences(
 	msg string,
 ) []base.TimeSlot {
 	result := []base.TimeSlot{}
-	for _, aref := range SplitRefList(reflist) {
+	for _, aref := range splitRefList(reflist) {
 		ts, ok := cdata.absences[aref]
 		if !ok {
 			base.Error.Fatalf("%s:\n  -- Invalid Absence: %s\n", msg, aref)
@@ -211,67 +211,6 @@ func get_time(t string) string {
 		return ""
 	}
 	return fmt.Sprintf("%02d:%02d", h, m)
-}
-
-func readTeachers(
-	outdata *base.DbTopLevel,
-	id2node map[Ref]interface{},
-	items []Teacher,
-) {
-	slices.SortFunc(items, func(a, b Teacher) int {
-		if a.ListPosition < b.ListPosition {
-			return -1
-		}
-		return 1
-	})
-	ndays := len(db.Days)
-	nhours := len(db.Hours)
-	for _, n := range items {
-		nid := addId(id2node, &n)
-		if nid == "" {
-			continue
-		}
-		maxdays := n.MaxDays
-		if maxdays >= ndays {
-			maxdays = -1
-		}
-		maxpm := n.MaxAfternoons
-		if maxpm >= ndays {
-			maxpm = -1
-		}
-		lb := withLunchBreak(id2node, n.Categories, nid)
-		maxlpd := n.MaxLessonsPerDay
-		if lb {
-			if maxlpd >= nhours-1 {
-				maxlpd = -1
-			}
-		} else if maxlpd >= nhours {
-			maxlpd = -1
-		}
-		r := &base.Teacher{
-			Id:               nid,
-			Name:             n.Name,
-			Tag:              n.Shortcut,
-			Firstname:        n.Firstname,
-			MinLessonsPerDay: n.MinLessonsPerDay,
-			MaxLessonsPerDay: maxlpd,
-			MaxDays:          maxdays,
-			MaxGapsPerDay:    n.MaxGapsPerDay,
-			MaxGapsPerWeek:   -1,
-			MaxAfternoons:    maxpm,
-			LunchBreak:       lb,
-		}
-		msg := fmt.Sprintf("Teacher %s in Absences", nid)
-		for _, ai := range GetRefList(id2node, n.Absences, msg) {
-			an := id2node[ai]
-			r.NotAvailable = append(r.NotAvailable, base.TimeSlot{
-				Day:  an.(Absence).Day,
-				Hour: an.(Absence).Hour,
-			})
-		}
-		sortAbsences(r.NotAvailable)
-		db.Teachers = append(db.Teachers, r)
-	}
 }
 
 func readGroups(
@@ -399,36 +338,10 @@ func readSchedules(
 	return smap
 }
 
-func SplitRefList(reflist RefList) []Ref {
+func splitRefList(reflist RefList) []Ref {
 	result := []Ref{}
 	for _, ref := range strings.Split(string(reflist), ",") {
 		result = append(result, Ref(ref))
 	}
 	return result
-}
-
-// TODO--? If I am not maintaining id2node, this won't work completely ...
-// Categories are separate.
-func GetRefList(
-	id2node map[Ref]interface{},
-	reflist RefList,
-	messages ...string,
-) []Ref {
-	var rl []Ref
-	if reflist != "" {
-		for _, rs := range strings.Split(string(reflist), ",") {
-			rr := Ref(rs)
-			if _, ok := id2node[rr]; ok {
-				rl = append(rl, rr)
-			} else {
-				msglist := []string{
-					fmt.Sprintf("Invalid Reference in RefList: %s\n", rs)}
-				for _, msg := range messages {
-					msglist = append(msglist, fmt.Sprintf("  ++ %s\n", msg))
-				}
-				base.Error.Printf(strings.Join(msglist, ""))
-			}
-		}
-	}
-	return rl
 }

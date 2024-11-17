@@ -1,6 +1,7 @@
 package readxml
 
 import (
+	"W365toFET/base"
 	"W365toFET/w365tt"
 	"fmt"
 	"strings"
@@ -11,18 +12,20 @@ const NO_LUNCH_BREAK = "-Mp"
 // Teachers and classes can have a "flag" (implemented here as a Category)
 // to signal "no lunch break". By default the element should have a
 // lunch break, but if this flag is present the result here will be false.
-func withLunchBreak(
-	id2node map[w365tt.Ref]any,
-	refs RefList,
-	nodeId w365tt.Ref,
+func (cdata *conversionData) withLunchBreak(
+	refs RefList, // Category list
+	nodeId Ref, // Teacher or Class with this Category list
 ) bool {
-	msg := fmt.Sprintf("Category in Course %s", nodeId)
-	reflist := GetRefList(id2node, refs, msg)
+	reflist := splitRefList(refs)
 	//fmt.Printf("Categories for Teacher or Class %s:\n", nodeId)
-	for _, cat := range reflist {
-		catnode := id2node[cat].(*Category)
-		//fmt.Printf("  :: %+v\n", catnode)
-		if catnode.Role == 0 && catnode.Shortcut == NO_LUNCH_BREAK {
+	for _, catref := range reflist {
+		cat, ok := cdata.categories[catref]
+		if !ok {
+			base.Error.Fatalf("Teacher or Class (%s):\n"+
+				"  -- Invalid Category: %s", nodeId, catref)
+		}
+		//fmt.Printf("  :: %+v\n", cat)
+		if cat.Shortcut == NO_LUNCH_BREAK {
 			return false
 		}
 	}
