@@ -24,6 +24,9 @@ type conversionData struct {
 	subjectTags     map[string]Ref
 	roomChoiceNames map[string]Ref
 	roomTags        map[string]bool
+	courseLessons   map[Ref][]int
+	// courseLessons maps course ref -> list of lesson lengths
+
 }
 
 func newConversionData(xmlin *Scenario) *conversionData {
@@ -36,6 +39,7 @@ func newConversionData(xmlin *Scenario) *conversionData {
 		subjectTags:     map[string]Ref{},
 		roomChoiceNames: map[string]Ref{},
 		roomTags:        map[string]bool{},
+		courseLessons:   map[Ref][]int{},
 	}
 }
 
@@ -58,7 +62,7 @@ func ReadXML(xmlpath string) W365XML {
 	return v
 }
 
-func ConvertToDb(f365xml string) *base.DbTopLevel {
+func ConvertToDb(f365xml string) *conversionData {
 	root := ReadXML(f365xml)
 	a := root.SchoolState.ActiveScenario
 	var indata *Scenario
@@ -92,20 +96,33 @@ func ConvertToDb(f365xml string) *base.DbTopLevel {
 	cdata.readTeachers()
 	cdata.readDivisions()
 	cdata.readClasses() // also handles Groups
-	courseLessons := cdata.readCourses()
+	cdata.courseLessons = cdata.readCourses()
 	// courseLessons maps course ref -> list of lesson lengths
-	readLessons(id2node, indata.Lessons)
-	schedmap := readSchedules(id2node, indata.Schedules)
+	return cdata
+}
 
-	llist, ok := schedmap[SCHEDULE_NAME]
-	if !ok {
-		base.Warning.Printf("No Schedule with Name=%s\n", SCHEDULE_NAME)
+func (cdata *conversionData) ScheduleNames() []string {
+	names := []string{}
+	for i := 0; i < len(cdata.xmlin.Schedules); i++ {
+		s := &cdata.xmlin.Schedules[i]
+		names = append(names, s.Name)
 	}
+	return names
+}
 
-	// Generate Lessons
-	makeLessons(db, id2node, courseLessons, llist)
-
-	return cdata.db
+// TODO: Might I want to use no schedule?
+func (cdata *conversionData) ReadSchedule(name string) bool {
+	// The Schedules serve only to determine which existing Lesson
+	// elements are relevant – for placements.
+	for i := 0; i < len(cdata.xmlin.Schedules); i++ {
+		s := &cdata.xmlin.Schedules[i]
+		if s.Name == name {
+			// Use the lessons belonging to the given Schedule name.
+			cdata.makeLessons(splitRefList(s.Lessons))
+			return true
+		}
+	}
+	return false
 }
 
 func (cdata *conversionData) readCategories() {
@@ -217,19 +234,6 @@ func get_time(t string) string {
 		return ""
 	}
 	return fmt.Sprintf("%02d:%02d", h, m)
-}
-
-func readSchedules(
-	id2node map[Ref]interface{},
-	items []Schedule,
-) map[string][]Ref {
-	// These serve only to determine which Lesson elements are relevant.
-	smap := map[string][]Ref{} // Name -> Lesson Ref list
-	for _, n := range items {
-		msg := fmt.Sprintf("Bad Lesson Ref in Schedule %s", n.Id)
-		smap[n.Name] = GetRefList(id2node, n.Lessons, msg)
-	}
-	return smap
 }
 
 func splitRefList(reflist RefList) []Ref {

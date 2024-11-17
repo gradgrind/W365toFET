@@ -4,7 +4,6 @@ import (
 	"W365toFET/base"
 	"log"
 	"slices"
-	"strconv"
 )
 
 //TODO: The Course field can be a Course or a SuperCourse.
@@ -18,53 +17,43 @@ import (
 // multi-hour lessons? Of course, they must be reverted to W365 form to pass
 // them back , but this should be possible ...
 
-func readLessons(
-	// At first, just read in all Lessons to id mapper.
-	//outdata *base.DbTopLevel,
-	id2node map[Ref]interface{},
-	items []Lesson,
-) {
-	for _, n := range items {
-		addId(id2node, &n)
+func (cdata *conversionData) makeLessons(scheduled []Ref) {
+	// Collect scheduled lessons.
+	schedmap := map[Ref]bool{}
+	for _, ref := range scheduled {
+		schedmap[ref] = true
 	}
-}
+	lessons := map[Ref][]*Lesson{}
+	for i := 0; i < len(cdata.xmlin.Lessons); i++ {
+		n := &cdata.xmlin.Lessons[i]
+		_, ok := schedmap[n.Id]
+		if !ok {
+			continue
+		}
 
-// TODO
-func makeLessons(
-	outdata *base.DbTopLevel,
-	id2node map[Ref]interface{},
-	courseLessons map[Ref][]int,
-	// courseLessons maps course ref -> list of lesson lengths
-	scheduled []Ref,
-) {
-	// Collect scheduled lessons
-	lessons := map[Ref][]*Lesson{} // course ref -> lesson list
-	for _, sl := range scheduled {
-		n, ok := id2node[sl]
-		if !ok {
-			log.Printf("*ERROR* Lesson in Schedule has no Definition: %s\n",
-				sl)
-			continue
-		}
-		np, ok := n.(*Lesson)
-		if !ok {
-			log.Printf("*ERROR* Bad Lesson in Schedule: %s\n", sl)
-			continue
-		}
 		// Ignore Lessons with no course (they belong to Epochenplan?)
-		if np.Course == "" {
+		cid := n.Course
+		if cid == "" {
 			continue
 		}
-		if _, ok := id2node[np.Course]; !ok {
-			log.Printf("*ERROR* Lesson with invalid Course: %s\n", np.Id)
+		e, ok := cdata.db.Elements[cid]
+		if ok {
+			_, ok = e.(*base.Course)
+			if !ok {
+				_, ok = e.(*base.SuperCourse)
+				if !ok {
+					base.Error.Fatalf("Lesson %s has invalid Course\n", n.Id)
+				}
+			}
+			lessons[cid] = append(lessons[cid], n)
 			continue
 		}
-		lessons[np.Course] = append(lessons[np.Course], np)
+		base.Error.Fatalf("Lesson %s has unknown Course\n", n.Id)
 	}
 
 	// Generate base.Lessons for the courses, taking into account the
 	// already scheduled lessons.
-	for cref, llens := range courseLessons {
+	for cref, llens := range cdata.courseLessons {
 		// Regard all supplied Lessons as fixed? If not, the others should
 		// perhaps be ignored. The state of development of W365 on which
 		// this model is based would require new lessons anyway.
@@ -107,16 +96,13 @@ func makeLessons(
 			next:
 			}
 		add_lesson:
-			lid := "#l#" + strconv.Itoa(len(outdata.Lessons))
-			outdata.Lessons = append(outdata.Lessons, &base.Lesson{
-				Id:       Ref(lid),
-				Course:   cref,
-				Duration: llen,
-				Day:      day,
-				Hour:     hour,
-				Fixed:    day >= 0,
-				Rooms:    []Ref{},
-			})
+			l := cdata.db.NewLesson("")
+			l.Course = cref
+			l.Duration = llen
+			l.Day = day
+			l.Hour = hour
+			l.Fixed = day >= 0
+			l.Rooms = []Ref{}
 		}
 		if len(llist) != 0 {
 			log.Fatalf("*ERROR* Didn't consume all lessons in course %s\n",

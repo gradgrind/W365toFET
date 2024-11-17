@@ -130,10 +130,10 @@ func (cdata *conversionData) readCourses() map[Ref][]int {
 		for _, sbct := range xc.subs {
 			sbc := db.NewSubCourse(sbct.Id)
 			sbc.SuperCourses = []Ref{scid}
-			sbc.Subject = sbc.Subject
-			sbc.Groups = sbc.Groups
-			sbc.Teachers = sbc.Teachers
-			sbc.Room = sbc.Room
+			sbc.Subject = sbct.Subject
+			sbc.Groups = sbct.Groups
+			sbc.Teachers = sbct.Teachers
+			sbc.Room = sbct.Room
 		}
 	}
 	return courseLessons

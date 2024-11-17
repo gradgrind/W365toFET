@@ -37,9 +37,6 @@ func (cdata *conversionData) readClasses() {
 		pregroups[n.Id] = nil
 	}
 
-	//TODO???
-	db.GroupRefMap = map[base.Ref]base.Ref{}
-
 	slices.SortFunc(cdata.xmlin.Classes, func(a, b Class) int {
 		if a.ListPosition < b.ListPosition {
 			return -1
@@ -71,7 +68,6 @@ func (cdata *conversionData) readClasses() {
 		// Add a Group for the whole class (not provided by W365).
 		classGroup := db.NewGroup("")
 		classGroup.Tag = ""
-		db.GroupRefMap[e.Id] = classGroup.Id
 		e.ClassGroup = classGroup.Id
 
 		if cdata.isStandIns(n.Categories, n.Id) {
@@ -179,7 +175,6 @@ func (cdata *conversionData) readClasses() {
 		}
 		g := db.NewGroup(n.Id)
 		g.Tag = n.Shortcut
-		db.GroupRefMap[n.Id] = n.Id // mapping to itself is correct!
 	}
 }
 
