@@ -3,7 +3,6 @@ package readxml
 import (
 	"W365toFET/base"
 	"W365toFET/w365tt"
-	"fmt"
 	"strings"
 )
 
@@ -53,26 +52,25 @@ func (cdata *conversionData) isStandIns(
 	return false
 }
 
-// Look for a block tag in the Categories. Only the one will be recognized,
+// Look for a block tag in the Categories. Only one will be recognized,
 // the first one.
-func getBlockTag(
-	id2node map[w365tt.Ref]any,
+func (cdata *conversionData) getBlockTag(
 	refs RefList,
-	nodeId w365tt.Ref,
+	nodeId Ref,
 ) string {
 	if refs != "" {
-		msg := fmt.Sprintf("Category in Course %s", nodeId)
-		reflist := GetRefList(id2node, refs, msg)
 		//fmt.Printf("Categories in Course %s:\n", nodeId)
-		for _, cat := range reflist {
-			catnode := id2node[cat].(*Category)
-			//fmt.Printf("  :: %+v\n", catnode)
-			if catnode.Role == 0 {
-				// If catnode.Shortcut starts with "_", take this as
-				// a block, a SuperCourse or a SubCourse:
-				if strings.HasPrefix(catnode.Shortcut, "_") {
-					return catnode.Shortcut
-				}
+		for _, catref := range splitRefList(refs) {
+			cat, ok := cdata.categories[catref]
+			if !ok {
+				base.Error.Fatalf("Class (%s):\n"+
+					"  -- Invalid Category: %s", nodeId, catref)
+			}
+			//fmt.Printf("  :: %+v\n", cat)
+			// If catnode.Shortcut starts with "_", take this as
+			// a block, a SuperCourse or a SubCourse:
+			if strings.HasPrefix(cat.Shortcut, "_") {
+				return cat.Shortcut
 			}
 		}
 	}

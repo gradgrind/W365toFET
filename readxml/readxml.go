@@ -21,7 +21,6 @@ type conversionData struct {
 	categories  map[Ref]*Category
 	absences    map[Ref]base.TimeSlot
 	divisions   map[Ref]*Division
-	subjectMap  map[Ref]*base.Subject
 	subjectTags map[string]Ref
 }
 
@@ -32,7 +31,6 @@ func newConversionData(xmlin *Scenario) *conversionData {
 		categories:  map[Ref]*Category{},
 		absences:    map[Ref]base.TimeSlot{},
 		divisions:   map[Ref]*Division{},
-		subjectMap:  map[Ref]*base.Subject{},
 		subjectTags: map[string]Ref{},
 	}
 }
@@ -88,11 +86,10 @@ func ConvertToDb(f365xml string) *base.DbTopLevel {
 	cdata.readSubjects()
 	cdata.readRooms()
 	cdata.readTeachers()
-	cdata.readGroups()
 	cdata.readDivisions()
-	cdata.readClasses()
+	cdata.readClasses() // also handles Groups
 
-	courseLessons := readCourses(db, id2node, indata.Courses)
+	courseLessons := cdata.readCourses()
 	// courseLessons maps course ref -> list of lesson lengths
 	readLessons(id2node, indata.Lessons)
 	schedmap := readSchedules(id2node, indata.Schedules)

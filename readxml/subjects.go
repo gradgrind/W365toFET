@@ -18,9 +18,6 @@ func (cdata *conversionData) readSubjects() {
 		e := cdata.db.NewSubject(n.Id)
 		e.Name = n.Name
 		e.Tag = n.Shortcut
-
-		//TODO???
-		cdata.subjectMap[e.Id] = e
 		cdata.subjectTags[e.Tag] = e.Id
 	}
 }
@@ -61,17 +58,27 @@ func courseSubject(
 			}
 		}
 		sktag := strings.Join(sklist, ",")
-		wsid, ok := db.subjectTags[sktag]
+		wsid, ok := cdata.subjectTags[sktag]
 		if ok {
 			// The name has already been used.
 			subject = wsid
 		} else {
 			// Need a new Subject.
-			subject = db.makeNewSubject(newdb, sktag, "Compound Subject")
-			db.subjectTags[sktag] = subject
+			subject = cdata.makeNewSubject(sktag, "Compound Subject")
+			cdata.subjectTags[sktag] = subject
 		}
 	} else {
 		base.Error.Fatalf("Course/SubCourse has no subject: %s\n", courseId)
 	}
 	return subject
+}
+
+func (cdata *conversionData) makeNewSubject(
+	tag string,
+	name string,
+) base.Ref {
+	s := cdata.db.NewSubject("")
+	s.Tag = tag
+	s.Name = name
+	return s.Id
 }
