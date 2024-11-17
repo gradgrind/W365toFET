@@ -92,7 +92,6 @@ func ConvertToDb(f365xml string) *base.DbTopLevel {
 	cdata.readTeachers()
 	cdata.readDivisions()
 	cdata.readClasses() // also handles Groups
-
 	courseLessons := cdata.readCourses()
 	// courseLessons maps course ref -> list of lesson lengths
 	readLessons(id2node, indata.Lessons)
