@@ -16,9 +16,8 @@ func (cdata *conversionData) withLunchBreak(
 	refs RefList, // Category list
 	nodeId Ref, // Teacher or Class with this Category list
 ) bool {
-	reflist := splitRefList(refs)
 	//fmt.Printf("Categories for Teacher or Class %s:\n", nodeId)
-	for _, catref := range reflist {
+	for _, catref := range splitRefList(refs) {
 		cat, ok := cdata.categories[catref]
 		if !ok {
 			base.Error.Fatalf("Teacher or Class (%s):\n"+
@@ -35,18 +34,19 @@ func (cdata *conversionData) withLunchBreak(
 // A class can have a "flag" (implemented here as a Category) to indicate
 // that it is not a real class, but a collection of stand-in "lessons".
 // Return true if the flag is set.
-func isStandIns(
-	id2node map[w365tt.Ref]any,
-	refs RefList,
-	nodeId w365tt.Ref,
+func (cdata *conversionData) isStandIns(
+	refs RefList, // Category list
+	nodeId w365tt.Ref, // Class
 ) bool {
-	msg := fmt.Sprintf("Category in Class %s", nodeId)
-	reflist := GetRefList(id2node, refs, msg)
 	//fmt.Printf("Categories for Class %s:\n", nodeId)
-	for _, cat := range reflist {
-		catnode := id2node[cat].(*Category)
-		//fmt.Printf("  :: %+v\n", catnode)
-		if catnode.Role == 7 {
+	for _, catref := range splitRefList(refs) {
+		cat, ok := cdata.categories[catref]
+		if !ok {
+			base.Error.Fatalf("Class (%s):\n"+
+				"  -- Invalid Category: %s", nodeId, catref)
+		}
+		//fmt.Printf("  :: %+v\n", cat)
+		if (cat.Role & 1) != 0 {
 			return true
 		}
 	}

@@ -15,9 +15,13 @@ func (cdata *conversionData) readSubjects() {
 	})
 	for i := 0; i < len(cdata.xmlin.Subjects); i++ {
 		n := &cdata.xmlin.Subjects[i]
-		s := cdata.db.NewSubject(n.Id)
-		s.Name = n.Name
-		s.Tag = n.Shortcut
+		e := cdata.db.NewSubject(n.Id)
+		e.Name = n.Name
+		e.Tag = n.Shortcut
+
+		//TODO???
+		cdata.subjectMap[e.Id] = e
+		cdata.subjectTags[e.Tag] = e.Id
 	}
 }
 
@@ -39,7 +43,7 @@ func courseSubject(
 	var subject Ref
 	if len(srefs) == 1 {
 		wsid := srefs[0]
-		_, ok := cdata.SubjectMap[wsid]
+		_, ok := cdata.subjectMap[wsid]
 		if !ok {
 			base.Error.Fatalf(msg, courseId, wsid)
 		}
@@ -49,7 +53,7 @@ func courseSubject(
 		sklist := []string{}
 		for _, wsid := range srefs {
 			// Need Tag/Shortcut field
-			s, ok := db.SubjectMap[wsid]
+			s, ok := db.subjectMap[wsid]
 			if ok {
 				sklist = append(sklist, s.Tag)
 			} else {
@@ -57,14 +61,14 @@ func courseSubject(
 			}
 		}
 		sktag := strings.Join(sklist, ",")
-		wsid, ok := db.SubjectTags[sktag]
+		wsid, ok := db.subjectTags[sktag]
 		if ok {
 			// The name has already been used.
 			subject = wsid
 		} else {
 			// Need a new Subject.
 			subject = db.makeNewSubject(newdb, sktag, "Compound Subject")
-			db.SubjectTags[sktag] = subject
+			db.subjectTags[sktag] = subject
 		}
 	} else {
 		base.Error.Fatalf("Course/SubCourse has no subject: %s\n", courseId)

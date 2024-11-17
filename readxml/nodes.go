@@ -118,7 +118,7 @@ type Class struct {
 	Categories       RefList `xml:",attr"`
 	ForceFirstHour   bool    `xml:",attr"`
 	Divisions        RefList `xml:"GradePartitions,attr"`
-	Groups           RefList `xml:",attr"` // Superfluous?
+	Groups           RefList `xml:",attr"`
 	MinLessonsPerDay int     `xml:",attr"`
 	MaxLessonsPerDay int     `xml:",attr"`
 	MaxAfternoons    int     `xml:"NumberOfAfterNoonDays,attr"`

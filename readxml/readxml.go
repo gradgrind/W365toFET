@@ -20,8 +20,9 @@ type conversionData struct {
 	xmlin       *Scenario
 	categories  map[Ref]*Category
 	absences    map[Ref]base.TimeSlot
-	SubjectMap  map[Ref]*base.Subject
-	SubjectTags map[string]Ref
+	divisions   map[Ref]*Division
+	subjectMap  map[Ref]*base.Subject
+	subjectTags map[string]Ref
 }
 
 func newConversionData(xmlin *Scenario) *conversionData {
@@ -30,8 +31,9 @@ func newConversionData(xmlin *Scenario) *conversionData {
 		xmlin:       xmlin,
 		categories:  map[Ref]*Category{},
 		absences:    map[Ref]base.TimeSlot{},
-		SubjectMap:  map[Ref]*base.Subject{},
-		SubjectTags: map[string]Ref{},
+		divisions:   map[Ref]*Division{},
+		subjectMap:  map[Ref]*base.Subject{},
+		subjectTags: map[string]Ref{},
 	}
 }
 
@@ -74,18 +76,22 @@ func ConvertToDb(f365xml string) *base.DbTopLevel {
 	db.Info.Reference = string(indata.Id)
 	db.Info.Institution = root.SchoolState.SchoolName
 	//db.Info.Schedule = "Vorlage"
+
+	// These items don't correspond directly to base db elements:
 	cdata.readCategories()
 	cdata.readAbsences()
+	cdata.readDivisions()
+
+	// db elements
 	cdata.readDays()
 	cdata.readHours()
 	cdata.readSubjects()
 	cdata.readRooms()
 	cdata.readTeachers()
-	readGroups(db, id2node, indata.Groups)
-	for _, n := range indata.Divisions {
-		id2node[n.IdStr()] = n
-	}
-	readClasses(db, id2node, indata.Classes)
+	cdata.readGroups()
+	cdata.readDivisions()
+	cdata.readClasses()
+
 	courseLessons := readCourses(db, id2node, indata.Courses)
 	// courseLessons maps course ref -> list of lesson lengths
 	readLessons(id2node, indata.Lessons)
@@ -213,118 +219,6 @@ func get_time(t string) string {
 	return fmt.Sprintf("%02d:%02d", h, m)
 }
 
-func readGroups(
-	outdata *base.DbTopLevel,
-	id2node map[Ref]interface{},
-	items []Group,
-) {
-	for _, n := range items {
-		nid := addId(id2node, &n)
-		if nid == "" {
-			continue
-		}
-		db.Groups = append(db.Groups, &base.Group{
-			Id:  nid,
-			Tag: n.Shortcut,
-		})
-	}
-}
-
-func readClasses(
-	outdata *base.DbTopLevel,
-	id2node map[Ref]interface{},
-	items []Class,
-) {
-	slices.SortFunc(items, func(a, b Class) int {
-		if a.ListPosition < b.ListPosition {
-			return -1
-		}
-		return 1
-	})
-	ndays := len(db.Days)
-	nhours := len(db.Hours)
-	for _, n := range items {
-		nid := addId(id2node, &n)
-		if nid == "" {
-			continue
-		}
-		maxpm := n.MaxAfternoons
-		if maxpm >= ndays {
-			maxpm = -1
-		}
-		var r *base.Class
-		if isStandIns(id2node, n.Categories, nid) {
-			r = &base.Class{
-				Id:               nid,
-				Name:             n.Name,
-				Year:             -1,
-				Letter:           "",
-				Tag:              "",
-				Divisions:        []base.Division{},
-				MinLessonsPerDay: -1,
-				MaxLessonsPerDay: -1,
-				MaxGapsPerDay:    -1,
-				MaxGapsPerWeek:   -1,
-				MaxAfternoons:    -1,
-				LunchBreak:       false,
-				ForceFirstHour:   false,
-			}
-		} else {
-			lb := withLunchBreak(id2node, n.Categories, nid)
-			maxlpd := n.MaxLessonsPerDay
-			if lb {
-				if maxlpd >= nhours-1 {
-					maxlpd = -1
-				}
-			} else if maxlpd >= nhours {
-				maxlpd = -1
-			}
-			r = &base.Class{
-				Id:               nid,
-				Name:             n.Name,
-				Year:             n.Level,
-				Letter:           n.Letter,
-				Tag:              fmt.Sprintf("%d%s", n.Level, n.Letter),
-				MinLessonsPerDay: n.MinLessonsPerDay,
-				MaxLessonsPerDay: maxlpd,
-				MaxGapsPerDay:    -1,
-				MaxGapsPerWeek:   0,
-				MaxAfternoons:    maxpm,
-				LunchBreak:       lb,
-				ForceFirstHour:   n.ForceFirstHour,
-			}
-			// Initialize Divisions to get [] instead of null, when empty
-			r.Divisions = []base.Division{}
-			msg := fmt.Sprintf("Class %s in Divisions", nid)
-			for i, d := range GetRefList(id2node, n.Divisions, msg) {
-				dn := id2node[d].(Division)
-				msg = fmt.Sprintf("Division %s in Groups", d)
-				glist := GetRefList(id2node, dn.Groups, msg)
-				if len(glist) != 0 {
-					nm := dn.Name
-					if nm == "" {
-						nm = fmt.Sprintf("#div%d", i)
-					}
-					r.Divisions = append(r.Divisions, base.Division{
-						Name:   nm,
-						Groups: glist,
-					})
-				}
-			}
-		}
-		msg := fmt.Sprintf("Class %s in Absences", nid)
-		for _, ai := range GetRefList(id2node, n.Absences, msg) {
-			an := id2node[ai]
-			r.NotAvailable = append(r.NotAvailable, base.TimeSlot{
-				Day:  an.(Absence).Day,
-				Hour: an.(Absence).Hour,
-			})
-		}
-		sortAbsences(r.NotAvailable)
-		db.Classes = append(db.Classes, r)
-	}
-}
-
 func readSchedules(
 	id2node map[Ref]interface{},
 	items []Schedule,
@@ -344,4 +238,40 @@ func splitRefList(reflist RefList) []Ref {
 		result = append(result, Ref(ref))
 	}
 	return result
+}
+
+// Block all afternoons if nAfternnons == 0.
+func handleZeroAfternoons(
+	dbp *base.DbTopLevel,
+	notAvailable []base.TimeSlot,
+	nAfternoons int,
+) []base.TimeSlot {
+	if nAfternoons != 0 {
+		return notAvailable
+	}
+	// Make a bool array and fill this in two passes, then remake list.
+	// NOTE: Days, Hours and Info must already be set up in the base db.
+	namap := make([][]bool, len(dbp.Days))
+	nhours := len(dbp.Hours)
+	// In the first pass, block afternoons
+	for i := range namap {
+		namap[i] = make([]bool, nhours)
+		for h := dbp.Info.FirstAfternoonHour; h < nhours; h++ {
+			namap[i][h] = true
+		}
+	}
+	// In the second pass, include existing blocked hours.
+	for _, ts := range notAvailable {
+		namap[ts.Day][ts.Hour] = true
+	}
+	// Build a new base.TimeSlot list
+	na := []base.TimeSlot{}
+	for d, naday := range namap {
+		for h, nahour := range naday {
+			if nahour {
+				na = append(na, base.TimeSlot{Day: d, Hour: h})
+			}
+		}
+	}
+	return na
 }
