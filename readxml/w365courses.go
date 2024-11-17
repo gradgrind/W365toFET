@@ -1,7 +1,7 @@
 package readxml
 
 import (
-	"W365toFET/w365tt"
+	"W365toFET/base"
 	"fmt"
 	"log"
 	"strconv"
@@ -9,11 +9,11 @@ import (
 )
 
 type tmpCourse struct {
-	Id             w365tt.Ref
-	Subjects       []w365tt.Ref
-	Groups         []w365tt.Ref
-	Teachers       []w365tt.Ref
-	PreferredRooms []w365tt.Ref
+	Id             Ref
+	Subjects       []Ref
+	Groups         []Ref
+	Teachers       []Ref
+	PreferredRooms []Ref
 }
 
 type xCourse struct {
@@ -23,11 +23,11 @@ type xCourse struct {
 }
 
 func readCourses(
-	outdata *w365tt.DbTopLevel,
-	id2node map[w365tt.Ref]interface{},
+	outdata *base.DbTopLevel,
+	id2node map[Ref]interface{},
 	items []Course,
-) map[w365tt.Ref][]int {
-	courseLessons := map[w365tt.Ref][]int{} // build return value here
+) map[Ref][]int {
+	courseLessons := map[Ref][]int{} // build return value here
 	xcourses := map[string]xCourse{}
 	for _, n := range items {
 		nid := addId(id2node, &n)
@@ -99,7 +99,7 @@ func readCourses(
 				xcourses[blockTag] = xc
 			}
 		} else if len(llen) != 0 {
-			outdata.Courses = append(outdata.Courses, &w365tt.Course{
+			outdata.Courses = append(outdata.Courses, &base.Course{
 				Id:             nid,
 				Subjects:       sbjs,
 				Groups:         grps,
@@ -118,7 +118,7 @@ func readCourses(
 		sc := xc.super
 		scid := sc.Id
 		//TODO: The SuperCourse may have only one subject
-		outdata.SuperCourses = append(outdata.SuperCourses, &w365tt.SuperCourse{
+		outdata.SuperCourses = append(outdata.SuperCourses, &base.SuperCourse{
 			Id:      scid,
 			Subject: sc.Subjects[0],
 			// All other fields are ignored.
@@ -127,10 +127,10 @@ func readCourses(
 
 		// Now the SubCourses
 		for _, sbc := range xc.subs {
-			outdata.SubCourses = append(outdata.SubCourses, &w365tt.SubCourse{
-				// Note the use of Id0 instead of Id (see w365tt.structures.go)
+			outdata.SubCourses = append(outdata.SubCourses, &base.SubCourse{
+				// Note the use of Id0 instead of Id (see base.structures.go)
 				Id0:            sbc.Id,
-				SuperCourses:   []w365tt.Ref{scid},
+				SuperCourses:   []Ref{scid},
 				Subjects:       sbc.Subjects,
 				Groups:         sbc.Groups,
 				Teachers:       sbc.Teachers,

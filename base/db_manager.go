@@ -124,7 +124,6 @@ func (db *DbTopLevel) addElement(ref Ref, element any) Ref {
 	return ref
 }
 
-// TODO???
 func (db *DbTopLevel) PrepareDb() {
 	if db.Info.MiddayBreak == nil {
 		db.Info.MiddayBreak = []int{}

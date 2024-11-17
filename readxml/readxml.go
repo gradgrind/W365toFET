@@ -1,14 +1,11 @@
 package readxml
 
 import (
-	"W365toFET/w365tt"
-	"encoding/json"
+	"W365toFET/base"
 	"encoding/xml"
 	"fmt"
 	"io"
-	"log"
 	"os"
-	"path/filepath"
 	"slices"
 	"strconv"
 	"strings"
@@ -16,27 +13,48 @@ import (
 
 const SCHEDULE_NAME = "Vorlage"
 
+type Ref = base.Ref // Element reference
+
+type conversionData struct {
+	db          *base.DbTopLevel
+	xmlin       *Scenario
+	categories  map[Ref]*Category
+	absences    map[Ref]base.TimeSlot
+	SubjectMap  map[Ref]*base.Subject
+	SubjectTags map[string]Ref
+}
+
+func newConversionData(xmlin *Scenario) *conversionData {
+	return &conversionData{
+		db:          base.NewDb(),
+		xmlin:       xmlin,
+		categories:  map[Ref]*Category{},
+		absences:    map[Ref]base.TimeSlot{},
+		SubjectMap:  map[Ref]*base.Subject{},
+		SubjectTags: map[string]Ref{},
+	}
+}
+
 func ReadXML(xmlpath string) W365XML {
 	// Open the  XML file
 	xmlFile, err := os.Open(xmlpath)
 	if err != nil {
-		log.Fatal(err)
+		base.Error.Fatal(err)
 	}
 	// Remember to close the file at the end of the function
 	defer xmlFile.Close()
 	// read the opened XML file as a byte array.
 	byteValue, _ := io.ReadAll(xmlFile)
-	log.Printf("*+ Reading: %s\n", xmlpath)
+	base.Message.Printf("Reading: %s\n", xmlpath)
 	v := W365XML{}
 	err = xml.Unmarshal(byteValue, &v)
 	if err != nil {
-		log.Fatalf("XML error in %s:\n %v\n", xmlpath, err)
+		base.Error.Fatalf("XML error in %s:\n %v\n", xmlpath, err)
 	}
-	v.Path = xmlpath
 	return v
 }
 
-func ConvertToJSON(f365xml string) string {
+func ConvertToDb(f365xml string) *base.DbTopLevel {
 	root := ReadXML(f365xml)
 	a := root.SchoolState.ActiveScenario
 	var indata *Scenario
@@ -48,123 +66,132 @@ func ConvertToJSON(f365xml string) string {
 		}
 	}
 	if indata == nil {
-		log.Fatalln("*ERROR* No Active Scenario")
+		base.Error.Fatalln("No Active Scenario")
 	}
-	outdata := w365tt.DbTopLevel{}
-	id2node := map[w365tt.Ref]interface{}{}
 
-	outdata.Info.Reference = string(indata.Id)
-	outdata.Info.Institution = root.SchoolState.SchoolName
-	//outdata.Info.Schedule = "Vorlage"
-	readCategories(id2node, indata.Categories)
-	readDays(&outdata, id2node, indata.Days)
-	readHours(&outdata, id2node, indata.Hours)
-	for _, n := range indata.Absences {
-		id2node[n.IdStr()] = n
-	}
-	readSubjects(&outdata, id2node, indata.Subjects)
-	readRooms(&outdata, id2node, indata.Rooms)
-	readTeachers(&outdata, id2node, indata.Teachers)
-	readGroups(&outdata, id2node, indata.Groups)
+	cdata := newConversionData(indata)
+	db := cdata.db
+	db.Info.Reference = string(indata.Id)
+	db.Info.Institution = root.SchoolState.SchoolName
+	//db.Info.Schedule = "Vorlage"
+	cdata.readCategories()
+	cdata.readAbsences()
+	cdata.readDays()
+	cdata.readHours()
+	cdata.readSubjects()
+	readRooms(db, id2node, indata.Rooms)
+	readTeachers(db, id2node, indata.Teachers)
+	readGroups(db, id2node, indata.Groups)
 	for _, n := range indata.Divisions {
 		id2node[n.IdStr()] = n
 	}
-	readClasses(&outdata, id2node, indata.Classes)
-	courseLessons := readCourses(&outdata, id2node, indata.Courses)
+	readClasses(db, id2node, indata.Classes)
+	courseLessons := readCourses(db, id2node, indata.Courses)
 	// courseLessons maps course ref -> list of lesson lengths
 	readLessons(id2node, indata.Lessons)
 	schedmap := readSchedules(id2node, indata.Schedules)
 
 	llist, ok := schedmap[SCHEDULE_NAME]
 	if !ok {
-		log.Printf("*WARNING* No Schedule with Name=%s\n", SCHEDULE_NAME)
+		base.Warning.Printf("No Schedule with Name=%s\n", SCHEDULE_NAME)
 	}
 
-	// Generate w365tt.Lessons
-	makeLessons(&outdata, id2node, courseLessons, llist)
+	// Generate Lessons
+	makeLessons(db, id2node, courseLessons, llist)
 
-	// Save as JSON
-	f := strings.TrimSuffix(root.Path, filepath.Ext(root.Path)) + ".json"
-	j, err := json.MarshalIndent(outdata, "", "  ")
-	if err != nil {
-		log.Fatal(err)
-	}
-	if err := os.WriteFile(f, j, 0666); err != nil {
-		log.Fatal(err)
-	}
-	return f
+	return cdata.db
 }
 
-func addId(id2node map[w365tt.Ref]interface{}, node TTNode) w365tt.Ref {
-	// Check for redeclarations
-	nid := node.IdStr()
-	if _, ok := id2node[nid]; ok {
-		log.Printf("Redefinition of %s\n", nid)
-		return ""
+func (cdata *conversionData) readCategories() {
+	for i := 0; i < len(cdata.xmlin.Categories); i++ {
+		n := &cdata.xmlin.Categories[i]
+		cdata.categories[n.Id] = n
 	}
-	id2node[nid] = node
-	return nid
 }
 
-func readDays(
-	outdata *w365tt.DbTopLevel,
-	id2node map[w365tt.Ref]interface{},
-	items []Day,
-) {
-	slices.SortFunc(items, func(a, b Day) int {
+func (cdata *conversionData) readAbsences() {
+	for i := 0; i < len(cdata.xmlin.Absences); i++ {
+		n := &cdata.xmlin.Absences[i]
+		e := base.TimeSlot{
+			Day:  n.Day,
+			Hour: n.Hour,
+		}
+		cdata.absences[n.Id] = e
+	}
+}
+
+func (cdata *conversionData) getAbsences(
+	reflist RefList,
+	msg string,
+) []base.TimeSlot {
+	result := []base.TimeSlot{}
+	for _, aref := range SplitRefList(reflist) {
+		ts, ok := cdata.absences[aref]
+		if !ok {
+			base.Error.Fatalf("%s:\n  -- Invalid Absence: %s\n", msg, aref)
+		}
+		result = append(result, ts)
+	}
+	slices.SortFunc(result, func(a, b base.TimeSlot) int {
+		if a.Day < b.Day {
+			return -1
+		}
+		if a.Day == b.Day {
+			if a.Hour < b.Hour {
+				return -1
+			}
+			if a.Hour == b.Hour {
+				base.Error.Fatalf("%s:\n  -- Equal Absences\n", msg)
+			}
+			return 1
+		}
+		return 1
+	})
+	return result
+}
+
+func (cdata *conversionData) readDays() {
+	slices.SortFunc(cdata.xmlin.Days, func(a, b Day) int {
 		if a.ListPosition < b.ListPosition {
 			return -1
 		}
 		return 1
 	})
-	for _, n := range items {
-		nid := addId(id2node, &n)
-		if nid == "" {
-			continue
-		}
-		outdata.Days = append(outdata.Days, &w365tt.Day{
-			Id:   nid,
-			Name: n.Name,
-			Tag:  n.Shortcut,
-		})
+	for i := 0; i < len(cdata.xmlin.Days); i++ {
+		n := &cdata.xmlin.Days[i]
+		e := cdata.db.NewDay(n.Id)
+		e.Name = n.Name
+		e.Tag = n.Shortcut
 	}
 }
 
-func readHours(
-	outdata *w365tt.DbTopLevel,
-	id2node map[w365tt.Ref]interface{},
-	items []Hour,
-) {
-	slices.SortFunc(items, func(a, b Hour) int {
+func (cdata *conversionData) readHours() {
+	slices.SortFunc(cdata.xmlin.Hours, func(a, b Hour) int {
 		if a.ListPosition < b.ListPosition {
 			return -1
 		}
 		return 1
 	})
-	for i, n := range items {
-		nid := addId(id2node, &n)
-		if nid == "" {
-			continue
-		}
-		r := &w365tt.Hour{
-			Id:   nid,
-			Name: n.Name,
-			Tag:  n.Shortcut,
-		}
+	db := cdata.db
+	for i := 0; i < len(cdata.xmlin.Hours); i++ {
+		n := &cdata.xmlin.Hours[i]
+		e := cdata.db.NewHour(n.Id)
+		e.Name = n.Name
+		e.Tag = n.Shortcut
+
 		t0 := get_time(n.Start)
 		t1 := get_time(n.End)
 		if len(t0) != 0 {
-			r.Start = t0
-			r.End = t1
+			e.Start = t0
+			e.End = t1
 		}
-		outdata.Hours = append(outdata.Hours, r)
 
 		if n.FirstAfternoonHour {
-			outdata.Info.FirstAfternoonHour = i
+			db.Info.FirstAfternoonHour = i
 		}
 		if n.MiddayBreak {
-			outdata.Info.MiddayBreak = append(
-				outdata.Info.MiddayBreak, i)
+			db.Info.MiddayBreak = append(
+				db.Info.MiddayBreak, i)
 		}
 	}
 }
@@ -186,86 +213,9 @@ func get_time(t string) string {
 	return fmt.Sprintf("%02d:%02d", h, m)
 }
 
-func readSubjects(
-	outdata *w365tt.DbTopLevel,
-	id2node map[w365tt.Ref]interface{},
-	items []Subject,
-) {
-	slices.SortFunc(items, func(a, b Subject) int {
-		if a.ListPosition < b.ListPosition {
-			return -1
-		}
-		return 1
-	})
-	for _, n := range items {
-		nid := addId(id2node, &n)
-		if nid == "" {
-			continue
-		}
-		outdata.Subjects = append(outdata.Subjects, &w365tt.Subject{
-			Id:   nid,
-			Name: n.Name,
-			Tag:  n.Shortcut,
-		})
-	}
-}
-
-func readRooms(
-	outdata *w365tt.DbTopLevel,
-	id2node map[w365tt.Ref]interface{},
-	items []Room,
-) {
-	slices.SortFunc(items, func(a, b Room) int {
-		if a.ListPosition < b.ListPosition {
-			return -1
-		}
-		return 1
-	})
-	rglist := map[w365tt.Ref]Room{} // RoomGroup elements
-	for _, n := range items {
-		nid := addId(id2node, &n)
-		if nid == "" {
-			continue
-		}
-		// Extract RoomGroup elements
-		if n.RoomGroups != "" {
-			rglist[nid] = n
-			continue
-		}
-		// Normal Room
-		r := &w365tt.Room{
-			Id:   nid,
-			Name: n.Name,
-			Tag:  n.Shortcut,
-		}
-		msg := fmt.Sprintf("Room %s in Absences", nid)
-		for _, ai := range GetRefList(id2node, n.Absences, msg) {
-			an := id2node[ai].(Absence)
-			r.NotAvailable = append(r.NotAvailable, w365tt.TimeSlot{
-				Day:  an.Day,
-				Hour: an.Hour,
-			})
-		}
-		sortAbsences(r.NotAvailable)
-		outdata.Rooms = append(outdata.Rooms, r)
-	}
-	// Now handle the RoomGroups
-	for nid, n := range rglist {
-		msg := fmt.Sprintf("Room %s in RoomGroups", nid)
-		rg := GetRefList(id2node, n.RoomGroups, msg)
-		r := &w365tt.RoomGroup{
-			Id:   nid,
-			Name: n.Shortcut, // !
-			//Tag: n.Shortcut,
-			Rooms: rg,
-		}
-		outdata.RoomGroups = append(outdata.RoomGroups, r)
-	}
-}
-
 func readTeachers(
-	outdata *w365tt.DbTopLevel,
-	id2node map[w365tt.Ref]interface{},
+	outdata *base.DbTopLevel,
+	id2node map[Ref]interface{},
 	items []Teacher,
 ) {
 	slices.SortFunc(items, func(a, b Teacher) int {
@@ -274,8 +224,8 @@ func readTeachers(
 		}
 		return 1
 	})
-	ndays := len(outdata.Days)
-	nhours := len(outdata.Hours)
+	ndays := len(db.Days)
+	nhours := len(db.Hours)
 	for _, n := range items {
 		nid := addId(id2node, &n)
 		if nid == "" {
@@ -298,7 +248,7 @@ func readTeachers(
 		} else if maxlpd >= nhours {
 			maxlpd = -1
 		}
-		r := &w365tt.Teacher{
+		r := &base.Teacher{
 			Id:               nid,
 			Name:             n.Name,
 			Tag:              n.Shortcut,
@@ -314,37 +264,19 @@ func readTeachers(
 		msg := fmt.Sprintf("Teacher %s in Absences", nid)
 		for _, ai := range GetRefList(id2node, n.Absences, msg) {
 			an := id2node[ai]
-			r.NotAvailable = append(r.NotAvailable, w365tt.TimeSlot{
+			r.NotAvailable = append(r.NotAvailable, base.TimeSlot{
 				Day:  an.(Absence).Day,
 				Hour: an.(Absence).Hour,
 			})
 		}
 		sortAbsences(r.NotAvailable)
-		outdata.Teachers = append(outdata.Teachers, r)
+		db.Teachers = append(db.Teachers, r)
 	}
 }
 
-func sortAbsences(alist []w365tt.TimeSlot) {
-	slices.SortFunc(alist, func(a, b w365tt.TimeSlot) int {
-		if a.Day < b.Day {
-			return -1
-		}
-		if a.Day == b.Day {
-			if a.Hour < b.Hour {
-				return -1
-			}
-			if a.Hour == b.Hour {
-				log.Fatalln("Equal Absences")
-			}
-			return 1
-		}
-		return 1
-	})
-}
-
 func readGroups(
-	outdata *w365tt.DbTopLevel,
-	id2node map[w365tt.Ref]interface{},
+	outdata *base.DbTopLevel,
+	id2node map[Ref]interface{},
 	items []Group,
 ) {
 	for _, n := range items {
@@ -352,7 +284,7 @@ func readGroups(
 		if nid == "" {
 			continue
 		}
-		outdata.Groups = append(outdata.Groups, &w365tt.Group{
+		db.Groups = append(db.Groups, &base.Group{
 			Id:  nid,
 			Tag: n.Shortcut,
 		})
@@ -360,8 +292,8 @@ func readGroups(
 }
 
 func readClasses(
-	outdata *w365tt.DbTopLevel,
-	id2node map[w365tt.Ref]interface{},
+	outdata *base.DbTopLevel,
+	id2node map[Ref]interface{},
 	items []Class,
 ) {
 	slices.SortFunc(items, func(a, b Class) int {
@@ -370,8 +302,8 @@ func readClasses(
 		}
 		return 1
 	})
-	ndays := len(outdata.Days)
-	nhours := len(outdata.Hours)
+	ndays := len(db.Days)
+	nhours := len(db.Hours)
 	for _, n := range items {
 		nid := addId(id2node, &n)
 		if nid == "" {
@@ -381,15 +313,15 @@ func readClasses(
 		if maxpm >= ndays {
 			maxpm = -1
 		}
-		var r *w365tt.Class
+		var r *base.Class
 		if isStandIns(id2node, n.Categories, nid) {
-			r = &w365tt.Class{
+			r = &base.Class{
 				Id:               nid,
 				Name:             n.Name,
 				Year:             -1,
 				Letter:           "",
 				Tag:              "",
-				Divisions:        []w365tt.Division{},
+				Divisions:        []base.Division{},
 				MinLessonsPerDay: -1,
 				MaxLessonsPerDay: -1,
 				MaxGapsPerDay:    -1,
@@ -408,7 +340,7 @@ func readClasses(
 			} else if maxlpd >= nhours {
 				maxlpd = -1
 			}
-			r = &w365tt.Class{
+			r = &base.Class{
 				Id:               nid,
 				Name:             n.Name,
 				Year:             n.Level,
@@ -423,7 +355,7 @@ func readClasses(
 				ForceFirstHour:   n.ForceFirstHour,
 			}
 			// Initialize Divisions to get [] instead of null, when empty
-			r.Divisions = []w365tt.Division{}
+			r.Divisions = []base.Division{}
 			msg := fmt.Sprintf("Class %s in Divisions", nid)
 			for i, d := range GetRefList(id2node, n.Divisions, msg) {
 				dn := id2node[d].(Division)
@@ -434,7 +366,7 @@ func readClasses(
 					if nm == "" {
 						nm = fmt.Sprintf("#div%d", i)
 					}
-					r.Divisions = append(r.Divisions, w365tt.Division{
+					r.Divisions = append(r.Divisions, base.Division{
 						Name:   nm,
 						Groups: glist,
 					})
@@ -444,22 +376,22 @@ func readClasses(
 		msg := fmt.Sprintf("Class %s in Absences", nid)
 		for _, ai := range GetRefList(id2node, n.Absences, msg) {
 			an := id2node[ai]
-			r.NotAvailable = append(r.NotAvailable, w365tt.TimeSlot{
+			r.NotAvailable = append(r.NotAvailable, base.TimeSlot{
 				Day:  an.(Absence).Day,
 				Hour: an.(Absence).Hour,
 			})
 		}
 		sortAbsences(r.NotAvailable)
-		outdata.Classes = append(outdata.Classes, r)
+		db.Classes = append(db.Classes, r)
 	}
 }
 
 func readSchedules(
-	id2node map[w365tt.Ref]interface{},
+	id2node map[Ref]interface{},
 	items []Schedule,
-) map[string][]w365tt.Ref {
+) map[string][]Ref {
 	// These serve only to determine which Lesson elements are relevant.
-	smap := map[string][]w365tt.Ref{} // Name -> Lesson Ref list
+	smap := map[string][]Ref{} // Name -> Lesson Ref list
 	for _, n := range items {
 		msg := fmt.Sprintf("Bad Lesson Ref in Schedule %s", n.Id)
 		smap[n.Name] = GetRefList(id2node, n.Lessons, msg)
@@ -467,35 +399,34 @@ func readSchedules(
 	return smap
 }
 
-func readCategories(
-	//outdata *w365tt.DbTopLevel,
-	id2node map[w365tt.Ref]interface{},
-	items []Category,
-) {
-	for _, n := range items {
-		nid := addId(id2node, &n)
-		if nid == "" {
-			continue
-		}
+func SplitRefList(reflist RefList) []Ref {
+	result := []Ref{}
+	for _, ref := range strings.Split(string(reflist), ",") {
+		result = append(result, Ref(ref))
 	}
+	return result
 }
 
+// TODO--? If I am not maintaining id2node, this won't work completely ...
+// Categories are separate.
 func GetRefList(
-	id2node map[w365tt.Ref]interface{},
+	id2node map[Ref]interface{},
 	reflist RefList,
 	messages ...string,
-) []w365tt.Ref {
-	var rl []w365tt.Ref
+) []Ref {
+	var rl []Ref
 	if reflist != "" {
 		for _, rs := range strings.Split(string(reflist), ",") {
-			rr := w365tt.Ref(rs)
+			rr := Ref(rs)
 			if _, ok := id2node[rr]; ok {
 				rl = append(rl, rr)
 			} else {
-				log.Printf("Invalid Reference in RefList: %s\n", rs)
+				msglist := []string{
+					fmt.Sprintf("Invalid Reference in RefList: %s\n", rs)}
 				for _, msg := range messages {
-					log.Printf("  ++ %s\n", msg)
+					msglist = append(msglist, fmt.Sprintf("  ++ %s\n", msg))
 				}
+				base.Error.Printf(strings.Join(msglist, ""))
 			}
 		}
 	}

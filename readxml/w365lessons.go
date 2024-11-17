@@ -1,7 +1,7 @@
 package readxml
 
 import (
-	"W365toFET/w365tt"
+	"W365toFET/base"
 	"log"
 	"slices"
 	"strconv"
@@ -20,8 +20,8 @@ import (
 
 func readLessons(
 	// At first, just read in all Lessons to id mapper.
-	//outdata *w365tt.DbTopLevel,
-	id2node map[w365tt.Ref]interface{},
+	//outdata *base.DbTopLevel,
+	id2node map[Ref]interface{},
 	items []Lesson,
 ) {
 	for _, n := range items {
@@ -31,14 +31,14 @@ func readLessons(
 
 // TODO
 func makeLessons(
-	outdata *w365tt.DbTopLevel,
-	id2node map[w365tt.Ref]interface{},
-	courseLessons map[w365tt.Ref][]int,
+	outdata *base.DbTopLevel,
+	id2node map[Ref]interface{},
+	courseLessons map[Ref][]int,
 	// courseLessons maps course ref -> list of lesson lengths
-	scheduled []w365tt.Ref,
+	scheduled []Ref,
 ) {
 	// Collect scheduled lessons
-	lessons := map[w365tt.Ref][]*Lesson{} // course ref -> lesson list
+	lessons := map[Ref][]*Lesson{} // course ref -> lesson list
 	for _, sl := range scheduled {
 		n, ok := id2node[sl]
 		if !ok {
@@ -62,7 +62,7 @@ func makeLessons(
 		lessons[np.Course] = append(lessons[np.Course], np)
 	}
 
-	// Generate w365tt.Lessons for the courses, taking into account the
+	// Generate base.Lessons for the courses, taking into account the
 	// already scheduled lessons.
 	for cref, llens := range courseLessons {
 		// Regard all supplied Lessons as fixed? If not, the others should
@@ -108,14 +108,14 @@ func makeLessons(
 			}
 		add_lesson:
 			lid := "#l#" + strconv.Itoa(len(outdata.Lessons))
-			outdata.Lessons = append(outdata.Lessons, &w365tt.Lesson{
-				Id:       w365tt.Ref(lid),
+			outdata.Lessons = append(outdata.Lessons, &base.Lesson{
+				Id:       Ref(lid),
 				Course:   cref,
 				Duration: llen,
 				Day:      day,
 				Hour:     hour,
 				Fixed:    day >= 0,
-				Rooms:    []w365tt.Ref{},
+				Rooms:    []Ref{},
 			})
 		}
 		if len(llist) != 0 {
