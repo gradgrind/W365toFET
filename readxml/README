@@ -1,2 +1,8 @@
-This is an incomplete sketch of a function to convert W365 XML to JSON
-compatible with the base db. 
+Read W365 XML-output to a "base.DbTopLevel" structure. It covers only a subset
+of the W365 elements and has certain particular expectations:
+
+"Epoch" courses are not handled. Using special "Categories" starting with
+"_" it is possible to represent blocks (SuperCourses and SubCourses).
+
+"Lessons" should be specified using the "SplitHoursPerWeek" notation
+(with "+").

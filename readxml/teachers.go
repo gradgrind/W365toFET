@@ -68,7 +68,7 @@ func (cdata *conversionData) getCourseTeachers(c *Course) []Ref {
 	// base.Groups.
 	//
 	tlist := []Ref{}
-	for _, ref := range splitRefList(c.Groups) {
+	for _, ref := range splitRefList(c.Teachers) {
 		s, ok := cdata.db.Elements[ref]
 		if ok {
 			_, ok := s.(*base.Teacher)

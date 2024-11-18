@@ -52,8 +52,8 @@ func ReadXML(xmlpath string) W365XML {
 	// Remember to close the file at the end of the function
 	defer xmlFile.Close()
 	// read the opened XML file as a byte array.
-	byteValue, _ := io.ReadAll(xmlFile)
 	base.Message.Printf("Reading: %s\n", xmlpath)
+	byteValue, _ := io.ReadAll(xmlFile)
 	v := W365XML{}
 	err = xml.Unmarshal(byteValue, &v)
 	if err != nil {
@@ -199,8 +199,12 @@ func (cdata *conversionData) readHours() {
 	for i := 0; i < len(cdata.xmlin.Hours); i++ {
 		n := &cdata.xmlin.Hours[i]
 		e := cdata.db.NewHour(n.Id)
+		tag := n.Shortcut
+		if tag == "" {
+			tag = "(" + strconv.Itoa(i+1) + ")"
+		}
 		e.Name = n.Name
-		e.Tag = n.Shortcut
+		e.Tag = tag
 
 		t0 := get_time(n.Start)
 		t1 := get_time(n.End)
@@ -238,8 +242,10 @@ func get_time(t string) string {
 
 func splitRefList(reflist RefList) []Ref {
 	result := []Ref{}
-	for _, ref := range strings.Split(string(reflist), ",") {
-		result = append(result, Ref(ref))
+	if reflist != "" {
+		for _, ref := range strings.Split(string(reflist), ",") {
+			result = append(result, Ref(ref))
+		}
 	}
 	return result
 }

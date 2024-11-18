@@ -170,7 +170,7 @@ type Lesson struct {
 	Hour     int
 	Fixed    bool
 	Rooms    []Ref
-	Flags    []string
+	Flags    []string `json:",omitempty"`
 }
 
 type LessonCourse interface {
@@ -189,15 +189,15 @@ type DbTopLevel struct {
 	Teachers         []*Teacher
 	Subjects         []*Subject
 	Rooms            []*Room
-	RoomGroups       []*RoomGroup
-	RoomChoiceGroups []*RoomChoiceGroup
+	RoomGroups       []*RoomGroup       `json:",omitempty"`
+	RoomChoiceGroups []*RoomChoiceGroup `json:",omitempty"`
 	Classes          []*Class
-	Groups           []*Group
-	Courses          []*Course
-	SuperCourses     []*SuperCourse
-	SubCourses       []*SubCourse
-	Lessons          []*Lesson
-	Constraints      []Constraint
+	Groups           []*Group       `json:",omitempty"`
+	Courses          []*Course      `json:",omitempty"`
+	SuperCourses     []*SuperCourse `json:",omitempty"`
+	SubCourses       []*SubCourse   `json:",omitempty"`
+	Lessons          []*Lesson      `json:",omitempty"`
+	Constraints      []Constraint   `json:",omitempty"`
 
 	// These fields do not belong in the JSON object:
 	Elements map[Ref]any `json:"-"`

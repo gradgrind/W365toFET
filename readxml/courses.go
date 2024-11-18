@@ -47,15 +47,9 @@ func (cdata *conversionData) readCourses() map[Ref][]int {
 					llen = append(llen, ll)
 				}
 			}
-		}
-		if n.HoursPerWeek != 0.0 {
-			if n.SplitHoursPerWeek != "" {
-				base.Error.Fatalf("In Course %s:\n"+
-					"  -- Entries for SplitHoursPerWeek AND HoursPerWeek",
-					n.Id)
-			}
+		} else if n.HoursPerWeek != 0.0 {
 			base.Warning.Printf("In Course %s:\n"+
-				"  -- HoursPerWeek specified\n", n.Id)
+				"  -- No SplitHoursPerWeek specified\n", n.Id)
 			for i := 0; i < int(n.HoursPerWeek); i++ {
 				llen = append(llen, 1)
 			}
@@ -120,7 +114,6 @@ func (cdata *conversionData) readCourses() map[Ref][]int {
 
 		spct := xc.super
 		scid := spct.Id
-		//TODO: The SuperCourse may have only one subject
 		spc := db.NewSuperCourse(scid)
 		spc.Subject = spct.Subject
 		// All other fields are ignored.

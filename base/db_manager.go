@@ -12,6 +12,27 @@ func NewDb() *DbTopLevel {
 	return db
 }
 
+func (db *DbTopLevel) newId() Ref {
+	// Create a Version 4 UUID.
+	u2, err := uuid.NewV4()
+	if err != nil {
+		Error.Fatalf("Failed to generate UUID: %v", err)
+	}
+	return Ref(u2.String())
+}
+
+func (db *DbTopLevel) addElement(ref Ref, element any) Ref {
+	if ref == "" {
+		ref = db.newId()
+	}
+	_, nok := db.Elements[ref]
+	if nok {
+		Error.Fatalf("Element Id defined more than once:\n  %s\n", ref)
+	}
+	db.Elements[ref] = element
+	return ref
+}
+
 func (db *DbTopLevel) NewDay(ref Ref) *Day {
 	e := &Day{}
 	e.Id = db.addElement(ref, e)
@@ -101,27 +122,6 @@ func (db *DbTopLevel) NewLesson(ref Ref) *Lesson {
 	e.Id = db.addElement(ref, e)
 	db.Lessons = append(db.Lessons, e)
 	return e
-}
-
-func (db *DbTopLevel) newId() Ref {
-	// Create a Version 4 UUID.
-	u2, err := uuid.NewV4()
-	if err != nil {
-		Error.Fatalf("Failed to generate UUID: %v", err)
-	}
-	return Ref(u2.String())
-}
-
-func (db *DbTopLevel) addElement(ref Ref, element any) Ref {
-	if ref == "" {
-		ref = db.newId()
-	}
-	_, nok := db.Elements[ref]
-	if nok {
-		Error.Fatalf("Element Id defined more than once:\n  %s\n", ref)
-	}
-	db.Elements[ref] = element
-	return ref
 }
 
 func (db *DbTopLevel) PrepareDb() {
