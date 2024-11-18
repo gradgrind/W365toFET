@@ -27984,11 +27984,11 @@ Groups=fa21251d-9154-4ce1-9440-e1c907e4f767
 HandWorkload=0.0
 HoursPerWeek=1.0
 Id=43edca70-7a34-49c8-95fb-7f0a9d9205af
-LastChanged=2024-07-16T12:54:22
+LastChanged=2024-11-18T11:54:54
 ListPosition=36.0
 PreferredRooms=a502dcf1-5523-40e5-843f-413ddf3e0a1f
 SplitEpochWeeks=null
-SplitHoursPerWeek=null
+SplitHoursPerWeek=1+
 Subjects=c2d93ee8-dadb-47bd-9117-8215cb5ac14c
 Teachers=ab4fc721-935f-4ca5-8c8c-f4d1f7bb1832#0e7ea79e-fe3d-48c4-aa41-727169ba3ae2#b1900dd7-28b0-4539-9d09-6daa1ae7e6d1
 

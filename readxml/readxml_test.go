@@ -12,8 +12,8 @@ import (
 )
 
 var inputfiles = []string{
-	"../testdata/Demo1.xml",
-	"../testdata/x01.xml",
+	"../testdata/readxml/Demo1.xml",
+	"../testdata/readxml/x01.xml",
 }
 
 func Test2JSON(t *testing.T) {
