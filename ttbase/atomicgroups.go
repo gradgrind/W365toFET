@@ -18,21 +18,21 @@ type AtomicGroup struct {
 	Tag    string
 }
 
-func filterDivisions(fetinfo *fetInfo) {
+func filterDivisions(ttinfo *TtInfo) {
 	// Prepare filtered versions of the class Divisions containing only
 	// those Divisions which have Groups used in Lessons.
 
 	// Collect groups used in Lessons. Get them from the
-	// fetinfo.courseInfo.groups map, which only includes courses with lessons.
+	// ttinfo.courseInfo.groups map, which only includes courses with lessons.
 	usedgroups := map[Ref]bool{}
-	for _, cinfo := range fetinfo.courseInfo {
-		for _, g := range cinfo.groups {
+	for _, cinfo := range ttinfo.courseInfo {
+		for _, g := range cinfo.Groups {
 			usedgroups[g] = true
 		}
 	}
 	// Filter the class divisions, discarding the division names.
 	cdivs := map[Ref][][]Ref{}
-	for _, c := range fetinfo.db.Classes {
+	for _, c := range ttinfo.db.Classes {
 		divs := [][]Ref{}
 		for _, div := range c.Divisions {
 			for _, gref := range div.Groups {
@@ -44,21 +44,21 @@ func filterDivisions(fetinfo *fetInfo) {
 		}
 		cdivs[c.Id] = divs
 	}
-	fetinfo.classDivisions = cdivs
+	ttinfo.classDivisions = cdivs
 }
 
-func makeAtomicGroups(fetinfo *fetInfo) {
+func makeAtomicGroups(ttinfo *TtInfo) {
 	// An atomic group is an ordered list of single groups from each division.
-	fetinfo.atomicGroups = map[Ref][]AtomicGroup{}
+	ttinfo.atomicGroups = map[Ref][]AtomicGroup{}
 	// Go through the classes inspecting their Divisions. Retain only those
 	// which have lessons.
-	filterDivisions(fetinfo) // -> fetinfo.classDivisions
+	filterDivisions(ttinfo) // -> ttinfo.classDivisions
 	// Go through the classes inspecting their Divisions.
 	// Build a list-basis for the atomic groups based on the Cartesian product.
-	for _, cl := range fetinfo.db.Classes {
-		divs, ok := fetinfo.classDivisions[cl.Id]
+	for _, cl := range ttinfo.db.Classes {
+		divs, ok := ttinfo.classDivisions[cl.Id]
 		if !ok {
-			base.Bug.Fatalf("fetinfo.classDivisions[%s]\n", cl.Id)
+			base.Bug.Fatalf("ttinfo.classDivisions[%s]\n", cl.Id)
 		}
 		// The atomic groups will be built as a list of lists of Refs.
 		agrefs := [][]Ref{{}}
@@ -85,7 +85,7 @@ func makeAtomicGroups(fetinfo *fetInfo) {
 		for _, ag := range agrefs {
 			glist := []string{}
 			for _, gref := range ag {
-				glist = append(glist, fetinfo.ref2grouponly[gref])
+				glist = append(glist, ttinfo.ref2grouponly[gref])
 			}
 			ago := AtomicGroup{
 				Class:  cl.Id,
@@ -115,31 +115,31 @@ func makeAtomicGroups(fetinfo *fetInfo) {
 			count *= len(divGroups)
 		}
 		if len(divs) != 0 {
-			fetinfo.atomicGroups[cl.Id] = aglist
+			ttinfo.atomicGroups[cl.Id] = aglist
 			for g, agl := range g2ags {
-				fetinfo.atomicGroups[g] = agl
+				ttinfo.atomicGroups[g] = agl
 			}
 		} else {
-			fetinfo.atomicGroups[cl.Id] = []AtomicGroup{}
+			ttinfo.atomicGroups[cl.Id] = []AtomicGroup{}
 		}
 	}
 }
 
 // For testing
-func printAtomicGroups(fetinfo *fetInfo) {
-	for _, cl := range fetinfo.db.Classes {
+func printAtomicGroups(ttinfo *TtInfo) {
+	for _, cl := range ttinfo.db.Classes {
 		agls := []string{}
-		for _, ag := range fetinfo.atomicGroups[cl.Id] {
+		for _, ag := range ttinfo.atomicGroups[cl.Id] {
 			agls = append(agls, ag.Tag)
 		}
-		fmt.Printf("  ++ %s: %+v\n", fetinfo.ref2fet[cl.Id], agls)
-		for _, div := range fetinfo.classDivisions[cl.Id] {
+		fmt.Printf("  ++ %s: %+v\n", ttinfo.ref2tt[cl.Id], agls)
+		for _, div := range ttinfo.classDivisions[cl.Id] {
 			for _, g := range div {
 				agls := []string{}
-				for _, ag := range fetinfo.atomicGroups[g] {
+				for _, ag := range ttinfo.atomicGroups[g] {
 					agls = append(agls, ag.Tag)
 				}
-				fmt.Printf("    -- %s: %+v\n", fetinfo.ref2fet[g], agls)
+				fmt.Printf("    -- %s: %+v\n", ttinfo.ref2tt[g], agls)
 			}
 		}
 	}

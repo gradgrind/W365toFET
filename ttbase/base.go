@@ -3,13 +3,12 @@ package ttbase
 import (
 	"W365toFET/base"
 	"encoding/json"
-	"encoding/xml"
 	"fmt"
-	"math"
-	"strconv"
 	"strings"
 )
 
+// TODO: Would it be better to use internal references – small integers?
+// There could be a list to map them (directly) to the referenced items.
 type Ref = base.Ref
 
 const CLASS_GROUP_SEP = "."
@@ -19,62 +18,26 @@ const VIRTUAL_ROOM_PREFIX = "!"
 const LUNCH_BREAK_TAG = "-lb-"
 const LUNCH_BREAK_NAME = "Lunch Break"
 
-const fet_version = "6.25.2"
-
-// Function makeXML produces a chunk of pretty-printed XML output from
-// the input data.
-func makeXML(data interface{}, indent_level int) string {
-	const indent = "  "
-	prefix := strings.Repeat(indent, indent_level)
-	xmlData, err := xml.MarshalIndent(data, prefix, indent)
-	if err != nil {
-		base.Error.Fatalf("%v\n", err)
-	}
-	return string(xmlData)
-}
-
 type virtualRoom struct {
 	rooms       []Ref   // only Rooms
 	roomChoices [][]Ref // list of pure Room lists
 }
 
-type courseInfo struct {
-	subject    Ref
-	groups     []Ref
-	teachers   []Ref
-	room       virtualRoom
-	lessons    []*base.Lesson
-	activities []int
-}
-
-func weight2fet(w int) string {
-	if w == 0 {
-		return "0"
-	}
-	if w == 100 {
-		return "100"
-	}
-	wf := float64(w)
-	n := wf + math.Pow(2, wf/12)
-	wfet := 100.0 - 100.0/n
-	return strconv.FormatFloat(wfet, 'f', 3, 64)
-}
-
 // Possibly helpful when testing
-func (fetinfo *fetInfo) View(cinfo *courseInfo) string {
+func (ttinfo *TtInfo) View(cinfo *CourseInfo) string {
 	tlist := []string{}
-	for _, t := range cinfo.teachers {
-		tlist = append(tlist, fetinfo.ref2fet[t])
+	for _, t := range cinfo.Teachers {
+		tlist = append(tlist, ttinfo.ref2tt[t])
 	}
 	glist := []string{}
-	for _, g := range cinfo.groups {
-		glist = append(glist, fetinfo.ref2fet[g])
+	for _, g := range cinfo.Groups {
+		glist = append(glist, ttinfo.ref2tt[g])
 	}
 
 	return fmt.Sprintf("<Course %s/%s:%s>\n",
 		strings.Join(glist, ","),
 		strings.Join(tlist, ","),
-		fetinfo.ref2fet[cinfo.subject],
+		ttinfo.ref2tt[cinfo.Subject],
 	)
 }
 
@@ -83,10 +46,11 @@ type idMap struct {
 	baseId     Ref
 }
 
-type fetInfo struct {
+// Some of this might be better placed in DbTopLevel?
+type TtInfo struct {
 	db            *base.DbTopLevel
-	ref2fet       map[Ref]string
-	ref2grouponly map[Ref]string
+	ref2tt        map[Ref]string
+	ref2grouponly map[Ref]string // includes only genuine groups
 	days          []string
 	hours         []string
 	// These cover only courses and groups with lessons:
@@ -94,28 +58,28 @@ type fetInfo struct {
 	// placement constraints for non-fixed lessons
 	WITHOUT_ROOM_PLACEMENTS bool
 	superSubs               map[Ref][]Ref
-	courseInfo              map[Ref]courseInfo // Key can be Course or SuperCourse
-	classDivisions          map[Ref][][]Ref
+	courseInfo              map[Ref]CourseInfo // Key can be Course or SuperCourse
+	classDivisions          map[Ref][][]Ref    // value is list of list of groups
 	atomicGroups            map[Ref][]AtomicGroup
-	fetVirtualRooms         map[string]string // cache for FET virtual rooms,
-	// "hash" -> FET-virtual-room tag
-	fetVirtualRoomN         map[string]int // FET-virtual-room tag -> number of room sets
+	ttVirtualRooms          map[string]string // cache for tt virtual rooms,
+	// "hash" -> tt-virtual-room tag
+	ttVirtualRoomN          map[string]int // tt-virtual-room tag -> number of room sets
 	differentDayConstraints map[Ref][]int  // Retain the indexes of the entries
 	// in the ConstraintMinDaysBetweenActivities list for each course. This
 	// allows the default constraints to be modified later.
 }
 
-func MakeFetFile(dbdata *base.DbTopLevel) (string, string) {
-	// Build ref-index -> fet-key mapping
-	ref2fet := map[Ref]string{}
+func MakeTtFile(dbdata *base.DbTopLevel) (string, string) {
+	// Build ref-index -> tt-key mapping
+	ref2tt := map[Ref]string{}
 	for _, r := range dbdata.Subjects {
-		ref2fet[r.Id] = r.Tag
+		ref2tt[r.Id] = r.Tag
 	}
 	for _, r := range dbdata.Rooms {
-		ref2fet[r.Id] = r.Tag
+		ref2tt[r.Id] = r.Tag
 	}
 	for _, r := range dbdata.Teachers {
-		ref2fet[r.Id] = r.Tag
+		ref2tt[r.Id] = r.Tag
 	}
 	ref2grouponly := map[Ref]string{}
 	for _, r := range dbdata.Groups {
@@ -124,51 +88,51 @@ func MakeFetFile(dbdata *base.DbTopLevel) (string, string) {
 		}
 	}
 	for _, r := range dbdata.Classes {
-		ref2fet[r.Id] = r.Tag
-		ref2fet[r.ClassGroup] = r.Tag
+		ref2tt[r.Id] = r.Tag
+		ref2tt[r.ClassGroup] = r.Tag
 		// Handle the groups
 		for _, d := range r.Divisions {
 			for _, g := range d.Groups {
-				ref2fet[g] = r.Tag + CLASS_GROUP_SEP + ref2grouponly[g]
+				ref2tt[g] = r.Tag + CLASS_GROUP_SEP + ref2grouponly[g]
 			}
 		}
 	}
 
-	//fmt.Printf("ref2fet: %v\n", ref2fet)
+	//fmt.Printf("ref2tt: %v\n", ref2tt)
 
 	/*
-		fetinfo := fetInfo{
+		ttinfo := ttInfo{
 			db:                      dbdata,
-			ref2fet:                 ref2fet,
+			ref2tt:                 ref2tt,
 			ref2grouponly:           ref2grouponly,
 			ONLY_FIXED:              true,
 			WITHOUT_ROOM_PLACEMENTS: true,
-			fetVirtualRooms:         map[string]string{},
-			fetVirtualRoomN:         map[string]int{},
+			ttVirtualRooms:         map[string]string{},
+			ttVirtualRoomN:         map[string]int{},
 			differentDayConstraints: map[Ref][]int{},
 		}
 	*/
 
 	/*
-		getDays(&fetinfo)
-		getHours(&fetinfo)
-		getTeachers(&fetinfo)
-		getSubjects(&fetinfo)
-		getRooms(&fetinfo)
+		getDays(&ttinfo)
+		getHours(&ttinfo)
+		getTeachers(&ttinfo)
+		getSubjects(&ttinfo)
+		getRooms(&ttinfo)
 		fmt.Println("=====================================")
-		gatherCourseInfo(&fetinfo)
+		gatherCourseInfo(&ttinfo)
 
-		//readCourseIndexes(&fetinfo)
-		makeAtomicGroups(&fetinfo)
+		//readCourseIndexes(&ttinfo)
+		makeAtomicGroups(&ttinfo)
 		//fmt.Println("\n +++++++++++++++++++++++++++")
-		//printAtomicGroups(&fetinfo)
-		getClasses(&fetinfo)
-		lessonIdMap := getActivities(&fetinfo)
+		//printAtomicGroups(&ttinfo)
+		getClasses(&ttinfo)
+		lessonIdMap := getActivities(&ttinfo)
 
-		addTeacherConstraints(&fetinfo)
-		addClassConstraints(&fetinfo)
+		addTeacherConstraints(&ttinfo)
+		addClassConstraints(&ttinfo)
 
-		getExtraConstraints(&fetinfo)
+		getExtraConstraints(&ttinfo)
 
 		// Convert lessonIdMap to string
 		idmlines := []string{}
@@ -178,7 +142,7 @@ func MakeFetFile(dbdata *base.DbTopLevel) (string, string) {
 		}
 		lidmap := strings.Join(idmlines, "\n")
 
-		return xml.Header + makeXML(fetinfo.fetdata, 0), lidmap
+		return xml.Header + makeXML(ttinfo.ttdata, 0), lidmap
 	*/
 	return "", ""
 }
