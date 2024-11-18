@@ -11,61 +11,47 @@ import (
 	"testing"
 )
 
-func getXMLfile() string {
-	/*
-		const defaultPath = "../_testdata/*.xml"
-		f365, err := zenity.SelectFile(
-			zenity.Filename(defaultPath),
-			zenity.FileFilter{
-				Name:     "Waldorf-365 TT-export",
-				Patterns: []string{"*.xml"},
-				CaseFold: false,
-			})
-		if err != nil {
-			log.Fatal(err)
-		}
-	*/
-
-	//f365 := "../_testdata/x01_w365.xml"
-	//f365 := "../_testdata/fms1_w365.xml"
-	f365 := "../_testdata/Demo1_w365.xml"
-	return f365
+var inputfiles = []string{
+	"../testdata/Demo1.xml",
+	"../testdata/x01.xml",
 }
 
 func Test2JSON(t *testing.T) {
 	base.OpenLog("")
-	fxml := getXMLfile()
-	cdata := ConvertToDb(fxml)
-	fmt.Println("*** Available Schedules:")
-	slist := cdata.ScheduleNames()
-	for _, sname := range slist {
-		fmt.Printf("  -- %s\n", sname)
-	}
-	sname := "Vorlage"
-	if !slices.Contains(slist, sname) {
-		if len(slist) != 0 {
-			sname = slist[0]
-		} else {
-			fmt.Println(" ... stopping ...")
-			return
+	for _, fxml := range inputfiles {
+		fmt.Println("\n ++++++++++++++++++++++")
+		cdata := ConvertToDb(fxml)
+		fmt.Println("*** Available Schedules:")
+		slist := cdata.ScheduleNames()
+		for _, sname := range slist {
+			fmt.Printf("  -- %s\n", sname)
 		}
-	}
-	fmt.Printf("*** Using Schedule '%s'\n", sname)
-	if !cdata.ReadSchedule(sname) {
-		fmt.Println(" ... failed ...")
-		return
-	}
-	stempath := strings.TrimSuffix(fxml, filepath.Ext(fxml))
-	fjson := stempath + "_db.json"
-	if cdata.db.SaveDb(fjson) {
-		fmt.Printf("\n ***** Written to: %s\n", fjson)
-	} else {
-		fmt.Println("\n ***** Write to JSON failed")
-		return
-	}
+		sname := "Vorlage"
+		if !slices.Contains(slist, sname) {
+			if len(slist) != 0 {
+				sname = slist[0]
+			} else {
+				fmt.Println(" ... stopping ...")
+				continue
+			}
+		}
+		fmt.Printf("*** Using Schedule '%s'\n", sname)
+		if !cdata.ReadSchedule(sname) {
+			fmt.Println(" ... failed ...")
+			continue
+		}
+		stempath := strings.TrimSuffix(fxml, filepath.Ext(fxml))
+		fjson := stempath + "_db.json"
+		if cdata.db.SaveDb(fjson) {
+			fmt.Printf("\n ***** Written to: %s\n", fjson)
+		} else {
+			fmt.Println("\n ***** Write to JSON failed")
+			continue
+		}
 
-	stempath = strings.TrimSuffix(stempath, "_w365")
-	toFET(cdata.db, stempath)
+		stempath = strings.TrimSuffix(stempath, "_w365")
+		toFET(cdata.db, stempath)
+	}
 }
 
 func toFET(db *base.DbTopLevel, fetpath string) {

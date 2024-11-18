@@ -101,11 +101,16 @@ func (cdata *conversionData) readCourses() map[Ref][]int {
 			e.Teachers = teachers
 			e.Room = room
 			courseLessons[n.Id] = llen
-		} // else Course with no lessons
+		} else {
+			// else Course with no lessons
 
+			//TODO: Courses without lessons are actually possible and should
+			// probably be handled somehow.
+
+			//fmt.Printf("??? Course with no lessons: %s\n", n.Id)
+		}
 	}
 
-	//TODO
 	for _, xc := range xcourses {
 		//for key, xc := range xcourses {
 		//fmt.Printf("\n *** XCOURSE: %s\n  %+v\n", key, xc)

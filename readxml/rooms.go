@@ -34,7 +34,7 @@ func (cdata *conversionData) readRooms() {
 
 	// Now handle the RoomGroups
 	for nid, n := range rglist {
-		e := base.NewDb().NewRoomGroup(nid)
+		e := cdata.db.NewRoomGroup(nid)
 		e.Name = n.Name
 		e.Tag = n.Shortcut
 		e.Rooms = cdata.checkRealRooms(n.RoomGroups,
