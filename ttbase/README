@@ -1,0 +1,2 @@
+The idea is to extract the stuff from the fet package which can be used
+more generally, i.e. also by other timetable algorithms.
