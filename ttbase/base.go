@@ -6,8 +6,6 @@ import (
 	"strings"
 )
 
-// TODO: Would it be better to use internal references – small integers?
-// There could be a list to map them (directly) to the referenced items.
 type Ref = base.Ref
 
 const CLASS_GROUP_SEP = "."
@@ -40,48 +38,27 @@ func (ttinfo *TtInfo) View(cinfo *CourseInfo) string {
 	)
 }
 
-type idMap struct {
-	activityId int
-	baseId     Ref
-}
-
 // TODO: Some of this might be better placed in DbTopLevel?
 type TtInfo struct {
 	Db      *base.DbTopLevel
-	Ref2Tag map[Ref]string
-
-	Days  []string //TODO: rather NDays?
-	Hours []string //TODO: rather NHours?
-	// These cover only courses and groups with lessons:
-	ONLY_FIXED bool // normally true, false allows generation of
-	// placement constraints for non-fixed lessons
-	WITHOUT_ROOM_PLACEMENTS bool // ?
+	Ref2Tag map[Ref]string // Ref -> Tag mapping for subjects, teachers,
+	// rooms, classes and groups
 
 	// Set up by "gatherCourseInfo"
-	SuperSubs  map[Ref][]Ref
+	SuperSubs  map[Ref][]Ref       // SuperCourse -> list of its SubCourses
 	CourseInfo map[Ref]*CourseInfo // Key can be Course or SuperCourse
 	TtLessons  []TtLesson
 
 	// Set by filterDivisions
-	ClassDivisions map[Ref][][]Ref // value is list of list of groups
+	ClassDivisions map[Ref][][]Ref // Class -> list of list of Groups
 
 	// Set by makeAtomicGroups
-	AtomicGroups map[Ref][]*AtomicGroup
-
-	//?
-	ttVirtualRooms map[string]string // cache for tt virtual rooms,
-	// "hash" -> tt-virtual-room tag
-	ttVirtualRoomN          map[string]int // tt-virtual-room tag -> number of room sets
-	differentDayConstraints map[Ref][]int  // Retain the indexes of the entries
-	// in the ConstraintMinDaysBetweenActivities list for each course. This
-	// allows the default constraints to be modified later.
+	AtomicGroups map[Ref][]*AtomicGroup // Group -> list of AtomicGroups
 }
 
 func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	ttinfo := &TtInfo{
-		Db:                      db,
-		ONLY_FIXED:              true,
-		WITHOUT_ROOM_PLACEMENTS: true,
+		Db: db,
 	}
 	gatherCourseInfo(ttinfo)
 
@@ -120,49 +97,5 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	// Get "atomic" groups
 	makeAtomicGroups(ttinfo)
 
-	//TODO--
-	/*
-		getDays(&ttinfo)
-		getHours(&ttinfo)
-		getTeachers(&ttinfo)
-		getSubjects(&ttinfo)
-		getRooms(&ttinfo)
-		fmt.Println("=====================================")
-		gatherCourseInfo(&ttinfo)
-
-		//readCourseIndexes(&ttinfo)
-		makeAtomicGroups(&ttinfo)
-		//fmt.Println("\n +++++++++++++++++++++++++++")
-		//printAtomicGroups(&ttinfo)
-		getClasses(&ttinfo)
-		lessonIdMap := getActivities(&ttinfo)
-
-		addTeacherConstraints(&ttinfo)
-		addClassConstraints(&ttinfo)
-
-		getExtraConstraints(&ttinfo)
-
-		// Convert lessonIdMap to string
-		idmlines := []string{}
-		for _, idm := range lessonIdMap {
-			idmlines = append(idmlines,
-				strconv.Itoa(idm.activityId)+":"+string(idm.baseId))
-		}
-		lidmap := strings.Join(idmlines, "\n")
-
-		return xml.Header + makeXML(ttinfo.ttdata, 0), lidmap
-	*/
 	return ttinfo
 }
-
-//TODO--?
-/*
-func getString(val interface{}) string {
-	s, ok := val.(string)
-	if !ok {
-		b, _ := json.Marshal(val)
-		s = string(b)
-	}
-	return s
-}
-*/

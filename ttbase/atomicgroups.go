@@ -108,7 +108,7 @@ func makeAtomicGroups(ttinfo *TtInfo) {
 }
 
 // For testing
-func printAtomicGroups(ttinfo *TtInfo) {
+func (ttinfo *TtInfo) PrintAtomicGroups() {
 	for _, cl := range ttinfo.Db.Classes {
 		agls := []string{}
 		for _, ag := range ttinfo.AtomicGroups[cl.Id] {
