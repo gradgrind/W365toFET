@@ -6,60 +6,42 @@ import (
 	"strings"
 )
 
-// "Atomic Groups" are needed especially for the class handling.
-// They should only be built for divisions which have lessons.
-// So first the Lessons must be consulted for their Courses
-// and thus their groups – which can then be marked. Finally the divisions
-// can be filtered on the basis of these marked groups.
+type ResourceIndex int
 
 type AtomicGroup struct {
+	Index  ResourceIndex
 	Class  Ref
 	Groups []Ref
-	Tag    string
-}
-
-func filterDivisions(ttinfo *TtInfo) {
-	// Prepare filtered versions of the class Divisions containing only
-	// those Divisions which have Groups used in Lessons.
-
-	// Collect groups used in Lessons. Get them from the
-	// ttinfo.courseInfo.groups map, which only includes courses with lessons.
-	usedgroups := map[Ref]bool{}
-	for _, cinfo := range ttinfo.courseInfo {
-		for _, g := range cinfo.Groups {
-			usedgroups[g] = true
-		}
-	}
-	// Filter the class divisions, discarding the division names.
-	cdivs := map[Ref][][]Ref{}
-	for _, c := range ttinfo.db.Classes {
-		divs := [][]Ref{}
-		for _, div := range c.Divisions {
-			for _, gref := range div.Groups {
-				if usedgroups[gref] {
-					divs = append(divs, div.Groups)
-					break
-				}
-			}
-		}
-		cdivs[c.Id] = divs
-	}
-	ttinfo.classDivisions = cdivs
+	Tag    string // A constructed tag to represent the atomic group
 }
 
 func makeAtomicGroups(ttinfo *TtInfo) {
-	// An atomic group is an ordered list of single groups from each division.
-	ttinfo.atomicGroups = map[Ref][]AtomicGroup{}
-	// Go through the classes inspecting their Divisions. Retain only those
-	// which have lessons.
-	filterDivisions(ttinfo) // -> ttinfo.classDivisions
+	// An atomic group is an ordered list of single groups, one from each
+	// division.
+	db := ttinfo.Db
+	ttinfo.AtomicGroups = map[Ref][]*AtomicGroup{}
+	atomicGroupIndex := ResourceIndex(0)
+
 	// Go through the classes inspecting their Divisions.
 	// Build a list-basis for the atomic groups based on the Cartesian product.
-	for _, cl := range ttinfo.db.Classes {
-		divs, ok := ttinfo.classDivisions[cl.Id]
+	for _, cl := range ttinfo.Db.Classes {
+		divs, ok := ttinfo.ClassDivisions[cl.Id]
 		if !ok {
 			base.Bug.Fatalf("ttinfo.classDivisions[%s]\n", cl.Id)
 		}
+
+		if len(divs) == 0 {
+			// Make an atomic group for the class
+			cag := &AtomicGroup{
+				Index: atomicGroupIndex,
+				Class: cl.Id,
+				Tag:   cl.Tag + ATOMIC_GROUP_SEP1,
+			}
+			atomicGroupIndex++
+			ttinfo.AtomicGroups[cl.ClassGroup] = []*AtomicGroup{cag}
+			continue
+		}
+
 		// The atomic groups will be built as a list of lists of Refs.
 		agrefs := [][]Ref{{}}
 		for _, dglist := range divs {
@@ -81,23 +63,26 @@ func makeAtomicGroups(ttinfo *TtInfo) {
 		//fmt.Printf("     --> %+v\n", agrefs)
 
 		// Make AtomicGroups
-		aglist := []AtomicGroup{}
+		aglist := []*AtomicGroup{}
 		for _, ag := range agrefs {
 			glist := []string{}
 			for _, gref := range ag {
-				glist = append(glist, ttinfo.ref2grouponly[gref])
+				gtag := db.Elements[gref].(*base.Group).Tag
+				glist = append(glist, gtag)
 			}
-			ago := AtomicGroup{
+			ago := &AtomicGroup{
+				Index:  atomicGroupIndex,
 				Class:  cl.Id,
 				Groups: ag,
 				Tag: cl.Tag + ATOMIC_GROUP_SEP1 +
 					strings.Join(glist, ATOMIC_GROUP_SEP2),
 			}
+			atomicGroupIndex++
 			aglist = append(aglist, ago)
 		}
 
 		// Map the individual groups to their atomic groups.
-		g2ags := map[Ref][]AtomicGroup{}
+		g2ags := map[Ref][]*AtomicGroup{}
 		count := 1
 		divIndex := len(divs)
 		for divIndex > 0 {
@@ -114,32 +99,29 @@ func makeAtomicGroups(ttinfo *TtInfo) {
 			}
 			count *= len(divGroups)
 		}
-		if len(divs) != 0 {
-			ttinfo.atomicGroups[cl.Id] = aglist
-			for g, agl := range g2ags {
-				ttinfo.atomicGroups[g] = agl
-			}
-		} else {
-			ttinfo.atomicGroups[cl.Id] = []AtomicGroup{}
+
+		ttinfo.AtomicGroups[cl.ClassGroup] = aglist
+		for g, agl := range g2ags {
+			ttinfo.AtomicGroups[g] = agl
 		}
 	}
 }
 
 // For testing
 func printAtomicGroups(ttinfo *TtInfo) {
-	for _, cl := range ttinfo.db.Classes {
+	for _, cl := range ttinfo.Db.Classes {
 		agls := []string{}
-		for _, ag := range ttinfo.atomicGroups[cl.Id] {
+		for _, ag := range ttinfo.AtomicGroups[cl.Id] {
 			agls = append(agls, ag.Tag)
 		}
-		fmt.Printf("  ++ %s: %+v\n", ttinfo.ref2tt[cl.Id], agls)
-		for _, div := range ttinfo.classDivisions[cl.Id] {
+		fmt.Printf("  ++ %s: %+v\n", ttinfo.Ref2Tag[cl.Id], agls)
+		for _, div := range ttinfo.ClassDivisions[cl.Id] {
 			for _, g := range div {
 				agls := []string{}
-				for _, ag := range ttinfo.atomicGroups[g] {
+				for _, ag := range ttinfo.AtomicGroups[g] {
 					agls = append(agls, ag.Tag)
 				}
-				fmt.Printf("    -- %s: %+v\n", ttinfo.ref2tt[g], agls)
+				fmt.Printf("    -- %s: %+v\n", ttinfo.Ref2Tag[g], agls)
 			}
 		}
 	}

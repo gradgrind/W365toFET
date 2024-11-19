@@ -2,7 +2,6 @@ package ttbase
 
 import (
 	"W365toFET/base"
-	"encoding/json"
 	"fmt"
 	"strings"
 )
@@ -18,26 +17,26 @@ const VIRTUAL_ROOM_PREFIX = "!"
 const LUNCH_BREAK_TAG = "-lb-"
 const LUNCH_BREAK_NAME = "Lunch Break"
 
-type virtualRoom struct {
-	rooms       []Ref   // only Rooms
-	roomChoices [][]Ref // list of pure Room lists
+type VirtualRoom struct {
+	Rooms       []Ref   // only Rooms
+	RoomChoices [][]Ref // list of ("real") Room lists
 }
 
 // Possibly helpful when testing
 func (ttinfo *TtInfo) View(cinfo *CourseInfo) string {
 	tlist := []string{}
 	for _, t := range cinfo.Teachers {
-		tlist = append(tlist, ttinfo.ref2tt[t])
+		tlist = append(tlist, ttinfo.Ref2Tag[t])
 	}
 	glist := []string{}
 	for _, g := range cinfo.Groups {
-		glist = append(glist, ttinfo.ref2tt[g])
+		glist = append(glist, ttinfo.Ref2Tag[g])
 	}
 
 	return fmt.Sprintf("<Course %s/%s:%s>\n",
 		strings.Join(glist, ","),
 		strings.Join(tlist, ","),
-		ttinfo.ref2tt[cinfo.Subject],
+		ttinfo.Ref2Tag[cinfo.Subject],
 	)
 }
 
@@ -46,22 +45,31 @@ type idMap struct {
 	baseId     Ref
 }
 
-// Some of this might be better placed in DbTopLevel?
+// TODO: Some of this might be better placed in DbTopLevel?
 type TtInfo struct {
-	db            *base.DbTopLevel
-	ref2tt        map[Ref]string
-	ref2grouponly map[Ref]string // includes only genuine groups
-	days          []string
-	hours         []string
+	Db      *base.DbTopLevel
+	Ref2Tag map[Ref]string
+
+	Days  []string //TODO: rather NDays?
+	Hours []string //TODO: rather NHours?
 	// These cover only courses and groups with lessons:
 	ONLY_FIXED bool // normally true, false allows generation of
 	// placement constraints for non-fixed lessons
-	WITHOUT_ROOM_PLACEMENTS bool
-	superSubs               map[Ref][]Ref
-	courseInfo              map[Ref]CourseInfo // Key can be Course or SuperCourse
-	classDivisions          map[Ref][][]Ref    // value is list of list of groups
-	atomicGroups            map[Ref][]AtomicGroup
-	ttVirtualRooms          map[string]string // cache for tt virtual rooms,
+	WITHOUT_ROOM_PLACEMENTS bool // ?
+
+	// Set up by "gatherCourseInfo"
+	SuperSubs  map[Ref][]Ref
+	CourseInfo map[Ref]*CourseInfo // Key can be Course or SuperCourse
+	TtLessons  []TtLesson
+
+	// Set by filterDivisions
+	ClassDivisions map[Ref][][]Ref // value is list of list of groups
+
+	// Set by makeAtomicGroups
+	AtomicGroups map[Ref][]*AtomicGroup
+
+	//?
+	ttVirtualRooms map[string]string // cache for tt virtual rooms,
 	// "hash" -> tt-virtual-room tag
 	ttVirtualRoomN          map[string]int // tt-virtual-room tag -> number of room sets
 	differentDayConstraints map[Ref][]int  // Retain the indexes of the entries
@@ -69,50 +77,50 @@ type TtInfo struct {
 	// allows the default constraints to be modified later.
 }
 
-func MakeTtFile(dbdata *base.DbTopLevel) (string, string) {
-	// Build ref-index -> tt-key mapping
-	ref2tt := map[Ref]string{}
-	for _, r := range dbdata.Subjects {
-		ref2tt[r.Id] = r.Tag
+func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
+	ttinfo := &TtInfo{
+		Db:                      db,
+		ONLY_FIXED:              true,
+		WITHOUT_ROOM_PLACEMENTS: true,
 	}
-	for _, r := range dbdata.Rooms {
-		ref2tt[r.Id] = r.Tag
+	gatherCourseInfo(ttinfo)
+
+	// Build Ref -> Tag mapping for subjects, teachers, rooms, classes
+	// and groups.
+	Ref2Tag := map[Ref]string{}
+	for _, r := range db.Subjects {
+		Ref2Tag[r.Id] = r.Tag
 	}
-	for _, r := range dbdata.Teachers {
-		ref2tt[r.Id] = r.Tag
+	for _, r := range db.Rooms {
+		Ref2Tag[r.Id] = r.Tag
 	}
-	ref2grouponly := map[Ref]string{}
-	for _, r := range dbdata.Groups {
-		if r.Tag != "" {
-			ref2grouponly[r.Id] = r.Tag
-		}
+	for _, r := range db.Teachers {
+		Ref2Tag[r.Id] = r.Tag
 	}
-	for _, r := range dbdata.Classes {
-		ref2tt[r.Id] = r.Tag
-		ref2tt[r.ClassGroup] = r.Tag
-		// Handle the groups
-		for _, d := range r.Divisions {
-			for _, g := range d.Groups {
-				ref2tt[g] = r.Tag + CLASS_GROUP_SEP + ref2grouponly[g]
+
+	// Get filtered divisions (only those with lessons)
+	filterDivisions(ttinfo)
+
+	// Handle the classes and groups (used for lessons)
+	for cref, divs := range ttinfo.ClassDivisions {
+		c := db.Elements[cref].(*base.Class)
+		ctag := c.Tag
+		Ref2Tag[c.Id] = ctag
+		Ref2Tag[c.ClassGroup] = ctag
+		for _, d := range divs {
+			for _, gref := range d {
+				gtag := db.Elements[gref].(*base.Group).Tag
+				Ref2Tag[gref] = ctag + CLASS_GROUP_SEP + gtag
 			}
 		}
 	}
 
-	//fmt.Printf("ref2tt: %v\n", ref2tt)
+	//fmt.Printf("Ref2Tag: %v\n", Ref2Tag)
 
-	/*
-		ttinfo := ttInfo{
-			db:                      dbdata,
-			ref2tt:                 ref2tt,
-			ref2grouponly:           ref2grouponly,
-			ONLY_FIXED:              true,
-			WITHOUT_ROOM_PLACEMENTS: true,
-			ttVirtualRooms:         map[string]string{},
-			ttVirtualRoomN:         map[string]int{},
-			differentDayConstraints: map[Ref][]int{},
-		}
-	*/
+	// Get "atomic" groups
+	makeAtomicGroups(ttinfo)
 
+	//TODO--
 	/*
 		getDays(&ttinfo)
 		getHours(&ttinfo)
@@ -144,9 +152,11 @@ func MakeTtFile(dbdata *base.DbTopLevel) (string, string) {
 
 		return xml.Header + makeXML(ttinfo.ttdata, 0), lidmap
 	*/
-	return "", ""
+	return ttinfo
 }
 
+//TODO--?
+/*
 func getString(val interface{}) string {
 	s, ok := val.(string)
 	if !ok {
@@ -155,3 +165,4 @@ func getString(val interface{}) string {
 	}
 	return s
 }
+*/
