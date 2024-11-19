@@ -1,2 +1,2 @@
-The idea is to extract the stuff from the fet package which can be used
-more generally, i.e. also by other timetable algorithms.
+This package should contain stuff extracted from the base db and processed
+or reorganized to be generally useful for timetable handling.

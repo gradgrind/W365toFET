@@ -29,6 +29,10 @@ type conversionData struct {
 
 }
 
+func (cdata *conversionData) Db() *base.DbTopLevel {
+	return cdata.db
+}
+
 func newConversionData(xmlin *Scenario) *conversionData {
 	return &conversionData{
 		db:              base.NewDb(),

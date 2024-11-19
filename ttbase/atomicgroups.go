@@ -111,10 +111,10 @@ func makeAtomicGroups(ttinfo *TtInfo) {
 func (ttinfo *TtInfo) PrintAtomicGroups() {
 	for _, cl := range ttinfo.Db.Classes {
 		agls := []string{}
-		for _, ag := range ttinfo.AtomicGroups[cl.Id] {
+		for _, ag := range ttinfo.AtomicGroups[cl.ClassGroup] {
 			agls = append(agls, ag.Tag)
 		}
-		fmt.Printf("  ++ %s: %+v\n", ttinfo.Ref2Tag[cl.Id], agls)
+		fmt.Printf("  ++ %s: %+v\n", ttinfo.Ref2Tag[cl.ClassGroup], agls)
 		for _, div := range ttinfo.ClassDivisions[cl.Id] {
 			for _, g := range div {
 				agls := []string{}

@@ -64,15 +64,15 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 
 	// Build Ref -> Tag mapping for subjects, teachers, rooms, classes
 	// and groups.
-	Ref2Tag := map[Ref]string{}
+	ref2Tag := map[Ref]string{}
 	for _, r := range db.Subjects {
-		Ref2Tag[r.Id] = r.Tag
+		ref2Tag[r.Id] = r.Tag
 	}
 	for _, r := range db.Rooms {
-		Ref2Tag[r.Id] = r.Tag
+		ref2Tag[r.Id] = r.Tag
 	}
 	for _, r := range db.Teachers {
-		Ref2Tag[r.Id] = r.Tag
+		ref2Tag[r.Id] = r.Tag
 	}
 
 	// Get filtered divisions (only those with lessons)
@@ -82,17 +82,18 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	for cref, divs := range ttinfo.ClassDivisions {
 		c := db.Elements[cref].(*base.Class)
 		ctag := c.Tag
-		Ref2Tag[c.Id] = ctag
-		Ref2Tag[c.ClassGroup] = ctag
+		ref2Tag[c.Id] = ctag
+		ref2Tag[c.ClassGroup] = ctag
 		for _, d := range divs {
 			for _, gref := range d {
 				gtag := db.Elements[gref].(*base.Group).Tag
-				Ref2Tag[gref] = ctag + CLASS_GROUP_SEP + gtag
+				ref2Tag[gref] = ctag + CLASS_GROUP_SEP + gtag
 			}
 		}
 	}
+	ttinfo.Ref2Tag = ref2Tag
 
-	//fmt.Printf("Ref2Tag: %v\n", Ref2Tag)
+	//fmt.Printf("Ref2Tag: %v\n", ttinfo.Ref2Tag)
 
 	// Get "atomic" groups
 	makeAtomicGroups(ttinfo)
