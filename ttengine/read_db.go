@@ -1,19 +1,31 @@
 package ttengine
 
-import "W365toFET/base"
+import (
+	"W365toFET/base"
+	"W365toFET/ttbase"
+	"fmt"
+	"slices"
+)
 
 type Resource int // or []any (see below)
 type WeekSlot []Resource
 
-type TtBase struct {
-	Resources []WeekSlot
+type TtCore struct {
+	NDays      int
+	NHours     int
+	Activities []Activity
+	Resources  []WeekSlot
 }
 
 // I could make just one big vector (slice) and divide it up using the
 // access functions.
 
-func readDb(db *base.DbTopLevel) *TtBase {
-	tt := &TtBase{}
+/*
+func readDb(db *base.DbTopLevel) *TtCore {
+	ttinfo := ttbase.MakeTtInfo(db)
+	ndays := len(db.Days)
+	nhours := len(db.Hours)
+	ttls := ttinfo.TtLessons
 
 	//TODO
 
@@ -27,17 +39,59 @@ func readDb(db *base.DbTopLevel) *TtBase {
 	// indicate "free". There would be a special reference for slots blocked
 	// by NotAvailable constraints.
 
-	/*
-		lt := len(db.Teachers)
-		lr := len(db.Rooms)
-		lg := number of atomic groups (incl. for classes with no divisions)
+	lt := len(db.Teachers)
+	lr := len(db.Rooms)
 
-		lw := ndays * nhours
+	nag := 0
+	for gref, ags := range ttinfo.AtomicGroups {
 
-		// If using a single vector for all slots:
-		tt.Resources := make([]Resource, (lt + lr + lg) * lw + 1)
+	}
+	//TODO: lg := number of atomic groups (incl. for classes with no divisions)
+
+	lw := ndays * nhours
+
+	// If using a single vector for all slots:
+
+	tt := &TtCore{
+		NDays:      ndays,
+		NHours:     nhours,
+		Activities: make([]Activity, len(ttls)),
+		Resources:  make([]WeekSlot, (lt+lr+lg)*lw+1),
 		// The slots are initialized to 0 (or nil for type "any").
+	}
 
-	*/
 	return tt
+}
+*/
+
+func handleAtomicGroups(
+	db *base.DbTopLevel,
+	agmap map[base.Ref][]*ttbase.AtomicGroup,
+) {
+	ags := []*ttbase.AtomicGroup{}
+	g2ags := map[base.Ref][]ttbase.ResourceIndex{}
+	for _, cl := range db.Classes {
+		for _, ag := range agmap[cl.ClassGroup] {
+			ags = append(ags, ag)
+			//TODO: Get the Group -> index list map
+			g2ags[cl.ClassGroup] = append(g2ags[cl.ClassGroup],
+				ag.Index)
+			for _, gref := range ag.Groups {
+				g2ags[gref] = append(g2ags[gref], ag.Index)
+			}
+		}
+	}
+	// Sort the AtomicGroups
+	slices.SortFunc(ags, func(a, b *ttbase.AtomicGroup) int {
+		if a.Index < b.Index {
+			return -1
+		}
+		return 1
+	})
+
+	for _, ag := range ags {
+		fmt.Printf(" :: %+v\n", ag)
+	}
+
+	//TODO: Save ags and g2ags ...
 }
