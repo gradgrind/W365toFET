@@ -7,9 +7,9 @@ import (
 
 type LessonIndex int // index to TtLessons vector
 
+// TODO: The Index field seems superfluous
 type TtLesson struct {
-	Index LessonIndex
-	//? Duration int
+	Index      LessonIndex
 	CourseInfo *CourseInfo
 	Lesson     *base.Lesson
 }

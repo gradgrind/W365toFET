@@ -3,77 +3,53 @@ package ttengine
 import (
 	"W365toFET/base"
 	"W365toFET/ttbase"
-	"fmt"
 	"slices"
 )
 
+type Ref = base.Ref
+
+type ActivityIndex int
 type Resource int // or []any (see below)
-type WeekSlot []Resource
+//type WeekSlot []Resource
 
 type TtCore struct {
-	NDays      int
-	NHours     int
-	Activities []Activity
-	Resources  []WeekSlot
+	NDays        int
+	NHours       int
+	SlotsPerWeek int
+	Activities   []*Activity // first entry (index 0) free!
+	Resources    []any       // pointers to Resources
+	TtSlots      []ActivityIndex
 }
 
 // I could make just one big vector (slice) and divide it up using the
 // access functions.
 
-/*
 func readDb(db *base.DbTopLevel) *TtCore {
 	ttinfo := ttbase.MakeTtInfo(db)
 	ndays := len(db.Days)
 	nhours := len(db.Hours)
 	ttls := ttinfo.TtLessons
 
-	//TODO
-
-	// Allocate a vector with entries for all resources: teachers, (atomic)
-	// student groups and (real) rooms. It might be a good idea to leave the
-	// first entry (index 0) free.
-	// Each entry is a vector for the time slots in a school week. Each slot
-	// can contain a reference to an activity, indicating that this time
-	// slot is blocked for this resource by the given activity. The references
-	// could be pointers or indexes, but the value 0 should be reserved to
-	// indicate "free". There would be a special reference for slots blocked
-	// by NotAvailable constraints.
+	// Allocate a vector for pointers to all Resources: teachers, (atomic)
+	// student groups and (real) rooms.
+	// Allocate a vector for pointers to all Activities, keeping the first
+	// entry free (0 should be an invalid ActivityIndex).
+	// Allocate a vector for a week of time slots for each Resource. Each
+	// cell represents a timetable slot for a single resource. If it is
+	// occupied – by an ActivityIndex – that indicates which Activity is
+	// using the Resource at this time. A value of -1 indicates that the
+	// time slot is blocked for this Resource.
 
 	lt := len(db.Teachers)
 	lr := len(db.Rooms)
-
-	nag := 0
-	for gref, ags := range ttinfo.AtomicGroups {
-
-	}
-	//TODO: lg := number of atomic groups (incl. for classes with no divisions)
-
 	lw := ndays * nhours
 
-	// If using a single vector for all slots:
-
-	tt := &TtCore{
-		NDays:      ndays,
-		NHours:     nhours,
-		Activities: make([]Activity, len(ttls)),
-		Resources:  make([]WeekSlot, (lt+lr+lg)*lw+1),
-		// The slots are initialized to 0 (or nil for type "any").
-	}
-
-	return tt
-}
-*/
-
-func handleAtomicGroups(
-	db *base.DbTopLevel,
-	agmap map[base.Ref][]*ttbase.AtomicGroup,
-) {
 	ags := []*ttbase.AtomicGroup{}
-	g2ags := map[base.Ref][]ttbase.ResourceIndex{}
+	g2ags := map[Ref][]ResourceIndex{}
 	for _, cl := range db.Classes {
-		for _, ag := range agmap[cl.ClassGroup] {
+		for _, ag := range ttinfo.AtomicGroups[cl.ClassGroup] {
 			ags = append(ags, ag)
-			//TODO: Get the Group -> index list map
+			// Add to the Group -> index list map
 			g2ags[cl.ClassGroup] = append(g2ags[cl.ClassGroup],
 				ag.Index)
 			for _, gref := range ag.Groups {
@@ -81,6 +57,7 @@ func handleAtomicGroups(
 			}
 		}
 	}
+
 	// Sort the AtomicGroups
 	slices.SortFunc(ags, func(a, b *ttbase.AtomicGroup) int {
 		if a.Index < b.Index {
@@ -89,9 +66,35 @@ func handleAtomicGroups(
 		return 1
 	})
 
-	for _, ag := range ags {
-		fmt.Printf(" :: %+v\n", ag)
+	lg := len(ags)
+	// If using a single vector for all slots:
+	tt := &TtCore{
+		NDays:        ndays,
+		NHours:       nhours,
+		SlotsPerWeek: ndays * nhours,
+		Activities:   make([]*Activity, len(ttls)+1),
+		Resources:    make([]any, lt+lr+lg),
+		TtSlots:      make([]ActivityIndex, (lt+lr+lg)*lw),
+	}
+	// The slice cells are initialized to 0 or nil, according to slice type.
+	// Copy the AtomicGroups to the beginning of the Resources slice.
+	for i, ag := range ags {
+		tt.Resources[i] = ag
+		//fmt.Printf(" :: %+v\n", ag)
 	}
 
-	//TODO: Save ags and g2ags ...
+	t2tt := map[Ref]ResourceIndex{}
+	for _, t := range db.Teachers {
+		t2tt[t.Id] = ResourceIndex(len(tt.Resources))
+		tt.Resources = append(tt.Resources, t)
+	}
+	r2tt := map[Ref]ResourceIndex{}
+	for _, r := range db.Rooms {
+		r2tt[r.Id] = ResourceIndex(len(tt.Resources))
+		tt.Resources = append(tt.Resources, r)
+	}
+
+	// Add the Activities
+	tt.addActivities(t2tt, r2tt, g2ags, ttls)
+	return tt
 }
