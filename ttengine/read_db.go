@@ -8,8 +8,9 @@ import (
 
 type Ref = base.Ref
 
-type ActivityIndex int
-type Resource int // or []any (see below)
+type ActivityIndex = int
+
+//type Resource int // or []any (see below)
 //type WeekSlot []Resource
 
 type TtCore struct {
@@ -78,7 +79,7 @@ func readDb(ttinfo *ttbase.TtInfo) *TtCore {
 	}
 	// The slice cells are initialized to 0 or nil, according to slice type.
 	// Copy the AtomicGroups to the beginning of the Resources slice.
-	i := ResourceIndex(0)
+	i := 0
 	for _, ag := range ags {
 		tt.Resources[i] = ag
 		//fmt.Printf(" :: %+v\n", ag)
@@ -97,6 +98,9 @@ func readDb(ttinfo *ttbase.TtInfo) *TtCore {
 		tt.Resources[i] = r
 		i++
 	}
+
+	// Add the pseudo activities due to the NotAvailable lists
+	tt.addBlockers(ttinfo, t2tt, r2tt)
 
 	// Add the Activities
 	tt.addActivities(ttinfo, t2tt, r2tt, g2ags)

@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type ResourceIndex int
+type ResourceIndex = int
 
 type AtomicGroup struct {
 	Index  ResourceIndex

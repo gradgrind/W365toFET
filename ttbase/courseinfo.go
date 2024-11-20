@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type LessonIndex int // index to TtLessons vector
+type LessonIndex = int // index to TtLessons vector
 
 // TODO: The Index field seems superfluous
 type TtLesson struct {
