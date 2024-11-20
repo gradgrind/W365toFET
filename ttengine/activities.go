@@ -6,11 +6,12 @@ import (
 	"slices"
 )
 
-type SlotIndex = int
-type ResourceIndex = int
+type SlotIndex = ttbase.TtIndex
+type ResourceIndex = ttbase.TtIndex
+type ActivityIndex = ttbase.TtIndex
 
 type Activity struct {
-	Index         int
+	Index         ActivityIndex
 	Duration      int
 	Resources     []ResourceIndex
 	PossibleSlots []SlotIndex

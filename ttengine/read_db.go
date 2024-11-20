@@ -8,11 +8,6 @@ import (
 
 type Ref = base.Ref
 
-type ActivityIndex = int
-
-//type Resource int // or []any (see below)
-//type WeekSlot []Resource
-
 type TtCore struct {
 	NDays        int
 	NHours       int
@@ -50,8 +45,7 @@ func readDb(ttinfo *ttbase.TtInfo) *TtCore {
 		for _, ag := range ttinfo.AtomicGroups[cl.ClassGroup] {
 			ags = append(ags, ag)
 			// Add to the Group -> index list map
-			g2ags[cl.ClassGroup] = append(g2ags[cl.ClassGroup],
-				ag.Index)
+			g2ags[cl.ClassGroup] = append(g2ags[cl.ClassGroup], ag.Index)
 			for _, gref := range ag.Groups {
 				g2ags[gref] = append(g2ags[gref], ag.Index)
 			}

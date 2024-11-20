@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-type LessonIndex = int // index to TtLessons vector
+type LessonIndex = TtIndex // index to TtLessons vector
 
 // TODO: The Index field seems superfluous
 type TtLesson struct {
@@ -116,7 +116,7 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 	db := ttinfo.Db
 	for _, l := range db.Lessons {
 		// Index of new TtLesson:
-		ttlix := LessonIndex(len(ttinfo.TtLessons))
+		ttlix := len(ttinfo.TtLessons)
 		// Test whether this is the first lesson of the course
 		lcref := l.Course
 		cinfo, ok := ttinfo.CourseInfo[lcref]

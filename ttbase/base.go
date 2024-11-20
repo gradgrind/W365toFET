@@ -6,6 +6,11 @@ import (
 
 type Ref = base.Ref
 
+// Use alias types for indexes to aid documentation. Making them distinct
+// types might help avoid errors, but it would necessitate conversions at
+// certain points, which has pros and cons ...
+type TtIndex = int // use this as the basic index type
+
 const CLASS_GROUP_SEP = "."
 const ATOMIC_GROUP_SEP1 = "#"
 const ATOMIC_GROUP_SEP2 = "~"

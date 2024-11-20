@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-type ResourceIndex = int
+type ResourceIndex = TtIndex
 
 type AtomicGroup struct {
 	Index  ResourceIndex
@@ -20,7 +20,7 @@ func makeAtomicGroups(ttinfo *TtInfo) {
 	// division.
 	db := ttinfo.Db
 	ttinfo.AtomicGroups = map[Ref][]*AtomicGroup{}
-	atomicGroupIndex := ResourceIndex(0)
+	atomicGroupIndex := 0
 
 	// Go through the classes inspecting their Divisions.
 	// Build a list-basis for the atomic groups based on the Cartesian product.
