@@ -66,14 +66,15 @@ func readDb(ttinfo *ttbase.TtInfo) *TtCore {
 	})
 
 	lg := len(ags)
+
 	// If using a single vector for all slots:
 	tt := &TtCore{
 		NDays:        ndays,
 		NHours:       nhours,
 		SlotsPerWeek: ndays * nhours,
-		Activities:   make([]*Activity, len(ttinfo.TtLessons)+1),
-		Resources:    make([]any, lt+lr+lg),
-		TtSlots:      make([]ActivityIndex, (lt+lr+lg)*lw),
+		// Activities:   set in "addActivities"
+		Resources: make([]any, lt+lr+lg),
+		TtSlots:   make([]ActivityIndex, (lt+lr+lg)*lw),
 	}
 	// The slice cells are initialized to 0 or nil, according to slice type.
 	// Copy the AtomicGroups to the beginning of the Resources slice.

@@ -25,6 +25,10 @@ func (tt *TtCore) addActivities(
 	g2tt map[Ref][]ResourceIndex,
 ) {
 	// Construct the Activities from the ttinfo.TtLessons.
+	// The first element (index 0) is kept empty, 0 being an
+	// invalid ActivityIndex.
+	tt.Activities = make([]*Activity, len(ttinfo.TtLessons)+1)
+
 	warned := []*ttbase.CourseInfo{} // used to warn only once per course
 	for i, ttl := range ttinfo.TtLessons {
 		l := ttl.Lesson
