@@ -62,7 +62,7 @@ func TestTtEngine(t *testing.T) {
 
 func tt(db *base.DbTopLevel) {
 	ttinfo := ttbase.MakeTtInfo(db)
-	ttinfo.PrintAtomicGroups()
+	//ttinfo.PrintAtomicGroups()
 
-	handleAtomicGroups(db, ttinfo.AtomicGroups)
+	readDb(ttinfo)
 }

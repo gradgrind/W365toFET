@@ -2,7 +2,9 @@ package ttbase
 
 import (
 	"W365toFET/base"
+	"fmt"
 	"slices"
+	"strings"
 )
 
 type LessonIndex int // index to TtLessons vector
@@ -20,6 +22,24 @@ type CourseInfo struct {
 	Teachers []Ref
 	Room     VirtualRoom
 	Lessons  []LessonIndex
+}
+
+// Make a shortish string view of a CourseInfo – can be useful in tests
+func (ttinfo *TtInfo) View(cinfo *CourseInfo) string {
+	tlist := []string{}
+	for _, t := range cinfo.Teachers {
+		tlist = append(tlist, ttinfo.Ref2Tag[t])
+	}
+	glist := []string{}
+	for _, g := range cinfo.Groups {
+		glist = append(glist, ttinfo.Ref2Tag[g])
+	}
+
+	return fmt.Sprintf("<Course %s/%s:%s>\n",
+		strings.Join(glist, ","),
+		strings.Join(tlist, ","),
+		ttinfo.Ref2Tag[cinfo.Subject],
+	)
 }
 
 func gatherCourseInfo(ttinfo *TtInfo) {
@@ -95,64 +115,64 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 	roomData := map[Ref][]Ref{} // course -> []room (any sort of "room")
 	db := ttinfo.Db
 	for _, l := range db.Lessons {
-		// Make a new TtLesson (CourseInfo will be added later)
+		// Index of new TtLesson:
 		ttlix := LessonIndex(len(ttinfo.TtLessons))
-		ttl := TtLesson{
-			Index:  ttlix,
-			Lesson: l,
-		}
-		ttinfo.TtLessons = append(ttinfo.TtLessons, ttl)
-
+		// Test whether this is the first lesson of the course
 		lcref := l.Course
 		cinfo, ok := ttinfo.CourseInfo[lcref]
 		if ok {
 			// If the course has already been handled, just add the lesson.
 			cinfo.Lessons = append(cinfo.Lessons, ttlix)
-			ttinfo.CourseInfo[lcref] = cinfo
-			continue
-		}
-
-		// First encounter with the course.
-		var subject Ref
-		var groups []Ref
-		var teachers []Ref
-		var rooms []Ref
-
-		c := db.Elements[lcref] // can be Course or SuperCourse
-		cnode, ok := c.(*base.Course)
-		if ok {
-			if slices.Contains(l.Flags, "SubstitutionService") {
-				groups = nil
-			} else {
-				groups = cnode.Groups
-			}
-			subject = cnode.Subject
-			teachers = cnode.Teachers
-			rooms = []Ref{}
-			if cnode.Room != "" {
-				rooms = append(rooms, cnode.Room)
-			}
 		} else {
-			spc, ok := c.(*base.SuperCourse)
-			if !ok {
-				base.Error.Fatalf(
-					"Invalid Course in Lesson %s:\n  %s\n",
-					l.Id, lcref)
+			// First encounter with the course.
+			var subject Ref
+			var groups []Ref
+			var teachers []Ref
+			var rooms []Ref
+
+			c := db.Elements[lcref] // can be Course or SuperCourse
+			cnode, ok := c.(*base.Course)
+			if ok {
+				if slices.Contains(l.Flags, "SubstitutionService") {
+					groups = nil
+				} else {
+					groups = cnode.Groups
+				}
+				subject = cnode.Subject
+				teachers = cnode.Teachers
+				rooms = []Ref{}
+				if cnode.Room != "" {
+					rooms = append(rooms, cnode.Room)
+				}
+			} else {
+				spc, ok := c.(*base.SuperCourse)
+				if !ok {
+					base.Error.Fatalf(
+						"Invalid Course in Lesson %s:\n  %s\n",
+						l.Id, lcref)
+				}
+				ttinfo.SuperSubs[lcref] = []Ref{}
+				subject = spc.Subject
+				groups = []Ref{}
+				teachers = []Ref{}
+				rooms = []Ref{}
 			}
-			ttinfo.SuperSubs[lcref] = []Ref{}
-			subject = spc.Subject
-			groups = []Ref{}
-			teachers = []Ref{}
-			rooms = []Ref{}
+			cinfo = &CourseInfo{
+				Subject:  subject,
+				Groups:   groups,
+				Teachers: teachers,
+				//Rooms: filled later
+				Lessons: []LessonIndex{ttlix},
+			}
+			ttinfo.CourseInfo[lcref] = cinfo
+			roomData[lcref] = rooms
 		}
-		ttinfo.CourseInfo[lcref] = &CourseInfo{
-			Subject:  subject,
-			Groups:   groups,
-			Teachers: teachers,
-			//Rooms: filled later
-			Lessons: []LessonIndex{ttlix},
+		ttl := TtLesson{
+			Index:      ttlix,
+			Lesson:     l,
+			CourseInfo: cinfo,
 		}
-		roomData[lcref] = rooms
+		ttinfo.TtLessons = append(ttinfo.TtLessons, ttl)
 	}
 	return roomData
 }

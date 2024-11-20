@@ -24,11 +24,10 @@ type TtCore struct {
 // I could make just one big vector (slice) and divide it up using the
 // access functions.
 
-func readDb(db *base.DbTopLevel) *TtCore {
-	ttinfo := ttbase.MakeTtInfo(db)
+func readDb(ttinfo *ttbase.TtInfo) *TtCore {
+	db := ttinfo.Db
 	ndays := len(db.Days)
 	nhours := len(db.Hours)
-	ttls := ttinfo.TtLessons
 
 	// Allocate a vector for pointers to all Resources: teachers, (atomic)
 	// student groups and (real) rooms.
@@ -72,29 +71,33 @@ func readDb(db *base.DbTopLevel) *TtCore {
 		NDays:        ndays,
 		NHours:       nhours,
 		SlotsPerWeek: ndays * nhours,
-		Activities:   make([]*Activity, len(ttls)+1),
+		Activities:   make([]*Activity, len(ttinfo.TtLessons)+1),
 		Resources:    make([]any, lt+lr+lg),
 		TtSlots:      make([]ActivityIndex, (lt+lr+lg)*lw),
 	}
 	// The slice cells are initialized to 0 or nil, according to slice type.
 	// Copy the AtomicGroups to the beginning of the Resources slice.
-	for i, ag := range ags {
+	i := ResourceIndex(0)
+	for _, ag := range ags {
 		tt.Resources[i] = ag
 		//fmt.Printf(" :: %+v\n", ag)
+		i++
 	}
 
 	t2tt := map[Ref]ResourceIndex{}
 	for _, t := range db.Teachers {
-		t2tt[t.Id] = ResourceIndex(len(tt.Resources))
-		tt.Resources = append(tt.Resources, t)
+		t2tt[t.Id] = i
+		tt.Resources[i] = t
+		i++
 	}
 	r2tt := map[Ref]ResourceIndex{}
 	for _, r := range db.Rooms {
-		r2tt[r.Id] = ResourceIndex(len(tt.Resources))
-		tt.Resources = append(tt.Resources, r)
+		r2tt[r.Id] = i
+		tt.Resources[i] = r
+		i++
 	}
 
 	// Add the Activities
-	tt.addActivities(t2tt, r2tt, g2ags, ttls)
+	tt.addActivities(ttinfo, t2tt, r2tt, g2ags)
 	return tt
 }

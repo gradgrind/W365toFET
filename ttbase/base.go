@@ -2,8 +2,6 @@ package ttbase
 
 import (
 	"W365toFET/base"
-	"fmt"
-	"strings"
 )
 
 type Ref = base.Ref
@@ -18,24 +16,6 @@ const LUNCH_BREAK_NAME = "Lunch Break"
 type VirtualRoom struct {
 	Rooms       []Ref   // only ("real") Rooms
 	RoomChoices [][]Ref // list of ("real") Room lists
-}
-
-// Possibly helpful when testing
-func (ttinfo *TtInfo) View(cinfo *CourseInfo) string {
-	tlist := []string{}
-	for _, t := range cinfo.Teachers {
-		tlist = append(tlist, ttinfo.Ref2Tag[t])
-	}
-	glist := []string{}
-	for _, g := range cinfo.Groups {
-		glist = append(glist, ttinfo.Ref2Tag[g])
-	}
-
-	return fmt.Sprintf("<Course %s/%s:%s>\n",
-		strings.Join(glist, ","),
-		strings.Join(tlist, ","),
-		ttinfo.Ref2Tag[cinfo.Subject],
-	)
 }
 
 // TODO: Some of this might be better placed in DbTopLevel?
