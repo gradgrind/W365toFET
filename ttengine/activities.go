@@ -14,9 +14,10 @@ type Activity struct {
 	Index         ActivityIndex
 	Duration      int
 	Resources     []ResourceIndex
-	PossibleSlots []SlotIndex
 	Fixed         bool
 	Placement     int // day * nhours + hour, or -1 if unplaced
+	PossibleSlots []SlotIndex
+	DifferentDays []ActivityIndex // hard constraint only
 }
 
 func (tt *TtCore) addActivities(
@@ -72,9 +73,10 @@ func (tt *TtCore) addActivities(
 			Index:     aix,
 			Duration:  l.Duration,
 			Resources: resources,
-			//PossibleSlots: TODO,
 			Fixed:     l.Fixed,
 			Placement: p,
+			//PossibleSlots: TODO,
+			//DifferentDays: TODO,
 		}
 		tt.Activities[aix] = a
 
@@ -113,7 +115,7 @@ func (tt *TtCore) addActivities(
 			// Perform placement
 			tt.placeActivity(aix, p)
 		} else {
-			//TODO: need CourseInfo
+			// Need CourseInfo for reporting details
 			ttl := ttinfo.TtLessons[aix-1]
 			cinfo := ttl.CourseInfo
 			//
