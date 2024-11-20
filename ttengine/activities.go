@@ -31,7 +31,10 @@ func (tt *TtCore) addActivities(
 	tt.Activities = make([]*Activity, len(ttinfo.TtLessons)+1)
 
 	warned := []*ttbase.CourseInfo{} // used to warn only once per course
+	// Collect non-fixed activities which need placing
+	toplace := []ActivityIndex{}
 	for i, ttl := range ttinfo.TtLessons {
+		aix := i + 1
 		l := ttl.Lesson
 		p := -1
 		if l.Day >= 0 {
@@ -65,34 +68,60 @@ func (tt *TtCore) addActivities(
 			resources = append(resources, r2tt[rref])
 		}
 
-		tt.Activities[i+1] = &Activity{
-			Index:     i + 1,
+		a := &Activity{
+			Index:     aix,
 			Duration:  l.Duration,
 			Resources: resources,
 			//PossibleSlots: TODO,
 			Fixed:     l.Fixed,
 			Placement: p,
 		}
+		tt.Activities[aix] = a
 
-		//TODO: Actually need to test before setting the Placement field!
-		// Perhaps the placement could be revoked on failure? It seems useful
-		// to have the desired data in the activities.
+		// The placement has not yet been tested, so the Placement field
+		// may still need to be revoked!
 
 		// First place the fixed lessons, then build the PossibleSlots for
-		// non-fixed lessons. Should Resource NotAvailable data be fed in
-		// before placing fixed lessons? Almost certainly, yes!
-
-		//TODO
+		// non-fixed lessons.
 
 		if p >= 0 {
-			if tt.testPlacement(i+1, p) {
-				// Perform placement
-				tt.placeActivity(i+1, p)
+			if a.Fixed {
+				if tt.testPlacement(aix, p) {
+					// Perform placement
+					tt.placeActivity(aix, p)
+				} else {
+					base.Error.Printf(
+						"Placement of Fixed Activity %d @ %d failed:\n"+
+							"  -- %s\n",
+						aix, p, ttinfo.View(cinfo))
+					a.Placement = -1
+					a.Fixed = false
+				}
 			} else {
-				base.Error.Printf(
-					"Placement of Activity %d @ %d failed:\n  -- %s\n",
-					i+1, p, ttinfo.View(cinfo))
+				toplace = append(toplace, aix)
 			}
+		}
+	}
+
+	//TODO: Build PossibleSlots
+
+	// Place non-fixed lessons
+	for _, aix := range toplace {
+		a := tt.Activities[aix]
+		p := a.Placement
+		if tt.testPlacement(aix, p) {
+			// Perform placement
+			tt.placeActivity(aix, p)
+		} else {
+			//TODO: need CourseInfo
+			ttl := ttinfo.TtLessons[aix-1]
+			cinfo := ttl.CourseInfo
+			//
+			base.Warning.Printf(
+				"Placement of Activity %d @ %d failed:\n"+
+					"  -- %s\n",
+				aix, p, ttinfo.View(cinfo))
+			a.Placement = -1
 		}
 	}
 }
