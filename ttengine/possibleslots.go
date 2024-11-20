@@ -10,11 +10,14 @@ import (
 // available slots.
 //TODO: Also hard different-days constraints can be taken into account.
 
+//TODO: What about parallel courses/ lessons?
+
 //TODO: Should the fixed-lesson placement check for end-of-day problems
 // when duration > 1?
 
 func (tt *TtCore) makePossibleSlots() {
-	for _, a := range tt.Activities {
+	for aix := 1; aix < len(tt.Activities); aix++ {
+		a := tt.Activities[aix]
 		if a.Fixed {
 			// Fixed activities don't need possible slots.
 			continue
@@ -44,16 +47,17 @@ func (tt *TtCore) makePossibleSlots() {
 		if len(banned) == tt.NDays {
 			//TODO: get course?
 			base.Error.Fatalf("Activity %d has no available time slots\n",
-				a.Index)
+				aix)
 		}
+		length := a.Duration
 		for d := 0; d < tt.NDays; d++ {
 			// Only days without different days activities are possible.
 			if slices.Contains(banned, d) {
 				continue
 			}
-			for h := 0; h < tt.NHours; h++ {
+			for h := 0; h <= tt.NHours-length; h++ {
 				p := d*tt.NHours + h
-				if tt.testPlacement(a.Index, p) {
+				if tt.testPlacement(aix, p) {
 					plist = append(plist, p)
 				}
 			}

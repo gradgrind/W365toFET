@@ -106,6 +106,7 @@ func (tt *TtCore) addActivities(
 	}
 
 	//TODO: Build PossibleSlots
+	tt.makePossibleSlots()
 
 	// Place non-fixed lessons
 	for _, aix := range toplace {
