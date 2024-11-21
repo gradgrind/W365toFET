@@ -9,8 +9,9 @@ func (db *DbTopLevel) addConstraint(c Constraint) {
 // If not present, all courses will by default apply it as a hard constraint,
 // except for courses which have an overriding DAYS_BETWEEN constraint.
 type AutomaticDifferentDays struct {
-	Constraint string
-	Weight     int
+	Constraint           string
+	Weight               int
+	ConsecutiveIfSameDay bool
 }
 
 func (c *AutomaticDifferentDays) CType() string {
@@ -26,10 +27,11 @@ func (db *DbTopLevel) NewAutomaticDifferentDays() *AutomaticDifferentDays {
 // ++ DaysBetween
 
 type DaysBetween struct {
-	Constraint  string
-	Weight      int
-	Courses     []Ref // Courses or SuperCourses
-	DaysBetween int
+	Constraint           string
+	Weight               int
+	Courses              []Ref // Courses or SuperCourses
+	DaysBetween          int
+	ConsecutiveIfSameDay bool
 }
 
 func (c *DaysBetween) CType() string {

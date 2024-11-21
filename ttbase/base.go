@@ -34,11 +34,13 @@ type TtInfo struct {
 	CourseInfo map[Ref]*CourseInfo // Key can be Course or SuperCourse
 	TtLessons  []TtLesson
 
-	// Set by filterDivisions
+	// Set by "filterDivisions"
 	ClassDivisions map[Ref][][]Ref // Class -> list of list of Groups
 
-	// Set by makeAtomicGroups
+	// Set by "makeAtomicGroups"
 	AtomicGroups map[Ref][]*AtomicGroup // Group -> list of AtomicGroups
+
+	Constraints map[string][]any
 }
 
 func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
@@ -46,6 +48,12 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 		Db: db,
 	}
 	gatherCourseInfo(ttinfo)
+
+	// Collect the constraints according to type
+	for _, c := range ttinfo.Db.Constraints {
+		ctype := c.CType()
+		ttinfo.Constraints[ctype] = append(ttinfo.Constraints[ctype], c)
+	}
 
 	// Build Ref -> Tag mapping for subjects, teachers, rooms, classes
 	// and groups.
