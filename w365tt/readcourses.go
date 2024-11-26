@@ -137,7 +137,7 @@ func (db *DbTopLevel) getCourseSubject(
 				base.Error.Fatalf(msg, courseId, wsid)
 			}
 		}
-		sktag := strings.Join(sklist, ",")
+		sktag := strings.Join(sklist, "/")
 		wsid, ok := db.SubjectTags[sktag]
 		if ok {
 			// The name has already been used.
