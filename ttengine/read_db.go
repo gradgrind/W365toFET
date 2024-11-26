@@ -72,6 +72,7 @@ func readDb(ttinfo *ttbase.TtInfo) *TtCore {
 		TtSlots:   make([]ActivityIndex, (lt+lr+lg)*lw),
 	}
 	// The slice cells are initialized to 0 or nil, according to slice type.
+
 	// Copy the AtomicGroups to the beginning of the Resources slice.
 	i := 0
 	for _, ag := range ags {

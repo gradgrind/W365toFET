@@ -25,12 +25,13 @@ func (tt *TtCore) makePossibleSlots() {
 		plist := []int{}
 
 		banned := []int{}
+		ddnew := []ActivityIndex{}
 		for _, addix := range a.DifferentDays {
 			add := tt.Activities[addix]
 			if !add.Fixed {
-				// Actually, for later tests I only need these ones as the
+				// For later tests I only need these ones, as the
 				// fixed ones will have already been taken care of.
-				//TODO
+				ddnew = append(ddnew, addix)
 				continue
 			}
 			// Find day
@@ -44,6 +45,8 @@ func (tt *TtCore) makePossibleSlots() {
 				banned = append(banned, dx)
 			}
 		}
+		a.DifferentDays = ddnew
+
 		if len(banned) == tt.NDays {
 			//TODO: get course?
 			base.Error.Fatalf("Activity %d has no available time slots\n",

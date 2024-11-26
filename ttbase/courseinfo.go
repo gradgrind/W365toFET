@@ -17,6 +17,7 @@ type TtLesson struct {
 }
 
 type CourseInfo struct {
+	Id       Ref
 	Subject  Ref
 	Groups   []Ref
 	Teachers []Ref
@@ -158,6 +159,7 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 				rooms = []Ref{}
 			}
 			cinfo = &CourseInfo{
+				Id:       lcref,
 				Subject:  subject,
 				Groups:   groups,
 				Teachers: teachers,

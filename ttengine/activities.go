@@ -34,6 +34,46 @@ func (tt *TtCore) addActivities(
 	warned := []*ttbase.CourseInfo{} // used to warn only once per course
 	// Collect non-fixed activities which need placing
 	toplace := []ActivityIndex{}
+
+	// The place to get custom different-days constraints is the
+	// course, which provides links to all the lessons of the course.
+	// However, there is also the possibility of a constraint modifying
+	// the default behaviour.
+	autoDifferentDays := true
+	cadd, ok := ttinfo.Constraints["AutomaticDifferentDays"]
+	if ok {
+		if len(cadd) > 1 {
+			base.Error.Fatalf("Constraint AutomaticDifferentDays exists"+
+				" %d times\n", len(cadd))
+		}
+		if cadd[0].(*base.AutomaticDifferentDays).Weight != base.MAXWEIGHT {
+			autoDifferentDays = false
+		}
+	}
+
+	differentDays := map[Ref]bool{}
+	for _, c := range ttinfo.Constraints["DaysBetween"] {
+		cc := c.(*base.DaysBetween)
+		if cc.DaysBetween == 1 {
+			for _, cref := range cc.Courses {
+				differentDays[cref] = cc.Weight == base.MAXWEIGHT
+			}
+		}
+	}
+
+	differentDaysJoin := map[Ref][]Ref{}
+	for _, c := range ttinfo.Constraints["DaysBetweenJoin"] {
+		cc := c.(*base.DaysBetweenJoin)
+		if cc.Weight == base.MAXWEIGHT && cc.DaysBetween == 1 {
+			differentDaysJoin[cc.Course1] = append(
+				differentDaysJoin[cc.Course1], cc.Course2)
+			differentDaysJoin[cc.Course2] = append(
+				differentDaysJoin[cc.Course2], cc.Course1)
+		}
+	}
+
+	// All other such constraints are not handled at this stage.
+
 	for i, ttl := range ttinfo.TtLessons {
 		aix := i + 1
 		l := ttl.Lesson
@@ -69,10 +109,26 @@ func (tt *TtCore) addActivities(
 			resources = append(resources, r2tt[rref])
 		}
 
-		//TODO: The first place to get different-days constraints is the course,
-		// which provides links to all the lessons of the course. However,
-		// there is also the possibility of a constraint modifying the
-		// default behaviour.
+		// Prepare the DifferentDays field
+		ddlist := []ActivityIndex{}
+		// Get different-days info for the course
+		dd, ok := differentDays[cinfo.Id]
+		if !ok {
+			dd = autoDifferentDays
+		}
+		if dd {
+			for _, l := range cinfo.Lessons {
+				if l != i {
+					ddlist = append(ddlist, l+1) // add the activity index
+				}
+			}
+		}
+		for _, cj := range differentDaysJoin[cinfo.Id] {
+			cjinfo := ttinfo.CourseInfo[cj]
+			for _, l := range cjinfo.Lessons {
+				ddlist = append(ddlist, l+1) // add the activity index
+			}
+		}
 
 		a := &Activity{
 			Index:     aix,
@@ -80,8 +136,8 @@ func (tt *TtCore) addActivities(
 			Resources: resources,
 			Fixed:     l.Fixed,
 			Placement: p,
-			//PossibleSlots: TODO,
-			//DifferentDays: TODO,
+			//PossibleSlots: added later (see "makePossibleSlots"),
+			DifferentDays: ddlist,
 		}
 		tt.Activities[aix] = a
 
@@ -111,7 +167,7 @@ func (tt *TtCore) addActivities(
 		}
 	}
 
-	//TODO: Build PossibleSlots
+	// Build PossibleSlots
 	tt.makePossibleSlots()
 
 	// Place non-fixed lessons
