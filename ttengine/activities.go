@@ -69,6 +69,11 @@ func (tt *TtCore) addActivities(
 			resources = append(resources, r2tt[rref])
 		}
 
+		//TODO: The first place to get different-days constraints is the course,
+		// which provides links to all the lessons of the course. However,
+		// there is also the possibility of a constraint modifying the
+		// default behaviour.
+
 		a := &Activity{
 			Index:     aix,
 			Duration:  l.Duration,
@@ -92,6 +97,7 @@ func (tt *TtCore) addActivities(
 					// Perform placement
 					tt.placeActivity(aix, p)
 				} else {
+					//TODO: MAybe this shoud be fatal?
 					base.Error.Printf(
 						"Placement of Fixed Activity %d @ %d failed:\n"+
 							"  -- %s\n",
