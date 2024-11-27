@@ -7,7 +7,7 @@ import (
 
 type preferredSlots struct {
 	XMLName                        xml.Name `xml:"ConstraintActivitiesPreferredTimeSlots"`
-	Weight_Percentage              int
+	Weight_Percentage              string
 	Teacher                        string
 	Students                       string
 	Subject                        string
@@ -44,6 +44,53 @@ func getExtraConstraints(fetinfo *fetInfo) {
 	tclist := &fetinfo.fetdata.Time_Constraints_List
 	db := fetinfo.db
 	for _, c := range db.Constraints {
+		{
+			cn, ok := c.(*base.AutomaticDifferentDays)
+			if ok {
+				if fetinfo.autoDifferentDays == nil {
+					fetinfo.autoDifferentDays = cn
+				} else {
+					base.Bug.Fatalln(
+						"More than one AutomaticDifferentDays constraint")
+				}
+				continue
+			}
+		}
+		{
+			cn, ok := c.(*base.DaysBetween)
+			if ok {
+				for _, cref := range cn.Courses {
+					fetinfo.daysBetween[cref] = append(
+						fetinfo.daysBetween[cref], cn)
+				}
+				continue
+			}
+		}
+		{
+			cn, ok := c.(*base.DaysBetweenJoin)
+			if ok {
+				c1 := fetinfo.courseInfo[cn.Course1]
+				c2 := fetinfo.courseInfo[cn.Course2]
+				mdba := []minDaysBetweenActivities{}
+				for _, l1 := range c1.activities {
+					for _, l2 := range c2.activities {
+						mdba = append(mdba, minDaysBetweenActivities{
+							Weight_Percentage:       weight2fet(cn.Weight),
+							Consecutive_If_Same_Day: cn.ConsecutiveIfSameDay,
+							Number_of_Activities:    2,
+							Activity_Id:             []int{l1, l2},
+							MinDays:                 cn.DaysBetween,
+							Active:                  true,
+						})
+					}
+				}
+				// Append constraints to full list
+				tclist.ConstraintMinDaysBetweenActivities = append(
+					tclist.ConstraintMinDaysBetweenActivities,
+					mdba...)
+				continue
+			}
+		}
 		{
 			cn, ok := c.(*base.LessonsEndDay)
 			if ok {
