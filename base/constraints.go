@@ -91,3 +91,24 @@ func (db *DbTopLevel) NewLessonsEndsDay() *LessonsEndDay {
 	db.addConstraint(c)
 	return c
 }
+
+// ++ ParallelCourses
+// The lessons of the courses specified here should be at the same time.
+// To avoid complications, it is required that the number and lengths of
+// lessons be the same in each course.
+
+type ParallelCourses struct {
+	Constraint string
+	Weight     int
+	Courses    []Ref // Courses or SuperCourses
+}
+
+func (c *ParallelCourses) CType() string {
+	return c.Constraint
+}
+
+func (db *DbTopLevel) NewParallelCourses() *ParallelCourses {
+	c := &ParallelCourses{Constraint: "ParallelCourses"}
+	db.addConstraint(c)
+	return c
+}
