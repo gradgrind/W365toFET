@@ -136,6 +136,7 @@ type timeConstraints struct {
 	ConstraintActivitiesPreferredTimeSlots  []preferredSlots
 	ConstraintMinDaysBetweenActivities      []minDaysBetweenActivities
 	ConstraintActivityEndsStudentsDay       []lessonEndsDay
+	ConstraintActivitiesSameStartingTime    []sameStartingTime
 
 	ConstraintStudentsSetMaxGapsPerDay                  []maxGapsPerDay
 	ConstraintStudentsSetMaxGapsPerWeek                 []maxGapsPerWeek

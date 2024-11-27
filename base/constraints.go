@@ -10,8 +10,8 @@ func (db *DbTopLevel) addConstraint(c Constraint) {
 
 type LessonsEndDay struct {
 	Constraint string
-	Course     Ref
 	Weight     int
+	Course     Ref
 }
 
 func (c *LessonsEndDay) CType() string {
@@ -23,8 +23,6 @@ func (db *DbTopLevel) NewLessonsEndDay() *LessonsEndDay {
 	db.addConstraint(c)
 	return c
 }
-
-//TODO ...
 
 // ++ BeforeAfterHour
 // Permissible hours are before or after the specified hour, not including
@@ -44,24 +42,6 @@ func (c *BeforeAfterHour) CType() string {
 
 func (db *DbTopLevel) NewBeforeAfterHour() *BeforeAfterHour {
 	c := &BeforeAfterHour{Constraint: "BeforeAfterHour"}
-	db.addConstraint(c)
-	return c
-}
-
-// ++ NotOnSameDay
-
-type NotOnSameDay struct {
-	Constraint string
-	Weight     int
-	Subjects   []Ref
-}
-
-func (c *NotOnSameDay) CType() string {
-	return c.Constraint
-}
-
-func (db *DbTopLevel) NewNotOnSameDay() *NotOnSameDay {
-	c := &NotOnSameDay{Constraint: "NotOnSameDay"}
 	db.addConstraint(c)
 	return c
 }
@@ -131,6 +111,26 @@ func (c *DaysBetweenJoin) CType() string {
 
 func (db *DbTopLevel) NewDaysBetweenJoin() *DaysBetweenJoin {
 	c := &DaysBetweenJoin{Constraint: "DaysBetweenJoin"}
+	db.addConstraint(c)
+	return c
+}
+
+//TODO ...
+
+// ++ NotOnSameDay
+
+type NotOnSameDay struct {
+	Constraint string
+	Weight     int
+	Subjects   []Ref
+}
+
+func (c *NotOnSameDay) CType() string {
+	return c.Constraint
+}
+
+func (db *DbTopLevel) NewNotOnSameDay() *NotOnSameDay {
+	c := &NotOnSameDay{Constraint: "NotOnSameDay"}
 	db.addConstraint(c)
 	return c
 }

@@ -3,6 +3,7 @@ package fet
 import (
 	"W365toFET/base"
 	"encoding/xml"
+	"strings"
 )
 
 type preferredSlots struct {
@@ -38,6 +39,14 @@ type activityPreferredTimes struct {
 	Number_of_Preferred_Time_Slots int
 	Preferred_Time_Slot            []preferredTime
 	Active                         bool
+}
+
+type sameStartingTime struct {
+	XMLName              xml.Name `xml:"ConstraintActivitiesSameStartingTime"`
+	Weight_Percentage    string
+	Number_of_Activities int
+	Activity_Id          []int
+	Active               bool
 }
 
 func getExtraConstraints(fetinfo *fetInfo) {
@@ -149,6 +158,59 @@ func getExtraConstraints(fetinfo *fetInfo) {
 								Active:                         true,
 							})
 					}
+				}
+				continue
+			}
+		}
+		{
+			cn, ok := c.(*base.ParallelCourses)
+			if ok {
+				// The courses must have the same number of lessons and the
+				// lengths of the corresponding lessons must also be the same.
+				// A constraint is generated for each lesson of the courses.
+
+				// Check lesson lengths
+				footprint := []int{} // lesson sizes
+				ll := 0              // number of lessons in each course
+				var alists [][]int   // collect the parallel activities
+				for i, cref := range cn.Courses {
+					cinfo := fetinfo.courseInfo[cref]
+					if i == 0 {
+						ll = len(cinfo.lessons)
+						alists = make([][]int, ll)
+					} else if len(cinfo.lessons) != ll {
+						clist := []string{}
+						for _, cr := range cn.Courses {
+							clist = append(clist, string(cr))
+						}
+						base.Error.Fatalf("Parallel courses have different"+
+							" lessons: %s\n",
+							strings.Join(clist, ","))
+					}
+					for j, l := range cinfo.lessons {
+						if i == 0 {
+							footprint = append(footprint, l.Duration)
+						} else if l.Duration != footprint[j] {
+							clist := []string{}
+							for _, cr := range cn.Courses {
+								clist = append(clist, string(cr))
+							}
+							base.Error.Fatalf("Parallel courses have lesson"+
+								" mismatch: %s\n",
+								strings.Join(clist, ","))
+						}
+						alists[j] = append(alists[j], cinfo.activities[j])
+					}
+				}
+				for _, alist := range alists {
+					tclist.ConstraintActivitiesSameStartingTime = append(
+						tclist.ConstraintActivitiesSameStartingTime,
+						sameStartingTime{
+							Weight_Percentage:    weight2fet(cn.Weight),
+							Number_of_Activities: len(alist),
+							Activity_Id:          alist,
+							Active:               true,
+						})
 				}
 				continue
 			}
