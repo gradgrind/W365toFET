@@ -133,6 +133,7 @@ type timeConstraints struct {
 	ConstraintTeacherNotAvailableTimes     []teacherNotAvailable
 
 	ConstraintActivityPreferredStartingTime []startingTime
+	ConstraintActivityPreferredTimeSlots    []activityPreferredTimes
 	ConstraintActivitiesPreferredTimeSlots  []preferredSlots
 	ConstraintMinDaysBetweenActivities      []minDaysBetweenActivities
 	ConstraintActivityEndsStudentsDay       []lessonEndsDay
