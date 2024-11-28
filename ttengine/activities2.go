@@ -223,6 +223,9 @@ func (tt *TtCore) addActivities2(
 		}
 	}
 
+	//TODO: What about non-fixed lessons parallel to fixed ones? Should they
+	// be made fixed? They wouldn't need to be placed a second time ...
+
 	// Build PossibleSlots
 	tt.makePossibleSlots()
 
@@ -245,4 +248,74 @@ func (tt *TtCore) addActivities2(
 			a.Placement = -1
 		}
 	}
+}
+
+func (tt *TtCore) findClashes(aix ActivityIndex, slot int) []ActivityIndex {
+	// Return a list of activities (indexes) which are in conflict with
+	// the proposed placement. It assumes the slot is in principle possible –
+	// so that it will not, for example, be the last slot of a day if
+	// the activity duration is 2.
+	clashes := []ActivityIndex{}
+	a := tt.Activities[aix]
+	day := slot / tt.NHours
+	for _, addix := range a.DifferentDays {
+		add := tt.Activities[addix]
+		if add.Placement >= 0 && add.Placement/tt.NHours == day {
+			clashes = append(clashes, addix)
+		}
+	}
+	for _, rix := range a.Resources {
+		i := rix*tt.SlotsPerWeek + slot
+		for ix := 0; ix < a.Duration; ix++ {
+			c := tt.TtSlots[i+ix]
+			if c != 0 {
+				clashes = append(clashes, c)
+			}
+		}
+	}
+	for _, aixp := range a.Parallel {
+		a := tt.Activities[aixp]
+		for _, addix := range a.DifferentDays {
+			add := tt.Activities[addix]
+			if add.Placement >= 0 && add.Placement/tt.NHours == day {
+				clashes = append(clashes, addix)
+			}
+		}
+		for _, rix := range a.Resources {
+			i := rix*tt.SlotsPerWeek + slot
+			for ix := 0; ix < a.Duration; ix++ {
+				c := tt.TtSlots[i+ix]
+				if c != 0 {
+					clashes = append(clashes, c)
+				}
+			}
+		}
+	}
+	slices.Sort(clashes)
+	return slices.Compact(clashes)
+}
+
+// TODO: Can I safely assume that no attempt will be made to unplace fixed
+// Activities?
+func (tt *TtCore) unplaceActivity(aix ActivityIndex) {
+	a := tt.Activities[aix]
+	slot := a.Placement
+	for _, rix := range a.Resources {
+		i := rix*tt.SlotsPerWeek + slot
+		for ix := 0; ix < a.Duration; ix++ {
+			tt.TtSlots[i+ix] = 0
+		}
+	}
+	a.Placement = -1
+	for _, aixp := range a.Parallel {
+		a := tt.Activities[aixp]
+		for _, rix := range a.Resources {
+			i := rix*tt.SlotsPerWeek + slot
+			for ix := 0; ix < a.Duration; ix++ {
+				tt.TtSlots[i+ix] = 0
+			}
+		}
+		a.Placement = -1
+	}
+
 }

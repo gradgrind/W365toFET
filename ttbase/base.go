@@ -42,6 +42,9 @@ type TtInfo struct {
 	AtomicGroups map[Ref][]*AtomicGroup // Group -> list of AtomicGroups
 
 	Constraints map[string][]any
+
+	autoDifferentDays *base.AutomaticDifferentDays
+	daysBetween       map[Ref][]*base.DaysBetween
 }
 
 func MakeTtInfo(db *base.DbTopLevel) *TtInfo {

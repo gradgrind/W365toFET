@@ -3,6 +3,7 @@ package ttengine
 import (
 	"W365toFET/base"
 	"W365toFET/ttbase"
+	"fmt"
 	"slices"
 )
 
@@ -192,11 +193,23 @@ func (tt *TtCore) addActivities(
 	}
 }
 
+// TODO: Handle DifferentDays
 func (tt *TtCore) testPlacement(aix ActivityIndex, slot int) bool {
 	// Simple boolean placement test. It assumes the slot is possible –
 	// so that it will not, for example, be the last slot of a day if
 	// the activity duration is 2.
 	a := tt.Activities[aix]
+	day := slot / tt.NHours
+	for _, addix := range a.DifferentDays {
+		add := tt.Activities[addix]
+
+		//TODO--
+		fmt.Printf("??? %d: %+v\n  -- %+v\n", addix, add, a)
+
+		if add.Placement >= 0 && add.Placement/tt.NHours == day {
+			return false
+		}
+	}
 	for _, rix := range a.Resources {
 		i := rix*tt.SlotsPerWeek + slot
 		for ix := 0; ix < a.Duration; ix++ {
@@ -207,6 +220,12 @@ func (tt *TtCore) testPlacement(aix ActivityIndex, slot int) bool {
 	}
 	for _, aixp := range a.Parallel {
 		a := tt.Activities[aixp]
+		for _, addix := range a.DifferentDays {
+			add := tt.Activities[addix]
+			if add.Placement >= 0 && add.Placement/tt.NHours == day {
+				return false
+			}
+		}
 		for _, rix := range a.Resources {
 			i := rix*tt.SlotsPerWeek + slot
 			for ix := 0; ix < a.Duration; ix++ {
@@ -247,6 +266,7 @@ func (tt *TtCore) placeActivity(aix ActivityIndex, slot int) {
 			tt.TtSlots[i+ix] = aix
 		}
 	}
+	a.Placement = slot
 	for _, aixp := range a.Parallel {
 		a := tt.Activities[aixp]
 		for _, rix := range a.Resources {
@@ -255,5 +275,6 @@ func (tt *TtCore) placeActivity(aix ActivityIndex, slot int) {
 				tt.TtSlots[i+ix] = aixp
 			}
 		}
+		a.Placement = slot
 	}
 }
