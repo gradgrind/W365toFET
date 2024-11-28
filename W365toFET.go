@@ -50,8 +50,7 @@ func main() {
 	// ********** Build the fet file **********
 	stempath = strings.TrimSuffix(stempath, "_w365")
 
-	//xmlitem, lessonIdMap := fet.MakeFetFile(db)
-	xmlitem, _ := fet.MakeFetFile(db)
+	xmlitem, lessonIdMap := fet.MakeFetFile(db)
 
 	// Write FET file
 	fetfile := stempath + ".fet"
@@ -66,7 +65,7 @@ func main() {
 	}
 	base.Message.Printf("FET file written to: %s\n", fetfile)
 
-	/* Write Id-map file.
+	// Write Id-map file.
 	mapfile := stempath + ".map"
 	fm, err := os.Create(mapfile)
 	if err != nil {
@@ -78,7 +77,6 @@ func main() {
 		base.Bug.Fatalf("Couldn't write fet output to: %s\n", mapfile)
 	}
 	base.Message.Printf("Id-map written to: %s\n", mapfile)
-	*/
 
 	base.Message.Println("OK")
 }
