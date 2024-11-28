@@ -25,6 +25,25 @@ type preferredTime struct {
 	Preferred_Hour string
 }
 
+type preferredStarts struct {
+	XMLName                            xml.Name `xml:"ConstraintActivitiesPreferredStartingTimes"`
+	Weight_Percentage                  string
+	Teacher                            string
+	Students                           string
+	Subject                            string
+	Activity_Tag                       string
+	Duration                           string
+	Number_of_Preferred_Starting_Times int
+	Preferred_Starting_Time            []preferredStart
+	Active                             bool
+}
+
+type preferredStart struct {
+	//XMLName                       xml.Name `xml:"Preferred_Starting_Time"`
+	Preferred_Starting_Day  string
+	Preferred_Starting_Hour string
+}
+
 type lessonEndsDay struct {
 	XMLName           xml.Name `xml:"ConstraintActivityEndsStudentsDay"`
 	Weight_Percentage string
@@ -52,6 +71,7 @@ type sameStartingTime struct {
 func getExtraConstraints(fetinfo *fetInfo) {
 	tclist := &fetinfo.fetdata.Time_Constraints_List
 	db := fetinfo.db
+	var doubleBlocked []bool
 	for _, c := range db.Constraints {
 		{
 			cn, ok := c.(*base.AutomaticDifferentDays)
@@ -212,6 +232,42 @@ func getExtraConstraints(fetinfo *fetInfo) {
 							Active:               true,
 						})
 				}
+				continue
+			}
+		}
+		{
+			cn, ok := c.(*base.DoubleLessonNotOverBreaks)
+			if ok {
+				if len(doubleBlocked) != 0 {
+					base.Error.Fatalln("Constraint DoubleLessonNotOverBreaks" +
+						" specified more than once")
+				}
+				timeslots := []preferredStart{}
+				// Note that a double lesson can't start in the last slot of
+				// the day.
+				doubleBlocked = make([]bool, len(fetinfo.hours)-1)
+				for _, h := range cn.Hours {
+					doubleBlocked[h-1] = true
+				}
+				for _, dd := range fetinfo.days {
+					for h, bl := range doubleBlocked {
+						if !bl {
+							timeslots = append(timeslots, preferredStart{
+								Preferred_Starting_Day:  dd,
+								Preferred_Starting_Hour: fetinfo.hours[h],
+							})
+						}
+					}
+				}
+				tclist.ConstraintActivitiesPreferredStartingTimes = append(
+					tclist.ConstraintActivitiesPreferredStartingTimes,
+					preferredStarts{
+						Weight_Percentage:                  weight2fet(cn.Weight),
+						Duration:                           "2",
+						Number_of_Preferred_Starting_Times: len(timeslots),
+						Preferred_Starting_Time:            timeslots,
+						Active:                             true,
+					})
 				continue
 			}
 		}
