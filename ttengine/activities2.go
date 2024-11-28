@@ -4,6 +4,7 @@ import (
 	"W365toFET/base"
 	"W365toFET/ttbase"
 	"slices"
+	"strings"
 )
 
 func (tt *TtCore) addActivities2(
@@ -17,7 +18,6 @@ func (tt *TtCore) addActivities2(
 	// invalid ActivityIndex. Note that the Ttlessons start at index 0,
 	// so their indexes must be shifted by 1.
 	tt.Activities = make([]*Activity, len(ttinfo.TtLessons)+1)
-
 	warned := []*ttbase.CourseInfo{} // used to warn only once per course
 	// Collect non-fixed activities which need placing
 	toplace := []ActivityIndex{}
@@ -61,21 +61,65 @@ func (tt *TtCore) addActivities2(
 
 	// All other such constraints are not handled at this stage.
 
-	// Handle hard-parallel courses here.
-	parallelCourses := map[Ref][]Ref{}
+	// Initialize parallel courses data.
+	parallels := map[ActivityIndex][]ActivityIndex{}
 	for _, pc := range ttinfo.Constraints["ParallelCourses"] {
 		//TODO
 		pcc := pc.(*base.ParallelCourses)
-		if pcc.Weight == base.MAXWEIGHT {
-			for _, cref := range pcc.Courses {
-				//TODO
+
+		// The courses must have the same number of lessons and the
+		// lengths of the corresponding lessons must also be the same.
+
+		// Check lesson lengths
+		footprint := []int{} // lesson sizes
+		ll := 0              // number of lessons in each course
+		var alists [][]int   // collect the parallel activities
+		for i, cref := range pcc.Courses {
+			cinfo := ttinfo.CourseInfo[cref]
+			if i == 0 {
+				ll = len(cinfo.Lessons)
+				alists = make([][]int, ll)
+			} else if len(cinfo.Lessons) != ll {
+				clist := []string{}
+				for _, cr := range pcc.Courses {
+					clist = append(clist, string(cr))
+				}
+				base.Error.Fatalf("Parallel courses have different"+
+					" lessons: %s\n",
+					strings.Join(clist, ","))
+			}
+			for j, lix := range cinfo.Lessons {
+				l := ttinfo.TtLessons[lix].Lesson
+				if i == 0 {
+					footprint = append(footprint, l.Duration)
+				} else if l.Duration != footprint[j] {
+					clist := []string{}
+					for _, cr := range pcc.Courses {
+						clist = append(clist, string(cr))
+					}
+					base.Error.Fatalf("Parallel courses have lesson"+
+						" mismatch: %s\n",
+						strings.Join(clist, ","))
+				}
+				alists[j] = append(alists[j], lix+1)
 			}
 		}
 
-	}
+		// alists is now a list of lists of parallel Activity indexes.
+		pcc.Activities = alists
 
-	for cref, cinfo := range ttinfo.CourseInfo {
-		//TODO
+		if pcc.Weight == base.MAXWEIGHT {
+			// Hard constraint – prepare for Activities
+			for _, alist := range alists {
+				for _, aix := range alist {
+					for _, aixp := range alist {
+						if aixp != aix {
+							parallels[aix] = append(parallels[aix], aixp)
+						}
+					}
+				}
+			}
+		}
 	}
 
 	for i, ttl := range ttinfo.TtLessons {
@@ -134,6 +178,13 @@ func (tt *TtCore) addActivities2(
 			}
 		}
 
+		// Sort and compactify parallel activities
+		plist, ok := parallels[aix]
+		if ok {
+			slices.Sort(plist)
+			plist = slices.Compact(plist)
+		}
+
 		a := &Activity{
 			Index:     aix,
 			Duration:  l.Duration,
@@ -142,6 +193,7 @@ func (tt *TtCore) addActivities2(
 			Placement: p,
 			//PossibleSlots: added later (see "makePossibleSlots"),
 			DifferentDays: ddlist,
+			Parallel:      plist,
 		}
 		tt.Activities[aix] = a
 
@@ -157,7 +209,7 @@ func (tt *TtCore) addActivities2(
 					// Perform placement
 					tt.placeActivity(aix, p)
 				} else {
-					//TODO: MAybe this shoud be fatal?
+					//TODO: Maybe this shoud be fatal?
 					base.Error.Printf(
 						"Placement of Fixed Activity %d @ %d failed:\n"+
 							"  -- %s\n",

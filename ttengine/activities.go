@@ -18,6 +18,7 @@ type Activity struct {
 	Placement     int // day * nhours + hour, or -1 if unplaced
 	PossibleSlots []SlotIndex
 	DifferentDays []ActivityIndex // hard constraint only
+	Parallel      []ActivityIndex // hard constraint only
 }
 
 func (tt *TtCore) addActivities(
@@ -204,6 +205,17 @@ func (tt *TtCore) testPlacement(aix ActivityIndex, slot int) bool {
 			}
 		}
 	}
+	for _, aixp := range a.Parallel {
+		a := tt.Activities[aixp]
+		for _, rix := range a.Resources {
+			i := rix*tt.SlotsPerWeek + slot
+			for ix := 0; ix < a.Duration; ix++ {
+				if tt.TtSlots[i+ix] != 0 {
+					return false
+				}
+			}
+		}
+	}
 	return true
 }
 
@@ -233,6 +245,15 @@ func (tt *TtCore) placeActivity(aix ActivityIndex, slot int) {
 		i := rix*tt.SlotsPerWeek + slot
 		for ix := 0; ix < a.Duration; ix++ {
 			tt.TtSlots[i+ix] = aix
+		}
+	}
+	for _, aixp := range a.Parallel {
+		a := tt.Activities[aixp]
+		for _, rix := range a.Resources {
+			i := rix*tt.SlotsPerWeek + slot
+			for ix := 0; ix < a.Duration; ix++ {
+				tt.TtSlots[i+ix] = aixp
+			}
 		}
 	}
 }

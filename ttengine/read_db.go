@@ -98,6 +98,6 @@ func readDb(ttinfo *ttbase.TtInfo) *TtCore {
 	tt.addBlockers(ttinfo, t2tt, r2tt)
 
 	// Add the Activities
-	tt.addActivities(ttinfo, t2tt, r2tt, g2ags)
+	tt.addActivities2(ttinfo, t2tt, r2tt, g2ags)
 	return tt
 }

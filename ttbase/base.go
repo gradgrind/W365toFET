@@ -15,8 +15,9 @@ const CLASS_GROUP_SEP = "."
 const ATOMIC_GROUP_SEP1 = "#"
 const ATOMIC_GROUP_SEP2 = "~"
 const VIRTUAL_ROOM_PREFIX = "!"
-const LUNCH_BREAK_TAG = "-lb-"
-const LUNCH_BREAK_NAME = "Lunch Break"
+
+//const LUNCH_BREAK_TAG = "-lb-"
+//const LUNCH_BREAK_NAME = "Lunch Break"
 
 type VirtualRoom struct {
 	Rooms       []Ref   // only ("real") Rooms
