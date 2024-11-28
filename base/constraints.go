@@ -6,10 +6,51 @@ func (db *DbTopLevel) addConstraint(c Constraint) {
 	db.Constraints = append(db.Constraints, c)
 }
 
+// ++ LessonsEndDay
+
+type LessonsEndDay struct {
+	Constraint string
+	Weight     int
+	Course     Ref
+}
+
+func (c *LessonsEndDay) CType() string {
+	return c.Constraint
+}
+
+func (db *DbTopLevel) NewLessonsEndDay() *LessonsEndDay {
+	c := &LessonsEndDay{Constraint: "LessonsEndDay"}
+	db.addConstraint(c)
+	return c
+}
+
+// ++ BeforeAfterHour
+// Permissible hours are before or after the specified hour, not including
+// the specified hour.
+
+type BeforeAfterHour struct {
+	Constraint string
+	Weight     int
+	Courses    []Ref
+	After      bool
+	Hour       int
+}
+
+func (c *BeforeAfterHour) CType() string {
+	return c.Constraint
+}
+
+func (db *DbTopLevel) NewBeforeAfterHour() *BeforeAfterHour {
+	c := &BeforeAfterHour{Constraint: "BeforeAfterHour"}
+	db.addConstraint(c)
+	return c
+}
+
 // ++ AutomaticDifferentDays
 // This Constraint applies to all courses (with more than one Lesson).
 // If not present, all courses will by default apply it as a hard constraint,
 // except for courses which have an overriding DAYS_BETWEEN constraint.
+
 type AutomaticDifferentDays struct {
 	Constraint           string
 	Weight               int
@@ -74,24 +115,6 @@ func (db *DbTopLevel) NewDaysBetweenJoin() *DaysBetweenJoin {
 	return c
 }
 
-// ++ LessonsEndDay
-
-type LessonsEndDay struct {
-	Constraint string
-	Weight     int
-	Course     Ref
-}
-
-func (c *LessonsEndDay) CType() string {
-	return c.Constraint
-}
-
-func (db *DbTopLevel) NewLessonsEndDay() *LessonsEndDay {
-	c := &LessonsEndDay{Constraint: "LessonsEndDay"}
-	db.addConstraint(c)
-	return c
-}
-
 // ++ ParallelCourses
 // The lessons of the courses specified here should be at the same time.
 // To avoid complications, it is required that the number and lengths of
@@ -109,50 +132,6 @@ func (c *ParallelCourses) CType() string {
 
 func (db *DbTopLevel) NewParallelCourses() *ParallelCourses {
 	c := &ParallelCourses{Constraint: "ParallelCourses"}
-	db.addConstraint(c)
-	return c
-}
-
-// ++ BeforeAfterHour
-// Permissible hours are before or after the specified hour, not including
-// the specified hour.
-
-type BeforeAfterHour struct {
-	Constraint string
-	Weight     int
-	Courses    []Ref
-	After      bool
-	Hour       int
-}
-
-func (c *BeforeAfterHour) CType() string {
-	return c.Constraint
-}
-
-func (db *DbTopLevel) NewBeforeAfterHour() *BeforeAfterHour {
-	c := &BeforeAfterHour{Constraint: "BeforeAfterHour"}
-	db.addConstraint(c)
-	return c
-}
-
-//TODO ...
-
-// ++ MinHoursFollowing
-
-type MinHoursFollowing struct {
-	Constraint string
-	Weight     int
-	Course1    Ref // Course or SuperCourse
-	Course2    Ref // Course or SuperCourse
-	Hours      int
-}
-
-func (c *MinHoursFollowing) CType() string {
-	return c.Constraint
-}
-
-func (db *DbTopLevel) NewMinHoursFollowing() *MinHoursFollowing {
-	c := &MinHoursFollowing{Constraint: "MinHoursFollowing"}
 	db.addConstraint(c)
 	return c
 }
@@ -192,6 +171,28 @@ func (c *NotOnSameDay) CType() string {
 
 func (db *DbTopLevel) NewNotOnSameDay() *NotOnSameDay {
 	c := &NotOnSameDay{Constraint: "NotOnSameDay"}
+	db.addConstraint(c)
+	return c
+}
+
+//TODO ...
+
+// ++ MinHoursFollowing
+
+type MinHoursFollowing struct {
+	Constraint string
+	Weight     int
+	Course1    Ref // Course or SuperCourse
+	Course2    Ref // Course or SuperCourse
+	Hours      int
+}
+
+func (c *MinHoursFollowing) CType() string {
+	return c.Constraint
+}
+
+func (db *DbTopLevel) NewMinHoursFollowing() *MinHoursFollowing {
+	c := &MinHoursFollowing{Constraint: "MinHoursFollowing"}
 	db.addConstraint(c)
 	return c
 }
