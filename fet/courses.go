@@ -270,7 +270,6 @@ func getActivities(fetinfo *fetInfo) []idMap {
 		Activity: activities,
 	}
 	addPlacementConstraints(fetinfo)
-	addDifferentDaysConstraints(fetinfo)
 	return lessonIdMap
 }
 

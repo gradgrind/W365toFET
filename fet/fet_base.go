@@ -119,10 +119,9 @@ type fetInfo struct {
 	atomicGroups            map[Ref][]AtomicGroup
 	fetVirtualRooms         map[string]string // cache for FET virtual rooms,
 	// "hash" -> FET-virtual-room tag
-	fetVirtualRoomN         map[string]int // FET-virtual-room tag -> number of room sets
-	differentDayConstraints map[Ref][]int  // Retain the indexes of the entries
-	// in the ConstraintMinDaysBetweenActivities list for each course. This
-	// allows the default constraints to be modified later.
+	fetVirtualRoomN   map[string]int // FET-virtual-room tag -> number of room sets
+	autoDifferentDays *base.AutomaticDifferentDays
+	daysBetween       map[Ref][]*base.DaysBetween
 }
 
 type timeConstraints struct {
@@ -132,10 +131,13 @@ type timeConstraints struct {
 	ConstraintStudentsSetNotAvailableTimes []studentsNotAvailable
 	ConstraintTeacherNotAvailableTimes     []teacherNotAvailable
 
-	ConstraintActivityPreferredStartingTime []startingTime
-	ConstraintActivitiesPreferredTimeSlots  []preferredSlots
-	ConstraintMinDaysBetweenActivities      []minDaysBetweenActivities
-	ConstraintActivityEndsStudentsDay       []lessonEndsDay
+	ConstraintActivityPreferredStartingTime    []startingTime
+	ConstraintActivityPreferredTimeSlots       []activityPreferredTimes
+	ConstraintActivitiesPreferredTimeSlots     []preferredSlots
+	ConstraintActivitiesPreferredStartingTimes []preferredStarts
+	ConstraintMinDaysBetweenActivities         []minDaysBetweenActivities
+	ConstraintActivityEndsStudentsDay          []lessonEndsDay
+	ConstraintActivitiesSameStartingTime       []sameStartingTime
 
 	ConstraintStudentsSetMaxGapsPerDay                  []maxGapsPerDay
 	ConstraintStudentsSetMaxGapsPerWeek                 []maxGapsPerWeek
@@ -226,7 +228,7 @@ func MakeFetFile(dbdata *base.DbTopLevel) (string, string) {
 		WITHOUT_ROOM_PLACEMENTS: true,
 		fetVirtualRooms:         map[string]string{},
 		fetVirtualRoomN:         map[string]int{},
-		differentDayConstraints: map[Ref][]int{},
+		daysBetween:             map[Ref][]*base.DaysBetween{},
 	}
 
 	getDays(&fetinfo)
@@ -248,6 +250,7 @@ func MakeFetFile(dbdata *base.DbTopLevel) (string, string) {
 	addClassConstraints(&fetinfo)
 
 	getExtraConstraints(&fetinfo)
+	addDifferentDaysConstraints(&fetinfo) // after getExtraConstraints!
 
 	// Convert lessonIdMap to string
 	idmlines := []string{}
