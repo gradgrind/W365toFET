@@ -215,6 +215,35 @@ func getExtraConstraints(fetinfo *fetInfo) {
 				continue
 			}
 		}
-	}
+		/*
+			{
+				cn, ok := c.(*base.MinHoursFollowing)
+				if ok {
+					c1 := fetinfo.courseInfo[cn.Course1]
+					c2 := fetinfo.courseInfo[cn.Course2]
 
+					//TODO
+
+					mdba := []minDaysBetweenActivities{}
+					for _, l1 := range c1.activities {
+						for _, l2 := range c2.activities {
+							mdba = append(mdba, minDaysBetweenActivities{
+								Weight_Percentage:       weight2fet(cn.Weight),
+								Consecutive_If_Same_Day: cn.ConsecutiveIfSameDay,
+								Number_of_Activities:    2,
+								Activity_Id:             []int{l1, l2},
+								MinDays:                 cn.DaysBetween,
+								Active:                  true,
+							})
+						}
+					}
+					// Append constraints to full list
+					tclist.ConstraintMinDaysBetweenActivities = append(
+						tclist.ConstraintMinDaysBetweenActivities,
+						mdba...)
+					continue
+				}
+			}
+		*/
+	}
 }

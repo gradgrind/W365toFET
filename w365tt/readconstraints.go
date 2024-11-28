@@ -20,6 +20,14 @@ func a2rr(rr any) []base.Ref {
 	return rlist
 }
 
+func a2ii(ii any) []int {
+	ilist := []int{}
+	for _, i := range ii.([]any) {
+		ilist = append(ilist, a2i(i))
+	}
+	return ilist
+}
+
 func (db *DbTopLevel) readConstraints(newdb *base.DbTopLevel) {
 	for _, e := range db.Constraints {
 		switch e["constraint"] {
@@ -50,6 +58,16 @@ func (db *DbTopLevel) readConstraints(newdb *base.DbTopLevel) {
 			c.Course1 = a2r(e["course1"])
 			c.Course2 = a2r(e["course2"])
 			c.ConsecutiveIfSameDay = e["consecutive_if_same_day"].(bool)
+		case "MIN_HOURS_FOLLOWING":
+			c := newdb.NewMinHoursFollowing()
+			c.Weight = a2i(e["weight"])
+			c.Hours = a2i(e["hours"])
+			c.Course1 = a2r(e["course1"])
+			c.Course2 = a2r(e["course2"])
+		case "DOUBLE_LESSON_NOT_OVER_BREAKS":
+			c := newdb.NewDoubleLessonNotOverBreaks()
+			c.Weight = a2i(e["weight"])
+			c.Hours = a2ii(e["hours"])
 		}
 	}
 }
