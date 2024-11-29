@@ -9,14 +9,19 @@ type differentDays struct {
 	weight               int
 	consecutiveIfSameDay bool
 	daysBetween          map[Ref][]*base.DaysBetween
-	daysBetweenJoin      map[Ref][]*base.DaysBetweenJoin
 }
 
-type minDaysBetweenActivities struct {
-	weight               int
-	consecutiveIfSameDay bool
-	lessons              []int
-	minDays              int
+type MinDaysBetweenLessons struct {
+	// Result of processing constraints DifferentDays and DaysBetween
+	Weight               int
+	ConsecutiveIfSameDay bool
+	Lessons              []int
+	MinDays              int
+}
+
+type ParallelLessons struct {
+	Weight       int
+	LessonGroups [][]LessonIndex
 }
 
 func processConstraints(ttinfo *TtInfo) {
@@ -25,7 +30,7 @@ func processConstraints(ttinfo *TtInfo) {
 	diffDays := differentDays{
 		weight: -1, // uninitialized
 	}
-	mdba := []minDaysBetweenActivities{}
+	mdba := []MinDaysBetweenLessons{}
 	for _, c := range db.Constraints {
 		{
 			cn, ok := c.(*base.AutomaticDifferentDays)
@@ -34,7 +39,6 @@ func processConstraints(ttinfo *TtInfo) {
 					diffDays.weight = cn.Weight
 					diffDays.consecutiveIfSameDay = cn.ConsecutiveIfSameDay
 					diffDays.daysBetween = map[Ref][]*base.DaysBetween{}
-					diffDays.daysBetweenJoin = map[Ref][]*base.DaysBetweenJoin{}
 				} else {
 					base.Bug.Fatalln(
 						"More than one AutomaticDifferentDays constraint")
@@ -42,8 +46,6 @@ func processConstraints(ttinfo *TtInfo) {
 				continue
 			}
 		}
-		//TODO: Perhaps I should keep lists of lesson indexes together with the
-		// constraint (parameters).
 		{
 			cn, ok := c.(*base.DaysBetween)
 			if ok {
@@ -61,11 +63,11 @@ func processConstraints(ttinfo *TtInfo) {
 				c2 := ttinfo.CourseInfo[cn.Course2]
 				for _, l1 := range c1.Lessons {
 					for _, l2 := range c2.Lessons {
-						mdba = append(mdba, minDaysBetweenActivities{
-							weight:               cn.Weight,
-							consecutiveIfSameDay: cn.ConsecutiveIfSameDay,
-							lessons:              []int{l1, l2},
-							minDays:              cn.DaysBetween,
+						mdba = append(mdba, MinDaysBetweenLessons{
+							Weight:               cn.Weight,
+							ConsecutiveIfSameDay: cn.ConsecutiveIfSameDay,
+							Lessons:              []int{l1, l2},
+							MinDays:              cn.DaysBetween,
 						})
 					}
 				}
@@ -114,39 +116,46 @@ func processConstraints(ttinfo *TtInfo) {
 					}
 				}
 				// llists is now a list of lists of parallel TtLesson indexes.
-				cn.Activities = llists
+				ttinfo.ParallelLessons = append(ttinfo.ParallelLessons,
+					ParallelLessons{
+						Weight:       cn.Weight,
+						LessonGroups: llists,
+					})
 				continue
 			}
 		}
-		/*
-			{
-				cn, ok := c.(*base.MinHoursFollowing)
-				if ok {
-					c1 := fetinfo.courseInfo[cn.Course1]
-					c2 := fetinfo.courseInfo[cn.Course2]
+		// Collect the other constraints according to type
+		ctype := c.CType()
+		ttinfo.Constraints[ctype] = append(ttinfo.Constraints[ctype], c)
+	}
+	// Resolve the differentDays constraints into days-between-lessons.
+	if diffDays.weight < 0 {
+		diffDays.weight = base.MAXWEIGHT
+	}
+	for cref, cinfo := range ttinfo.CourseInfo {
+		ddcs, ok := diffDays.daysBetween[cref]
+		if ok {
+			// Generate the constraints in the list
+			for _, ddc := range ddcs {
+				if ddc.Weight != 0 {
+					mdba = append(mdba, MinDaysBetweenLessons{
+						Weight:               ddc.Weight,
+						ConsecutiveIfSameDay: ddc.ConsecutiveIfSameDay,
+						Lessons:              cinfo.Lessons,
+						MinDays:              ddc.DaysBetween,
+					})
 
-					//TODO
-
-					mdba := []minDaysBetweenActivities{}
-					for _, l1 := range c1.activities {
-						for _, l2 := range c2.activities {
-							mdba = append(mdba, minDaysBetweenActivities{
-								Weight_Percentage:       weight2fet(cn.Weight),
-								Consecutive_If_Same_Day: cn.ConsecutiveIfSameDay,
-								Number_of_Activities:    2,
-								Activity_Id:             []int{l1, l2},
-								MinDays:                 cn.DaysBetween,
-								Active:                  true,
-							})
-						}
-					}
-					// Append constraints to full list
-					tclist.ConstraintMinDaysBetweenActivities = append(
-						tclist.ConstraintMinDaysBetweenActivities,
-						mdba...)
-					continue
 				}
 			}
-		*/
+		} else if diffDays.weight != 0 {
+			// Generate the default constraint
+			mdba = append(mdba, MinDaysBetweenLessons{
+				Weight:               diffDays.weight,
+				ConsecutiveIfSameDay: diffDays.consecutiveIfSameDay,
+				Lessons:              cinfo.Lessons,
+				MinDays:              1,
+			})
+		}
 	}
+	ttinfo.MinDaysBetweenLessons = mdba
 }

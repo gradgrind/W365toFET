@@ -123,8 +123,7 @@ func (db *DbTopLevel) NewDaysBetweenJoin() *DaysBetweenJoin {
 type ParallelCourses struct {
 	Constraint string
 	Weight     int
-	Courses    []Ref   // Courses or SuperCourses
-	Activities [][]int // Initialized later
+	Courses    []Ref // Courses or SuperCourses
 }
 
 func (c *ParallelCourses) CType() string {

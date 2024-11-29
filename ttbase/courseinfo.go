@@ -52,7 +52,7 @@ func gatherCourseInfo(ttinfo *TtInfo) {
 	db := ttinfo.Db
 	ttinfo.SuperSubs = map[Ref][]Ref{}
 	ttinfo.CourseInfo = map[Ref]*CourseInfo{}
-	ttinfo.TtLessons = []TtLesson{}
+	ttinfo.TtLessons = make([]TtLesson, 1) // 1-based indexing, 0 is invalid
 
 	// Collect Courses with Lessons.
 	roomData := collectCourses(ttinfo)

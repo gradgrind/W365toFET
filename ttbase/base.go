@@ -43,8 +43,8 @@ type TtInfo struct {
 
 	Constraints map[string][]any
 
-	autoDifferentDays *base.AutomaticDifferentDays
-	daysBetween       map[Ref][]*base.DaysBetween
+	MinDaysBetweenLessons []MinDaysBetweenLessons
+	ParallelLessons       []ParallelLessons
 }
 
 func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
@@ -53,11 +53,7 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	}
 	gatherCourseInfo(ttinfo)
 
-	// Collect the constraints according to type
-	for _, c := range ttinfo.Db.Constraints {
-		ctype := c.CType()
-		ttinfo.Constraints[ctype] = append(ttinfo.Constraints[ctype], c)
-	}
+	processConstraints(ttinfo)
 
 	// Build Ref -> Tag mapping for subjects, teachers, rooms, classes
 	// and groups.

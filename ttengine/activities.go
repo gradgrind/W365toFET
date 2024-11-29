@@ -29,55 +29,49 @@ func (tt *TtCore) addActivities(
 	g2tt map[Ref][]ResourceIndex,
 ) {
 	// Construct the Activities from the ttinfo.TtLessons.
-	// The first element (index 0) is kept empty, 0 being an
-	// invalid ActivityIndex.
-	tt.Activities = make([]*Activity, len(ttinfo.TtLessons)+1)
-
+	// The first Activity has index 1. Index 0 is kept empty, 0 being an
+	// invalid ActivityIndex. To accommodate this, the Ttlessons also start
+	// at index 0.
+	tt.Activities = make([]*Activity, len(ttinfo.TtLessons))
 	warned := []*ttbase.CourseInfo{} // used to warn only once per course
 	// Collect non-fixed activities which need placing
 	toplace := []ActivityIndex{}
 
-	// The place to get custom different-days constraints is the
-	// course, which provides links to all the lessons of the course.
-	// However, there is also the possibility of a constraint modifying
-	// the default behaviour.
-	autoDifferentDays := true
-	cadd, ok := ttinfo.Constraints["AutomaticDifferentDays"]
-	if ok {
-		if len(cadd) > 1 {
-			base.Error.Fatalf("Constraint AutomaticDifferentDays exists"+
-				" %d times\n", len(cadd))
-		}
-		if cadd[0].(*base.AutomaticDifferentDays).Weight != base.MAXWEIGHT {
-			autoDifferentDays = false
-		}
-	}
-
-	differentDays := map[Ref]bool{}
-	for _, c := range ttinfo.Constraints["DaysBetween"] {
-		cc := c.(*base.DaysBetween)
-		if cc.DaysBetween == 1 {
-			for _, cref := range cc.Courses {
-				differentDays[cref] = cc.Weight == base.MAXWEIGHT
+	// Collect the hard-different-days lessons (gap = 1) for each lesson.
+	diffdays := map[ActivityIndex][]ActivityIndex{}
+	for _, dbc := range ttinfo.MinDaysBetweenLessons {
+		if dbc.Weight == base.MAXWEIGHT && dbc.MinDays == 1 {
+			alist := dbc.Lessons
+			for _, aix := range alist {
+				for _, aix2 := range alist {
+					if aix2 != aix {
+						diffdays[aix] = append(diffdays[aix], aix2)
+					}
+				}
 			}
 		}
 	}
 
-	differentDaysJoin := map[Ref][]Ref{}
-	for _, c := range ttinfo.Constraints["DaysBetweenJoin"] {
-		cc := c.(*base.DaysBetweenJoin)
-		if cc.Weight == base.MAXWEIGHT && cc.DaysBetween == 1 {
-			differentDaysJoin[cc.Course1] = append(
-				differentDaysJoin[cc.Course1], cc.Course2)
-			differentDaysJoin[cc.Course2] = append(
-				differentDaysJoin[cc.Course2], cc.Course1)
+	// Collect the hard-parallel lessons for each lesson.
+	parallels := map[ActivityIndex][]ActivityIndex{}
+	for _, pl := range ttinfo.ParallelLessons {
+		if pl.Weight == base.MAXWEIGHT {
+			// Hard constraint – prepare for Activities
+			for _, alist := range pl.LessonGroups {
+				for _, aix := range alist {
+					for _, aix2 := range alist {
+						if aix2 != aix {
+							parallels[aix] = append(parallels[aix], aix2)
+						}
+					}
+				}
+			}
 		}
 	}
 
-	// All other such constraints are not handled at this stage.
-
-	for i, ttl := range ttinfo.TtLessons {
-		aix := i + 1
+	// Lessons start at index 1!
+	for aix := 1; aix < len(ttinfo.TtLessons); aix++ {
+		ttl := ttinfo.TtLessons[aix]
 		l := ttl.Lesson
 		p := -1
 		if l.Day >= 0 {
@@ -111,25 +105,18 @@ func (tt *TtCore) addActivities(
 			resources = append(resources, r2tt[rref])
 		}
 
-		// Prepare the DifferentDays field
-		ddlist := []ActivityIndex{}
-		// Get different-days info for the course
-		dd, ok := differentDays[cinfo.Id]
-		if !ok {
-			dd = autoDifferentDays
+		// Sort and compactify different-days activities
+		ddlist, ok := diffdays[aix]
+		if ok && len(ddlist) > 1 {
+			slices.Sort(ddlist)
+			ddlist = slices.Compact(ddlist)
 		}
-		if dd {
-			for _, l := range cinfo.Lessons {
-				if l != i {
-					ddlist = append(ddlist, l+1) // add the activity index
-				}
-			}
-		}
-		for _, cj := range differentDaysJoin[cinfo.Id] {
-			cjinfo := ttinfo.CourseInfo[cj]
-			for _, l := range cjinfo.Lessons {
-				ddlist = append(ddlist, l+1) // add the activity index
-			}
+
+		// Sort and compactify parallel activities
+		plist, ok := parallels[aix]
+		if ok && len(plist) > 1 {
+			slices.Sort(plist)
+			plist = slices.Compact(plist)
 		}
 
 		a := &Activity{
@@ -139,7 +126,11 @@ func (tt *TtCore) addActivities(
 			Fixed:     l.Fixed,
 			Placement: p,
 			//PossibleSlots: added later (see "makePossibleSlots"),
-			DifferentDays: ddlist,
+			//DifferentDays: ddlist, // only if not fixed, see below
+			Parallel: plist,
+		}
+		if !l.Fixed {
+			a.DifferentDays = ddlist
 		}
 		tt.Activities[aix] = a
 
@@ -155,7 +146,7 @@ func (tt *TtCore) addActivities(
 					// Perform placement
 					tt.placeActivity(aix, p)
 				} else {
-					//TODO: MAybe this shoud be fatal?
+					//TODO: Maybe this shoud be fatal?
 					base.Error.Printf(
 						"Placement of Fixed Activity %d @ %d failed:\n"+
 							"  -- %s\n",
@@ -169,12 +160,22 @@ func (tt *TtCore) addActivities(
 		}
 	}
 
+	//TODO: What about non-fixed lessons parallel to fixed ones? Should they
+	// be made fixed? They wouldn't need to be placed a second time ...
+
 	// Build PossibleSlots
 	tt.makePossibleSlots()
+
+	//TODO--
+	fmt.Println("+++++++++++ NON-FIXED")
 
 	// Place non-fixed lessons
 	for _, aix := range toplace {
 		a := tt.Activities[aix]
+
+		//TODO--
+		fmt.Printf("??? %+v\n", a)
+
 		p := a.Placement
 		if tt.testPlacement(aix, p) {
 			// Perform placement
@@ -193,7 +194,76 @@ func (tt *TtCore) addActivities(
 	}
 }
 
-// TODO: Handle DifferentDays
+func (tt *TtCore) findClashes(aix ActivityIndex, slot int) []ActivityIndex {
+	// Return a list of activities (indexes) which are in conflict with
+	// the proposed placement. It assumes the slot is in principle possible –
+	// so that it will not, for example, be the last slot of a day if
+	// the activity duration is 2.
+	clashes := []ActivityIndex{}
+	a := tt.Activities[aix]
+	day := slot / tt.NHours
+	for _, addix := range a.DifferentDays {
+		add := tt.Activities[addix]
+		if add.Placement >= 0 && add.Placement/tt.NHours == day {
+			clashes = append(clashes, addix)
+		}
+	}
+	for _, rix := range a.Resources {
+		i := rix*tt.SlotsPerWeek + slot
+		for ix := 0; ix < a.Duration; ix++ {
+			c := tt.TtSlots[i+ix]
+			if c != 0 {
+				clashes = append(clashes, c)
+			}
+		}
+	}
+	for _, aixp := range a.Parallel {
+		a := tt.Activities[aixp]
+		for _, addix := range a.DifferentDays {
+			add := tt.Activities[addix]
+			if add.Placement >= 0 && add.Placement/tt.NHours == day {
+				clashes = append(clashes, addix)
+			}
+		}
+		for _, rix := range a.Resources {
+			i := rix*tt.SlotsPerWeek + slot
+			for ix := 0; ix < a.Duration; ix++ {
+				c := tt.TtSlots[i+ix]
+				if c != 0 {
+					clashes = append(clashes, c)
+				}
+			}
+		}
+	}
+	slices.Sort(clashes)
+	return slices.Compact(clashes)
+}
+
+// TODO: Can I safely assume that no attempt will be made to unplace fixed
+// Activities?
+func (tt *TtCore) unplaceActivity(aix ActivityIndex) {
+	a := tt.Activities[aix]
+	slot := a.Placement
+	for _, rix := range a.Resources {
+		i := rix*tt.SlotsPerWeek + slot
+		for ix := 0; ix < a.Duration; ix++ {
+			tt.TtSlots[i+ix] = 0
+		}
+	}
+	a.Placement = -1
+	for _, aixp := range a.Parallel {
+		a := tt.Activities[aixp]
+		for _, rix := range a.Resources {
+			i := rix*tt.SlotsPerWeek + slot
+			for ix := 0; ix < a.Duration; ix++ {
+				tt.TtSlots[i+ix] = 0
+			}
+		}
+		a.Placement = -1
+	}
+
+}
+
 func (tt *TtCore) testPlacement(aix ActivityIndex, slot int) bool {
 	// Simple boolean placement test. It assumes the slot is possible –
 	// so that it will not, for example, be the last slot of a day if
@@ -202,10 +272,6 @@ func (tt *TtCore) testPlacement(aix ActivityIndex, slot int) bool {
 	day := slot / tt.NHours
 	for _, addix := range a.DifferentDays {
 		add := tt.Activities[addix]
-
-		//TODO--
-		fmt.Printf("??? %d: %+v\n  -- %+v\n", addix, add, a)
-
 		if add.Placement >= 0 && add.Placement/tt.NHours == day {
 			return false
 		}
