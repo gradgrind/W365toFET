@@ -3,6 +3,7 @@ package fet
 import (
 	"encoding/xml"
 	"fmt"
+	"strconv"
 )
 
 type fetTeacher struct {
@@ -51,8 +52,8 @@ func getTeachers(fetinfo *fetInfo) {
 		for _, dh := range n.NotAvailable {
 			nats = append(nats,
 				notAvailableTime{
-					Day:  fetinfo.days[dh.Day],
-					Hour: fetinfo.hours[dh.Hour]})
+					Day:  strconv.Itoa(dh.Day),
+					Hour: strconv.Itoa(dh.Hour)})
 		}
 
 		if len(nats) > 0 {

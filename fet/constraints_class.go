@@ -2,6 +2,7 @@ package fet
 
 import (
 	"slices"
+	"strconv"
 )
 
 /* Lunch-breaks
@@ -65,7 +66,7 @@ func addClassConstraints(fetinfo *fetInfo) {
 			cmaxaft = append(cmaxaft, maxDaysinIntervalPerWeek{
 				Weight_Percentage:   100,
 				Students:            cl.Tag,
-				Interval_Start_Hour: fetinfo.hours[i],
+				Interval_Start_Hour: strconv.Itoa(i),
 				Interval_End_Hour:   "", // end of day
 				Max_Days_Per_Week:   maxpm,
 				Active:              true,
@@ -108,8 +109,8 @@ func addClassConstraints(fetinfo *fetInfo) {
 				clblist = append(clblist, lunchBreak{
 					Weight_Percentage:   100,
 					Students:            cl.Tag,
-					Interval_Start_Hour: fetinfo.hours[mbhours[0]],
-					Interval_End_Hour:   fetinfo.hours[mbhours[0]+len(mbhours)],
+					Interval_Start_Hour: strconv.Itoa(mbhours[0]),
+					Interval_End_Hour:   strconv.Itoa(mbhours[0] + len(mbhours)),
 					Maximum_Hours_Daily: len(mbhours) - 1,
 					Active:              true,
 				})

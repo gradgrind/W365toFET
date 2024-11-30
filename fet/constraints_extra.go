@@ -3,6 +3,7 @@ package fet
 import (
 	"W365toFET/base"
 	"encoding/xml"
+	"strconv"
 	"strings"
 )
 
@@ -144,20 +145,20 @@ func getExtraConstraints(fetinfo *fetInfo) {
 			if ok {
 				timeslots := []preferredTime{}
 				if cn.After {
-					for _, dd := range fetinfo.days {
+					for d := 0; d < len(fetinfo.days); d++ {
 						for h := cn.Hour + 1; h < len(fetinfo.hours); h++ {
 							timeslots = append(timeslots, preferredTime{
-								Preferred_Day:  dd,
-								Preferred_Hour: fetinfo.hours[h],
+								Preferred_Day:  strconv.Itoa(d),
+								Preferred_Hour: strconv.Itoa(h),
 							})
 						}
 					}
 				} else {
-					for _, dd := range fetinfo.days {
+					for d := 0; d < len(fetinfo.days); d++ {
 						for h := 0; h < cn.Hour; h++ {
 							timeslots = append(timeslots, preferredTime{
-								Preferred_Day:  dd,
-								Preferred_Hour: fetinfo.hours[h],
+								Preferred_Day:  strconv.Itoa(d),
+								Preferred_Hour: strconv.Itoa(h),
 							})
 						}
 					}
@@ -249,12 +250,12 @@ func getExtraConstraints(fetinfo *fetInfo) {
 				for _, h := range cn.Hours {
 					doubleBlocked[h-1] = true
 				}
-				for _, dd := range fetinfo.days {
+				for d := 0; d < len(fetinfo.days); d++ {
 					for h, bl := range doubleBlocked {
 						if !bl {
 							timeslots = append(timeslots, preferredStart{
-								Preferred_Starting_Day:  dd,
-								Preferred_Starting_Hour: fetinfo.hours[h],
+								Preferred_Starting_Day:  strconv.Itoa(d),
+								Preferred_Starting_Hour: strconv.Itoa(h),
 							})
 						}
 					}

@@ -21,10 +21,7 @@ func (db *DbTopLevel) readRooms(newdb *base.DbTopLevel) {
 		}
 		db.RoomTags[e.Tag] = e.Id
 		// Copy to base db.
-		tsl := []base.TimeSlot{}
-		for _, ts := range e.NotAvailable {
-			tsl = append(tsl, base.TimeSlot(ts))
-		}
+		tsl := db.handleZeroAfternoons(e.NotAvailable, 1)
 		r := newdb.NewRoom(e.Id)
 		r.Tag = e.Tag
 		r.Name = e.Name

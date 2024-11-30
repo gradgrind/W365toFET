@@ -167,6 +167,7 @@ type spaceConstraints struct {
 	ConstraintBasicCompulsorySpace   basicSpaceConstraint
 	ConstraintActivityPreferredRooms []roomChoice
 	ConstraintActivityPreferredRoom  []placedRoom
+	ConstraintRoomNotAvailableTimes  []roomNotAvailable
 }
 
 type basicSpaceConstraint struct {
