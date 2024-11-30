@@ -7,22 +7,13 @@ import (
 	"strings"
 )
 
-type LessonIndex = TtIndex // index to TtLessons vector
-
-// TODO: The Index field seems superfluous
-type TtLesson struct {
-	Index      LessonIndex
-	CourseInfo *CourseInfo
-	Lesson     *base.Lesson
-}
-
 type CourseInfo struct {
 	Id       Ref
 	Subject  Ref
 	Groups   []Ref
 	Teachers []Ref
 	Room     VirtualRoom
-	Lessons  []LessonIndex
+	Lessons  []ActivityIndex
 }
 
 // Make a shortish string view of a CourseInfo – can be useful in tests
@@ -52,7 +43,7 @@ func gatherCourseInfo(ttinfo *TtInfo) {
 	db := ttinfo.Db
 	ttinfo.SuperSubs = map[Ref][]Ref{}
 	ttinfo.CourseInfo = map[Ref]*CourseInfo{}
-	ttinfo.TtLessons = make([]TtLesson, 1) // 1-based indexing, 0 is invalid
+	ttinfo.Activities = make([]*Activity, 1) // 1-based indexing, 0 is invalid
 
 	// Collect Courses with Lessons.
 	roomData := collectCourses(ttinfo)
@@ -117,7 +108,7 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 	db := ttinfo.Db
 	for _, l := range db.Lessons {
 		// Index of new TtLesson:
-		ttlix := len(ttinfo.TtLessons)
+		ttlix := len(ttinfo.Activities)
 		// Test whether this is the first lesson of the course
 		lcref := l.Course
 		cinfo, ok := ttinfo.CourseInfo[lcref]
@@ -164,17 +155,17 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 				Groups:   groups,
 				Teachers: teachers,
 				//Rooms: filled later
-				Lessons: []LessonIndex{ttlix},
+				Lessons: []ActivityIndex{ttlix},
 			}
 			ttinfo.CourseInfo[lcref] = cinfo
 			roomData[lcref] = rooms
 		}
-		ttl := TtLesson{
+		ttl := &Activity{
 			Index:      ttlix,
 			Lesson:     l,
 			CourseInfo: cinfo,
 		}
-		ttinfo.TtLessons = append(ttinfo.TtLessons, ttl)
+		ttinfo.Activities = append(ttinfo.Activities, ttl)
 	}
 	return roomData
 }

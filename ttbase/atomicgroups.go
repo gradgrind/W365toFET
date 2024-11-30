@@ -6,8 +6,6 @@ import (
 	"strings"
 )
 
-type ResourceIndex = TtIndex
-
 type AtomicGroup struct {
 	Index  ResourceIndex
 	Class  Ref

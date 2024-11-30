@@ -21,7 +21,7 @@ type MinDaysBetweenLessons struct {
 
 type ParallelLessons struct {
 	Weight       int
-	LessonGroups [][]LessonIndex
+	LessonGroups [][]ActivityIndex
 }
 
 func processConstraints(ttinfo *TtInfo) {
@@ -100,7 +100,7 @@ func processConstraints(ttinfo *TtInfo) {
 							strings.Join(clist, ","))
 					}
 					for j, lix := range cinfo.Lessons {
-						l := ttinfo.TtLessons[lix].Lesson
+						l := ttinfo.Activities[lix].Lesson
 						if i == 0 {
 							footprint = append(footprint, l.Duration)
 						} else if l.Duration != footprint[j] {

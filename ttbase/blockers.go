@@ -1,14 +1,12 @@
-package ttengine
+package ttbase
 
 import (
 	"W365toFET/base"
-	"W365toFET/ttbase"
 )
 
 const BLOCKED_ACTIVITY = -1
 
-func (tt *TtCore) addBlockers(
-	ttinfo *ttbase.TtInfo,
+func (ttinfo *TtInfo) addBlockers(
 	t2tt map[Ref]ResourceIndex,
 	r2tt map[Ref]ResourceIndex,
 ) {
@@ -16,13 +14,13 @@ func (tt *TtCore) addBlockers(
 	for _, t := range db.Teachers {
 		rix, ok := t2tt[t.Id]
 		if ok {
-			tt.blockResource(rix, t.NotAvailable)
+			ttinfo.blockResource(rix, t.NotAvailable)
 		}
 	}
 	for _, r := range db.Rooms {
 		rix, ok := r2tt[r.Id]
 		if ok {
-			tt.blockResource(rix, r.NotAvailable)
+			ttinfo.blockResource(rix, r.NotAvailable)
 		}
 	}
 	for _, cl := range db.Classes {
@@ -34,17 +32,17 @@ func (tt *TtCore) addBlockers(
 		// Resource indexes.
 		ags := ttinfo.AtomicGroups[cl.ClassGroup]
 		for _, ag := range ags {
-			tt.blockResource(ag.Index, na)
+			ttinfo.blockResource(ag.Index, na)
 		}
 	}
 }
 
-func (tt *TtCore) blockResource(
+func (ttinfo *TtInfo) blockResource(
 	rix ResourceIndex,
 	timeslots []base.TimeSlot,
 ) {
 	for _, ts := range timeslots {
-		p := ts.Day*tt.NHours + ts.Hour
-		tt.TtSlots[rix*tt.SlotsPerWeek+p] = BLOCKED_ACTIVITY
+		p := ts.Day*ttinfo.NHours + ts.Hour
+		ttinfo.TtSlots[rix*ttinfo.SlotsPerWeek+p] = BLOCKED_ACTIVITY
 	}
 }

@@ -1,9 +1,8 @@
-package ttengine
+package ttbase
 
 import (
 	"W365toFET/base"
 	"W365toFET/readxml"
-	"W365toFET/ttbase"
 	"fmt"
 	"slices"
 	"testing"
@@ -61,8 +60,8 @@ func TestTtEngine(t *testing.T) {
 }
 
 func tt(db *base.DbTopLevel) {
-	ttinfo := ttbase.MakeTtInfo(db)
+	ttinfo := MakeTtInfo(db)
 	//ttinfo.PrintAtomicGroups()
 
-	readDb(ttinfo)
+	ttinfo.prepareCoreData()
 }
