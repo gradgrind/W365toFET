@@ -17,9 +17,6 @@ const ATOMIC_GROUP_SEP1 = "#"
 const ATOMIC_GROUP_SEP2 = "~"
 const VIRTUAL_ROOM_PREFIX = "!"
 
-//const LUNCH_BREAK_TAG = "-lb-"
-//const LUNCH_BREAK_NAME = "Lunch Break"
-
 type VirtualRoom struct {
 	Rooms       []Ref   // only ("real") Rooms
 	RoomChoices [][]Ref // list of ("real") Room lists
@@ -57,6 +54,8 @@ type TtInfo struct {
 
 	MinDaysBetweenLessons []MinDaysBetweenLessons
 	ParallelLessons       []ParallelLessons
+
+	WITHOUT_ROOM_PLACEMENTS bool // ignore initial room placements
 }
 
 func MakeTtInfo(db *base.DbTopLevel) *TtInfo {

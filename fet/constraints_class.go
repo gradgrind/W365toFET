@@ -31,10 +31,12 @@ func addClassConstraints(fetinfo *fetInfo) {
 	cmaxaft := []maxDaysinIntervalPerWeek{}
 	cmaxls := []maxLateStarts{}
 	clblist := []lunchBreak{}
-	ndays := len(fetinfo.days)
-	nhours := len(fetinfo.hours)
+	ttinfo := fetinfo.ttinfo
+	ndays := ttinfo.NDays
+	nhours := ttinfo.NHours
+	db := ttinfo.Db
 
-	for _, cl := range fetinfo.db.Classes {
+	for _, cl := range db.Classes {
 		if cl.Tag == "" {
 			continue
 		}
@@ -60,7 +62,7 @@ func addClassConstraints(fetinfo *fetInfo) {
 			})
 		}
 
-		i := fetinfo.db.Info.FirstAfternoonHour
+		i := db.Info.FirstAfternoonHour
 		maxpm := cl.MaxAfternoons
 		if maxpm >= 0 && i > 0 {
 			cmaxaft = append(cmaxaft, maxDaysinIntervalPerWeek{
@@ -92,7 +94,7 @@ func addClassConstraints(fetinfo *fetInfo) {
 		if cl.LunchBreak {
 			// Generate the constraint unless all days have a blocked lesson
 			// at lunchtime.
-			mbhours := fetinfo.db.Info.MiddayBreak
+			mbhours := db.Info.MiddayBreak
 			lbdays := ndays
 			d := 0
 			for _, ts := range cl.NotAvailable {

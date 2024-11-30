@@ -29,10 +29,12 @@ func addTeacherConstraints(fetinfo *fetInfo) {
 	tmaxgpw := []maxGapsPerWeekT{}
 	tmaxaft := []maxDaysinIntervalPerWeekT{}
 	tlblist := []lunchBreakT{}
-	ndays := len(fetinfo.days)
-	nhours := len(fetinfo.hours)
+	ttinfo := fetinfo.ttinfo
+	ndays := ttinfo.NDays
+	nhours := ttinfo.NHours
+	db := ttinfo.Db
 
-	for _, t := range fetinfo.db.Teachers {
+	for _, t := range db.Teachers {
 		n := t.MaxDays
 		if n >= 0 && n < ndays {
 			tmaxdpw = append(tmaxdpw, maxDaysT{
@@ -64,7 +66,7 @@ func addTeacherConstraints(fetinfo *fetInfo) {
 			})
 		}
 
-		i := fetinfo.db.Info.FirstAfternoonHour
+		i := db.Info.FirstAfternoonHour
 		maxpm := t.MaxAfternoons
 		if maxpm >= 0 && i > 0 {
 			tmaxaft = append(tmaxaft, maxDaysinIntervalPerWeekT{
@@ -84,7 +86,7 @@ func addTeacherConstraints(fetinfo *fetInfo) {
 		if t.LunchBreak {
 			// Generate the constraint unless all days have a blocked lesson
 			// at lunchtime.
-			mbhours := fetinfo.db.Info.MiddayBreak
+			mbhours := db.Info.MiddayBreak
 			lbdays := ndays
 			d := 0
 			for _, ts := range t.NotAvailable {

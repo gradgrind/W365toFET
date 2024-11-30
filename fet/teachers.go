@@ -36,7 +36,7 @@ type teacherNotAvailable struct {
 func getTeachers(fetinfo *fetInfo) {
 	items := []fetTeacher{}
 	natimes := []teacherNotAvailable{}
-	for _, n := range fetinfo.db.Teachers {
+	for _, n := range fetinfo.ttinfo.Db.Teachers {
 		items = append(items, fetTeacher{
 			Name: n.Tag,
 			Long_Name: fmt.Sprintf("%s %s",

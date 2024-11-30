@@ -1,7 +1,6 @@
 package fet
 
 import (
-	"W365toFET/base"
 	"encoding/xml"
 )
 
@@ -155,96 +154,19 @@ type maxLateStarts struct {
 	Active                        bool
 }
 
-/*
-The different-days constraint for lessons belonging to a single course can
-be added automatically, but it is posible to disable it (or use a different
-weight) by passing in an AutomaticDifferentDays constraint.
-DaysBetween constraints can override this default for individual courses.
-*/
 func addDifferentDaysConstraints(fetinfo *fetInfo) {
 	mdba := []minDaysBetweenActivities{}
-
-	// Start by getting the default value for all courses
-	autoDifferentDaysWeight := base.MAXWEIGHT
-	autoDifferentDaysCISD := false
-	if fetinfo.autoDifferentDays != nil {
-		autoDifferentDaysWeight = fetinfo.autoDifferentDays.Weight
-		autoDifferentDaysCISD = fetinfo.autoDifferentDays.ConsecutiveIfSameDay
+	for _, dbc := range fetinfo.ttinfo.MinDaysBetweenLessons {
+		mdba = append(mdba, minDaysBetweenActivities{
+			Weight_Percentage:       weight2fet(dbc.Weight),
+			Consecutive_If_Same_Day: dbc.ConsecutiveIfSameDay,
+			Number_of_Activities:    len(dbc.Lessons),
+			Activity_Id:             dbc.Lessons,
+			MinDays:                 dbc.MinDays,
+			Active:                  true,
+		})
 	}
 
-	for cref, cinfo := range fetinfo.courseInfo {
-		nact := len(cinfo.activities)
-		if nact < 2 || nact > len(fetinfo.days) {
-			continue
-		}
-		// Need the Acivity_Ids for the Lessons, and whether they are fixed.
-		// No two fixed activities should be different-dayed.
-
-		fixeds := []int{}
-		unfixeds := []int{}
-		for i, l := range cinfo.lessons {
-			if l.Fixed {
-				fixeds = append(fixeds, cinfo.activities[i])
-			} else {
-				unfixeds = append(unfixeds, cinfo.activities[i])
-			}
-		}
-		if len(unfixeds) == 0 {
-			continue
-		}
-
-		differentDaysWeight := autoDifferentDaysWeight
-		differentDaysCISD := autoDifferentDaysCISD
-
-		aidlists := [][]int{}
-		if len(fixeds) <= 1 {
-			aidlists = append(aidlists, cinfo.activities)
-		} else {
-			for _, aid := range fixeds {
-				aids := []int{aid}
-				aids = append(aids, unfixeds...)
-				aidlists = append(aidlists, aids)
-			}
-		}
-
-		// Read DaysBetween constraints
-		for _, dbc := range fetinfo.daysBetween[cref] {
-			if dbc.DaysBetween == 1 {
-				// Override the default
-				differentDaysWeight = dbc.Weight
-				differentDaysCISD = dbc.ConsecutiveIfSameDay
-				continue
-			}
-			// Add constraints for DaysBetween > 1
-			if dbc.Weight == base.MAXWEIGHT {
-				// This will make the default superfluous
-				differentDaysWeight = 0
-			}
-			for _, aids := range aidlists {
-				mdba = append(mdba, minDaysBetweenActivities{
-					Weight_Percentage:       weight2fet(dbc.Weight),
-					Consecutive_If_Same_Day: dbc.ConsecutiveIfSameDay,
-					Number_of_Activities:    len(aids),
-					Activity_Id:             aids,
-					MinDays:                 dbc.DaysBetween,
-					Active:                  true,
-				})
-			}
-		}
-
-		if differentDaysWeight != 0 {
-			for _, aids := range aidlists {
-				mdba = append(mdba, minDaysBetweenActivities{
-					Weight_Percentage:       weight2fet(differentDaysWeight),
-					Consecutive_If_Same_Day: differentDaysCISD,
-					Number_of_Activities:    len(aids),
-					Activity_Id:             aids,
-					MinDays:                 1,
-					Active:                  true,
-				})
-			}
-		}
-	}
 	// Append constraints to full list
 	fetinfo.fetdata.Time_Constraints_List.
 		ConstraintMinDaysBetweenActivities = append(

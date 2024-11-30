@@ -1,6 +1,7 @@
 package fet
 
 import (
+	"W365toFET/ttbase"
 	"encoding/xml"
 	"fmt"
 	"strconv"
@@ -61,7 +62,7 @@ type roomNotAvailable struct {
 func getRooms(fetinfo *fetInfo) {
 	rooms := []fetRoom{}
 	natimes := []roomNotAvailable{}
-	for _, n := range fetinfo.db.Rooms {
+	for _, n := range fetinfo.ttinfo.Db.Rooms {
 		rooms = append(rooms, fetRoom{
 			Name:      n.Tag,
 			Long_Name: n.Name,
@@ -97,18 +98,19 @@ func getRooms(fetinfo *fetInfo) {
 		ConstraintRoomNotAvailableTimes = natimes
 }
 
-func getFetRooms(fetinfo *fetInfo, room virtualRoom) []string {
+func (fetinfo *fetInfo) getFetRooms(room ttbase.VirtualRoom) []string {
 	// The fet virtual rooms are cached at fetinfo.fetVirtualRooms.
 	// First convert the Ref values to Element Tags for FET.
 	rtags := []string{}
-	for _, rref := range room.rooms {
-		rtags = append(rtags, fetinfo.ref2fet[rref])
+	ref2fet := fetinfo.ttinfo.Ref2Tag
+	for _, rref := range room.Rooms {
+		rtags = append(rtags, ref2fet[rref])
 	}
 	rctags := [][]string{}
-	for _, rc := range room.roomChoices {
+	for _, rc := range room.RoomChoices {
 		rcl := []string{}
 		for _, rref := range rc {
-			rcl = append(rcl, fetinfo.ref2fet[rref])
+			rcl = append(rcl, ref2fet[rref])
 		}
 		rctags = append(rctags, rcl)
 	}
