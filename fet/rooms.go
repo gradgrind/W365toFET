@@ -3,6 +3,7 @@ package fet
 import (
 	"encoding/xml"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -47,9 +48,19 @@ type roomChoice struct {
 	Active                    bool // true
 }
 
+type roomNotAvailable struct {
+	XMLName                       xml.Name `xml:"ConstraintRoomNotAvailableTimes"`
+	Weight_Percentage             int
+	Room                          string
+	Number_of_Not_Available_Times int
+	Not_Available_Time            []notAvailableTime
+	Active                        bool
+}
+
 // Generate the fet entries for the basic ("real") rooms.
 func getRooms(fetinfo *fetInfo) {
 	rooms := []fetRoom{}
+	natimes := []roomNotAvailable{}
 	for _, n := range fetinfo.db.Rooms {
 		rooms = append(rooms, fetRoom{
 			Name:      n.Tag,
@@ -58,10 +69,32 @@ func getRooms(fetinfo *fetInfo) {
 			Virtual:   false,
 			Comments:  getString(n.Id),
 		})
+
+		// "Not available" times
+		nats := []notAvailableTime{}
+		for _, dh := range n.NotAvailable {
+			nats = append(nats,
+				notAvailableTime{
+					Day:  strconv.Itoa(dh.Day),
+					Hour: strconv.Itoa(dh.Hour)})
+		}
+
+		if len(nats) > 0 {
+			natimes = append(natimes,
+				roomNotAvailable{
+					Weight_Percentage:             100,
+					Room:                          n.Tag,
+					Number_of_Not_Available_Times: len(nats),
+					Not_Available_Time:            nats,
+					Active:                        true,
+				})
+		}
 	}
 	fetinfo.fetdata.Rooms_List = fetRoomsList{
 		Room: rooms,
 	}
+	fetinfo.fetdata.Space_Constraints_List.
+		ConstraintRoomNotAvailableTimes = natimes
 }
 
 func getFetRooms(fetinfo *fetInfo, room virtualRoom) []string {

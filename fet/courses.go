@@ -4,6 +4,7 @@ import (
 	"W365toFET/base"
 	"encoding/xml"
 	"slices"
+	"strconv"
 )
 
 type fetActivity struct {
@@ -305,8 +306,8 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 				startingTime{
 					Weight_Percentage:  100,
 					Activity_Id:        aid,
-					Preferred_Day:      fetinfo.days[l.Day],
-					Preferred_Hour:     fetinfo.hours[l.Hour],
+					Preferred_Day:      strconv.Itoa(l.Day),
+					Preferred_Hour:     strconv.Itoa(l.Hour),
 					Permanently_Locked: l.Fixed,
 					Active:             true,
 				},

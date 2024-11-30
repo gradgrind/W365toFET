@@ -221,7 +221,7 @@ func (dbp *DbTopLevel) handleZeroAfternoons(
 	// Make a bool array and fill this in two passes, then remake list
 	namap := make([][]bool, len(dbp.Days))
 	nhours := len(dbp.Hours)
-	// In the first pass, conditionally blocak afternoons
+	// In the first pass, conditionally block afternoons
 	for i := range namap {
 		namap[i] = make([]bool, nhours)
 		if nAfternoons == 0 {

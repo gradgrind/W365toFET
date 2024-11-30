@@ -3,6 +3,7 @@ package fet
 import (
 	"W365toFET/base"
 	"encoding/xml"
+	"strconv"
 	"strings"
 )
 
@@ -130,7 +131,7 @@ func getClasses(fetinfo *fetInfo) {
 			}
 			nats = append(nats,
 				notAvailableTime{
-					Day: fetinfo.days[day], Hour: fetinfo.hours[na.Hour]})
+					Day: strconv.Itoa(day), Hour: strconv.Itoa(na.Hour)})
 		}
 		if len(nats) > 0 {
 			natimes = append(natimes,
