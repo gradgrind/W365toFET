@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 )
 
 // Read to the local, tweaked DbTopLevel
@@ -64,8 +65,18 @@ func (db *DbTopLevel) readHours(newdb *base.DbTopLevel) {
 		n := newdb.NewHour(e.Id)
 		n.Tag = tag
 		n.Name = e.Name
-		n.Start = e.Start
-		n.End = e.End
+		ts := strings.Split(e.Start, ":")
+		if len(ts) == 3 {
+			n.Start = ts[0] + ":" + ts[1]
+		} else {
+			n.Start = e.Start
+		}
+		ts = strings.Split(e.End, ":")
+		if len(ts) == 3 {
+			n.End = ts[0] + ":" + ts[1]
+		} else {
+			n.End = e.End
+		}
 	}
 }
 
