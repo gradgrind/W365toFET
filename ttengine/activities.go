@@ -3,7 +3,6 @@ package ttengine
 import (
 	"W365toFET/base"
 	"W365toFET/ttbase"
-	"fmt"
 	"slices"
 )
 
@@ -136,9 +135,73 @@ func (tt *TtCore) addActivities(
 
 		// The placement has not yet been tested, so the Placement field
 		// may still need to be revoked!
+	}
 
-		// First place the fixed lessons, then build the PossibleSlots for
-		// non-fixed lessons.
+	//TODO: Move to ttbase?
+	// Check parallel lessons for compatibility, etc.
+	for aix := 1; aix < len(ttinfo.TtLessons); aix++ {
+		a := tt.Activities[aix]
+		if len(a.Parallel) != 0 {
+			continue
+		}
+		p := a.Placement
+		if a.Fixed {
+			if p < 0 {
+				base.Bug.Fatalf("Fixed activity with no time slot: %d\n", aix)
+			}
+			for _, paix := range a.Parallel {
+				pa := tt.Activities[paix]
+				pp := pa.Placement
+				if pa.Fixed {
+					base.Warning.Printf("Parallel fixed lessons:\n"+
+						"  -- %d: %s\n  -- %d: %s\n",
+						aix,
+						ttinfo.View(ttinfo.TtLessons[aix].CourseInfo),
+						paix,
+						ttinfo.View(ttinfo.TtLessons[paix].CourseInfo),
+					)
+					if pp != p {
+						base.Error.Fatalln("Parallel fixed lessons have" +
+							" different times")
+					}
+				} else {
+					if pp != p {
+						if pp >= 0 {
+							base.Warning.Printf("Parallel lessons with"+
+								" different times:\n  -- %d: %s\n  -- %d: %s\n",
+								aix,
+								ttinfo.View(ttinfo.TtLessons[aix].CourseInfo),
+								paix,
+								ttinfo.View(ttinfo.TtLessons[paix].CourseInfo),
+							)
+						}
+						pa.Placement = p
+						pa.Fixed = true
+					}
+				}
+			}
+		} else {
+			if p < 0 {
+				continue
+			}
+			for _, paix := range a.Parallel {
+				pa := tt.Activities[paix]
+				pp := pa.Placement
+				if pp >= 0 && pp != p {
+					//TODO: Warn and set ALL to -1?
+
+				}
+			}
+		}
+	}
+	//TODO: How to avoid multiple placement of parallels? Perhaps with a map/set
+	// of already placed ones?
+
+	// First place the fixed lessons, then build the PossibleSlots for
+	// non-fixed lessons.
+	for aix := 1; aix < len(ttinfo.TtLessons); aix++ {
+		a := tt.Activities[aix]
+		p := a.Placement
 
 		if p >= 0 {
 			if a.Fixed {
@@ -146,13 +209,10 @@ func (tt *TtCore) addActivities(
 					// Perform placement
 					tt.placeActivity(aix, p)
 				} else {
-					//TODO: Maybe this shoud be fatal?
-					base.Error.Printf(
+					base.Error.Fatalf(
 						"Placement of Fixed Activity %d @ %d failed:\n"+
 							"  -- %s\n",
-						aix, p, ttinfo.View(cinfo))
-					a.Placement = -1
-					a.Fixed = false
+						aix, p, ttinfo.View(ttinfo.TtLessons[aix].CourseInfo))
 				}
 			} else {
 				toplace = append(toplace, aix)
@@ -160,22 +220,12 @@ func (tt *TtCore) addActivities(
 		}
 	}
 
-	//TODO: What about non-fixed lessons parallel to fixed ones? Should they
-	// be made fixed? They wouldn't need to be placed a second time ...
-
 	// Build PossibleSlots
 	tt.makePossibleSlots()
-
-	//TODO--
-	fmt.Println("+++++++++++ NON-FIXED")
 
 	// Place non-fixed lessons
 	for _, aix := range toplace {
 		a := tt.Activities[aix]
-
-		//TODO--
-		fmt.Printf("??? %+v\n", a)
-
 		p := a.Placement
 		if tt.testPlacement(aix, p) {
 			// Perform placement
