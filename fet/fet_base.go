@@ -4,7 +4,6 @@ package fet
 import (
 	"W365toFET/base"
 	"W365toFET/ttbase"
-	"encoding/json"
 	"encoding/xml"
 	"fmt"
 	"math"
@@ -22,7 +21,7 @@ const VIRTUAL_ROOM_PREFIX = "!"
 // const LUNCH_BREAK_TAG = "-lb-"
 // const LUNCH_BREAK_NAME = "Lunch Break"
 
-const fet_version = "6.25.2"
+const fet_version = "6.28.2"
 
 // Function makeXML produces a chunk of pretty-printed XML output from
 // the input data.
@@ -82,7 +81,7 @@ type fetInfo struct {
 	fetVirtualRoomN map[string]int // FET-virtual-room tag -> number of room sets
 }
 
-/* old contents:
+/* TODO-- old contents:
 db            *base.DbTopLevel
 ref2fet       map[Ref]string
 days          []string
@@ -172,7 +171,7 @@ func MakeFetFile(ttinfo *ttbase.TtInfo) (string, string) {
 			Version:          fet_version,
 			Mode:             "Official",
 			Institution_Name: dbdata.Info.Institution,
-			Comments:         getString(dbdata.Info.Reference),
+			Comments:         dbdata.Info.Reference,
 			Time_Constraints_List: timeConstraints{
 				ConstraintBasicCompulsoryTime: basicTimeConstraint{
 					Weight_Percentage: 100, Active: true},
@@ -220,6 +219,7 @@ func MakeFetFile(ttinfo *ttbase.TtInfo) (string, string) {
 	return xml.Header + makeXML(fetinfo.fetdata, 0), lidmap
 }
 
+/*
 func getString(val interface{}) string {
 	s, ok := val.(string)
 	if !ok {
@@ -228,3 +228,4 @@ func getString(val interface{}) string {
 	}
 	return s
 }
+*/

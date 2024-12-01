@@ -2,6 +2,7 @@ package ttbase
 
 import (
 	"W365toFET/base"
+	"fmt"
 	"strings"
 )
 
@@ -24,13 +25,14 @@ type ParallelLessons struct {
 	LessonGroups [][]ActivityIndex
 }
 
-func processConstraints(ttinfo *TtInfo) {
+func (ttinfo *TtInfo) processConstraints() {
 	// Some constraints can be "preprocessed" into more convenient structures.
 	db := ttinfo.Db
 	diffDays := differentDays{
 		weight: -1, // uninitialized
 	}
 	mdba := []MinDaysBetweenLessons{}
+	ttinfo.Constraints = map[string][]any{}
 	for _, c := range db.Constraints {
 		{
 			cn, ok := c.(*base.AutomaticDifferentDays)
@@ -136,6 +138,11 @@ func processConstraints(ttinfo *TtInfo) {
 		ddcs, ok := diffDays.daysBetween[cref]
 		if ok {
 			// Generate the constraints in the list
+			if len(cinfo.Lessons) == 1 {
+				base.Warning.Printf("DaysBetween constraint on course with"+
+					" only one lesson:\n  -- %s", ttinfo.View(cinfo))
+				continue
+			}
 			for _, ddc := range ddcs {
 				if ddc.Weight != 0 {
 					mdba = append(mdba, MinDaysBetweenLessons{
@@ -144,11 +151,17 @@ func processConstraints(ttinfo *TtInfo) {
 						Lessons:              cinfo.Lessons,
 						MinDays:              ddc.DaysBetween,
 					})
-
 				}
 			}
-		} else if diffDays.weight != 0 {
+		} else if diffDays.weight != 0 && len(cinfo.Lessons) > 1 {
 			// Generate the default constraint
+
+			//TODO--
+			if len(cinfo.Lessons) > 3 {
+				fmt.Printf("??? %d: %s\n", len(cinfo.Lessons), ttinfo.View(cinfo))
+				//fmt.Printf("=== %d: %+v\n", len(cinfo.Lessons), cinfo)
+			}
+
 			mdba = append(mdba, MinDaysBetweenLessons{
 				Weight:               diffDays.weight,
 				ConsecutiveIfSameDay: diffDays.consecutiveIfSameDay,

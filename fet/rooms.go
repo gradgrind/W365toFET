@@ -68,7 +68,7 @@ func getRooms(fetinfo *fetInfo) {
 			Long_Name: n.Name,
 			Capacity:  30000,
 			Virtual:   false,
-			Comments:  getString(n.Id),
+			Comments:  string(n.Id),
 		})
 
 		// "Not available" times

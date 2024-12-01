@@ -24,7 +24,12 @@ func (ttinfo *TtInfo) View(cinfo *CourseInfo) string {
 	}
 	glist := []string{}
 	for _, g := range cinfo.Groups {
-		glist = append(glist, ttinfo.Ref2Tag[g])
+		//TODO: Fix: There should always be an entry
+		gx, ok := ttinfo.Ref2Tag[g]
+		if !ok {
+			gx = "%" + string(g) + "%"
+		}
+		glist = append(glist, gx)
 	}
 
 	return fmt.Sprintf("<Course %s/%s:%s>\n",

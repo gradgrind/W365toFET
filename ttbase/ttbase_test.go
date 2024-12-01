@@ -16,7 +16,7 @@ var inputfiles = []string{
 	"../testdata/readxml/x01.xml",
 }
 
-func TestTtEngine(t *testing.T) {
+func TestTtBase(t *testing.T) {
 	base.OpenLog("")
 	for _, fxml := range inputfiles {
 		fmt.Println("\n ++++++++++++++++++++++")

@@ -62,9 +62,8 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	ttinfo := &TtInfo{
 		Db: db,
 	}
-	gatherCourseInfo(ttinfo)
 
-	processConstraints(ttinfo)
+	gatherCourseInfo(ttinfo) // must be before call to filterDivisions
 
 	// Build Ref -> Tag mapping for subjects, teachers, rooms, classes
 	// and groups.
@@ -95,12 +94,14 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 			}
 		}
 	}
-	ttinfo.Ref2Tag = ref2Tag
 
+	ttinfo.Ref2Tag = ref2Tag
 	//fmt.Printf("Ref2Tag: %v\n", ttinfo.Ref2Tag)
 
+	ttinfo.processConstraints() // uses ttinfo.Ref2Tag
+
 	// Get "atomic" groups
-	makeAtomicGroups(ttinfo)
+	ttinfo.makeAtomicGroups()
 
 	ttinfo.prepareCoreData()
 	return ttinfo

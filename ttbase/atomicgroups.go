@@ -13,7 +13,7 @@ type AtomicGroup struct {
 	Tag    string // A constructed tag to represent the atomic group
 }
 
-func makeAtomicGroups(ttinfo *TtInfo) {
+func (ttinfo *TtInfo) makeAtomicGroups() {
 	// An atomic group is an ordered list of single groups, one from each
 	// division.
 	db := ttinfo.Db
