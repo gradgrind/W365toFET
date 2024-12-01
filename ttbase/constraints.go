@@ -2,7 +2,6 @@ package ttbase
 
 import (
 	"W365toFET/base"
-	"fmt"
 	"strings"
 )
 
@@ -32,6 +31,7 @@ func (ttinfo *TtInfo) processConstraints() {
 		weight: -1, // uninitialized
 	}
 	mdba := []MinDaysBetweenLessons{}
+	ddays := map[Ref]bool{} // collect diff days override flags
 	ttinfo.Constraints = map[string][]any{}
 	for _, c := range db.Constraints {
 		{
@@ -54,6 +54,10 @@ func (ttinfo *TtInfo) processConstraints() {
 				for _, cref := range cn.Courses {
 					diffDays.daysBetween[cref] = append(
 						diffDays.daysBetween[cref], cn)
+					if cn.DaysBetween == 1 {
+						// Override default constraint
+						ddays[cref] = true
+					}
 				}
 				continue
 			}
@@ -63,12 +67,17 @@ func (ttinfo *TtInfo) processConstraints() {
 			if ok {
 				c1 := ttinfo.CourseInfo[cn.Course1]
 				c2 := ttinfo.CourseInfo[cn.Course2]
-				for _, l1 := range c1.Lessons {
-					for _, l2 := range c2.Lessons {
+				for _, l1ref := range c1.Lessons {
+					l1fixed := ttinfo.Activities[l1ref].Fixed
+					for _, l2ref := range c2.Lessons {
+						if l1fixed && ttinfo.Activities[l2ref].Fixed {
+							// both fixed => no constraint
+							continue
+						}
 						mdba = append(mdba, MinDaysBetweenLessons{
 							Weight:               cn.Weight,
 							ConsecutiveIfSameDay: cn.ConsecutiveIfSameDay,
-							Lessons:              []int{l1, l2},
+							Lessons:              []int{l1ref, l2ref},
 							MinDays:              cn.DaysBetween,
 						})
 					}
@@ -135,39 +144,77 @@ func (ttinfo *TtInfo) processConstraints() {
 		diffDays.weight = base.MAXWEIGHT
 	}
 	for cref, cinfo := range ttinfo.CourseInfo {
-		ddcs, ok := diffDays.daysBetween[cref]
-		if ok {
-			// Generate the constraints in the list
-			if len(cinfo.Lessons) == 1 {
-				base.Warning.Printf("DaysBetween constraint on course with"+
-					" only one lesson:\n  -- %s", ttinfo.View(cinfo))
-				continue
+		// Determine groups of lessons to couple by means of the fixed flags.
+		fixeds := []int{}
+		unfixeds := []int{}
+		for _, lref := range cinfo.Lessons {
+			if ttinfo.Activities[lref].Fixed {
+				fixeds = append(fixeds, lref)
+			} else {
+				unfixeds = append(unfixeds, lref)
 			}
+		}
+
+		ddcs, ddcsok := diffDays.daysBetween[cref]
+		if len(unfixeds) == 0 || (len(fixeds) == 0 && len(unfixeds) == 1) {
+			// No constraints necessary
+			if ddcsok {
+				base.Warning.Printf("Superfluous DaysBetween constraint on"+
+					" course:\n  -- %s", ttinfo.View(cinfo))
+			}
+			continue
+		}
+		aidlists := [][]int{}
+		if len(fixeds) <= 1 {
+			aidlists = append(aidlists, cinfo.Lessons)
+		} else {
+			for _, aid := range fixeds {
+				aids := []int{aid}
+				aids = append(aids, unfixeds...)
+				aidlists = append(aidlists, aids)
+			}
+		}
+
+		// Add constraints
+
+		if !ddays[cref] && diffDays.weight != 0 {
+			// Add default constraint
+			for _, alist := range aidlists {
+				if len(alist) > ttinfo.NDays {
+					base.Warning.Printf("Course has too many lessons for"+
+						"DifferentDays constraint:\n  -- %s\n",
+						ttinfo.View(cinfo))
+					continue
+				}
+				mdba = append(mdba, MinDaysBetweenLessons{
+					Weight:               diffDays.weight,
+					ConsecutiveIfSameDay: diffDays.consecutiveIfSameDay,
+					Lessons:              alist,
+					MinDays:              1,
+				})
+			}
+		}
+
+		if ddcsok {
+			// Generate the additional constraints
 			for _, ddc := range ddcs {
 				if ddc.Weight != 0 {
-					mdba = append(mdba, MinDaysBetweenLessons{
-						Weight:               ddc.Weight,
-						ConsecutiveIfSameDay: ddc.ConsecutiveIfSameDay,
-						Lessons:              cinfo.Lessons,
-						MinDays:              ddc.DaysBetween,
-					})
+					for _, alist := range aidlists {
+						if (len(alist)-1)*ddc.DaysBetween >= ttinfo.NDays {
+							base.Warning.Printf("Course has too many lessons"+
+								" for DaysBetween constraint:\n  -- %s\n",
+								ttinfo.View(cinfo))
+							continue
+						}
+						mdba = append(mdba, MinDaysBetweenLessons{
+							Weight:               ddc.Weight,
+							ConsecutiveIfSameDay: ddc.ConsecutiveIfSameDay,
+							Lessons:              alist,
+							MinDays:              ddc.DaysBetween,
+						})
+					}
 				}
 			}
-		} else if diffDays.weight != 0 && len(cinfo.Lessons) > 1 {
-			// Generate the default constraint
-
-			//TODO--
-			if len(cinfo.Lessons) > 3 {
-				fmt.Printf("??? %d: %s\n", len(cinfo.Lessons), ttinfo.View(cinfo))
-				//fmt.Printf("=== %d: %+v\n", len(cinfo.Lessons), cinfo)
-			}
-
-			mdba = append(mdba, MinDaysBetweenLessons{
-				Weight:               diffDays.weight,
-				ConsecutiveIfSameDay: diffDays.consecutiveIfSameDay,
-				Lessons:              cinfo.Lessons,
-				MinDays:              1,
-			})
 		}
 	}
 	ttinfo.MinDaysBetweenLessons = mdba

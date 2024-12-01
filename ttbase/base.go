@@ -98,12 +98,15 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	ttinfo.Ref2Tag = ref2Tag
 	//fmt.Printf("Ref2Tag: %v\n", ttinfo.Ref2Tag)
 
-	ttinfo.processConstraints() // uses ttinfo.Ref2Tag
-
 	// Get "atomic" groups
 	ttinfo.makeAtomicGroups()
 
 	ttinfo.prepareCoreData()
+
+	// The constraint "preprocessing" the Activities, so it must be
+	// after prepareCoreData().
+	ttinfo.processConstraints()
+
 	return ttinfo
 }
 
