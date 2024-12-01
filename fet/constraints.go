@@ -153,24 +153,3 @@ type maxLateStarts struct {
 	Students                      string
 	Active                        bool
 }
-
-func addDifferentDaysConstraints(fetinfo *fetInfo) {
-	mdba := []minDaysBetweenActivities{}
-	for _, dbc := range fetinfo.ttinfo.MinDaysBetweenLessons {
-		mdba = append(mdba, minDaysBetweenActivities{
-			Weight_Percentage:       weight2fet(dbc.Weight),
-			Consecutive_If_Same_Day: dbc.ConsecutiveIfSameDay,
-			Number_of_Activities:    len(dbc.Lessons),
-			Activity_Id:             dbc.Lessons,
-			MinDays:                 dbc.MinDays,
-			Active:                  true,
-		})
-	}
-
-	// Append constraints to full list
-	fetinfo.fetdata.Time_Constraints_List.
-		ConstraintMinDaysBetweenActivities = append(
-		fetinfo.fetdata.Time_Constraints_List.
-			ConstraintMinDaysBetweenActivities,
-		mdba...)
-}

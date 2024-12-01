@@ -41,7 +41,8 @@ func TestTtEngine(t *testing.T) {
 			continue
 		}
 
-		tt(cdata.Db())
+		ttinfo := MakeTtInfo(cdata.Db())
+		ttinfo.PrintAtomicGroups()
 
 		/*
 			stempath := strings.TrimSuffix(fxml, filepath.Ext(fxml))
@@ -57,11 +58,4 @@ func TestTtEngine(t *testing.T) {
 			//toFET(cdata.db, stempath)
 		*/
 	}
-}
-
-func tt(db *base.DbTopLevel) {
-	ttinfo := MakeTtInfo(db)
-	//ttinfo.PrintAtomicGroups()
-
-	ttinfo.prepareCoreData()
 }

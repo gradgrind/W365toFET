@@ -102,6 +102,7 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	// Get "atomic" groups
 	makeAtomicGroups(ttinfo)
 
+	ttinfo.prepareCoreData()
 	return ttinfo
 }
 

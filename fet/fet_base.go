@@ -207,9 +207,7 @@ func MakeFetFile(ttinfo *ttbase.TtInfo) (string, string) {
 
 	addTeacherConstraints(&fetinfo)
 	addClassConstraints(&fetinfo)
-
 	getExtraConstraints(&fetinfo)
-	addDifferentDaysConstraints(&fetinfo) // after getExtraConstraints!
 
 	// Convert lessonIdMap to string
 	idmlines := []string{}

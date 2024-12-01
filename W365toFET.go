@@ -3,6 +3,7 @@ package main
 import (
 	"W365toFET/base"
 	"W365toFET/fet"
+	"W365toFET/ttbase"
 	"W365toFET/w365tt"
 	"flag"
 	"log"
@@ -47,10 +48,12 @@ func main() {
 	w365tt.LoadJSON(db, abspath)
 	db.PrepareDb()
 
+	ttinfo := ttbase.MakeTtInfo(db)
+
 	// ********** Build the fet file **********
 	stempath = strings.TrimSuffix(stempath, "_w365")
 
-	xmlitem, lessonIdMap := fet.MakeFetFile(db)
+	xmlitem, lessonIdMap := fet.MakeFetFile(ttinfo)
 
 	// Write FET file
 	fetfile := stempath + ".fet"
