@@ -3,6 +3,7 @@ package readxml
 import (
 	"W365toFET/base"
 	"W365toFET/fet"
+	"W365toFET/ttbase"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -56,9 +57,10 @@ func Test2JSON(t *testing.T) {
 
 func toFET(db *base.DbTopLevel, fetpath string) {
 	db.PrepareDb()
+	ttinfo := ttbase.MakeTtInfo(db)
 
 	// ********** Build the fet file **********
-	xmlitem, lessonIdMap := fet.MakeFetFile(db)
+	xmlitem, lessonIdMap := fet.MakeFetFile(ttinfo)
 
 	// Write FET file
 	fetfile := fetpath + ".fet"
