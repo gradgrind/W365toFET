@@ -1,17 +1,27 @@
-package timetable
+package ttprint
 
 import (
+	"W365toFET/base"
+	"W365toFET/readxml"
+	"W365toFET/ttbase"
 	"fmt"
 	"log"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 )
 
+var inputfiles = []string{
+	"../testdata/readxml/Demo1.xml",
+	"../testdata/readxml/x01.xml",
+}
+
 func TestPrint(t *testing.T) {
+	base.OpenLog("")
 	datadir, err := filepath.Abs("../data/")
 	if err != nil {
-		log.Fatal(err)
+		base.Error.Fatal(err)
 	}
 	//typst, err := filepath.Abs("../resources/print_timetable.typ")
 	//if err != nil {
@@ -33,27 +43,44 @@ func TestPrint(t *testing.T) {
 		log.Fatalln("Quit")
 	*/
 	fmt.Println("\n############## TestPrint")
-	const defaultPath = "../_testdata/*.w365"
-	/*
-		abspath, err := zenity.SelectFile(
-			zenity.Filename(defaultPath),
-			zenity.FileFilter{
-				Name:     "Waldorf-365 files",
-				Patterns: []string{"*.w365"},
-				CaseFold: false,
-			})
-	*/
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("\n ***** Reading %s *****\n", abspath)
-	/*
-		abspath, err := filepath.Abs(w365file)
-		if err != nil {
-			log.Fatalf("Couldn't resolve file path: %s\n", abspath)
+
+	//
+
+	for _, fxml := range inputfiles {
+		fmt.Println("\n ++++++++++++++++++++++")
+		cdata := readxml.ConvertToDb(fxml)
+		fmt.Println("*** Available Schedules:")
+		slist := cdata.ScheduleNames()
+		for _, sname := range slist {
+			fmt.Printf("  -- %s\n", sname)
 		}
-	*/
-	wzdb := w365.ReadW365(abspath)
+		sname := "Vorlage"
+		if !slices.Contains(slist, sname) {
+			if len(slist) != 0 {
+				sname = slist[0]
+			} else {
+				fmt.Println(" ... stopping ...")
+				continue
+			}
+		}
+		fmt.Printf("*** Using Schedule '%s'\n", sname)
+		if !cdata.ReadSchedule(sname) {
+			fmt.Println(" ... failed ...")
+			continue
+		}
+		stempath := strings.TrimSuffix(fxml, filepath.Ext(fxml))
+
+		stempath = strings.TrimSuffix(stempath, "_w365")
+
+		db := cdata.Db()
+		db.PrepareDb()
+		ttinfo := ttbase.MakeTtInfo(db)
+		doPrinting(ttinfo)
+	}
+}
+
+func doPrinting(ttinfo *ttbase.TtInfo) {
+	//
 
 	fmt.Println("\n +++++ GetActivities +++++")
 	alist, course2activities, _ := wzbase.GetActivities(&wzdb)

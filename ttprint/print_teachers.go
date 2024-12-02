@@ -1,6 +1,8 @@
-package timetable
+package ttprint
 
 import (
+	"W365toFET/base"
+	"W365toFET/ttbase"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -11,18 +13,84 @@ import (
 	"strings"
 )
 
-const CLASS_GROUP_SEP = "."
+//const CLASS_GROUP_SEP = "."
 
 func PrintTeacherTimetables(
-	ttdata TimetableData,
+	//ttdata TimetableData,
+	ttinfo *ttbase.TtInfo,
 	plan_name string,
 	datadir string,
 	outpath string, // full path to output pdf
 ) {
 	pages := [][]any{}
+	ref2id := ttinfo.Ref2Tag
 	// Generate the tiles.
-	teacherTiles := map[string][]Tile{}
-	for _, l := range ttdata.Lessons {
+	teacherTiles := map[base.Ref][]Tile{}
+
+	tmap := map[base.Ref][]*ttbase.CourseInfo{}
+	for cref, cinfo := range ttinfo.CourseInfo {
+
+		//
+
+		subject := ref2id[cinfo.Subject]
+		groups := []string{}
+		// For SuperCourses gather the resources from the relevant SubCourses.
+		sbcs, ok := ttinfo.SuperSubs[cref]
+		if ok {
+
+		} else {
+			for _, gref := range cinfo.Groups {
+				groups = append(groups, ref2id[gref])
+			}
+
+			// The rooms are associated with the lessons
+			for _, lix := range cinfo.Lessons {
+				rooms := []string{}
+				l := ttinfo.Activities[lix].Lesson
+				for _, rref := range l.Rooms {
+					rooms = append(rooms, ref2id[rref])
+				}
+
+				//TODO
+
+				// The lists should be sorted, somehow ...
+
+				// Limit list lengths?
+
+				for _, tref := range cinfo.Teachers {
+
+					// If there is more than one teacher, list the others
+					teachers := []string{}
+					if len(cinfo.Teachers) > 1 {
+						for _, tref1 := range cinfo.Teachers {
+							if tref1 != tref {
+								teachers = append(teachers, ref2id[tref1])
+							}
+						}
+					}
+
+					tile := Tile{
+						Day:      l.Day,
+						Hour:     l.Hour,
+						Duration: l.Duration,
+						Fraction: 1,
+						Offset:   0,
+						Total:    1,
+						Centre:   strings.Join(groups, ","),
+						TL:       subject,
+						TR:       strings.Join(teachers, ","),
+						BR:       strings.Join(rooms, ","),
+					}
+					teacherTiles[tref] = append(teacherTiles[tref], tile)
+				}
+			}
+		}
+
+		//
+
+	}
+
+	{
 		// Limit the length of the room list.
 		var room string
 		if len(l.RealRooms) > 6 {
