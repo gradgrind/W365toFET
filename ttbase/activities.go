@@ -128,8 +128,8 @@ func (ttinfo *TtInfo) addActivityInfo(
 			a.DifferentDays = ddlist
 		}
 
-		// The placement has not yet been tested, so the Placement field
-		// may still need to be revoked!
+		// The placement has not yet been tested, so it may still need to be
+		// revoked!
 	}
 
 	// Check parallel lessons for compatibility, etc.
@@ -182,14 +182,24 @@ func (ttinfo *TtInfo) addActivityInfo(
 				pa := ttinfo.Activities[paix]
 				pp := pa.Placement
 				if pp >= 0 && pp != p {
-					//TODO: Warn and set ALL to -1?
-
+					// Warn and set ALL to -1
+					base.Warning.Printf("Parallel lessons with different"+
+						" times (placements revoked):\n  -- %d: %s\n",
+						aix,
+						ttinfo.View(ttinfo.Activities[aix].CourseInfo))
+					a.Placement = -1
+					for _, paix := range a.Parallel {
+						pa := ttinfo.Activities[paix]
+						pa.Placement = -1
+					}
+					break
 				}
 			}
 		}
 	}
-	//TODO: How to avoid multiple placement of parallels? Perhaps with a map/set
-	// of already placed ones?
+	// To avoid multiple placement of parallels, mark Activities which have
+	// been placed.
+	placed := make([]bool, len(ttinfo.Activities))
 
 	// First place the fixed lessons, then build the PossibleSlots for
 	// non-fixed lessons.
@@ -198,10 +208,17 @@ func (ttinfo *TtInfo) addActivityInfo(
 		p := a.Placement
 
 		if p >= 0 {
+			if placed[aix] {
+				continue
+			}
 			if a.Fixed {
 				if ttinfo.testPlacement(aix, p) {
 					// Perform placement
 					ttinfo.placeActivity(aix, p)
+					placed[aix] = true
+					for _, paix := range a.Parallel {
+						placed[paix] = true
+					}
 				} else {
 					base.Error.Fatalf(
 						"Placement of Fixed Activity %d @ %d failed:\n"+
@@ -219,11 +236,18 @@ func (ttinfo *TtInfo) addActivityInfo(
 
 	// Place non-fixed lessons
 	for _, aix := range toplace {
+		if placed[aix] {
+			continue
+		}
 		a := ttinfo.Activities[aix]
 		p := a.Placement
 		if ttinfo.testPlacement(aix, p) {
 			// Perform placement
 			ttinfo.placeActivity(aix, p)
+			placed[aix] = true
+			for _, paix := range a.Parallel {
+				placed[paix] = true
+			}
 		} else {
 			// Need CourseInfo for reporting details
 			ttl := ttinfo.Activities[aix-1]
