@@ -211,7 +211,16 @@ func (ttinfo *TtInfo) addActivityInfo(
 			if placed[aix] {
 				continue
 			}
+
 			if a.Fixed {
+				// Check for end-of-day problems when duration > 1
+				h := p % ttinfo.NHours
+				if h+a.Duration > ttinfo.NHours {
+					base.Error.Fatalf(
+						"Placement for Fixed Activity %d @ %d invalid:\n"+
+							"  -- %s\n",
+						aix, p, ttinfo.View(ttinfo.Activities[aix].CourseInfo))
+				}
 				if ttinfo.testPlacement(aix, p) {
 					// Perform placement
 					ttinfo.placeActivity(aix, p)
@@ -241,7 +250,9 @@ func (ttinfo *TtInfo) addActivityInfo(
 		}
 		a := ttinfo.Activities[aix]
 		p := a.Placement
-		if ttinfo.testPlacement(aix, p) {
+		if slices.Contains(a.PossibleSlots, p) &&
+			ttinfo.testPlacement(aix, p) {
+
 			// Perform placement
 			ttinfo.placeActivity(aix, p)
 			placed[aix] = true
