@@ -81,24 +81,6 @@ type fetInfo struct {
 	fetVirtualRoomN map[string]int // FET-virtual-room tag -> number of room sets
 }
 
-/* TODO-- old contents:
-db            *base.DbTopLevel
-ref2fet       map[Ref]string
-days          []string
-hours         []string
-fetdata       fet
-// These cover only courses and groups with lessons:
-ONLY_FIXED bool // normally true, false allows generation of
-// placement constraints for non-fixed lessons
-WITHOUT_ROOM_PLACEMENTS bool
-superSubs               map[Ref][]Ref
-courseInfo              map[Ref]courseInfo // Key can be Course or SuperCourse
-classDivisions          map[Ref][][]Ref
-atomicGroups            map[Ref][]AtomicGroup
-autoDifferentDays *base.AutomaticDifferentDays
-daysBetween       map[Ref][]*base.DaysBetween
-*/
-
 type timeConstraints struct {
 	XMLName xml.Name `xml:"Time_Constraints_List"`
 	//

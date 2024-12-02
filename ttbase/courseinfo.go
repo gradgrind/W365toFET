@@ -24,10 +24,9 @@ func (ttinfo *TtInfo) View(cinfo *CourseInfo) string {
 	}
 	glist := []string{}
 	for _, g := range cinfo.Groups {
-		//TODO: Fix: There should always be an entry
 		gx, ok := ttinfo.Ref2Tag[g]
 		if !ok {
-			gx = "%" + string(g) + "%"
+			base.Bug.Fatalf("No Ref2Tag for %s\n", g)
 		}
 		glist = append(glist, gx)
 	}

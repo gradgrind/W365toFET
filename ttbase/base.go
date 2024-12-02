@@ -22,7 +22,6 @@ type VirtualRoom struct {
 	RoomChoices [][]Ref // list of ("real") Room lists
 }
 
-// TODO: Some of this might be better placed in DbTopLevel?
 type TtInfo struct {
 
 	// Core structures maintaining timetable state
