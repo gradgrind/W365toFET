@@ -110,66 +110,93 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 	// Collect Courses with Lessons.
 	roomData := map[Ref][]Ref{} // course -> []room (any sort of "room")
 	db := ttinfo.Db
-	for _, l := range db.Lessons {
-		// Index of new TtLesson:
-		ttlix := len(ttinfo.Activities)
-		// Test whether this is the first lesson of the course
-		lcref := l.Course
-		cinfo, ok := ttinfo.CourseInfo[lcref]
-		if ok {
-			// If the course has already been handled, just add the lesson.
-			cinfo.Lessons = append(cinfo.Lessons, ttlix)
-		} else {
-			// First encounter with the course.
-			var subject Ref
-			var groups []Ref
-			var teachers []Ref
-			var rooms []Ref
 
-			c := db.Elements[lcref] // can be Course or SuperCourse
-			cnode, ok := c.(*base.Course)
-			if ok {
-				if slices.Contains(l.Flags, "SubstitutionService") {
-					groups = nil
-				} else {
-					groups = cnode.Groups
-				}
-				subject = cnode.Subject
-				teachers = cnode.Teachers
-				rooms = []Ref{}
-				if cnode.Room != "" {
-					rooms = append(rooms, cnode.Room)
-				}
-			} else {
-				spc, ok := c.(*base.SuperCourse)
-				if !ok {
-					base.Error.Fatalf(
-						"Invalid Course in Lesson %s:\n  %s\n",
-						l.Id, lcref)
-				}
-				ttinfo.SuperSubs[lcref] = []Ref{}
-				subject = spc.Subject
-				groups = []Ref{}
-				teachers = []Ref{}
-				rooms = []Ref{}
+	// Collect the relevant courses and their lessons
+	courses := map[Ref][]*base.Lesson{}
+	for _, l := range db.Lessons {
+		courses[l.Course] = append(courses[l.Course], l)
+	}
+
+	// Create the CourseInfos and Activities
+	for cref, llist := range courses {
+		// If there are placements, sort chronologically
+		slices.SortStableFunc(llist, func(a, b *base.Lesson) int {
+			if a.Day < b.Day {
+				return -1
 			}
-			cinfo = &CourseInfo{
-				Id:       lcref,
-				Subject:  subject,
-				Groups:   groups,
-				Teachers: teachers,
-				//Rooms: filled later
-				Lessons: []ActivityIndex{ttlix},
+			if a.Day == b.Day {
+				if a.Day < 0 {
+					return 0
+				}
+				if a.Hour < b.Hour {
+					return -1
+				}
+				if a.Hour == b.Hour {
+					return 0
+				}
 			}
-			ttinfo.CourseInfo[lcref] = cinfo
-			roomData[lcref] = rooms
+			return 1
+		})
+
+		// Prepare CourseInfo
+		var subject Ref
+		var groups []Ref
+		var teachers []Ref
+		var rooms []Ref
+
+		c := db.Elements[cref] // can be Course or SuperCourse
+		cnode, ok := c.(*base.Course)
+		if ok {
+			groups = cnode.Groups
+			subject = cnode.Subject
+			teachers = cnode.Teachers
+			rooms = []Ref{}
+			if cnode.Room != "" {
+				rooms = append(rooms, cnode.Room)
+			}
+		} else {
+			spc, ok := c.(*base.SuperCourse)
+			if !ok {
+				ll := []Ref{}
+				for _, l := range llist {
+					ll = append(ll, l.Id)
+				}
+				base.Error.Fatalf(
+					"Invalid Course in Lessons %+v:\n  %s\n",
+					ll, cref)
+			}
+			ttinfo.SuperSubs[cref] = []Ref{}
+			subject = spc.Subject
+			groups = []Ref{}
+			teachers = []Ref{}
+			rooms = []Ref{}
 		}
-		ttl := &Activity{
-			Index:      ttlix,
-			Lesson:     l,
-			CourseInfo: cinfo,
+		cinfo := &CourseInfo{
+			Id:       cref,
+			Subject:  subject,
+			Groups:   groups,
+			Teachers: teachers,
+			//Rooms: filled later
+			Lessons: []ActivityIndex{},
 		}
-		ttinfo.Activities = append(ttinfo.Activities, ttl)
+		ttinfo.CourseInfo[cref] = cinfo
+		roomData[cref] = rooms
+
+		// Add lessons to CourseInfo
+		for _, l := range llist {
+			if slices.Contains(l.Flags, "SubstitutionService") {
+				cinfo.Groups = nil
+			}
+			// Index of new Activity:
+			ttlix := len(ttinfo.Activities)
+			ttl := &Activity{
+				Index:      ttlix,
+				Lesson:     l,
+				CourseInfo: cinfo,
+			}
+			ttinfo.Activities = append(ttinfo.Activities, ttl)
+			cinfo.Lessons = append(cinfo.Lessons, ttlix)
+		}
 	}
 	return roomData
 }

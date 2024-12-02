@@ -102,7 +102,7 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 
 	ttinfo.prepareCoreData()
 
-	// The constraint "preprocessing" the Activities, so it must be
+	// The constraint "preprocessing" needs the Activities, so it must be
 	// after prepareCoreData().
 	ttinfo.processConstraints()
 
