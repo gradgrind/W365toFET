@@ -68,7 +68,7 @@ func weight2fet(w int) string {
 
 type idMap struct {
 	activityId int
-	baseId     Ref
+	baseId     string
 }
 
 type fetInfo struct {

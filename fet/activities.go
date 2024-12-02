@@ -4,6 +4,7 @@ import (
 	"W365toFET/base"
 	"W365toFET/ttbase"
 	"encoding/xml"
+	"slices"
 	"strconv"
 )
 
@@ -60,7 +61,6 @@ func getActivities(fetinfo *fetInfo) []idMap {
 
 	// ************* Now the activities
 	activities := []fetActivity{}
-	lessonIdMap := []idMap{}
 	//for i := 0; i <
 	for _, cinfo := range ttinfo.CourseInfo {
 		// Teachers
@@ -108,11 +108,21 @@ func getActivities(fetinfo *fetInfo) []idMap {
 					Comments:          string(l.Lesson.Id),
 				},
 			)
-			// Also add to Id-map.
-			lessonIdMap = append(
-				lessonIdMap, idMap{aid, l.Lesson.Id})
 		}
 	}
+
+	// Sort Activities
+	slices.SortFunc(activities, func(a, b fetActivity) int {
+		if a.Id < b.Id {
+			return -1
+		}
+		return 1
+	})
+	lessonIdMap := []idMap{}
+	for _, a := range activities {
+		lessonIdMap = append(lessonIdMap, idMap{a.Id, a.Comments})
+	}
+
 	fetinfo.fetdata.Activities_List = fetActivitiesList{
 		Activity: activities,
 	}
