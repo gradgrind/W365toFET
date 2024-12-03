@@ -1,5 +1,11 @@
 package ttprint
 
+import (
+	"W365toFET/base"
+	"W365toFET/ttbase"
+	"slices"
+)
+
 type Tile struct {
 	Day      int    `json:"day"`
 	Hour     int    `json:"hour"`
@@ -19,6 +25,54 @@ type Timetable struct {
 	Info  map[string]string
 	Plan  string
 	Pages [][]any
+}
+
+func orderResources(ttinfo *ttbase.TtInfo) map[base.Ref]int {
+	// Needed for sorting teachers, groups and rooms
+	db := ttinfo.Db
+	i := 0
+	olist := map[base.Ref]int{}
+	for _, t := range db.Teachers {
+		olist[t.Id] = i
+		i++
+	}
+	for _, r := range db.Rooms {
+		olist[r.Id] = i
+		i++
+	}
+	for _, c := range db.Classes {
+		olist[c.ClassGroup] = i
+		i++
+		for _, div := range ttinfo.ClassDivisions[c.Id] {
+			for _, gref := range div {
+				olist[gref] = i
+				i++
+			}
+		}
+	}
+	return olist
+}
+
+func sortList(
+	ordering map[base.Ref]int,
+	ref2tag map[base.Ref]string,
+	list []base.Ref,
+) []string {
+	olist := []string{}
+	if len(list) > 1 {
+		slices.SortFunc(list, func(a, b base.Ref) int {
+			if ordering[a] < ordering[b] {
+				return -1
+			}
+			return 1
+		})
+		for _, ref := range list {
+			olist = append(olist, ref2tag[ref])
+		}
+	} else if len(list) == 1 {
+		olist = append(olist, ref2tag[list[0]])
+	}
+	return olist
 }
 
 /*

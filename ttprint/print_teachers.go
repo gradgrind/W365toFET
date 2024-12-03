@@ -9,17 +9,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
-
 	"strings"
 )
-
-//TODO: The groups could be ordered by making an ordered list of all groups
-// then running through this checking off those which are used in the Activity.
-// The same, but easier, for rooms and teachers.
 
 func PrintTeacherTimetables(
 	//ttdata TimetableData,
 	ttinfo *ttbase.TtInfo,
+	ordering map[base.Ref]int,
 	plan_name string,
 	datadir string,
 	outpath string, // full path to output pdf
@@ -71,23 +67,23 @@ func PrintTeacherTimetables(
 				l := ttinfo.Activities[lix].Lesson
 				rooms := l.Rooms
 				for tref, tdata1 := range tmap {
-					tlist := []string{}
+					tlist := []base.Ref{}
 					for t := range tdata1.teachers {
-						tlist = append(tlist, ref2id[t])
+						tlist = append(tlist, t)
 					}
-					glist := []string{}
+					glist := []base.Ref{}
 					for g := range tdata1.groups {
-						glist = append(glist, ref2id[g])
+						glist = append(glist, g)
 					}
 					// Choose the rooms in "rooms" which could be relevant for
 					// the list of (general) rooms in tdata1.rooms.
-					rlist := []string{}
+					rlist := []base.Ref{}
 					for rref := range tdata1.rooms {
 						rx := db.Elements[rref]
-						rr, ok := rx.(*base.Room)
+						_, ok := rx.(*base.Room)
 						if ok {
 							if slices.Contains(rooms, rref) {
-								rlist = append(rlist, rr.Tag)
+								rlist = append(rlist, rref)
 							}
 							continue
 						}
@@ -95,7 +91,7 @@ func PrintTeacherTimetables(
 						if ok {
 							for _, rr := range rg.Rooms {
 								if slices.Contains(rooms, rr) {
-									rlist = append(rlist, ref2id[rr])
+									rlist = append(rlist, rr)
 								}
 							}
 							continue
@@ -104,13 +100,16 @@ func PrintTeacherTimetables(
 						if ok {
 							for _, rr := range rc.Rooms {
 								if slices.Contains(rooms, rr) {
-									rlist = append(rlist, ref2id[rr])
+									rlist = append(rlist, rr)
 								}
 							}
 							continue
 						}
 						base.Bug.Fatalf("Not a room: %s\n", rref)
 					}
+					gstrings := sortList(ordering, ref2id, glist)
+					tstrings := sortList(ordering, ref2id, tlist)
+					rstrings := sortList(ordering, ref2id, rlist)
 					//TODO: Rather pass lists and let the Typst template
 					// decide how to join or shorten them?
 					tile := Tile{
@@ -120,45 +119,38 @@ func PrintTeacherTimetables(
 						Fraction: 1,
 						Offset:   0,
 						Total:    1,
-						Centre:   strings.Join(glist, ","),
+						Centre:   strings.Join(gstrings, ","),
 						TL:       subject,
-						TR:       strings.Join(tlist, ","),
-						BR:       strings.Join(rlist, ","),
+						TR:       strings.Join(tstrings, ","),
+						BR:       strings.Join(rstrings, ","),
 					}
 					teacherTiles[tref] = append(teacherTiles[tref], tile)
 				}
 			}
 		} else {
 			// A normal Course
-			glist := []string{}
-			for _, gref := range cinfo.Groups {
-				glist = append(glist, ref2id[gref])
-			}
+			glist := []base.Ref{}
+			glist = append(glist, cinfo.Groups...)
+			gstrings := sortList(ordering, ref2id, glist)
 
 			// The rooms are associated with the lessons
 			for _, lix := range cinfo.Lessons {
-				rlist := []string{}
+				rlist := []base.Ref{}
 				l := ttinfo.Activities[lix].Lesson
-				for _, rref := range l.Rooms {
-					rlist = append(rlist, ref2id[rref])
-				}
-
-				//TODO
-
-				// The lists should be sorted, somehow ...
-
-				// Limit list lengths?
+				rlist = append(rlist, l.Rooms...)
+				rstrings := sortList(ordering, ref2id, rlist)
 
 				for _, tref := range cinfo.Teachers {
 					// If there is more than one teacher, list the others
-					tlist := []string{}
+					tlist := []base.Ref{}
 					if len(cinfo.Teachers) > 1 {
 						for _, tref1 := range cinfo.Teachers {
 							if tref1 != tref {
-								tlist = append(tlist, ref2id[tref1])
+								tlist = append(tlist, tref1)
 							}
 						}
 					}
+					tstrings := sortList(ordering, ref2id, tlist)
 					//TODO: Rather pass lists and let the Typst template
 					// decide how to join or shorten them?
 					tile := Tile{
@@ -168,10 +160,10 @@ func PrintTeacherTimetables(
 						Fraction: 1,
 						Offset:   0,
 						Total:    1,
-						Centre:   strings.Join(glist, ","),
+						Centre:   strings.Join(gstrings, ","),
 						TL:       subject,
-						TR:       strings.Join(tlist, ","),
-						BR:       strings.Join(rlist, ","),
+						TR:       strings.Join(tstrings, ","),
+						BR:       strings.Join(rstrings, ","),
 					}
 					teacherTiles[tref] = append(teacherTiles[tref], tile)
 				}

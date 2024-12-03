@@ -85,6 +85,8 @@ func TestPrint(t *testing.T) {
 }
 
 func doPrinting(ttinfo *ttbase.TtInfo, datadir string, stempath string) {
+	ordering := orderResources(ttinfo)
+
 	/*
 
 		fmt.Println("\n +++++ GetActivities +++++")
@@ -137,7 +139,8 @@ func doPrinting(ttinfo *ttbase.TtInfo, datadir string, stempath string) {
 	//lessons := PrepareData(&wzdb, alist)
 	//PrintClassTimetables(ttinfo, plan_name, datadir,
 	//	strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Klassen.pdf")
-	PrintTeacherTimetables(ttinfo, plan_name, datadir, outpath+"_Lehrer.pdf")
+	PrintTeacherTimetables(
+		ttinfo, ordering, plan_name, datadir, outpath+"_Lehrer.pdf")
 	/*
 		PrintRoomTimetables(lessons, plan_name, datadir,
 			strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Räume.pdf")
