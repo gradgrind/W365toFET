@@ -5,7 +5,6 @@ import (
 	"W365toFET/readxml"
 	"W365toFET/ttbase"
 	"fmt"
-	"log"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -47,6 +46,10 @@ func TestPrint(t *testing.T) {
 	//
 
 	for _, fxml := range inputfiles {
+		fxml, err := filepath.Abs(fxml)
+		if err != nil {
+			base.Error.Fatal(err)
+		}
 		fmt.Println("\n ++++++++++++++++++++++")
 		cdata := readxml.ConvertToDb(fxml)
 		fmt.Println("*** Available Schedules:")
@@ -75,29 +78,30 @@ func TestPrint(t *testing.T) {
 		db := cdata.Db()
 		db.PrepareDb()
 		ttinfo := ttbase.MakeTtInfo(db)
-		doPrinting(ttinfo)
+		doPrinting(ttinfo, datadir, stempath)
 	}
 }
 
-func doPrinting(ttinfo *ttbase.TtInfo) {
-	//
+func doPrinting(ttinfo *ttbase.TtInfo, datadir string, stempath string) {
+	/*
 
-	fmt.Println("\n +++++ GetActivities +++++")
-	alist, course2activities, _ := wzbase.GetActivities(&wzdb)
-	fmt.Println("\n -------------------------------------------")
+		fmt.Println("\n +++++ GetActivities +++++")
+		alist, course2activities, _ := wzbase.GetActivities(&wzdb)
+		fmt.Println("\n -------------------------------------------")
 
-	fmt.Println("\n +++++ SetLessons +++++")
-	scheduleNames := []string{}
-	for _, lpi := range wzdb.TableMap["LESSON_PLANS"] {
-		scheduleNames = append(scheduleNames,
-			wzdb.GetNode(lpi).(wzbase.LessonPlan).ID)
-	}
-	fmt.Printf("\n ??? Schedules: %+v\n", scheduleNames)
+		fmt.Println("\n +++++ SetLessons +++++")
+		scheduleNames := []string{}
+		for _, lpi := range wzdb.TableMap["LESSON_PLANS"] {
+			scheduleNames = append(scheduleNames,
+				wzdb.GetNode(lpi).(wzbase.LessonPlan).ID)
+		}
+		fmt.Printf("\n ??? Schedules: %+v\n", scheduleNames)
 
-	if len(scheduleNames) == 0 {
-		log.Fatalln("\n No Schedule")
-	}
-	var plan_name string
+		if len(scheduleNames) == 0 {
+			log.Fatalln("\n No Schedule")
+		}
+	*/
+	var plan_name string = "Test Plan"
 	/*
 		if len(scheduleNames) == 1 {
 			plan_name = scheduleNames[0]
@@ -117,16 +121,17 @@ func doPrinting(ttinfo *ttbase.TtInfo) {
 			}
 		}
 	*/
-	fmt.Printf("\n Schedule: %s\n", plan_name)
-	wzbase.SetLessons(&wzdb, plan_name, alist, course2activities)
+	//fmt.Printf("\n Schedule: %s\n", plan_name)
+	//wzbase.SetLessons(&wzdb, plan_name, alist, course2activities)
 
-	lessons := PrepareData(&wzdb, alist)
-	PrintClassTimetables(lessons, plan_name, datadir,
-		strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Klassen.pdf")
-	PrintTeacherTimetables(lessons, plan_name, datadir,
-		strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Lehrer.pdf")
-	PrintRoomTimetables(lessons, plan_name, datadir,
-		strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Räume.pdf")
-	PrintRoomOverview(lessons, plan_name, datadir,
-		strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Räume-gesamt.pdf")
+	//lessons := PrepareData(&wzdb, alist)
+	//PrintClassTimetables(ttinfo, plan_name, datadir,
+	//	strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Klassen.pdf")
+	PrintTeacherTimetables(ttinfo, plan_name, datadir, stempath+"_Lehrer.pdf")
+	/*
+		PrintRoomTimetables(lessons, plan_name, datadir,
+			strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Räume.pdf")
+		PrintRoomOverview(lessons, plan_name, datadir,
+			strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Räume-gesamt.pdf")
+	*/
 }

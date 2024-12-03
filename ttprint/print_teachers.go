@@ -27,7 +27,6 @@ func PrintTeacherTimetables(
 	// Generate the tiles.
 	teacherTiles := map[base.Ref][]Tile{}
 
-	tmap := map[base.Ref][]*ttbase.CourseInfo{}
 	for cref, cinfo := range ttinfo.CourseInfo {
 
 		//
@@ -35,8 +34,9 @@ func PrintTeacherTimetables(
 		subject := ref2id[cinfo.Subject]
 		groups := []string{}
 		// For SuperCourses gather the resources from the relevant SubCourses.
-		sbcs, ok := ttinfo.SuperSubs[cref]
+		_, ok := ttinfo.SuperSubs[cref]
 		if ok {
+			//TODO
 
 		} else {
 			for _, gref := range cinfo.Groups {
@@ -85,13 +85,10 @@ func PrintTeacherTimetables(
 				}
 			}
 		}
-
-		//
-
 	}
 
 	{
-		// Limit the length of the room list.
+		/* Limit the length of the room list.
 		var room string
 		if len(l.RealRooms) > 6 {
 			room = strings.Join(l.RealRooms[:5], ",") + "..."
@@ -135,35 +132,25 @@ func PrintTeacherTimetables(
 		} else {
 			students = strings.Join(cgroups, ",")
 		}
-		// Go through the teachers.
-		for _, t := range l.Teacher {
-			tile := Tile{
-				Day:      l.Day,
-				Hour:     l.Hour,
-				Duration: l.Duration,
-				Fraction: 1,
-				Offset:   0,
-				Total:    1,
-				Centre:   students,
-				TL:       l.Subject,
-				BR:       room,
-			}
-			teacherTiles[t] = append(teacherTiles[t], tile)
-		}
+		*/
 	}
-	for _, t := range ttdata.TeacherList {
+	db := ttinfo.Db
+	for _, t := range db.Teachers {
 		ctiles, ok := teacherTiles[t.Id]
 		if !ok {
 			continue
 		}
 		pages = append(pages, []any{
-			fmt.Sprintf("%s (%s)", t.Name, t.Id),
+			fmt.Sprintf("%s (%s)", t.Name, t.Tag),
 			ctiles,
 		})
 	}
+	info := map[string]string{
+		"School": db.Info.Institution,
+	}
 	tt := Timetable{
 		Title: "Stundenpläne der Lehrer",
-		Info:  ttdata.Info,
+		Info:  info,
 		Plan:  plan_name,
 		Pages: pages,
 	}

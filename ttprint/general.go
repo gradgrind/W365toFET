@@ -1,11 +1,5 @@
 package ttprint
 
-import (
-	"W365toFET/ttbase"
-	"log"
-	"slices"
-)
-
 type Tile struct {
 	Day      int    `json:"day"`
 	Hour     int    `json:"hour"`
@@ -27,6 +21,7 @@ type Timetable struct {
 	Pages [][]any
 }
 
+/*
 func PrepareData(ttinfo *ttbase.TtInfo) TimetableData {
 	ref2id := ttinfo.Ref2Tag
 	// Get the rooms contained in room-groups
@@ -205,3 +200,4 @@ func PrepareData(ttinfo *ttbase.TtInfo) TimetableData {
 		Lessons:     lessons,
 	}
 }
+*/

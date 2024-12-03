@@ -1,5 +1,6 @@
 package ttprint
 
+/*
 import (
 	"encoding/json"
 	"fmt"
@@ -261,3 +262,4 @@ func PrintRoomOverview(
 	}
 	fmt.Println(string(output))
 }
+*/
