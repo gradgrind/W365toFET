@@ -5,15 +5,17 @@ import (
 	"W365toFET/ttbase"
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 
 	"strings"
 )
 
-//const CLASS_GROUP_SEP = "."
+//TODO: The groups could be ordered by making an ordered list of all groups
+// then running through this checking off those which are used in the Activity.
+// The same, but easier, for rooms and teachers.
 
 func PrintTeacherTimetables(
 	//ttdata TimetableData,
@@ -22,33 +24,123 @@ func PrintTeacherTimetables(
 	datadir string,
 	outpath string, // full path to output pdf
 ) {
+	db := ttinfo.Db
 	pages := [][]any{}
 	ref2id := ttinfo.Ref2Tag
 	// Generate the tiles.
 	teacherTiles := map[base.Ref][]Tile{}
-
+	type tdata struct { // for SuperCourses
+		groups   map[base.Ref]bool
+		rooms    map[base.Ref]bool
+		teachers map[base.Ref]bool
+	}
 	for cref, cinfo := range ttinfo.CourseInfo {
-
-		//
-
 		subject := ref2id[cinfo.Subject]
-		groups := []string{}
 		// For SuperCourses gather the resources from the relevant SubCourses.
-		_, ok := ttinfo.SuperSubs[cref]
+		subrefs, ok := ttinfo.SuperSubs[cref]
 		if ok {
-			//TODO
-
+			tmap := map[base.Ref]tdata{}
+			for _, subref := range subrefs {
+				sub := db.Elements[subref].(*base.SubCourse)
+				for _, tref := range sub.Teachers {
+					tdata1, ok := tmap[tref]
+					if !ok {
+						tdata1 = tdata{
+							map[base.Ref]bool{},
+							map[base.Ref]bool{},
+							map[base.Ref]bool{},
+						}
+					}
+					// If there is more than one teacher, add the others
+					for _, tref1 := range sub.Teachers {
+						if tref1 != tref {
+							tdata1.teachers[tref1] = true
+						}
+					}
+					if sub.Room != "" {
+						tdata1.rooms[sub.Room] = true
+					}
+					for _, gref := range sub.Groups {
+						tdata1.groups[gref] = true
+					}
+					tmap[tref] = tdata1
+				}
+			}
+			// The rooms are associated with the lessons
+			for _, lix := range cinfo.Lessons {
+				l := ttinfo.Activities[lix].Lesson
+				rooms := l.Rooms
+				for tref, tdata1 := range tmap {
+					tlist := []string{}
+					for t := range tdata1.teachers {
+						tlist = append(tlist, ref2id[t])
+					}
+					glist := []string{}
+					for g := range tdata1.groups {
+						glist = append(glist, ref2id[g])
+					}
+					// Choose the rooms in "rooms" which could be relevant for
+					// the list of (general) rooms in tdata1.rooms.
+					rlist := []string{}
+					for rref := range tdata1.rooms {
+						rx := db.Elements[rref]
+						rr, ok := rx.(*base.Room)
+						if ok {
+							if slices.Contains(rooms, rref) {
+								rlist = append(rlist, rr.Tag)
+							}
+							continue
+						}
+						rg, ok := rx.(*base.RoomGroup)
+						if ok {
+							for _, rr := range rg.Rooms {
+								if slices.Contains(rooms, rr) {
+									rlist = append(rlist, ref2id[rr])
+								}
+							}
+							continue
+						}
+						rc, ok := rx.(*base.RoomChoiceGroup)
+						if ok {
+							for _, rr := range rc.Rooms {
+								if slices.Contains(rooms, rr) {
+									rlist = append(rlist, ref2id[rr])
+								}
+							}
+							continue
+						}
+						base.Bug.Fatalf("Not a room: %s\n", rref)
+					}
+					//TODO: Rather pass lists and let the Typst template
+					// decide how to join or shorten them?
+					tile := Tile{
+						Day:      l.Day,
+						Hour:     l.Hour,
+						Duration: l.Duration,
+						Fraction: 1,
+						Offset:   0,
+						Total:    1,
+						Centre:   strings.Join(glist, ","),
+						TL:       subject,
+						TR:       strings.Join(tlist, ","),
+						BR:       strings.Join(rlist, ","),
+					}
+					teacherTiles[tref] = append(teacherTiles[tref], tile)
+				}
+			}
 		} else {
+			// A normal Course
+			glist := []string{}
 			for _, gref := range cinfo.Groups {
-				groups = append(groups, ref2id[gref])
+				glist = append(glist, ref2id[gref])
 			}
 
 			// The rooms are associated with the lessons
 			for _, lix := range cinfo.Lessons {
-				rooms := []string{}
+				rlist := []string{}
 				l := ttinfo.Activities[lix].Lesson
 				for _, rref := range l.Rooms {
-					rooms = append(rooms, ref2id[rref])
+					rlist = append(rlist, ref2id[rref])
 				}
 
 				//TODO
@@ -58,17 +150,17 @@ func PrintTeacherTimetables(
 				// Limit list lengths?
 
 				for _, tref := range cinfo.Teachers {
-
 					// If there is more than one teacher, list the others
-					teachers := []string{}
+					tlist := []string{}
 					if len(cinfo.Teachers) > 1 {
 						for _, tref1 := range cinfo.Teachers {
 							if tref1 != tref {
-								teachers = append(teachers, ref2id[tref1])
+								tlist = append(tlist, ref2id[tref1])
 							}
 						}
 					}
-
+					//TODO: Rather pass lists and let the Typst template
+					// decide how to join or shorten them?
 					tile := Tile{
 						Day:      l.Day,
 						Hour:     l.Hour,
@@ -76,10 +168,10 @@ func PrintTeacherTimetables(
 						Fraction: 1,
 						Offset:   0,
 						Total:    1,
-						Centre:   strings.Join(groups, ","),
+						Centre:   strings.Join(glist, ","),
 						TL:       subject,
-						TR:       strings.Join(teachers, ","),
-						BR:       strings.Join(rooms, ","),
+						TR:       strings.Join(tlist, ","),
+						BR:       strings.Join(rlist, ","),
 					}
 					teacherTiles[tref] = append(teacherTiles[tref], tile)
 				}
@@ -134,7 +226,6 @@ func PrintTeacherTimetables(
 		}
 		*/
 	}
-	db := ttinfo.Db
 	for _, t := range db.Teachers {
 		ctiles, ok := teacherTiles[t.Id]
 		if !ok {
@@ -163,7 +254,7 @@ func PrintTeacherTimetables(
 	jsonpath := filepath.Join(datadir, jsonfile)
 	err = os.WriteFile(jsonpath, b, 0666)
 	if err != nil {
-		log.Fatal(err)
+		base.Error.Fatal(err)
 	}
 	fmt.Printf("Wrote json to: %s\n", jsonpath)
 	cmd := exec.Command("typst", "compile",
@@ -172,10 +263,9 @@ func PrintTeacherTimetables(
 		filepath.Join(datadir, "resources", "print_timetable.typ"),
 		outpath)
 	fmt.Printf(" ::: %s\n", cmd.String())
-	//TODO: I am not getting any output messages from typst here ...
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println("(Typst) " + string(output))
+		base.Error.Fatal(err)
 	}
-	fmt.Println(string(output))
 }
