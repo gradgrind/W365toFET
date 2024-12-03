@@ -4,7 +4,9 @@ import (
 	"W365toFET/base"
 	"W365toFET/readxml"
 	"W365toFET/ttbase"
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -124,10 +126,18 @@ func doPrinting(ttinfo *ttbase.TtInfo, datadir string, stempath string) {
 	//fmt.Printf("\n Schedule: %s\n", plan_name)
 	//wzbase.SetLessons(&wzdb, plan_name, alist, course2activities)
 
+	outdir := filepath.Join(filepath.Dir(stempath), "_pdf")
+	if _, err := os.Stat(outdir); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(outdir, os.ModePerm)
+		if err != nil {
+			base.Error.Println(err)
+		}
+	}
+	outpath := filepath.Join(outdir, filepath.Base(stempath))
 	//lessons := PrepareData(&wzdb, alist)
 	//PrintClassTimetables(ttinfo, plan_name, datadir,
 	//	strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Klassen.pdf")
-	PrintTeacherTimetables(ttinfo, plan_name, datadir, stempath+"_Lehrer.pdf")
+	PrintTeacherTimetables(ttinfo, plan_name, datadir, outpath+"_Lehrer.pdf")
 	/*
 		PrintRoomTimetables(lessons, plan_name, datadir,
 			strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Räume.pdf")
