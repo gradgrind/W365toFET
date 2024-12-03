@@ -22,9 +22,15 @@ type Tile struct {
 
 type Timetable struct {
 	Title string
-	Info  map[string]string
+	Info  map[string]any
 	Plan  string
 	Pages [][]any
+}
+
+type ttHour struct {
+	Hour  string
+	Start string
+	End   string
 }
 
 func orderResources(ttinfo *ttbase.TtInfo) map[base.Ref]int {

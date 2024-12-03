@@ -228,8 +228,22 @@ func PrintTeacherTimetables(
 			ctiles,
 		})
 	}
-	info := map[string]string{
+	dlist := []string{}
+	for _, d := range db.Days {
+		dlist = append(dlist, d.Name)
+	}
+	hlist := []ttHour{}
+	for _, h := range db.Hours {
+		hlist = append(hlist, ttHour{
+			Hour:  h.Tag,
+			Start: h.Start,
+			End:   h.End,
+		})
+	}
+	info := map[string]any{
 		"School": db.Info.Institution,
+		"Days":   dlist,
+		"Hours":  hlist,
 	}
 	tt := Timetable{
 		Title: "Stundenpläne der Lehrer",

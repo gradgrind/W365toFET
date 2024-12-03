@@ -22,8 +22,20 @@
     - PAGE_BORDER.right)
 
 //#PLAN_AREA_WIDTH x #PLAN_AREA_HEIGHT
+#let xdata = json(sys.inputs.ifile)
 
-#let DAYS = ("Mo", "Di", "Mi", "Do", "Fr")
+#let DAYS = xdata.Info.Days
+//#let DAYS = ("Mo", "Di", "Mi", "Do", "Fr")
+#let HOURS = ()
+#let TIMES = ()
+#for hdata in xdata.Info.Hours {
+  HOURS.push(hdata.at("Hour"))
+//TODO: Handle case without times
+  let (h1, m1) = hdata.at("Start").split(":")
+  let (h2, m2) = hdata.at("End").split(":")
+  TIMES.push(((int(h1), int(m1)), (int(h2), int(m2))))
+}
+/*
 #let HOURS = ("HU 1", "HU 2",
     "FS 1", "FS 2", "FS 3", "FS 4", "FS 5", "FS 6", "FS 7")
 #let TIMES = (
@@ -37,7 +49,7 @@
     ((14, 30), (15, 15)),
     ((15, 15), (16, 0)),
 )
-
+*/
 
 #let tend = TIMES.at(-1).at(1)
 #let tstart = TIMES.at(0).at(0)
@@ -246,8 +258,6 @@
 #show heading: it => text(weight: "bold", size: BIG_SIZE,
     bottom-edge: "descender",
     pad(left: 5mm, it))
-
-#let xdata = json(sys.inputs.ifile)
 
 #let page = 0
 #for (k, kdata) in xdata.Pages [

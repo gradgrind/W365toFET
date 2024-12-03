@@ -2,6 +2,7 @@ package ttprint
 
 import (
 	"W365toFET/base"
+	"W365toFET/fet"
 	"W365toFET/readxml"
 	"W365toFET/ttbase"
 	"errors"
@@ -86,6 +87,20 @@ func TestPrint(t *testing.T) {
 
 func doPrinting(ttinfo *ttbase.TtInfo, datadir string, stempath string) {
 	ordering := orderResources(ttinfo)
+
+	// Get placements
+	pfile := stempath + "_activities.xml"
+	placements := fet.ReadPlacements(ttinfo, pfile)
+
+	for _, p := range placements {
+		//fmt.Printf(" --> %+v\n", p)
+		a := ttinfo.Activities[p.Id]
+		l := a.Lesson
+		l.Rooms = p.Rooms
+		l.Day = p.Day
+		l.Hour = p.Hour
+		a.Placement = p.Day*ttinfo.NHours + p.Hour
+	}
 
 	/*
 

@@ -110,7 +110,7 @@ func PrintClassTimetables(
 	}
 	tt := Timetable{
 		Title: "Stundenpläne der Klassen",
-		Info:  ttdata.Info,
+		//Info:  ttdata.Info,
 		Plan:  plan_name,
 		Pages: pages,
 	}
