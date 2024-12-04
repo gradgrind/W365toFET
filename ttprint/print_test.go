@@ -79,6 +79,7 @@ func doPrinting(ttinfo *ttbase.TtInfo, datadir string, stempath string) {
 		ttinfo, plan_name, datadir, outpath+"_Klassen.pdf")
 	PrintTeacherTimetables(
 		ttinfo, plan_name, datadir, outpath+"_Lehrer.pdf")
+
 	/*
 		PrintRoomTimetables(lessons, plan_name, datadir,
 			strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Räume.pdf")

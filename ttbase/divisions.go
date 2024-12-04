@@ -1,6 +1,8 @@
 package ttbase
 
-import "W365toFET/base"
+import (
+	"W365toFET/base"
+)
 
 func filterDivisions(ttinfo *TtInfo) {
 	// Prepare filtered versions of the class Divisions containing only
@@ -65,6 +67,7 @@ func (ttinfo *TtInfo) SortClassGroups(
 	}
 	xgroups := ttinfo.SortList(othergroups)
 	chips := []FractionChip{}
+
 	if mygroups[""] {
 		chips = append(chips, FractionChip{
 			Groups:      []string{},
@@ -107,6 +110,8 @@ func (ttinfo *TtInfo) SortClassGroups(
 			if start >= 0 {
 				// Groups from this division were found
 				if len(mygroups) == 0 {
+					break
+				} else {
 					// There are groups from other divisions, too.
 					// Return the whole class.
 					chips = nil
