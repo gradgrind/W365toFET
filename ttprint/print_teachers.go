@@ -3,11 +3,7 @@ package ttprint
 import (
 	"W365toFET/base"
 	"W365toFET/ttbase"
-	"encoding/json"
 	"fmt"
-	"os"
-	"os/exec"
-	"path/filepath"
 	"slices"
 	"strings"
 )
@@ -62,6 +58,9 @@ func PrintTeacherTimetables(
 			// The rooms are associated with the lessons
 			for _, lix := range cinfo.Lessons {
 				l := ttinfo.Activities[lix].Lesson
+				if l.Day < 0 {
+					continue
+				}
 				rooms := l.Rooms
 				for tref, tdata1 := range tmap {
 					tlist := []base.Ref{}
@@ -132,8 +131,11 @@ func PrintTeacherTimetables(
 
 			// The rooms are associated with the lessons
 			for _, lix := range cinfo.Lessons {
-				rlist := []base.Ref{}
 				l := ttinfo.Activities[lix].Lesson
+				if l.Day < 0 {
+					continue
+				}
+				rlist := []base.Ref{}
 				rlist = append(rlist, l.Rooms...)
 				rstrings := ttinfo.SortList(rlist)
 
@@ -201,27 +203,5 @@ func PrintTeacherTimetables(
 		Plan:  plan_name,
 		Pages: pages,
 	}
-	b, err := json.MarshalIndent(tt, "", "  ")
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-	//os.Stdout.Write(b)
-	jsonfile := filepath.Join("_out", "tmp.json")
-	jsonpath := filepath.Join(datadir, jsonfile)
-	err = os.WriteFile(jsonpath, b, 0666)
-	if err != nil {
-		base.Error.Fatal(err)
-	}
-	fmt.Printf("Wrote json to: %s\n", jsonpath)
-	cmd := exec.Command("typst", "compile",
-		"--root", datadir,
-		"--input", "ifile="+filepath.Join("..", jsonfile),
-		filepath.Join(datadir, "resources", "print_timetable.typ"),
-		outpath)
-	fmt.Printf(" ::: %s\n", cmd.String())
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		fmt.Println("(Typst) " + string(output))
-		base.Error.Fatal(err)
-	}
+	makePdf(tt, datadir, outpath)
 }
