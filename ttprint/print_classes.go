@@ -178,62 +178,61 @@ func PrintClassTimetables(
 				}
 			}
 		}
-
-		for _, c := range db.Classes {
-			ctiles, ok := classTiles[c.Id]
-			if !ok {
-				continue
-			}
-			pages = append(pages, []any{
-				fmt.Sprintf("Klasse %s", c.Tag),
-				ctiles,
-			})
+	}
+	for _, c := range db.Classes {
+		ctiles, ok := classTiles[c.Id]
+		if !ok {
+			continue
 		}
-		dlist := []string{}
-		for _, d := range db.Days {
-			dlist = append(dlist, d.Name)
-		}
-		hlist := []ttHour{}
-		for _, h := range db.Hours {
-			hlist = append(hlist, ttHour{
-				Hour:  h.Tag,
-				Start: h.Start,
-				End:   h.End,
-			})
-		}
-		info := map[string]any{
-			"School": db.Info.Institution,
-			"Days":   dlist,
-			"Hours":  hlist,
-		}
-		tt := Timetable{
-			Title: "Stundenpläne der Klassen",
-			Info:  info,
-			Plan:  plan_name,
-			Pages: pages,
-		}
-		b, err := json.MarshalIndent(tt, "", "  ")
-		if err != nil {
-			fmt.Println("error:", err)
-		}
-		//os.Stdout.Write(b)
-		jsonfile := filepath.Join("_out", "tmp.json")
-		jsonpath := filepath.Join(datadir, jsonfile)
-		err = os.WriteFile(jsonpath, b, 0666)
-		if err != nil {
-			base.Error.Fatal(err)
-		}
-		fmt.Printf("Wrote json to: %s\n", jsonpath)
-		cmd := exec.Command("typst", "compile",
-			"--root", datadir,
-			"--input", "ifile="+filepath.Join("..", jsonfile),
-			filepath.Join(datadir, "resources", "print_timetable.typ"),
-			outpath)
-		fmt.Printf(" ::: %s\n", cmd.String())
-		output, err := cmd.CombinedOutput()
-		if err != nil {
-			fmt.Println("(Typst) " + string(output))
-			base.Error.Fatal(err)
-		}
+		pages = append(pages, []any{
+			fmt.Sprintf("Klasse %s", c.Tag),
+			ctiles,
+		})
+	}
+	dlist := []string{}
+	for _, d := range db.Days {
+		dlist = append(dlist, d.Name)
+	}
+	hlist := []ttHour{}
+	for _, h := range db.Hours {
+		hlist = append(hlist, ttHour{
+			Hour:  h.Tag,
+			Start: h.Start,
+			End:   h.End,
+		})
+	}
+	info := map[string]any{
+		"School": db.Info.Institution,
+		"Days":   dlist,
+		"Hours":  hlist,
+	}
+	tt := Timetable{
+		Title: "Stundenpläne der Klassen",
+		Info:  info,
+		Plan:  plan_name,
+		Pages: pages,
+	}
+	b, err := json.MarshalIndent(tt, "", "  ")
+	if err != nil {
+		fmt.Println("error:", err)
+	}
+	//os.Stdout.Write(b)
+	jsonfile := filepath.Join("_out", "tmp.json")
+	jsonpath := filepath.Join(datadir, jsonfile)
+	err = os.WriteFile(jsonpath, b, 0666)
+	if err != nil {
+		base.Error.Fatal(err)
+	}
+	fmt.Printf("Wrote json to: %s\n", jsonpath)
+	cmd := exec.Command("typst", "compile",
+		"--root", datadir,
+		"--input", "ifile="+filepath.Join("..", jsonfile),
+		filepath.Join(datadir, "resources", "print_timetable.typ"),
+		outpath)
+	fmt.Printf(" ::: %s\n", cmd.String())
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println("(Typst) " + string(output))
+		base.Error.Fatal(err)
 	}
 }
