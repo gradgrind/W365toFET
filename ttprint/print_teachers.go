@@ -13,16 +13,13 @@ import (
 )
 
 func PrintTeacherTimetables(
-	//ttdata TimetableData,
 	ttinfo *ttbase.TtInfo,
-	ordering map[base.Ref]int,
 	plan_name string,
 	datadir string,
 	outpath string, // full path to output pdf
 ) {
 	db := ttinfo.Db
 	pages := [][]any{}
-	ref2id := ttinfo.Ref2Tag
 	// Generate the tiles.
 	teacherTiles := map[base.Ref][]Tile{}
 	type tdata struct { // for SuperCourses
@@ -31,7 +28,7 @@ func PrintTeacherTimetables(
 		teachers map[base.Ref]bool
 	}
 	for cref, cinfo := range ttinfo.CourseInfo {
-		subject := ref2id[cinfo.Subject]
+		subject := ttinfo.Ref2Tag[cinfo.Subject]
 		// For SuperCourses gather the resources from the relevant SubCourses.
 		subrefs, ok := ttinfo.SuperSubs[cref]
 		if ok {
@@ -107,9 +104,9 @@ func PrintTeacherTimetables(
 						}
 						base.Bug.Fatalf("Not a room: %s\n", rref)
 					}
-					gstrings := sortList(ordering, ref2id, glist)
-					tstrings := sortList(ordering, ref2id, tlist)
-					rstrings := sortList(ordering, ref2id, rlist)
+					gstrings := ttinfo.SortList(glist)
+					tstrings := ttinfo.SortList(tlist)
+					rstrings := ttinfo.SortList(rlist)
 					//TODO: Rather pass lists and let the Typst template
 					// decide how to join or shorten them?
 					tile := Tile{
@@ -131,14 +128,14 @@ func PrintTeacherTimetables(
 			// A normal Course
 			glist := []base.Ref{}
 			glist = append(glist, cinfo.Groups...)
-			gstrings := sortList(ordering, ref2id, glist)
+			gstrings := ttinfo.SortList(glist)
 
 			// The rooms are associated with the lessons
 			for _, lix := range cinfo.Lessons {
 				rlist := []base.Ref{}
 				l := ttinfo.Activities[lix].Lesson
 				rlist = append(rlist, l.Rooms...)
-				rstrings := sortList(ordering, ref2id, rlist)
+				rstrings := ttinfo.SortList(rlist)
 
 				for _, tref := range cinfo.Teachers {
 					// If there is more than one teacher, list the others
@@ -150,7 +147,7 @@ func PrintTeacherTimetables(
 							}
 						}
 					}
-					tstrings := sortList(ordering, ref2id, tlist)
+					tstrings := ttinfo.SortList(tlist)
 					//TODO: Rather pass lists and let the Typst template
 					// decide how to join or shorten them?
 					tile := Tile{

@@ -42,8 +42,6 @@ func TestPrint(t *testing.T) {
 }
 
 func doPrinting(ttinfo *ttbase.TtInfo, datadir string, stempath string) {
-	ordering := orderResources(ttinfo)
-
 	// Get activity mapping
 	mapfile := stempath + ".map"
 	activityMap := readActivityMap(mapfile)
@@ -81,7 +79,7 @@ func doPrinting(ttinfo *ttbase.TtInfo, datadir string, stempath string) {
 	//PrintClassTimetables(ttinfo, plan_name, datadir,
 	//	strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Klassen.pdf")
 	PrintTeacherTimetables(
-		ttinfo, ordering, plan_name, datadir, outpath+"_Lehrer.pdf")
+		ttinfo, plan_name, datadir, outpath+"_Lehrer.pdf")
 	/*
 		PrintRoomTimetables(lessons, plan_name, datadir,
 			strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Räume.pdf")

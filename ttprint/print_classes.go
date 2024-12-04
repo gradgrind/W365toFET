@@ -1,15 +1,6 @@
 package ttprint
 
-import (
-	"encoding/json"
-	"fmt"
-	"log"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-)
-
+/*
 // TODO: Try to find a form suitable for both fet and w365 which can be
 // passed into the timetable generator.
 type TTGroup struct {
@@ -44,12 +35,19 @@ type TimetableData struct {
 }
 
 func PrintClassTimetables(
-	ttdata TimetableData,
+	ttinfo *ttbase.TtInfo,
 	plan_name string,
 	datadir string,
 	outpath string, // full path to output pdf
 ) {
+	db := ttinfo.Db
 	pages := [][]any{}
+	ref2id := ttinfo.Ref2Tag
+	type cdata struct { // for SuperCourses
+		groups   map[base.Ref]bool
+		rooms    map[base.Ref]bool
+		teachers map[base.Ref]bool
+	}
 	type chip struct {
 		class  string
 		groups []string
@@ -59,7 +57,159 @@ func PrintClassTimetables(
 	}
 	// Generate the tiles.
 	classTiles := map[string][]Tile{}
-	for _, l := range ttdata.Lessons {
+	for cref, cinfo := range ttinfo.CourseInfo {
+		subject := ref2id[cinfo.Subject]
+		// For SuperCourses gather the resources from the relevant SubCourses.
+		subrefs, ok := ttinfo.SuperSubs[cref]
+		if ok {
+			cmap := map[base.Ref]cdata{}
+			for _, subref := range subrefs {
+				sub := db.Elements[subref].(*base.SubCourse)
+				for _, gref := range sub.Groups {
+					g := db.Elements[gref].(*base.Group)
+					cref := g.Class
+					c := db.Elements[cref].(*base.Class)
+
+					cdata1, ok := cmap[cref]
+					if !ok {
+						cdata1 = cdata{
+							map[base.Ref]bool{},
+							map[base.Ref]bool{},
+							map[base.Ref]bool{},
+						}
+					}
+
+					for _, gref1 := range sub.Groups {
+						cdata1.groups[gref1] = true
+					}
+					for _, tref := range sub.Teachers {
+						cdata1.teachers[tref] = true
+					}
+					if sub.Room != "" {
+						cdata1.rooms[sub.Room] = true
+					}
+					cmap[cref] = cdata1
+				}
+			}
+			// The rooms are associated with the lessons
+			for _, lix := range cinfo.Lessons {
+				l := ttinfo.Activities[lix].Lesson
+				rooms := l.Rooms
+				for cref, cdata1 := range cmap {
+					tlist := []base.Ref{}
+					for t := range cdata1.teachers {
+						tlist = append(tlist, t)
+					}
+					glist := []base.Ref{}
+					for g := range cdata1.groups {
+						glist = append(glist, g)
+					}
+					// Choose the rooms in "rooms" which could be relevant for
+					// the list of (general) rooms in cdata1.rooms.
+					rlist := []base.Ref{}
+					for rref := range cdata1.rooms {
+						rx := db.Elements[rref]
+						_, ok := rx.(*base.Room)
+						if ok {
+							if slices.Contains(rooms, rref) {
+								rlist = append(rlist, rref)
+							}
+							continue
+						}
+						rg, ok := rx.(*base.RoomGroup)
+						if ok {
+							for _, rr := range rg.Rooms {
+								if slices.Contains(rooms, rr) {
+									rlist = append(rlist, rr)
+								}
+							}
+							continue
+						}
+						rc, ok := rx.(*base.RoomChoiceGroup)
+						if ok {
+							for _, rr := range rc.Rooms {
+								if slices.Contains(rooms, rr) {
+									rlist = append(rlist, rr)
+								}
+							}
+							continue
+						}
+						base.Bug.Fatalf("Not a room: %s\n", rref)
+					}
+
+					//TODO: The groups need special handling, to determine
+					// tile fractions (with the groups from the current class)
+					chips := ttinfo.SortClassGroups(cref, glist)
+
+					//gstrings := sortList(ordering, ref2id, glist)
+
+					tstrings := ttinfo.SortList(tlist)
+					rstrings := ttinfo.SortList(rlist)
+					//TODO: Rather pass lists and let the Typst template
+					// decide how to join or shorten them?
+					tile := Tile{
+						Day:      l.Day,
+						Hour:     l.Hour,
+						Duration: l.Duration,
+						Fraction: 1,
+						Offset:   0,
+						Total:    1,
+						Centre:   strings.Join(gstrings, ","),
+						TL:       subject,
+						TR:       strings.Join(tstrings, ","),
+						BR:       strings.Join(rstrings, ","),
+					}
+					teacherTiles[tref] = append(teacherTiles[tref], tile)
+				}
+			}
+		} else {
+
+			//TODO ...
+
+			// A normal Course
+			glist := []base.Ref{}
+			glist = append(glist, cinfo.Groups...)
+			gstrings := sortList(ordering, ref2id, glist)
+
+			// The rooms are associated with the lessons
+			for _, lix := range cinfo.Lessons {
+				rlist := []base.Ref{}
+				l := ttinfo.Activities[lix].Lesson
+				rlist = append(rlist, l.Rooms...)
+				rstrings := sortList(ordering, ref2id, rlist)
+
+				for _, tref := range cinfo.Teachers {
+					// If there is more than one teacher, list the others
+					tlist := []base.Ref{}
+					if len(cinfo.Teachers) > 1 {
+						for _, tref1 := range cinfo.Teachers {
+							if tref1 != tref {
+								tlist = append(tlist, tref1)
+							}
+						}
+					}
+					tstrings := sortList(ordering, ref2id, tlist)
+					//TODO: Rather pass lists and let the Typst template
+					// decide how to join or shorten them?
+					tile := Tile{
+						Day:      l.Day,
+						Hour:     l.Hour,
+						Duration: l.Duration,
+						Fraction: 1,
+						Offset:   0,
+						Total:    1,
+						Centre:   strings.Join(gstrings, ","),
+						TL:       subject,
+						TR:       strings.Join(tstrings, ","),
+						BR:       strings.Join(rstrings, ","),
+					}
+					teacherTiles[tref] = append(teacherTiles[tref], tile)
+				}
+			}
+
+
+
+			for _, l := range ttdata.Lessons {
 		// Limit the length of the room list.
 		var room string
 		if len(l.RealRooms) > 6 {
@@ -138,3 +288,4 @@ func PrintClassTimetables(
 	}
 	fmt.Println(string(output))
 }
+*/
