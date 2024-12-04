@@ -75,9 +75,8 @@ func doPrinting(ttinfo *ttbase.TtInfo, datadir string, stempath string) {
 		}
 	}
 	outpath := filepath.Join(outdir, filepath.Base(stempath))
-	//lessons := PrepareData(&wzdb, alist)
-	//PrintClassTimetables(ttinfo, plan_name, datadir,
-	//	strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Klassen.pdf")
+	PrintClassTimetables(
+		ttinfo, plan_name, datadir, outpath+"_Klassen.pdf")
 	PrintTeacherTimetables(
 		ttinfo, plan_name, datadir, outpath+"_Lehrer.pdf")
 	/*

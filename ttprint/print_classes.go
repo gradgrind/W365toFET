@@ -1,38 +1,16 @@
 package ttprint
 
-/*
-// TODO: Try to find a form suitable for both fet and w365 which can be
-// passed into the timetable generator.
-type TTGroup struct {
-	// Represents the groups in a tile in the class view
-	Groups []string
-	Offset int
-	Size   int
-	Total  int
-}
-
-type LessonData struct {
-	Duration  int
-	Subject   string
-	Teacher   []string
-	Students  map[string][]TTGroup // mapping: class -> list of groups
-	RealRooms []string
-	Day       int
-	Hour      int
-}
-
-type IdName struct {
-	Id   string
-	Name string
-}
-
-type TimetableData struct {
-	Info        map[string]string
-	ClassList   []IdName
-	TeacherList []IdName
-	RoomList    []IdName
-	Lessons     []LessonData
-}
+import (
+	"W365toFET/base"
+	"W365toFET/ttbase"
+	"encoding/json"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"slices"
+	"strings"
+)
 
 func PrintClassTimetables(
 	ttinfo *ttbase.TtInfo,
@@ -48,19 +26,12 @@ func PrintClassTimetables(
 		rooms    map[base.Ref]bool
 		teachers map[base.Ref]bool
 	}
-	type chip struct {
-		class  string
-		groups []string
-		offset int
-		parts  int
-		total  int
-	}
 	// Generate the tiles.
-	classTiles := map[string][]Tile{}
-	for cref, cinfo := range ttinfo.CourseInfo {
+	classTiles := map[base.Ref][]Tile{}
+	for courseref, cinfo := range ttinfo.CourseInfo {
 		subject := ref2id[cinfo.Subject]
 		// For SuperCourses gather the resources from the relevant SubCourses.
-		subrefs, ok := ttinfo.SuperSubs[cref]
+		subrefs, ok := ttinfo.SuperSubs[courseref]
 		if ok {
 			cmap := map[base.Ref]cdata{}
 			for _, subref := range subrefs {
@@ -68,7 +39,7 @@ func PrintClassTimetables(
 				for _, gref := range sub.Groups {
 					g := db.Elements[gref].(*base.Group)
 					cref := g.Class
-					c := db.Elements[cref].(*base.Class)
+					//c := db.Elements[cref].(*base.Class)
 
 					cdata1, ok := cmap[cref]
 					if !ok {
@@ -137,155 +108,132 @@ func PrintClassTimetables(
 						base.Bug.Fatalf("Not a room: %s\n", rref)
 					}
 
-					//TODO: The groups need special handling, to determine
-					// tile fractions (with the groups from the current class)
+					// The groups need special handling, to determine tile
+					// fractions (with the groups from the current class)
 					chips := ttinfo.SortClassGroups(cref, glist)
-
-					//gstrings := sortList(ordering, ref2id, glist)
-
 					tstrings := ttinfo.SortList(tlist)
 					rstrings := ttinfo.SortList(rlist)
-					//TODO: Rather pass lists and let the Typst template
-					// decide how to join or shorten them?
-					tile := Tile{
-						Day:      l.Day,
-						Hour:     l.Hour,
-						Duration: l.Duration,
-						Fraction: 1,
-						Offset:   0,
-						Total:    1,
-						Centre:   strings.Join(gstrings, ","),
-						TL:       subject,
-						TR:       strings.Join(tstrings, ","),
-						BR:       strings.Join(rstrings, ","),
+
+					for _, chip := range chips {
+						gstrings := append(chip.Groups, chip.ExtraGroups...)
+
+						//TODO: Rather pass lists and let the Typst template
+						// decide how to join or shorten them?
+						tile := Tile{
+							Day:      l.Day,
+							Hour:     l.Hour,
+							Duration: l.Duration,
+							Fraction: chip.Fraction,
+							Offset:   chip.Offset,
+							Total:    chip.Total,
+							Centre:   subject,
+							TL:       strings.Join(tstrings, ","),
+							TR:       strings.Join(gstrings, ","),
+							BR:       strings.Join(rstrings, ","),
+						}
+						classTiles[cref] = append(classTiles[cref], tile)
 					}
-					teacherTiles[tref] = append(teacherTiles[tref], tile)
+
 				}
 			}
 		} else {
-
-			//TODO ...
-
 			// A normal Course
-			glist := []base.Ref{}
-			glist = append(glist, cinfo.Groups...)
-			gstrings := sortList(ordering, ref2id, glist)
+			tlist := []base.Ref{}
+			tlist = append(tlist, cinfo.Teachers...)
+			tstrings := ttinfo.SortList(tlist)
 
 			// The rooms are associated with the lessons
 			for _, lix := range cinfo.Lessons {
 				rlist := []base.Ref{}
 				l := ttinfo.Activities[lix].Lesson
 				rlist = append(rlist, l.Rooms...)
-				rstrings := sortList(ordering, ref2id, rlist)
+				rstrings := ttinfo.SortList(rlist)
 
-				for _, tref := range cinfo.Teachers {
-					// If there is more than one teacher, list the others
-					tlist := []base.Ref{}
-					if len(cinfo.Teachers) > 1 {
-						for _, tref1 := range cinfo.Teachers {
-							if tref1 != tref {
-								tlist = append(tlist, tref1)
-							}
+				// The groups need special handling, to determine tile
+				// fractions (with the groups from the current class)
+				for _, gref := range cinfo.Groups {
+					g := db.Elements[gref].(*base.Group)
+					cref := g.Class
+					chips := ttinfo.SortClassGroups(cref, cinfo.Groups)
+
+					for _, chip := range chips {
+						gstrings := append(chip.Groups, chip.ExtraGroups...)
+
+						//TODO: Rather pass lists and let the Typst template
+						// decide how to join or shorten them?
+						tile := Tile{
+							Day:      l.Day,
+							Hour:     l.Hour,
+							Duration: l.Duration,
+							Fraction: chip.Fraction,
+							Offset:   chip.Offset,
+							Total:    chip.Total,
+							Centre:   subject,
+							TL:       strings.Join(tstrings, ","),
+							TR:       strings.Join(gstrings, ","),
+							BR:       strings.Join(rstrings, ","),
 						}
+						classTiles[cref] = append(classTiles[cref], tile)
 					}
-					tstrings := sortList(ordering, ref2id, tlist)
-					//TODO: Rather pass lists and let the Typst template
-					// decide how to join or shorten them?
-					tile := Tile{
-						Day:      l.Day,
-						Hour:     l.Hour,
-						Duration: l.Duration,
-						Fraction: 1,
-						Offset:   0,
-						Total:    1,
-						Centre:   strings.Join(gstrings, ","),
-						TL:       subject,
-						TR:       strings.Join(tstrings, ","),
-						BR:       strings.Join(rstrings, ","),
-					}
-					teacherTiles[tref] = append(teacherTiles[tref], tile)
 				}
 			}
-
-
-
-			for _, l := range ttdata.Lessons {
-		// Limit the length of the room list.
-		var room string
-		if len(l.RealRooms) > 6 {
-			room = strings.Join(l.RealRooms[:5], ",") + "..."
-		} else {
-			room = strings.Join(l.RealRooms, ",")
 		}
-		// Limit the length of the teachers list.
-		var teacher string
-		if len(l.Teacher) > 6 {
-			teacher = strings.Join(l.Teacher[:5], ",") + "..."
-		} else {
-			teacher = strings.Join(l.Teacher, ",")
-		}
-		chips := []chip{}
-		for cl, ttglist := range l.Students {
-			for _, ttg := range ttglist {
-				chips = append(chips, chip{cl,
-					ttg.Groups, ttg.Offset, ttg.Size, ttg.Total})
+
+		for _, c := range db.Classes {
+			ctiles, ok := classTiles[c.Id]
+			if !ok {
+				continue
 			}
+			pages = append(pages, []any{
+				fmt.Sprintf("Klasse %s", c.Tag),
+				ctiles,
+			})
 		}
-		for _, c := range chips {
-			tile := Tile{
-				Day:      l.Day,
-				Hour:     l.Hour,
-				Duration: l.Duration,
-				Fraction: c.parts,
-				Offset:   c.offset,
-				Total:    c.total,
-				Centre:   l.Subject,
-				TL:       teacher,
-				TR:       strings.Join(c.groups, ","),
-				BR:       room,
-			}
-			classTiles[c.class] = append(classTiles[c.class], tile)
+		dlist := []string{}
+		for _, d := range db.Days {
+			dlist = append(dlist, d.Name)
+		}
+		hlist := []ttHour{}
+		for _, h := range db.Hours {
+			hlist = append(hlist, ttHour{
+				Hour:  h.Tag,
+				Start: h.Start,
+				End:   h.End,
+			})
+		}
+		info := map[string]any{
+			"School": db.Info.Institution,
+			"Days":   dlist,
+			"Hours":  hlist,
+		}
+		tt := Timetable{
+			Title: "Stundenpläne der Klassen",
+			Info:  info,
+			Plan:  plan_name,
+			Pages: pages,
+		}
+		b, err := json.MarshalIndent(tt, "", "  ")
+		if err != nil {
+			fmt.Println("error:", err)
+		}
+		//os.Stdout.Write(b)
+		jsonfile := filepath.Join("_out", "tmp.json")
+		jsonpath := filepath.Join(datadir, jsonfile)
+		err = os.WriteFile(jsonpath, b, 0666)
+		if err != nil {
+			base.Error.Fatal(err)
+		}
+		fmt.Printf("Wrote json to: %s\n", jsonpath)
+		cmd := exec.Command("typst", "compile",
+			"--root", datadir,
+			"--input", "ifile="+filepath.Join("..", jsonfile),
+			filepath.Join(datadir, "resources", "print_timetable.typ"),
+			outpath)
+		fmt.Printf(" ::: %s\n", cmd.String())
+		output, err := cmd.CombinedOutput()
+		if err != nil {
+			fmt.Println("(Typst) " + string(output))
+			base.Error.Fatal(err)
 		}
 	}
-
-	for _, cl := range ttdata.ClassList {
-		ctiles, ok := classTiles[cl.Id]
-		if !ok {
-			continue
-		}
-		pages = append(pages, []any{
-			fmt.Sprintf("Klasse %s", cl.Id),
-			ctiles,
-		})
-	}
-	tt := Timetable{
-		Title: "Stundenpläne der Klassen",
-		//Info:  ttdata.Info,
-		Plan:  plan_name,
-		Pages: pages,
-	}
-	b, err := json.MarshalIndent(tt, "", "  ")
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-	//os.Stdout.Write(b)
-	jsonfile := filepath.Join("_out", "tmp.json")
-	jsonpath := filepath.Join(datadir, jsonfile)
-	err = os.WriteFile(jsonpath, b, 0666)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("Wrote json to: %s\n", jsonpath)
-	cmd := exec.Command("typst", "compile",
-		"--root", datadir,
-		"--input", "ifile="+filepath.Join("..", jsonfile),
-		filepath.Join(datadir, "resources", "print_timetable.typ"),
-		outpath)
-	fmt.Printf(" ::: %s\n", cmd.String())
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(string(output))
 }
-*/

@@ -168,60 +168,13 @@ func PrintTeacherTimetables(
 		}
 	}
 
-	{
-		/* Limit the length of the room list.
-		var room string
-		if len(l.RealRooms) > 6 {
-			room = strings.Join(l.RealRooms[:5], ",") + "..."
-		} else {
-			room = strings.Join(l.RealRooms, ",")
-		}
-		// Gather student groups.
-		var students string
-		type c_ttg struct {
-			class string
-			ttg   []TTGroup
-		}
-		var c_ttg_list []c_ttg
-		if len(l.Students) > 1 {
-			// Multiple classes, which need sorting
-			for _, c := range ttdata.ClassList {
-				ttgroups, ok := l.Students[c.Id]
-				if ok {
-					c_ttg_list = append(c_ttg_list, c_ttg{c.Id, ttgroups})
-				}
-			}
-		} else {
-			for c, ttgroups := range l.Students {
-				c_ttg_list = []c_ttg{{c, ttgroups}}
-			}
-		}
-		cgroups := []string{}
-		for _, cg := range c_ttg_list {
-			for _, ttg := range cg.ttg {
-				if len(ttg.Groups) == 0 {
-					cgroups = append(cgroups, cg.class)
-				} else {
-					for _, g := range ttg.Groups {
-						cgroups = append(cgroups, cg.class+CLASS_GROUP_SEP+g)
-					}
-				}
-			}
-		}
-		if len(cgroups) > 10 {
-			students = strings.Join(cgroups[:9], ",") + "..."
-		} else {
-			students = strings.Join(cgroups, ",")
-		}
-		*/
-	}
 	for _, t := range db.Teachers {
 		ctiles, ok := teacherTiles[t.Id]
 		if !ok {
 			continue
 		}
 		pages = append(pages, []any{
-			fmt.Sprintf("%s (%s)", t.Name, t.Tag),
+			fmt.Sprintf("%s %s (%s)", t.Firstname, t.Name, t.Tag),
 			ctiles,
 		})
 	}
