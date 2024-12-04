@@ -1,5 +1,7 @@
 package ttbase
 
+import "W365toFET/base"
+
 func filterDivisions(ttinfo *TtInfo) {
 	// Prepare filtered versions of the class Divisions containing only
 	// those Divisions which have Groups used in Lessons.
@@ -27,4 +29,97 @@ func filterDivisions(ttinfo *TtInfo) {
 		cdivs[c.Id] = divs
 	}
 	ttinfo.ClassDivisions = cdivs
+}
+
+type FractionChip struct {
+	Groups      []string
+	ExtraGroups []string
+	Fraction    int
+	Offset      int
+	Total       int
+}
+
+func (ttinfo *TtInfo) SortClassGroups(
+	class Ref,
+	groups []Ref,
+) []FractionChip {
+	// Given a class and a list of groups, separate those groups from the
+	// given class.
+	// Also build corresponding "fractional chip" info.
+	db := ttinfo.Db
+	elements := db.Elements
+	mygroups := map[Ref]bool{}
+	othergroups := []Ref{}
+	for _, gref := range groups {
+		g := elements[gref].(*base.Group)
+		if g.Class == class {
+			if g.Tag == "" {
+				// whole class
+				mygroups[""] = true
+			} else {
+				mygroups[gref] = true
+			}
+		} else {
+			othergroups = append(othergroups, gref)
+		}
+	}
+	xgroups := ttinfo.SortList(othergroups)
+	chips := []FractionChip{}
+	if mygroups[""] {
+		chips = append(chips, FractionChip{
+			Groups:      []string{},
+			ExtraGroups: xgroups,
+			Fraction:    1,
+			Offset:      0,
+			Total:       1,
+		})
+	} else {
+		for _, div := range ttinfo.ClassDivisions[class] {
+			start := -1
+			var glist []string = nil
+			for i, gref := range div {
+				if mygroups[gref] {
+					if glist == nil {
+						start = i
+					}
+					glist = append(glist, elements[gref].(*base.Group).Tag)
+					delete(mygroups, gref)
+				} else if glist != nil {
+					chips = append(chips, FractionChip{
+						Groups:      glist,
+						ExtraGroups: xgroups,
+						Fraction:    len(glist),
+						Offset:      start,
+						Total:       len(div),
+					})
+					glist = nil
+				}
+			}
+			if glist != nil {
+				chips = append(chips, FractionChip{
+					Groups:      glist,
+					ExtraGroups: xgroups,
+					Fraction:    len(glist),
+					Offset:      start,
+					Total:       len(div),
+				})
+			}
+			if start >= 0 {
+				// Groups from this division were found
+				if len(mygroups) == 0 {
+					// There are groups from other divisions, too.
+					// Return the whole class.
+					chips = nil
+					chips = append(chips, FractionChip{
+						Groups:      []string{},
+						ExtraGroups: xgroups,
+						Fraction:    1,
+						Offset:      0,
+						Total:       1,
+					})
+				}
+			}
+		}
+	}
+	return chips
 }
