@@ -19,7 +19,7 @@ func (ttinfo *TtInfo) makePossibleSlots() {
 		for d := 0; d < ttinfo.NDays; d++ {
 			for h := 0; h <= ttinfo.NHours-length; h++ {
 				p := d*ttinfo.NHours + h
-				if ttinfo.testPlacement(aix, p) {
+				if ttinfo.TestPlacement(aix, p) {
 					plist = append(plist, p)
 				}
 			}

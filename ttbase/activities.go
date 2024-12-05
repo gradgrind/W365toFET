@@ -221,9 +221,9 @@ func (ttinfo *TtInfo) addActivityInfo(
 							"  -- %s\n",
 						aix, p, ttinfo.View(ttinfo.Activities[aix].CourseInfo))
 				}
-				if ttinfo.testPlacement(aix, p) {
+				if ttinfo.TestPlacement(aix, p) {
 					// Perform placement
-					ttinfo.placeActivity(aix, p)
+					ttinfo.PlaceActivity(aix, p)
 					placed[aix] = true
 					for _, paix := range a.Parallel {
 						placed[paix] = true
@@ -251,10 +251,10 @@ func (ttinfo *TtInfo) addActivityInfo(
 		a := ttinfo.Activities[aix]
 		p := a.Placement
 		if slices.Contains(a.PossibleSlots, p) &&
-			ttinfo.testPlacement(aix, p) {
+			ttinfo.TestPlacement(aix, p) {
 
 			// Perform placement
-			ttinfo.placeActivity(aix, p)
+			ttinfo.PlaceActivity(aix, p)
 			placed[aix] = true
 			for _, paix := range a.Parallel {
 				placed[paix] = true
@@ -343,7 +343,7 @@ func (ttinfo *TtInfo) unplaceActivity(aix ActivityIndex) {
 
 }
 
-func (ttinfo *TtInfo) testPlacement(aix ActivityIndex, slot int) bool {
+func (ttinfo *TtInfo) TestPlacement(aix ActivityIndex, slot int) bool {
 	// Simple boolean placement test. It assumes the slot is possible –
 	// so that it will not, for example, be the last slot of a day if
 	// the activity duration is 2.
@@ -402,7 +402,7 @@ func (tt *TtCore) testPlacement2(aix ActivityIndex, slot int) (int, int) {
 }
 */
 
-func (ttinfo *TtInfo) placeActivity(aix ActivityIndex, slot int) {
+func (ttinfo *TtInfo) PlaceActivity(aix ActivityIndex, slot int) {
 	// Allocate the resources, assuming none of the slots are blocked!
 	a := ttinfo.Activities[aix]
 	for _, rix := range a.Resources {
