@@ -57,8 +57,8 @@
 
 #let WITHTIMES = xdata.Info.at("WithTimes", default: false)
 #let WITHBREAKS = xdata.at("WithBreaks", default: false)
-#let WITHTIMES = true
-#let WITHBREAKS = true
+//#let WITHTIMES = true
+//#let WITHBREAKS = true
 #for hdata in xdata.Info.Hours {
   let hour = hdata.at("Hour")
   let time1 = hdata.at("Start")
@@ -80,7 +80,7 @@
 #let vfactor = if WITHBREAKS {
   // Here it is a factor with which to multiply the minutes
   let tdelta = TIMES.at(-1).at(1) - TIMES.at(0).at(0)
-  PLAN_AREA_HEIGHT / tdelta
+  (PLAN_AREA_HEIGHT - H_HEADER_HEIGHT) / tdelta
 } else {
   // Here it is just the height of a period box
   (PLAN_AREA_HEIGHT - H_HEADER_HEIGHT) / HOURS.len()
@@ -103,7 +103,6 @@
         }
         let t1 = (m1 - m0) * vfactor
         if t > 0mm {
-            hlines.push((t + H_HEADER_HEIGHT, t1 + H_HEADER_HEIGHT))
             trows.push(t1 - t)
             table_content += ("",) + ([],) * DAYS.len()
             isbreak.push(true)
