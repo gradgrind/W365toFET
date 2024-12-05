@@ -1,33 +1,6 @@
-/* The basic idea is to use a table for structuring each timetable. This
- * manages the headers, lines and background colouring.
- * The tiles of the actual timetable are overlaid on this using the line
- * coordinates for orientation.
- * A space (block) is left at the top of each page for a page title. This
- * is in the space left free by the TITLE_HEIGHT value.
- * The rest of the page will be used for the table, adjusting the cell size
- * to fit.
- * Two variants of table are supported:
- *  - plain (default): A simple table is used with each lesson period having
- *                     the same length.
- *  - with breaks:     The height of the lesson periods is proportional to
- *                     their times in minutes. Also the breaks between lessons
- *                     will be shown, proportional to their times. This can
- *                     only work if the lesson periods (hours) are supplied
- *                     with correctly formatted start and end times (hh:mm,
- *                     24-hour clock).
- *                     To select this variant, the parameter Info.WithBreaks
- *                     must be true.
- * If lesson period times are supplied, the parameter Info.WithTimes must be
- * true (default: false) for them to be shown in the period headers.
- */
-
 #let PAGE_HEIGHT = 210mm
 #let PAGE_WIDTH = 297mm
-#let PAGE_BORDER = (top:15mm, bottom: 15mm, left: 15mm, right: 15mm)
-#let TITLE_HEIGHT = 15mm
-#let H_HEADER_HEIGHT = 15mm
-#let V_HEADER_WIDTH = 30mm
-
+#let PAGE_BORDER = (top:15mm, bottom: 12mm, left: 15mm, right: 15mm)
 #set page(height: PAGE_HEIGHT, width: PAGE_WIDTH,
 //  numbering: "1",
   margin: PAGE_BORDER,
@@ -42,6 +15,7 @@
 #let BREAK_COLOUR = "#e0e0e0"
 #let EMPTY_COLOUR = "#f0f0f0"
 
+#let TITLE_HEIGHT = 20mm
 #let PLAN_AREA_HEIGHT = (PAGE_HEIGHT - PAGE_BORDER.top
     - PAGE_BORDER.bottom - TITLE_HEIGHT)
 #let PLAN_AREA_WIDTH = (PAGE_WIDTH - PAGE_BORDER.left
@@ -54,77 +28,73 @@
 //#let DAYS = ("Mo", "Di", "Mi", "Do", "Fr")
 #let HOURS = ()
 #let TIMES = ()
-
-#let WITHTIMES = xdata.Info.at("WithTimes", default: false)
-#let WITHBREAKS = xdata.at("WithBreaks", default: false)
-#let WITHTIMES = true
-#let WITHBREAKS = true
 #for hdata in xdata.Info.Hours {
-  let hour = hdata.at("Hour")
-  let time1 = hdata.at("Start")
-  let time2 = hdata.at("End")
-  if WITHTIMES {
-    HOURS.push(hour + "|" + time1 + " – " + time2)
-  } else {
-    HOURS.push(hour)
-  }
-  if WITHBREAKS {
-    // The period start and end times must be present and correct.
-    let (h1, m1) = time1.split(":")
-    let (h2, m2) = time2.split(":")
-    // Convert the times to minutes only.
-    TIMES.push((int(h1) * 60 + int(m1), int(h2) * 60 + int(m2)))
-  }
+  HOURS.push(hdata.at("Hour"))
+//TODO: Handle case without times
+  let (h1, m1) = hdata.at("Start").split(":")
+  let (h2, m2) = hdata.at("End").split(":")
+  TIMES.push(((int(h1), int(m1)), (int(h2), int(m2))))
 }
+/*
+#let HOURS = ("HU 1", "HU 2",
+    "FS 1", "FS 2", "FS 3", "FS 4", "FS 5", "FS 6", "FS 7")
+#let TIMES = (
+    ((8, 10), (9, 0)),
+    ((9, 0), (9, 50)),
+    ((10, 10), (10, 55)),
+    ((11, 0), (11, 45)),
+    ((12, 0), (12, 45)),
+    ((12, 50), (13, 35)),
+    ((13, 45), (14, 30)),
+    ((14, 30), (15, 15)),
+    ((15, 15), (16, 0)),
+)
+*/
 
-#let vfactor = if WITHBREAKS {
-  // Here it is a factor with which to multiply the minutes
-  let tdelta = TIMES.at(-1).at(1) - TIMES.at(0).at(0)
-  PLAN_AREA_HEIGHT / tdelta
-} else {
-  // Here it is just the height of a period box
-  (PLAN_AREA_HEIGHT - H_HEADER_HEIGHT) / HOURS.len()
-}
+#let tend = TIMES.at(-1).at(1)
+#let tstart = TIMES.at(0).at(0)
+#let tdelta = (tend.at(0)*60 + tend.at(1)
+    - tstart.at(0)*60 + tstart.at(1))
+#let vfactor = PLAN_AREA_HEIGHT / tdelta
 //#vfactor
 
-// Build the row structure
-#let table_content = ([],) + DAYS
-#let isbreak = (false,)
+#let period_time(t1, t2) = (
+    datetime(hour: t1.at(0), minute: t1.at(1), second: 0
+    ).display("[hour]:[minute]")
+    + " – "
+    + datetime(hour: t2.at(0), minute: t2.at(1), second: 0
+    ).display("[hour]:[minute]")
+)
+
+#let H_HEADER_HEIGHT = 15mm
+#let V_HEADER_WIDTH = 30mm
+
+// Collect headers and start and end coordinates for the period rows.
 #let hlines = ()
 #let trows = (H_HEADER_HEIGHT,)
-#let t = 0mm
-#let m0 = -1
+#let t0 = 0
+#let tx = 0
+#let ptime = ()
 #let i = 0
-#for h in HOURS {
-    if WITHBREAKS {
-        let (m1, m2) = TIMES.at(i)
-        if m0 < 0 {
-            m0 = m1
-        }
-        let t1 = (m1 - m0) * vfactor
-        if t > 0mm {
-            hlines.push((t + H_HEADER_HEIGHT, t1 + H_HEADER_HEIGHT))
-            trows.push(t1 - t)
-            table_content += ("",) + ([],) * DAYS.len()
-            isbreak.push(true)
-        }
-        t = (m2 - m0) * vfactor
-        hlines.push((t1 + H_HEADER_HEIGHT, t + H_HEADER_HEIGHT))
-        trows.push(t - t1)
+#for (pt1, pt2) in TIMES {
+    let t1 = (pt1.at(0)*60 + pt1.at(1)) * vfactor
+    let t2 = (pt2.at(0)*60 + pt2.at(1)) * vfactor
+    if t0 == 0 {
+        t0 = t1
+        tx = t2
     } else {
-        let period_height = vfactor
-        let t0 = t
-        t += period_height
-        hlines.push((t0 + H_HEADER_HEIGHT, t + H_HEADER_HEIGHT))
-        trows.push(period_height)
+        trows.push(t1 - tx)
+        tx = t2
+        ptime.push("")
     }
-    table_content += (h,) + ([],) * DAYS.len()
-    isbreak.push(false)
+    hlines.push((t1 - t0 + H_HEADER_HEIGHT, t2 - t0 + H_HEADER_HEIGHT))
+    trows.push(t2 - t1)
+    ptime.push(HOURS.at(i) + "|" + period_time(pt1, pt2))
     i += 1
 }
-
 //#trows
 //#hlines
+//#ptime
 
 // Build the vertical lines
 
@@ -139,6 +109,12 @@
 #let tcolumns = (V_HEADER_WIDTH,) + (colwidth,)*DAYS.len()
 //#tcolumns
 //#vlines
+
+
+#let table_content = ([],) + DAYS
+#for h in ptime {
+    table_content += (h,) + ([],) * DAYS.len()
+}
 
 #show table.cell: it => {
   if it.y == 0 {
@@ -158,7 +134,7 @@
   }
 }
 
-// On text lines (top or bottom of cell) with two text items:
+// On lines with two text items:
 // If one is smaller than 25% of the space, leave this and shrink the
 // other to 90% of the reamining space. Otherwise shrink both.
 #let fit2inspace(width, text1, text2) = {
@@ -269,7 +245,7 @@
     inset: 0pt,
     fill: (x, y) =>
         if y != 0 {
-            if isbreak.at(y) {
+            if ptime.at(y - 1) == "" {
                 rgb(BREAK_COLOUR)
             } else if x != 0 {
                 rgb(EMPTY_COLOUR)
@@ -292,10 +268,7 @@
         page += 1
     }
 
-    #block(height: TITLE_HEIGHT, above: 0mm, below: 0mm)[
-        #v(5mm)
-        = #k
-    ]
+    = #k
 
     #box([
         #tbody
