@@ -209,6 +209,9 @@ func PrintClassTimetables(
 		"School": db.Info.Institution,
 		"Days":   dlist,
 		"Hours":  hlist,
+		//TODO: How to (de)activate thes?
+		"WithTimes":  true,
+		"WithBreaks": true,
 	}
 	tt := Timetable{
 		Title: "Stundenpläne der Klassen",
