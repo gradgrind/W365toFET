@@ -56,9 +56,10 @@
 #let TIMES = ()
 
 #let WITHTIMES = xdata.Info.at("WithTimes", default: false)
-#let WITHBREAKS = xdata.at("WithBreaks", default: false)
+#let WITHBREAKS = xdata.Info.at("WithBreaks", default: false)
 //#let WITHTIMES = true
 //#let WITHBREAKS = true
+
 #for hdata in xdata.Info.Hours {
   let hour = hdata.at("Hour")
   let time1 = hdata.at("Start")
