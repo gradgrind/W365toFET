@@ -39,6 +39,10 @@ type TtInfo struct {
 	Ref2Tag map[Ref]string // Ref -> Tag mapping for subjects, teachers,
 	// rooms, classes and groups
 
+	// Set up by "orderResources",
+	// used by "SortList" for ordering resource lists
+	ResourceOrder map[Ref]int
+
 	// Set up by "gatherCourseInfo"
 	SuperSubs  map[Ref][]Ref       // SuperCourse -> list of its SubCourses
 	CourseInfo map[Ref]*CourseInfo // Key can be Course or SuperCourse
@@ -96,6 +100,7 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 
 	ttinfo.Ref2Tag = ref2Tag
 	//fmt.Printf("Ref2Tag: %v\n", ttinfo.Ref2Tag)
+	ttinfo.orderResources()
 
 	// Get "atomic" groups
 	ttinfo.makeAtomicGroups()
@@ -186,4 +191,50 @@ func (ttinfo *TtInfo) prepareCoreData() {
 
 	// Add the remaining Activity information
 	ttinfo.addActivityInfo(t2tt, r2tt, g2ags)
+}
+
+func (ttinfo *TtInfo) orderResources() {
+	// Needed for sorting teachers, groups and rooms
+	db := ttinfo.Db
+	i := 0
+	olist := map[base.Ref]int{}
+	for _, t := range db.Teachers {
+		olist[t.Id] = i
+		i++
+	}
+	for _, r := range db.Rooms {
+		olist[r.Id] = i
+		i++
+	}
+	for _, c := range db.Classes {
+		olist[c.ClassGroup] = i
+		i++
+		for _, div := range ttinfo.ClassDivisions[c.Id] {
+			for _, gref := range div {
+				olist[gref] = i
+				i++
+			}
+		}
+	}
+	ttinfo.ResourceOrder = olist
+}
+
+func (ttinfo *TtInfo) SortList(list []Ref) []string {
+	ordering := ttinfo.ResourceOrder
+	ref2tag := ttinfo.Ref2Tag
+	olist := []string{}
+	if len(list) > 1 {
+		slices.SortFunc(list, func(a, b Ref) int {
+			if ordering[a] < ordering[b] {
+				return -1
+			}
+			return 1
+		})
+		for _, ref := range list {
+			olist = append(olist, ref2tag[ref])
+		}
+	} else if len(list) == 1 {
+		olist = append(olist, ref2tag[list[0]])
+	}
+	return olist
 }

@@ -3,7 +3,6 @@ package fet
 import (
 	"W365toFET/base"
 	"encoding/xml"
-	"fmt"
 	"strconv"
 )
 
@@ -74,9 +73,9 @@ func getExtraConstraints(fetinfo *fetInfo) {
 	ttinfo := fetinfo.ttinfo
 
 	//TODO--
-	for ctype := range ttinfo.Constraints {
-		fmt.Printf("CTYPE: %s\n", ctype)
-	}
+	//for ctype := range ttinfo.Constraints {
+	//	fmt.Printf("CTYPE: %s\n", ctype)
+	//}
 
 	for _, dbc := range fetinfo.ttinfo.MinDaysBetweenLessons {
 		tclist.ConstraintMinDaysBetweenActivities = append(

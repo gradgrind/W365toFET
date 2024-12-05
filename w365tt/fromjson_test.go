@@ -12,9 +12,7 @@ import (
 )
 
 var inputfiles = []string{
-	"../_testdata/test1_w365.json",
-	"../_testdata/test2_w365.json",
-	"../_testdata/test3_w365.json",
+	"../_testdata1/Versuch_D_Margin_hour_constraint_w365.json",
 }
 
 func TestFromJSON(t *testing.T) {
@@ -58,18 +56,11 @@ func TestToDb(t *testing.T) {
 
 		db := base.NewDb()
 		LoadJSON(db, fjson)
-		db.PrepareDb()
 
 		// Save as JSON
 		stempath = strings.TrimSuffix(stempath, "_w365")
 		f := stempath + "_db.json"
-		j, err := json.MarshalIndent(db, "", "  ")
-		if err != nil {
-			log.Fatal(err)
-		}
-		if err := os.WriteFile(f, j, 0666); err != nil {
-			log.Fatal(err)
-		}
+		db.SaveDb(f)
 		fmt.Printf("\n ***** JSON written to %s *****\n", f)
 	}
 }

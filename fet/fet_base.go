@@ -5,7 +5,6 @@ import (
 	"W365toFET/base"
 	"W365toFET/ttbase"
 	"encoding/xml"
-	"fmt"
 	"math"
 	"strconv"
 	"strings"
@@ -176,13 +175,16 @@ func MakeFetFile(ttinfo *ttbase.TtInfo) (string, string) {
 	getTeachers(&fetinfo)
 	getSubjects(&fetinfo)
 	getRooms(&fetinfo)
-	fmt.Println("=====================================")
+
+	//TODO--
+	//fmt.Println("=====================================")
 	//gatherCourseInfo(&fetinfo)
 
 	//readCourseIndexes(&fetinfo)
 	//makeAtomicGroups(&fetinfo)
 	//fmt.Println("\n +++++++++++++++++++++++++++")
 	//printAtomicGroups(&fetinfo)
+
 	getClasses(&fetinfo)
 	lessonIdMap := getActivities(&fetinfo)
 

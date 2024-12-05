@@ -17,6 +17,7 @@ func OpenLog(logpath string) {
 	if logpath == "" {
 		file = os.Stderr
 	} else {
+		os.Remove(logpath)
 		var err error
 		file, err = os.OpenFile(logpath, os.O_CREATE|os.O_WRONLY, 0666)
 		if err != nil {
