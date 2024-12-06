@@ -20,6 +20,7 @@ func main() {
 	//flag.StringVar(&svar, "svar", "bar", "a string var")
 
 	teachers := flag.Bool("t", false, "Print individual teacher tables")
+	classes := flag.Bool("c", false, "Print individual class tables")
 
 	flag.Parse()
 
@@ -51,13 +52,22 @@ func main() {
 	db.PrepareDb()
 	ttinfo := ttbase.MakeTtInfo(db)
 
+	//TODO: Add a flag to disable this call (to prevent testing of placements):
+	ttinfo.PrepareCoreData()
+
 	datadir := filepath.Join(filepath.Dir(abspath), "typst_files")
 	stemfile := filepath.Base(stempath)
-	ttprint.GenTypstData(ttinfo, datadir, stemfile)
+
+	//TODO: Provide plan_name somehow?
+	plan_name := ""
+	ttprint.GenTypstData(ttinfo, datadir, stemfile, plan_name)
 
 	//TODO option to pass in typst path
 	if *teachers {
 		ttprint.MakePdf("print_timetable.typ", datadir, stemfile+"_teachers", "")
+	}
+	if *classes {
+		ttprint.MakePdf("print_timetable.typ", datadir, stemfile+"_classes", "")
 	}
 	base.Message.Println("OK")
 }

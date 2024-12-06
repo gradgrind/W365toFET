@@ -1,23 +1,18 @@
 package ttprint
 
 import (
+	"W365toFET/base"
 	"W365toFET/ttbase"
+	"fmt"
+	"slices"
+	"strings"
 )
 
-func genTypstClassData(ttinfo *ttbase.TtInfo,
-	plan_name string,
-	datadir string,
-	stemfile string, // basic name part of source file
-) {
-
-}
-
-/*
-func PrintClassTimetables(
+func genTypstClassData(
 	ttinfo *ttbase.TtInfo,
 	plan_name string,
 	datadir string,
-	outpath string, // full path to output pdf
+	stemfile string, // basic name part of source file
 ) {
 	db := ttinfo.Db
 	pages := [][]any{}
@@ -224,6 +219,5 @@ func PrintClassTimetables(
 		Plan:  plan_name,
 		Pages: pages,
 	}
-	makePdf(tt, datadir, outpath)
+	makeTypstJson(tt, datadir, stemfile+"_classes")
 }
-*/

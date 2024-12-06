@@ -41,31 +41,11 @@ func GenTypstData(
 	ttinfo *ttbase.TtInfo,
 	datadir string,
 	stemfile string,
+	plan_name string,
 ) {
-	//genTypstClassData(ttinfo, "", datadir, stemfile)
-	genTypstTeacherData(ttinfo, "", datadir, stemfile)
+	genTypstClassData(ttinfo, plan_name, datadir, stemfile)
+	genTypstTeacherData(ttinfo, plan_name, datadir, stemfile)
 }
-
-/* TODO--
-func PrintTimetables(
-	ttinfo *ttbase.TtInfo,
-	datadir string,
-	stempath string,
-) {
-	outdir := filepath.Join(filepath.Dir(stempath), "_pdf")
-	if _, err := os.Stat(outdir); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(outdir, os.ModePerm)
-		if err != nil {
-			base.Error.Println(err)
-		}
-	}
-	outpath := filepath.Join(outdir, filepath.Base(stempath))
-	PrintClassTimetables(
-		ttinfo, "", datadir, outpath+"_Klassen.pdf")
-	PrintTeacherTimetables(
-		ttinfo, "", datadir, outpath+"_Lehrer.pdf")
-}
-*/
 
 func makeTypstJson(tt Timetable, datadir string, outfile string) {
 	b, err := json.MarshalIndent(tt, "", "  ")

@@ -49,6 +49,7 @@ func main() {
 	w365tt.LoadJSON(db, abspath)
 	db.PrepareDb()
 	ttinfo := ttbase.MakeTtInfo(db)
+	ttinfo.PrepareCoreData()
 
 	// ********** Build the fet file **********
 
