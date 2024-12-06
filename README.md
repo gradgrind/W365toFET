@@ -12,7 +12,21 @@ Die Stundenplan-Daten werden von der JSON-Datei eingelesen.
 
 Ausgegeben wird eine FET-Datei im selben Ordner. Auch eine Logdatei (mit Fehlermeldungen, usw.) und eine Zuordnungsdatei für die FET-Activities werden erstellt.
 
-## Aktueller Stand (05.12.2024)
+## Kompilieren
+
+Um mehrere ausführbare Dateien zu unterstützen, befinden sich die ```main.go```-Dateien in Unterordnern des Ordners ```cmd```. Zum Kompilieren (im Hauptordner):
+
+```
+go build cmd/W365toFET
+```
+
+Die ausführbaren Dateien können auch in einem anderen (schon existierenden!) Ordner abgelegt werden:
+
+```
+go build -o bin cmd/W365toFET
+```
+
+## Aktueller Stand (06.12.2024)
 
 Bis auf die „Constraint“-Elemente werden alle Elemente in `docs/stundenplanschnittstelle.md` in einigermaßen entsprechende FET-Strukturen übertragen.
 

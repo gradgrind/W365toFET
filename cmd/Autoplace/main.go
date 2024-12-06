@@ -1,22 +1,22 @@
-package ttengine
+package main
 
 import (
 	"W365toFET/base"
 	"W365toFET/readxml"
 	"W365toFET/ttbase"
+	"W365toFET/ttengine"
 	"fmt"
 	"slices"
-	"testing"
 )
 
-var inputfiles = []string{
+var ifiles = []string{
 	"../testdata/readxml/Demo1.xml",
-	"../testdata/readxml/x01.xml",
+	//"../testdata/readxml/x01.xml",
 }
 
-func TestTtEngine(t *testing.T) {
+func main() {
 	base.OpenLog("")
-	for _, fxml := range inputfiles {
+	for _, fxml := range ifiles {
 		fmt.Println("\n ++++++++++++++++++++++")
 		cdata := readxml.ConvertToDb(fxml)
 		fmt.Println("*** Available Schedules:")
@@ -44,9 +44,9 @@ func TestTtEngine(t *testing.T) {
 		ttbase.MakeTtInfo(db)
 		ttinfo := ttbase.MakeTtInfo(db)
 
-		alist := CollectCourseLessons(ttinfo)
+		alist := ttengine.CollectCourseLessons(ttinfo)
 		//fmt.Printf("??? %+v\n", alist)
 
-		PlaceLessons(ttinfo, alist)
+		ttengine.PlaceLessons(ttinfo, alist)
 	}
 }

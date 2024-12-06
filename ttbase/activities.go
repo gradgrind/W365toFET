@@ -273,7 +273,7 @@ func (ttinfo *TtInfo) addActivityInfo(
 	}
 }
 
-func (ttinfo *TtInfo) findClashes(aix ActivityIndex, slot int) []ActivityIndex {
+func (ttinfo *TtInfo) FindClashes(aix ActivityIndex, slot int) []ActivityIndex {
 	// Return a list of activities (indexes) which are in conflict with
 	// the proposed placement. It assumes the slot is in principle possible –
 	// so that it will not, for example, be the last slot of a day if
@@ -285,6 +285,7 @@ func (ttinfo *TtInfo) findClashes(aix ActivityIndex, slot int) []ActivityIndex {
 		add := ttinfo.Activities[addix]
 		if add.Placement >= 0 && add.Placement/ttinfo.NHours == day {
 			clashes = append(clashes, addix)
+			//fmt.Printf("????0 %d\n", addix)
 		}
 	}
 	for _, rix := range a.Resources {
@@ -293,6 +294,7 @@ func (ttinfo *TtInfo) findClashes(aix ActivityIndex, slot int) []ActivityIndex {
 			c := ttinfo.TtSlots[i+ix]
 			if c != 0 {
 				clashes = append(clashes, c)
+				//fmt.Printf("????1 %d %d\n", c, ix)
 			}
 		}
 	}
@@ -302,6 +304,7 @@ func (ttinfo *TtInfo) findClashes(aix ActivityIndex, slot int) []ActivityIndex {
 			add := ttinfo.Activities[addix]
 			if add.Placement >= 0 && add.Placement/ttinfo.NHours == day {
 				clashes = append(clashes, addix)
+				//fmt.Printf("????2 %d\n", addix)
 			}
 		}
 		for _, rix := range a.Resources {
@@ -310,6 +313,7 @@ func (ttinfo *TtInfo) findClashes(aix ActivityIndex, slot int) []ActivityIndex {
 				c := ttinfo.TtSlots[i+ix]
 				if c != 0 {
 					clashes = append(clashes, c)
+					//fmt.Printf("????3 %d %d\n", c, ix)
 				}
 			}
 		}
@@ -320,7 +324,7 @@ func (ttinfo *TtInfo) findClashes(aix ActivityIndex, slot int) []ActivityIndex {
 
 // TODO: Can I safely assume that no attempt will be made to unplace fixed
 // Activities?
-func (ttinfo *TtInfo) unplaceActivity(aix ActivityIndex) {
+func (ttinfo *TtInfo) UnplaceActivity(aix ActivityIndex) {
 	a := ttinfo.Activities[aix]
 	slot := a.Placement
 	for _, rix := range a.Resources {
