@@ -37,6 +37,16 @@ type ttHour struct {
 	End   string
 }
 
+func GenTypstData(
+	ttinfo *ttbase.TtInfo,
+	datadir string,
+	stemfile string,
+) {
+	//genTypstClassData(ttinfo, "", datadir, stemfile)
+	genTypstTeacherData(ttinfo, "", datadir, stemfile)
+}
+
+/* TODO--
 func PrintTimetables(
 	ttinfo *ttbase.TtInfo,
 	datadir string,
@@ -55,24 +65,48 @@ func PrintTimetables(
 	PrintTeacherTimetables(
 		ttinfo, "", datadir, outpath+"_Lehrer.pdf")
 }
+*/
 
-func makePdf(tt Timetable, datadir string, outpath string) {
+func makeTypstJson(tt Timetable, datadir string, outfile string) {
 	b, err := json.MarshalIndent(tt, "", "  ")
 	if err != nil {
 		base.Error.Fatal(err)
 	}
-	//os.Stdout.Write(b)
-	jsonfile := filepath.Join("_out", "tmp.json")
-	jsonpath := filepath.Join(datadir, jsonfile)
+	// os.Stdout.Write(b)
+	outdir := filepath.Join(datadir, "_data")
+	if _, err := os.Stat(outdir); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(outdir, os.ModePerm)
+		if err != nil {
+			base.Error.Println(err)
+		}
+	}
+	jsonpath := filepath.Join(outdir, outfile+".json")
 	err = os.WriteFile(jsonpath, b, 0666)
 	if err != nil {
 		base.Error.Fatal(err)
 	}
-	//fmt.Printf("Wrote json to: %s\n", jsonpath)
-	cmd := exec.Command("typst", "compile",
+}
+
+func MakePdf(script string, datadir string, stemfile string, typst string) {
+	if typst == "" {
+		typst = "typst"
+	}
+	outdir := filepath.Join(datadir, "_pdf")
+	if _, err := os.Stat(outdir); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(outdir, os.ModePerm)
+		if err != nil {
+			base.Error.Fatalln(err)
+		}
+	}
+	outpath := filepath.Join(outdir, stemfile+".pdf")
+	//TODO: The output file path should somehow reflect the .typ script.
+	//"testx01_teachers.json"
+	//"print_timetable.typ"
+
+	cmd := exec.Command(typst, "compile",
 		"--root", datadir,
-		"--input", "ifile="+filepath.Join("..", jsonfile),
-		filepath.Join(datadir, "resources", "print_timetable.typ"),
+		"--input", "ifile="+filepath.Join("/_data", stemfile+".json"),
+		filepath.Join(datadir, "scripts", script),
 		outpath)
 	//fmt.Printf(" ::: %s\n", cmd.String())
 	output, err := cmd.CombinedOutput()

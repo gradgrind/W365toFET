@@ -2,13 +2,11 @@ package main
 
 import (
 	"W365toFET/base"
-	"W365toFET/fet"
 	"W365toFET/ttbase"
 	"W365toFET/ttprint"
 	"W365toFET/w365tt"
 	"flag"
 	"log"
-	"os"
 	"path/filepath"
 	"strings"
 )
@@ -21,7 +19,7 @@ func main() {
 	//var svar string
 	//flag.StringVar(&svar, "svar", "bar", "a string var")
 
-	printflag := flag.Bool("p", false, "print timetables")
+	teachers := flag.Bool("t", false, "Print individual teacher tables")
 
 	flag.Parse()
 
@@ -53,42 +51,13 @@ func main() {
 	db.PrepareDb()
 	ttinfo := ttbase.MakeTtInfo(db)
 
-	if *printflag {
-		datadir := filepath.Join(filepath.Dir(abspath), "data")
-		ttprint.PrintTimetables(ttinfo, datadir, stempath)
-		base.Message.Println("OK")
-		return
-	}
+	datadir := filepath.Join(filepath.Dir(abspath), "typst_files")
+	stemfile := filepath.Base(stempath)
+	ttprint.GenTypstData(ttinfo, datadir, stemfile)
 
-	// ********** Build the fet file **********
-
-	xmlitem, lessonIdMap := fet.MakeFetFile(ttinfo)
-
-	// Write FET file
-	fetfile := stempath + ".fet"
-	f, err := os.Create(fetfile)
-	if err != nil {
-		base.Bug.Fatalf("Couldn't open output file: %s\n", fetfile)
+	//TODO option to pass in typst path
+	if *teachers {
+		ttprint.MakePdf("print_timetable.typ", datadir, stemfile+"_teachers", "")
 	}
-	defer f.Close()
-	_, err = f.WriteString(xmlitem)
-	if err != nil {
-		base.Bug.Fatalf("Couldn't write fet output to: %s\n", fetfile)
-	}
-	base.Message.Printf("FET file written to: %s\n", fetfile)
-
-	// Write Id-map file.
-	mapfile := stempath + ".map"
-	fm, err := os.Create(mapfile)
-	if err != nil {
-		base.Bug.Fatalf("Couldn't open output file: %s\n", mapfile)
-	}
-	defer fm.Close()
-	_, err = fm.WriteString(lessonIdMap)
-	if err != nil {
-		base.Bug.Fatalf("Couldn't write fet output to: %s\n", mapfile)
-	}
-	base.Message.Printf("Id-map written to: %s\n", mapfile)
-
 	base.Message.Println("OK")
 }
