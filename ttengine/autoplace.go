@@ -53,6 +53,8 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 	slices.Reverse(failed)
 	l0 := len(failed)
 	var pending []ttbase.ActivityIndex
+	added := map[ttbase.ActivityIndex]int{}
+	count := 0
 	for {
 		l := len(failed) - 1
 		if l < 0 {
@@ -104,14 +106,46 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 
 		//fmt.Printf("%s\n", ttinfo.View(a.CourseInfo))
 
-		slot := poss[rand.IntN(len(poss))]
+		slotix0 := rand.IntN(len(poss))
 
-		//fmt.Printf(" ? Slot: %d\n", slot)
+		//fmt.Printf(" ? Slot: %d\n", slot0)
 
+		slotix := slotix0
+		var slot int
+		for {
+			slot = poss[slotix]
+			for _, aixx := range ttinfo.FindClashes(aix, slot) {
+				if added[aixx] > 0 {
+					goto next
+				}
+			}
+			break
+		next:
+			slotix++
+			if slotix == len(poss) {
+				slotix = 0
+			}
+			if slotix == slotix0 {
+				slotix = -1
+				break
+			}
+		}
+		if slotix < 0 {
+			//TODO
+			fmt.Printf(" ??? Trouble placing %d: %d\n", aix, added[aix])
+			//fmt.Printf("   --- Added %+v\n", added)
+			//fmt.Printf("   --- Pending %+v\n", pending)
+			//return
+		}
 		for _, aixx := range ttinfo.FindClashes(aix, slot) {
 			//fmt.Printf("   --- Remove %d\n", aixx)
 			ttinfo.UnplaceActivity(aixx)
 			pending = append(pending, aixx)
+			if len(pending) == 30 {
+				//fmt.Printf("   --- Added %+v\n", added)
+				//fmt.Printf("   --- Pending %+v\n", pending)
+				//				return
+			}
 		}
 
 		//TODO--- Just testing
@@ -119,6 +153,11 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 			base.Bug.Fatalf("Clashes removed but still failed: %d\n", aix)
 		}
 		ttinfo.PlaceActivity(aix, slot)
+		added[aix]++
+		count++
+		if count == 200 {
+			break
+		}
 	}
 }
 
