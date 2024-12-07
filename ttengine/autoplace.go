@@ -55,7 +55,7 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 	fmt.Printf("Remaining: %d\n", l0)
 	var pending []ttbase.ActivityIndex
 	added := make(map[ttbase.ActivityIndex]int64, len(ttinfo.Activities))
-	var delta int64 = 8 // This might be a reasonable value?
+	var delta int64 = 7 // This might be a reasonable value?
 	var count int64 = delta
 	for {
 		l := len(failed) - 1
