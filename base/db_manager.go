@@ -151,6 +151,10 @@ func (db *DbTopLevel) PrepareDb() {
 
 	// Expand Group information
 	for _, c := range db.Classes {
+		if c.ClassGroup == "" {
+			// Not a real class
+			continue
+		}
 		db.Elements[c.ClassGroup].(*Group).Class = c.Id // Tag is empty.
 		for _, d := range c.Divisions {
 			for _, gref := range d.Groups {
