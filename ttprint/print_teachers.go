@@ -107,8 +107,6 @@ func genTypstTeacherData(
 					gstrings := ttinfo.SortList(glist)
 					tstrings := ttinfo.SortList(tlist)
 					rstrings := ttinfo.SortList(rlist)
-					//TODO: Rather pass lists and let the Typst template
-					// decide how to join or shorten them?
 					tile := Tile{
 						Day:      l.Day,
 						Hour:     l.Hour,
@@ -151,8 +149,6 @@ func genTypstTeacherData(
 						}
 					}
 					tstrings := ttinfo.SortList(tlist)
-					//TODO: Rather pass lists and let the Typst template
-					// decide how to join or shorten them?
 					tile := Tile{
 						Day:      l.Day,
 						Hour:     l.Hour,

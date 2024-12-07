@@ -35,7 +35,7 @@ func TestPrint(t *testing.T) {
 		db.PrepareDb()
 		ttinfo := ttbase.MakeTtInfo(db)
 
-		//TODO: Do I want to disable this (to prevent testing of placements)?
+		// Disabling this will prevent testing of placements.
 		// Note that times loaded from the activities.xml file are not checked
 		// anyway!
 		ttinfo.PrepareCoreData()

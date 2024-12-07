@@ -116,9 +116,6 @@ func genTypstClassData(
 
 					for _, chip := range chips {
 						gstrings := append(chip.Groups, chip.ExtraGroups...)
-
-						//TODO: Rather pass lists and let the Typst template
-						// decide how to join or shorten them?
 						tile := Tile{
 							Day:      l.Day,
 							Hour:     l.Hour,
@@ -160,9 +157,6 @@ func genTypstClassData(
 
 					for _, chip := range chips {
 						gstrings := append(chip.Groups, chip.ExtraGroups...)
-
-						//TODO: Rather pass lists and let the Typst template
-						// decide how to join or shorten them?
 						tile := Tile{
 							Day:      l.Day,
 							Hour:     l.Hour,
