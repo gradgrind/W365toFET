@@ -58,6 +58,7 @@ func Test2JSON(t *testing.T) {
 func toFET(db *base.DbTopLevel, fetpath string) {
 	db.PrepareDb()
 	ttinfo := ttbase.MakeTtInfo(db)
+	ttinfo.PrepareCoreData()
 
 	// ********** Build the fet file **********
 	xmlitem, lessonIdMap := fet.MakeFetFile(ttinfo)

@@ -42,6 +42,7 @@ func TestTtBase(t *testing.T) {
 		}
 
 		ttinfo := MakeTtInfo(cdata.Db())
+		ttinfo.PrepareCoreData()
 		ttinfo.PrintAtomicGroups()
 
 		/*

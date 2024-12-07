@@ -105,16 +105,10 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	// Get "atomic" groups
 	ttinfo.makeAtomicGroups()
 
-	ttinfo.prepareCoreData()
-
-	// The constraint "preprocessing" needs the Activities, so it must be
-	// after prepareCoreData().
-	ttinfo.processConstraints()
-
 	return ttinfo
 }
 
-func (ttinfo *TtInfo) prepareCoreData() {
+func (ttinfo *TtInfo) PrepareCoreData() {
 	db := ttinfo.Db
 	ndays := len(db.Days)
 	nhours := len(db.Hours)
@@ -191,6 +185,10 @@ func (ttinfo *TtInfo) prepareCoreData() {
 
 	// Add the remaining Activity information
 	ttinfo.addActivityInfo(t2tt, r2tt, g2ags)
+
+	// The constraint "preprocessing" needs the Activity info, so it must be
+	// placed here.
+	ttinfo.processConstraints()
 }
 
 func (ttinfo *TtInfo) orderResources() {

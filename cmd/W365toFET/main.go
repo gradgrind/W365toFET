@@ -4,7 +4,6 @@ import (
 	"W365toFET/base"
 	"W365toFET/fet"
 	"W365toFET/ttbase"
-	"W365toFET/ttprint"
 	"W365toFET/w365tt"
 	"flag"
 	"log"
@@ -20,8 +19,6 @@ func main() {
 	//forkPtr := flag.Bool("fork", false, "a bool")
 	//var svar string
 	//flag.StringVar(&svar, "svar", "bar", "a string var")
-
-	printflag := flag.Bool("p", false, "print timetables")
 
 	flag.Parse()
 
@@ -52,13 +49,7 @@ func main() {
 	w365tt.LoadJSON(db, abspath)
 	db.PrepareDb()
 	ttinfo := ttbase.MakeTtInfo(db)
-
-	if *printflag {
-		datadir := filepath.Join(filepath.Dir(abspath), "data")
-		ttprint.PrintTimetables(ttinfo, datadir, stempath)
-		base.Message.Println("OK")
-		return
-	}
+	ttinfo.PrepareCoreData()
 
 	// ********** Build the fet file **********
 

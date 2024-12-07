@@ -5,7 +5,6 @@ import (
 	"W365toFET/fet"
 	"W365toFET/ttbase"
 	"bufio"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,7 +20,7 @@ var inputfiles = []string{
 
 func TestPrint(t *testing.T) {
 	base.OpenLog("")
-	datadir, err := filepath.Abs("../data/")
+	datadir, err := filepath.Abs("../typst_files/")
 	if err != nil {
 		base.Error.Fatal(err)
 	}
@@ -35,6 +34,12 @@ func TestPrint(t *testing.T) {
 		db := base.LoadDb(f)
 		db.PrepareDb()
 		ttinfo := ttbase.MakeTtInfo(db)
+
+		// Disabling this will prevent testing of placements.
+		// Note that times loaded from the activities.xml file are not checked
+		// anyway!
+		ttinfo.PrepareCoreData()
+
 		stempath := strings.TrimSuffix(f, filepath.Ext(f))
 		stempath = strings.TrimSuffix(stempath, "_db")
 		doPrinting(ttinfo, datadir, stempath)
@@ -67,18 +72,16 @@ func doPrinting(ttinfo *ttbase.TtInfo, datadir string, stempath string) {
 	}
 	plan_name := "Test Plan"
 
-	outdir := filepath.Join(filepath.Dir(stempath), "_pdf")
-	if _, err := os.Stat(outdir); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(outdir, os.ModePerm)
-		if err != nil {
-			base.Error.Println(err)
-		}
+	stemfile := filepath.Base(stempath)
+	flags := map[string]bool{
+		"WithTimes":  true,
+		"WithBreaks": true,
 	}
-	outpath := filepath.Join(outdir, filepath.Base(stempath))
-	PrintClassTimetables(
-		ttinfo, plan_name, datadir, outpath+"_Klassen.pdf")
-	PrintTeacherTimetables(
-		ttinfo, plan_name, datadir, outpath+"_Lehrer.pdf")
+	GenTypstData(ttinfo, datadir, stemfile, plan_name, flags)
+
+	typst := "typst"
+	MakePdf("print_timetable.typ", datadir, stemfile+"_teachers", typst)
+	MakePdf("print_timetable.typ", datadir, stemfile+"_classes", typst)
 
 	/*
 		PrintRoomTimetables(lessons, plan_name, datadir,

@@ -8,11 +8,12 @@ import (
 	"strings"
 )
 
-func PrintClassTimetables(
+func genTypstClassData(
 	ttinfo *ttbase.TtInfo,
 	plan_name string,
 	datadir string,
-	outpath string, // full path to output pdf
+	stemfile string, // basic name part of source file
+	flags map[string]bool,
 ) {
 	db := ttinfo.Db
 	pages := [][]any{}
@@ -115,9 +116,6 @@ func PrintClassTimetables(
 
 					for _, chip := range chips {
 						gstrings := append(chip.Groups, chip.ExtraGroups...)
-
-						//TODO: Rather pass lists and let the Typst template
-						// decide how to join or shorten them?
 						tile := Tile{
 							Day:      l.Day,
 							Hour:     l.Hour,
@@ -159,9 +157,6 @@ func PrintClassTimetables(
 
 					for _, chip := range chips {
 						gstrings := append(chip.Groups, chip.ExtraGroups...)
-
-						//TODO: Rather pass lists and let the Typst template
-						// decide how to join or shorten them?
 						tile := Tile{
 							Day:      l.Day,
 							Hour:     l.Hour,
@@ -206,12 +201,11 @@ func PrintClassTimetables(
 		})
 	}
 	info := map[string]any{
-		"School": db.Info.Institution,
-		"Days":   dlist,
-		"Hours":  hlist,
-		//TODO: How to (de)activate thes?
-		"WithTimes":  true,
-		"WithBreaks": true,
+		"School":     db.Info.Institution,
+		"Days":       dlist,
+		"Hours":      hlist,
+		"WithTimes":  flags["WithTimes"],
+		"WithBreaks": flags["WithBreaks"],
 	}
 	tt := Timetable{
 		Title: "Stundenpläne der Klassen",
@@ -219,5 +213,5 @@ func PrintClassTimetables(
 		Plan:  plan_name,
 		Pages: pages,
 	}
-	makePdf(tt, datadir, outpath)
+	makeTypstJson(tt, datadir, stemfile+"_classes")
 }

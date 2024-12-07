@@ -37,42 +37,52 @@ type ttHour struct {
 	End   string
 }
 
-func PrintTimetables(
+func GenTypstData(
 	ttinfo *ttbase.TtInfo,
 	datadir string,
-	stempath string,
+	stemfile string,
+	plan_name string,
+	flags map[string]bool,
 ) {
-	outdir := filepath.Join(filepath.Dir(stempath), "_pdf")
-	if _, err := os.Stat(outdir); errors.Is(err, os.ErrNotExist) {
-		err := os.Mkdir(outdir, os.ModePerm)
-		if err != nil {
-			base.Error.Println(err)
-		}
-	}
-	outpath := filepath.Join(outdir, filepath.Base(stempath))
-	PrintClassTimetables(
-		ttinfo, "", datadir, outpath+"_Klassen.pdf")
-	PrintTeacherTimetables(
-		ttinfo, "", datadir, outpath+"_Lehrer.pdf")
+	genTypstClassData(ttinfo, plan_name, datadir, stemfile, flags)
+	genTypstTeacherData(ttinfo, plan_name, datadir, stemfile, flags)
 }
 
-func makePdf(tt Timetable, datadir string, outpath string) {
+func makeTypstJson(tt Timetable, datadir string, outfile string) {
 	b, err := json.MarshalIndent(tt, "", "  ")
 	if err != nil {
 		base.Error.Fatal(err)
 	}
-	//os.Stdout.Write(b)
-	jsonfile := filepath.Join("_out", "tmp.json")
-	jsonpath := filepath.Join(datadir, jsonfile)
+	// os.Stdout.Write(b)
+	outdir := filepath.Join(datadir, "_data")
+	if _, err := os.Stat(outdir); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(outdir, os.ModePerm)
+		if err != nil {
+			base.Error.Fatal(err)
+		}
+	}
+	jsonpath := filepath.Join(outdir, outfile+".json")
 	err = os.WriteFile(jsonpath, b, 0666)
 	if err != nil {
 		base.Error.Fatal(err)
 	}
-	//fmt.Printf("Wrote json to: %s\n", jsonpath)
-	cmd := exec.Command("typst", "compile",
+	base.Message.Printf("Wrote: %s\n", jsonpath)
+}
+
+func MakePdf(script string, datadir string, stemfile string, typst string) {
+	outdir := filepath.Join(datadir, "_pdf")
+	if _, err := os.Stat(outdir); errors.Is(err, os.ErrNotExist) {
+		err := os.Mkdir(outdir, os.ModePerm)
+		if err != nil {
+			base.Error.Fatalln(err)
+		}
+	}
+	outpath := filepath.Join(outdir, stemfile+".pdf")
+
+	cmd := exec.Command(typst, "compile",
 		"--root", datadir,
-		"--input", "ifile="+filepath.Join("..", jsonfile),
-		filepath.Join(datadir, "resources", "print_timetable.typ"),
+		"--input", "ifile="+filepath.Join("/_data", stemfile+".json"),
+		filepath.Join(datadir, "scripts", script),
 		outpath)
 	//fmt.Printf(" ::: %s\n", cmd.String())
 	output, err := cmd.CombinedOutput()
