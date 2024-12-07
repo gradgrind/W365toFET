@@ -17,16 +17,16 @@ Ausgegeben wird eine FET-Datei im selben Ordner. Auch eine Logdatei (mit Fehlerm
 Um mehrere ausführbare Dateien zu unterstützen, befinden sich die `main.go`-Dateien in Unterordnern des Ordners `cmd`. Zum Kompilieren (im Hauptordner):
 
 ```
-go build cmd/W365toFET
+go build ./cmd/W365toFET
 ```
 
 Die ausführbaren Dateien können auch in einem anderen (schon existierenden!) Ordner abgelegt werden:
 
 ```
-go build -o bin cmd/W365toFET
+go build -o bin ./cmd/W365toFET
 ```
 
-## Aktueller Stand (06.12.2024)
+## Aktueller Stand (07.12.2024)
 
 Bis auf die „Constraint“-Elemente werden alle Elemente in `docs/stundenplanschnittstelle.md` in einigermaßen entsprechende FET-Strukturen übertragen.
 
@@ -43,7 +43,7 @@ In dieser Version werden die Daten in eine etwas andere interne Struktur gebrach
 Stundenpläne können jetzt als PDF ausgegeben werden, aktuell die Klassentabellen und die Lehrertabellen. Dafür muss Typst installiert sein. Das Programm W365toTypst erstellt JSON-Dateien, die als Eingabe zu Typst-Skripten dienen. Es kann etwa so kompiliert werden:
 
 ```
-go build -o bin cmd/W365toTypst
+go build -o bin ./cmd/W365toTypst
 ```
 
 Um die Eingabedateien für die Typst-Skripten zu erstellen:
@@ -62,7 +62,17 @@ typst compile --root "path/to/typst_files" --input ifile="/_data/sp001_teachers.
 
 Der Ordner für die PDF-Ausgabe muss schon existieren.
 
-Bei Erfolg wären die Ergebnisse dann im Ordner `path/to/_pdf` zu finden. Fehlermeldungen kann man von `stderr` lesen.
+Bei Erfolg wären die Ergebnisse dann im Ordner `path/to/typst_files/_pdf` zu finden. Fehlermeldungen kann man von `stderr` lesen.
 
+Bei Angabe entsprechender Kommandozeilenoptionen können auch die PDF-Dateien automatisch erstellt werden.
 
-typst compile --root "/home/user/Development/github/W365toFET/_testdata1/typst_files" --input ifile="/_data/testx01_teachers.json" "/home/user/Development/github/W365toFET/_testdata1/typst_files/scripts/print_timetable.typ" "/home/user/Development/github/W365toFET/_testdata1/typst_files/_pdf/testx01_teachers.pdf"
+## Kommandozeilenoptionen
+
+| Option | Bedeutung |
+| :--- | :--- |
+| -C | Erstelle PDF für Stundenpläne der Klassen |
+| -T | Erstelle PDF für Stundenpläne der Lehrer |
+| -nb | Vereinfachte Pläne: Pausen nicht darstellen |
+| -nt | Vereinfachte Pläne: Stundenzeiten nicht zeigen |
+| -x | Platzierungen nicht auf Gültigkeit kontrollieren |
+| -typst=...| Typst-Befehl (Pfad) angeben |

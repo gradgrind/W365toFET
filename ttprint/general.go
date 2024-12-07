@@ -58,7 +58,7 @@ func makeTypstJson(tt Timetable, datadir string, outfile string) {
 	if _, err := os.Stat(outdir); errors.Is(err, os.ErrNotExist) {
 		err := os.Mkdir(outdir, os.ModePerm)
 		if err != nil {
-			base.Error.Println(err)
+			base.Error.Fatal(err)
 		}
 	}
 	jsonpath := filepath.Join(outdir, outfile+".json")
