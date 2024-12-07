@@ -43,6 +43,7 @@ func TestTtEngine(t *testing.T) {
 		db.PrepareDb()
 		ttbase.MakeTtInfo(db)
 		ttinfo := ttbase.MakeTtInfo(db)
+		ttinfo.PrepareCoreData()
 
 		alist := CollectCourseLessons(ttinfo)
 		//fmt.Printf("??? %+v\n", alist)

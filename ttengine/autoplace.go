@@ -54,50 +54,21 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 	l0 := len(failed)
 	fmt.Printf("Remaining: %d\n", l0)
 	var pending []ttbase.ActivityIndex
-	added := map[ttbase.ActivityIndex]int{}
-	count := 0
+	added := make(map[ttbase.ActivityIndex]int64, len(ttinfo.Activities))
+	var delta int64 = 8 // This might be a reasonable value?
+	var count int64 = delta
 	for {
 		l := len(failed) - 1
 		if l < 0 {
 			if len(pending) == 0 {
+				fmt.Printf("========= DONE (%d)\n", count-delta)
 				return
 			} else {
-
-				/*-- TODO: Under certain circumstances pick a particular
-				// activity to "unplace"? This seems ineffective!
-				if rand.IntN(100) < 10 {
-					aixmap := map[ttbase.ActivityIndex]int{}
-					for _, aix := range pending {
-						for _, slot := range possibleSlots(ttinfo, aix) {
-							for _, aixx := range ttinfo.FindClashes(aix, slot) {
-								aixmap[aixx]++
-							}
-						}
-					}
-					aix0 := 0
-					nc := 0
-					for aix, n := range aixmap {
-						if n > nc {
-							nc = n
-							aix0 = aix
-						}
-					}
-					ttinfo.UnplaceActivity(aix0)
-					failed = []ttbase.ActivityIndex{aix0}
-					failed = append(failed, pending...)
-				} else {
-					failed = pending
-				}
-				*/
-
 				failed = pending
-
-				//
-
 				l = len(failed) - 1
-				fmt.Printf("Remaining: %d\n", l+1)
+				//fmt.Printf("Remaining: %d\n", l+1)
 				if l < l0 {
-					fmt.Printf(" *!!* Remaining: %d\n", l0)
+					fmt.Printf(" *!!* Remaining: %d (%d)\n", l0, count-delta)
 					l0 = l
 				}
 				pending = nil
@@ -122,17 +93,23 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 		var sclist []slotClashes
 		for _, slot := range poss {
 			clashes := ttinfo.FindClashes(aix, slot)
+			for _, clash := range clashes {
+				if count-added[clash] < delta {
+					goto skip
+				}
+			}
 			if len(clashes) < ncmin {
 				ncmin = len(clashes)
 				sclist = []slotClashes{{slot, clashes}}
 			} else if len(clashes) == ncmin {
 				sclist = append(sclist, slotClashes{slot, clashes})
 			}
+		skip:
 		}
 		scn := len(sclist)
 		//fmt.Printf("   *** Clashes for %d: %d (%d)\n", aix, ncmin, scn)
 		if scn == 0 {
-			fmt.Printf("!!!!! Couldn't place %d\n", aix)
+			fmt.Printf("!!!!! Couldn't place %d (%d)\n", aix, count-delta)
 			return
 		}
 
@@ -142,52 +119,11 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 		}
 		sc := sclist[i]
 
-		/*
-			//fmt.Printf("%s\n", ttinfo.View(a.CourseInfo))
-
-			slotix0 := rand.IntN(len(poss))
-
-			//fmt.Printf(" ? Slot: %d\n", slot0)
-
-			slotix := slotix0
-			var slot int
-			for {
-				slot = poss[slotix]
-				for _, aixx := range ttinfo.FindClashes(aix, slot) {
-					if added[aixx] > 0 {
-						goto next
-					}
-				}
-				break
-			next:
-				slotix++
-				if slotix == len(poss) {
-					slotix = 0
-				}
-				if slotix == slotix0 {
-					slotix = -1
-					break
-				}
-			}
-			if slotix < 0 {
-				//TODO
-				fmt.Printf(" ??? Trouble placing %d: %d\n", aix, added[aix])
-				//fmt.Printf("   --- Added %+v\n", added)
-				//fmt.Printf("   --- Pending %+v\n", pending)
-				//return
-			}
-		*/
-
 		//for _, aixx := range ttinfo.FindClashes(aix, slot) {
 		for _, aixx := range sc.clashes {
 			//fmt.Printf("   --- Remove %d\n", aixx)
 			ttinfo.UnplaceActivity(aixx)
 			pending = append(pending, aixx)
-			if len(pending) == 30 {
-				//fmt.Printf("   --- Added %+v\n", added)
-				//fmt.Printf("   --- Pending %+v\n", pending)
-				//				return
-			}
 		}
 
 		//TODO--- Just testing
@@ -195,13 +131,13 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 			base.Bug.Fatalf("Clashes removed but still failed: %d\n", aix)
 		}
 		ttinfo.PlaceActivity(aix, sc.slot)
-		added[aix]++
+		added[aix] = count
 		count++
-		if count == 1000 {
+		if count == 1000000 {
 			// Show unplaced lessons
 			for _, aix := range append(failed, pending...) {
 				a := ttinfo.Activities[aix]
-				//cinfo := a.CourseInfo
+				cinfo := a.CourseInfo
 				reslist := []string{}
 				for _, res := range a.Resources {
 					r0 := ttinfo.Resources[res]
@@ -220,7 +156,7 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 						}
 					}
 					{
-						r, ok := r0.(*base.Group)
+						r, ok := r0.(*ttbase.AtomicGroup)
 						if ok {
 							reslist = append(reslist, r.Tag)
 							continue
@@ -228,8 +164,11 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 					}
 					reslist = append(reslist, fmt.Sprintf("??%+v", r0))
 				}
-				//fmt.Printf("$$$ %s (%s) %+v\n",
-				//	ttinfo.View(cinfo), strings.Join(reslist, ","), a)
+				fmt.Printf("\n$$$ %s", ttinfo.View(cinfo))
+				for _, res := range reslist {
+					fmt.Printf("  -- %s\n", res)
+				}
+				fmt.Printf("  ++ %+v\n", a)
 			}
 			break
 		}
