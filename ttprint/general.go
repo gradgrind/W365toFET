@@ -66,6 +66,7 @@ func makeTypstJson(tt Timetable, datadir string, outfile string) {
 	if err != nil {
 		base.Error.Fatal(err)
 	}
+	base.Message.Printf("Wrote: %s\n", jsonpath)
 }
 
 func MakePdf(script string, datadir string, stemfile string, typst string) {
