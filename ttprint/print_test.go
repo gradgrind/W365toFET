@@ -73,10 +73,15 @@ func doPrinting(ttinfo *ttbase.TtInfo, datadir string, stempath string) {
 	plan_name := "Test Plan"
 
 	stemfile := filepath.Base(stempath)
-	GenTypstData(ttinfo, datadir, stemfile, plan_name)
+	flags := map[string]bool{
+		"WithTimes":  true,
+		"WithBreaks": true,
+	}
+	GenTypstData(ttinfo, datadir, stemfile, plan_name, flags)
 
-	MakePdf("print_timetable.typ", datadir, stemfile+"_teachers", "")
-	MakePdf("print_timetable.typ", datadir, stemfile+"_classes", "")
+	typst := "typst"
+	MakePdf("print_timetable.typ", datadir, stemfile+"_teachers", typst)
+	MakePdf("print_timetable.typ", datadir, stemfile+"_classes", typst)
 
 	/*
 		PrintRoomTimetables(lessons, plan_name, datadir,

@@ -13,6 +13,7 @@ func genTypstClassData(
 	plan_name string,
 	datadir string,
 	stemfile string, // basic name part of source file
+	flags map[string]bool,
 ) {
 	db := ttinfo.Db
 	pages := [][]any{}
@@ -206,12 +207,11 @@ func genTypstClassData(
 		})
 	}
 	info := map[string]any{
-		"School": db.Info.Institution,
-		"Days":   dlist,
-		"Hours":  hlist,
-		//TODO: How to (de)activate thes?
-		"WithTimes":  true,
-		"WithBreaks": true,
+		"School":     db.Info.Institution,
+		"Days":       dlist,
+		"Hours":      hlist,
+		"WithTimes":  flags["WithTimes"],
+		"WithBreaks": flags["WithBreaks"],
 	}
 	tt := Timetable{
 		Title: "Stundenpläne der Klassen",

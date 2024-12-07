@@ -42,9 +42,10 @@ func GenTypstData(
 	datadir string,
 	stemfile string,
 	plan_name string,
+	flags map[string]bool,
 ) {
-	genTypstClassData(ttinfo, plan_name, datadir, stemfile)
-	genTypstTeacherData(ttinfo, plan_name, datadir, stemfile)
+	genTypstClassData(ttinfo, plan_name, datadir, stemfile, flags)
+	genTypstTeacherData(ttinfo, plan_name, datadir, stemfile, flags)
 }
 
 func makeTypstJson(tt Timetable, datadir string, outfile string) {
@@ -68,9 +69,6 @@ func makeTypstJson(tt Timetable, datadir string, outfile string) {
 }
 
 func MakePdf(script string, datadir string, stemfile string, typst string) {
-	if typst == "" {
-		typst = "typst"
-	}
 	outdir := filepath.Join(datadir, "_pdf")
 	if _, err := os.Stat(outdir); errors.Is(err, os.ErrNotExist) {
 		err := os.Mkdir(outdir, os.ModePerm)
@@ -79,9 +77,6 @@ func MakePdf(script string, datadir string, stemfile string, typst string) {
 		}
 	}
 	outpath := filepath.Join(outdir, stemfile+".pdf")
-	//TODO: The output file path should somehow reflect the .typ script.
-	//"testx01_teachers.json"
-	//"print_timetable.typ"
 
 	cmd := exec.Command(typst, "compile",
 		"--root", datadir,
