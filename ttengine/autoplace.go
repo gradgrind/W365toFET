@@ -107,30 +107,43 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 		skip:
 		}
 		scn := len(sclist)
+		var slot int
+		var clashes []ttbase.ActivityIndex
 		//fmt.Printf("   *** Clashes for %d: %d (%d)\n", aix, ncmin, scn)
 		if scn == 0 {
-			fmt.Printf("!!!!! Couldn't place %d (%d)\n", aix, count-delta)
-			return
+			n := len(poss)
+			if n == 0 {
+				fmt.Printf("!!!!! Couldn't place %d (%d)\n", aix, count-delta)
+				return
+			}
+			if n == 1 {
+				slot = poss[0]
+			} else {
+				slot = poss[rand.IntN(n)]
+			}
+			clashes = ttinfo.FindClashes(aix, slot)
+		} else {
+			i := 0
+			if scn > 1 {
+				i = rand.IntN(scn)
+			}
+			sc := sclist[i]
+			slot = sc.slot
+			clashes = sc.clashes
 		}
-
-		i := 0
-		if scn > 1 {
-			i = rand.IntN(scn)
-		}
-		sc := sclist[i]
 
 		//for _, aixx := range ttinfo.FindClashes(aix, slot) {
-		for _, aixx := range sc.clashes {
+		for _, aixx := range clashes {
 			//fmt.Printf("   --- Remove %d\n", aixx)
 			ttinfo.UnplaceActivity(aixx)
 			pending = append(pending, aixx)
 		}
 
 		//TODO--- Just testing
-		if !ttinfo.TestPlacement(aix, sc.slot) {
+		if !ttinfo.TestPlacement(aix, slot) {
 			base.Bug.Fatalf("Clashes removed but still failed: %d\n", aix)
 		}
-		ttinfo.PlaceActivity(aix, sc.slot)
+		ttinfo.PlaceActivity(aix, slot)
 		added[aix] = count
 		count++
 		if count == 1000000 {
