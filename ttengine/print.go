@@ -17,7 +17,7 @@ func PrintTT(ttinfo *ttbase.TtInfo, datadir string, name string) {
 			l.Hour = p % ttinfo.NHours
 			//TODO: Rooms will still need some thought ... how to handle
 			// the choices, etc.
-			// For the moment just incclude the compulsory rooms.
+			// For the moment just include the compulsory rooms.
 			l.Rooms = ttinfo.CourseInfo[l.Course].Room.Rooms
 		}
 	}
