@@ -2,6 +2,7 @@ package ttengine
 
 import (
 	"W365toFET/ttbase"
+	"fmt"
 	"math/rand/v2"
 	"slices"
 )
@@ -10,12 +11,14 @@ import (
 
 // Testing a blanket approach initially – try to minimize gaps in students'
 // timetables and ensure that all get a lunch break.
-func findGapProblems(ttinfo *ttbase.TtInfo) {
+func findGapProblems(ttinfo *ttbase.TtInfo, pmon *placementMonitor,
+) []ttbase.ActivityIndex {
 	ndays := ttinfo.NDays
 	nhours := ttinfo.NHours
 	nslots := ttinfo.SlotsPerWeek
 	ttslots := ttinfo.TtSlots
 	//lunchbreaks := ttinfo.Db.Info.MiddayBreak
+	var unplaced []ttbase.ActivityIndex
 	for _, cl := range ttinfo.Db.Classes {
 		//TODO: This handles the lower classes first, which may be a good
 		// idea, but later classes may never be reached!
@@ -55,28 +58,51 @@ func findGapProblems(ttinfo *ttbase.TtInfo) {
 				if ng != 1 {
 					n = rand.IntN(ng)
 				}
-				slot := gaps[n]
+				n0 := n
+				for {
+					slot := gaps[n]
 
-				//TODO: Try to place one of the aixlasts here. Then return to
-				// the main placement loop.
-				for _, aix := range aixlasts {
-					//TODO: Test for last-lesson-of-day constraint
-					a := ttinfo.Activities[aix]
-					if slices.Contains(a.PossibleSlots, slot) {
-						ttinfo.UnplaceActivity(aix)
-						for _, aixx := range ttinfo.FindClashes(aix, slot) {
-							ttinfo.UnplaceActivity(aixx)
+					//TODO: Try to place one of the aixlasts here. Then return to
+					// the main placement loop.
+					for _, aix := range aixlasts {
+
+						//TODO: Maybe put this stuff in a structure, which can
+						// be passed by pointer?
+						if pmon.check(aix) {
+							continue
 						}
-						//TODO: add removed stuff to pending ... how to do this?
-						// As return value?
-						ttinfo.PlaceActivity(aix, slot)
-						return
+
+						//TODO: Test for last-lesson-of-day constraint
+						a := ttinfo.Activities[aix]
+						if slices.Contains(a.PossibleSlots, slot) {
+							ttinfo.UnplaceActivity(aix)
+							unplaced = ttinfo.FindClashes(aix, slot)
+							for _, aixx := range unplaced {
+								ttinfo.UnplaceActivity(aixx)
+							}
+							//TODO: add removed stuff to pending ... how to do this?
+							// As return value?
+							ttinfo.PlaceActivity(aix, slot)
+							pmon.added[aix] = pmon.count
+							pmon.count++
+							fmt.Printf("Gap Fill: %s aix=%d slot=%d gaps=%d\n",
+								ag.Tag, aix, slot, ng)
+							return unplaced
+						}
+					}
+					//TODO: Special case if last-lesson-of-day activity?
+
+					//TODO: try next slot before skipping this ag?
+					n++
+					if n == ng {
+						n = 0
+					}
+					if n == n0 {
+						break
 					}
 				}
-				//TODO: Special case if last-lesson-of-day activity?
-
-				//TODO: try next slot before skipping this ag?
 			}
 		}
 	}
+	return unplaced
 }

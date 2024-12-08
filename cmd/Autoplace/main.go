@@ -13,7 +13,7 @@ import (
 
 var ifiles = []string{
 	"../testdata/readxml/Demo1.xml",
-	"../testdata/readxml/x01.xml",
+	//"../testdata/readxml/x01.xml",
 }
 
 func main() {

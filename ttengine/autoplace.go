@@ -38,6 +38,16 @@ func CollectCourseLessons(ttinfo *ttbase.TtInfo) []ttbase.ActivityIndex {
 	return alist
 }
 
+type placementMonitor struct {
+	count int64
+	delta int64
+	added []int64
+}
+
+func (pm *placementMonitor) check(aix ttbase.ActivityIndex) bool {
+	return pm.count-pm.added[aix] < pm.delta
+}
+
 //TODO: IMPORTANT! Chack that I am handling (hard) parallel lessons correctly.
 // If possible, only one of a parallel set should be in the list of activities
 // still to be placed. But that might be a bit tricky. This probably needs
@@ -54,25 +64,48 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 	l0 := len(failed)
 	fmt.Printf("Remaining: %d\n", l0)
 	var pending []ttbase.ActivityIndex
-	added := make(map[ttbase.ActivityIndex]int64, len(ttinfo.Activities))
-	var delta int64 = 7 // This might be a reasonable value?
-	var count int64 = delta
+
+	var pmon placementMonitor
+	{
+		var delta int64 = 7 // This might be a reasonable value?
+		pmon = placementMonitor{
+			count: delta,
+			delta: delta,
+			added: make([]int64, len(ttinfo.Activities)),
+		}
+	}
+	//added := make(map[ttbase.ActivityIndex]int64, len(ttinfo.Activities))
+	//var delta int64 = 7 // This might be a reasonable value?
+	//var count int64 = delta
 	for {
 		l := len(failed) - 1
 		if l < 0 {
 			if len(pending) == 0 {
-				fmt.Printf("========= DONE (%d)\n", count-delta)
-				return
-			} else {
-				failed = pending
-				l = len(failed) - 1
-				//fmt.Printf("Remaining: %d\n", l+1)
-				if l < l0 {
-					fmt.Printf(" *!!* Remaining: %d (%d)\n", l0, count-delta)
-					l0 = l
+				for {
+					removed := findGapProblems(ttinfo, &pmon)
+					if len(removed) == 0 {
+						fmt.Printf("========= DONE (%d)\n",
+							pmon.count-pmon.delta)
+						return
+					} else {
+						fmt.Printf("~~~ (%d) removed %+v\n",
+							pmon.count-pmon.delta, removed)
+						if len(removed) != 0 {
+							pending = removed
+							break
+						}
+					}
 				}
-				pending = nil
 			}
+			failed = pending
+			l = len(failed) - 1
+			//fmt.Printf("Remaining: %d\n", l+1)
+			if l < l0 {
+				fmt.Printf(" *!!* Remaining: %d (%d)\n",
+					l0, pmon.count-pmon.delta)
+				l0 = l
+			}
+			pending = nil
 		}
 
 		aix := failed[l]
@@ -94,7 +127,8 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 		for _, slot := range poss {
 			clashes := ttinfo.FindClashes(aix, slot)
 			for _, clash := range clashes {
-				if count-added[clash] < delta {
+				if pmon.check(clash) {
+					//count-added[clash] < delta {
 					goto skip
 				}
 			}
@@ -113,7 +147,8 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 		if scn == 0 {
 			n := len(poss)
 			if n == 0 {
-				fmt.Printf("!!!!! Couldn't place %d (%d)\n", aix, count-delta)
+				fmt.Printf("!!!!! Couldn't place %d (%d)\n",
+					aix, pmon.count-pmon.delta)
 				return
 			}
 			if n == 1 {
@@ -144,9 +179,10 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 			base.Bug.Fatalf("Clashes removed but still failed: %d\n", aix)
 		}
 		ttinfo.PlaceActivity(aix, slot)
-		added[aix] = count
-		count++
-		if count == 1000000 {
+		pmon.added[aix] = pmon.count
+		pmon.count++
+		//if pmon.count >= 400 {
+		if pmon.count >= 1000000 {
 			// Show unplaced lessons
 			for _, aix := range append(failed, pending...) {
 				a := ttinfo.Activities[aix]
