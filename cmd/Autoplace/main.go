@@ -6,7 +6,9 @@ import (
 	"W365toFET/ttbase"
 	"W365toFET/ttengine"
 	"fmt"
+	"path/filepath"
 	"slices"
+	"strings"
 )
 
 var ifiles = []string{
@@ -49,5 +51,14 @@ func main() {
 		//fmt.Printf("??? %+v\n", alist)
 
 		ttengine.PlaceLessons(ttinfo, alist)
+
+		abspath, err := filepath.Abs(fxml)
+		if err != nil {
+			base.Error.Fatal(err)
+		}
+		datadir := filepath.Join(filepath.Dir(abspath), "typst_files/")
+		stempath := strings.TrimSuffix(abspath, filepath.Ext(abspath))
+		name := filepath.Base(stempath)
+		ttengine.PrintTT(ttinfo, datadir, name+"_tmp")
 	}
 }
