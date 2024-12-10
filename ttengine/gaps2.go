@@ -4,25 +4,6 @@ import (
 	"W365toFET/ttbase"
 )
 
-// TODO: Probably need to remember where the real activities end. Though these
-// dummies would have some special feature (CourseInfo == nil?, Lesson == nil?)
-// that would enable them to be identified easily ...
-func DummyActivity(ttinfo *ttbase.TtInfo) *ttbase.Activity {
-	// Index of new Activity:
-	ttlix := len(ttinfo.Activities)
-	ttl := &ttbase.Activity{
-		Index:    ttlix,
-		Duration: 1,
-		//Lesson:     nil,
-		//CourseInfo: nil,
-		//Resources: to be set,
-		//Fixed: true, // for blocking lesson
-		//Placement: to be set
-	}
-	ttinfo.Activities = append(ttinfo.Activities, ttl)
-	return ttl
-}
-
 // Handle gaps and lunch breaks
 
 //TODO: This doesn't work at all. My guess is that individual atomic groups are
@@ -30,7 +11,7 @@ func DummyActivity(ttinfo *ttbase.TtInfo) *ttbase.Activity {
 
 // Testing a blanket approach initially – try to minimize gaps in students'
 // timetables and ensure that all get a lunch break.
-func findGapProblems(ttinfo *ttbase.TtInfo, pmon *placementMonitor,
+func findGapProblems2(ttinfo *ttbase.TtInfo, pmon *placementMonitor,
 ) []ttbase.ActivityIndex {
 	ndays := ttinfo.NDays
 	nhours := ttinfo.NHours
@@ -47,7 +28,10 @@ func findGapProblems(ttinfo *ttbase.TtInfo, pmon *placementMonitor,
 		//TODO: This handles the lower classes first, which may be a good
 		// idea, but later classes may never be reached!
 
-		for _, ag := range ttinfo.AtomicGroups[cl.ClassGroup] {
+		aglist := ttinfo.AtomicGroups[cl.ClassGroup]
+		aggaps := make([]int, len(aglist))
+		for agn, ag := range aglist {
+			aggaps[agn] = 0
 			agix := ag.Index // Resource index
 			for d := 0; d < ndays; d++ {
 			repeatday:
@@ -143,6 +127,7 @@ func findGapProblems(ttinfo *ttbase.TtInfo, pmon *placementMonitor,
 				ttinfo.UnplaceActivity(aixlast)
 				unplaced = append(unplaced, aixlast)
 
+				/* TODO: Not like this ...
 				// Add blockers, but don't encroach on minHours limit.
 				for hlast >= cl.MinLessonsPerDay {
 					b := DummyActivity(ttinfo)
@@ -160,8 +145,8 @@ func findGapProblems(ttinfo *ttbase.TtInfo, pmon *placementMonitor,
 						break
 					}
 				}
+				*/
 				goto nextclass
-
 			} // end of day loop
 
 		} // end of ag loop

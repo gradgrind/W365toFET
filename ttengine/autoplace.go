@@ -84,6 +84,11 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 		if l < 0 {
 			if len(pending) == 0 {
 				for {
+
+					//fmt.Printf("========= DONE (%d)\n",
+					//	pmon.count-pmon.delta)
+					//return
+
 					toplace := findGapProblems(ttinfo, &pmon)
 					if len(toplace) == 0 {
 						fmt.Printf("========= DONE (%d)\n",
@@ -273,4 +278,48 @@ func tryToPlace(ttinfo *ttbase.TtInfo, aix ttbase.ActivityIndex) bool {
 		}
 	}
 	return false
+}
+
+func freeSlots(ttinfo *ttbase.TtInfo, aix ttbase.ActivityIndex) []int {
+	// Get free slots for the given activity
+	a := ttinfo.Activities[aix]
+	var slots []int
+	for _, p := range a.PossibleSlots {
+		if ttinfo.TestPlacement(aix, p) {
+			slots = append(slots, p)
+		}
+	}
+	return slots
+}
+
+// The weights will be constructed for each class, slots within minLessons all
+// being equally high. Later slots can be much less,
+// for example: 10, 10, 10, 10, 5, 4, 3, 2, 1, 1
+func chooseWeightedFreeSlot(weights []int, free []int) int {
+	wlist := make([]int, len(free))
+	w := -1
+	for _, slot := range free {
+		w += weights[slot]
+		wlist = append(wlist, w)
+	}
+	n, _ := slices.BinarySearch(wlist, rand.IntN(w+1))
+	return free[n]
+
+	//TODO--
+
+	/* test
+	wlist = []int{9, 19, 29, 34, 39, 41, 43, 44, 45}
+	collect := map[int]int{}
+	for i := 0; i < 100000000; i++ {
+		w := rand.IntN(45 + 1)
+		n, _ := slices.BinarySearch(weights, w)
+		collect[n]++
+		//fmt.Printf("===== %d: %d\n", w, n)
+	}
+
+	for i := 0; i < len(weights); i++ {
+		fmt.Printf(">>>>> %d: %d\n", i, collect[i])
+	}
+	*/
+
 }
