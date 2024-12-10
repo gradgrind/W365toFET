@@ -9,9 +9,11 @@ import (
 
 // Handle gaps and lunch breaks
 
+// This one didn't really help much at all – no real progress.
+
 // Testing a blanket approach initially – try to minimize gaps in students'
 // timetables and ensure that all get a lunch break.
-func findGapProblems(ttinfo *ttbase.TtInfo, pmon *placementMonitor,
+func findGapProblems1(ttinfo *ttbase.TtInfo, pmon *placementMonitor,
 ) []ttbase.ActivityIndex {
 	ndays := ttinfo.NDays
 	nhours := ttinfo.NHours
@@ -25,8 +27,9 @@ func findGapProblems(ttinfo *ttbase.TtInfo, pmon *placementMonitor,
 
 		for _, ag := range ttinfo.AtomicGroups[cl.ClassGroup] {
 			agix := ag.Index // Resource index
-			var gaps []int
-			var aixlasts []ttbase.ActivityIndex
+		sameag:
+			gaps := []int{}
+			aixlasts := []ttbase.ActivityIndex{}
 			for d := 0; d < ndays; d++ {
 				pending := []int{}
 				aixlast := 0
@@ -53,6 +56,7 @@ func findGapProblems(ttinfo *ttbase.TtInfo, pmon *placementMonitor,
 				}
 			}
 			ng := len(gaps)
+			//fmt.Printf("??? %s: %d\n", ag.Tag, ng)
 			if ng != 0 {
 				n := 0
 				if ng != 1 {
@@ -66,13 +70,13 @@ func findGapProblems(ttinfo *ttbase.TtInfo, pmon *placementMonitor,
 					// the main placement loop.
 					for _, aix := range aixlasts {
 
-						//TODO: Maybe put this stuff in a structure, which can
-						// be passed by pointer?
 						if pmon.check(aix) {
+							// placed only recently
 							continue
 						}
 
 						//TODO: Test for last-lesson-of-day constraint
+
 						a := ttinfo.Activities[aix]
 						if slices.Contains(a.PossibleSlots, slot) {
 							ttinfo.UnplaceActivity(aix)
@@ -86,7 +90,14 @@ func findGapProblems(ttinfo *ttbase.TtInfo, pmon *placementMonitor,
 							pmon.added[aix] = pmon.count
 							pmon.count++
 							fmt.Printf("Gap Fill: %s aix=%d slot=%d gaps=%d\n",
-								ag.Tag, aix, slot, ng)
+								ag.Tag, aix, slot, ng-1)
+							if len(unplaced) == 0 {
+								if ng == 1 {
+									// no more gaps here
+									goto nextag
+								}
+								goto sameag
+							}
 							return unplaced
 						}
 					}
@@ -98,10 +109,13 @@ func findGapProblems(ttinfo *ttbase.TtInfo, pmon *placementMonitor,
 						n = 0
 					}
 					if n == n0 {
+						fmt.Printf("Group %s -- Replacements too new: %d\n",
+							ag.Tag, ng)
 						break
 					}
 				}
 			}
+		nextag:
 		}
 	}
 	return unplaced

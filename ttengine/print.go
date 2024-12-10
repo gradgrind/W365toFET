@@ -9,6 +9,9 @@ func PrintTT(ttinfo *ttbase.TtInfo, datadir string, name string) {
 	for aix := 1; aix < len(ttinfo.Activities); aix++ {
 		a := ttinfo.Activities[aix]
 		l := a.Lesson
+		if l == nil {
+			continue
+		}
 		p := a.Placement
 		if p < 0 {
 			//TODO?

@@ -29,6 +29,8 @@ type TtInfo struct {
 	NDays        int
 	NHours       int
 	SlotsPerWeek int
+	PMStart      int
+	LunchTimes   []int
 	Activities   []*Activity // first entry (index 0) free!
 	Resources    []any       // pointers to Resources
 	TtSlots      []ActivityIndex
@@ -63,7 +65,9 @@ type TtInfo struct {
 
 func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	ttinfo := &TtInfo{
-		Db: db,
+		Db:         db,
+		PMStart:    db.Info.FirstAfternoonHour,
+		LunchTimes: db.Info.MiddayBreak,
 	}
 
 	gatherCourseInfo(ttinfo) // must be before call to filterDivisions
@@ -162,6 +166,10 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 	// Copy the AtomicGroups to the beginning of the Resources slice.
 	i := 0
 	for _, ag := range ags {
+		if ag.Index != i {
+			base.Bug.Fatalf("Atomic group index != resource index:\n"+
+				"  -- %d: %+v\n", i, ag)
+		}
 		ttinfo.Resources[i] = ag
 		//fmt.Printf(" :: %+v\n", ag)
 		i++

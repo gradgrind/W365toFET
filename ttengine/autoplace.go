@@ -45,7 +45,9 @@ type placementMonitor struct {
 }
 
 func (pm *placementMonitor) check(aix ttbase.ActivityIndex) bool {
-	return pm.count-pm.added[aix] < pm.delta
+	// Return true if only fixed or "recently" placed.
+	aixc := pm.added[aix]
+	return aixc < 0 || pm.count-aixc < pm.delta
 }
 
 //TODO: IMPORTANT! Chack that I am handling (hard) parallel lessons correctly.
@@ -82,16 +84,16 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 		if l < 0 {
 			if len(pending) == 0 {
 				for {
-					removed := findGapProblems(ttinfo, &pmon)
-					if len(removed) == 0 {
+					toplace := findGapProblems(ttinfo, &pmon)
+					if len(toplace) == 0 {
 						fmt.Printf("========= DONE (%d)\n",
 							pmon.count-pmon.delta)
 						return
 					} else {
-						fmt.Printf("~~~ (%d) removed %+v\n",
-							pmon.count-pmon.delta, removed)
-						if len(removed) != 0 {
-							pending = removed
+						fmt.Printf("~~~ (%d) toplace %+v\n",
+							pmon.count-pmon.delta, toplace)
+						if len(toplace) != 0 {
+							pending = toplace
 							break
 						}
 					}
@@ -127,8 +129,9 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 		for _, slot := range poss {
 			clashes := ttinfo.FindClashes(aix, slot)
 			for _, clash := range clashes {
+
 				if pmon.check(clash) {
-					//count-added[clash] < delta {
+					// fixed or count-added[clash] < delta {
 					goto skip
 				}
 			}
@@ -147,8 +150,8 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 		if scn == 0 {
 			n := len(poss)
 			if n == 0 {
-				fmt.Printf("!!!!! Couldn't place %d (%d)\n",
-					aix, pmon.count-pmon.delta)
+				fmt.Printf("!!!!! Couldn't place %d (%d)\n  -- %+v\n",
+					aix, pmon.count-pmon.delta, ttinfo.Activities[aix])
 				return
 			}
 			if n == 1 {
