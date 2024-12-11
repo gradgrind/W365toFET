@@ -5,9 +5,10 @@ import (
 	"W365toFET/ttbase"
 	"cmp"
 	"fmt"
-	"math/rand/v2"
 	"slices"
 )
+
+const MAX_STEPS = 1000
 
 func CollectCourseLessons(ttinfo *ttbase.TtInfo) []ttbase.ActivityIndex {
 	type wlix struct {
@@ -38,27 +39,36 @@ func CollectCourseLessons(ttinfo *ttbase.TtInfo) []ttbase.ActivityIndex {
 	return alist
 }
 
-type placementMonitor struct {
-	count int64
-	delta int64
-	added []int64
-}
-
-func (pm *placementMonitor) check(aix ttbase.ActivityIndex) bool {
-	// Return true if only fixed or "recently" placed.
-	aixc := pm.added[aix]
-	return aixc < 0 || pm.count-aixc < pm.delta
-}
-
 //TODO: IMPORTANT! Chack that I am handling (hard) parallel lessons correctly.
 // If possible, only one of a parallel set should be in the list of activities
 // still to be placed. But that might be a bit tricky. This probably needs
 // some thought ...
 
 func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
+	preferEarlier := buildEarlyHourWeights(ttinfo.NDays, ttinfo.NHours, 4)
+	preferLater := buildLateHourWeights(ttinfo.NDays, ttinfo.NHours, 5)
+	resourceSlotActivityMap := makeResourceSlotActivityMap(ttinfo)
+
+	var pmon placementMonitor
+	{
+		var delta int64 = 7 // This might be a reasonable value?
+		pmon = placementMonitor{
+			count:                   delta,
+			delta:                   delta,
+			added:                   make([]int64, len(ttinfo.Activities)),
+			preferEarlier:           preferEarlier,
+			preferLater:             preferLater,
+			resourceSlotActivityMap: resourceSlotActivityMap,
+		}
+	}
 	failed := []ttbase.ActivityIndex{}
 	for _, aix := range alist {
-		if !tryToPlace(ttinfo, aix) {
+		//
+		//if !tryToPlace(ttinfo, aix) {
+		//	failed = append(failed, aix)
+		//}
+		//
+		if !placeFree(ttinfo, preferEarlier, aix) {
 			failed = append(failed, aix)
 		}
 	}
@@ -67,27 +77,17 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 	fmt.Printf("Remaining: %d\n", l0)
 	var pending []ttbase.ActivityIndex
 
-	var pmon placementMonitor
-	{
-		var delta int64 = 7 // This might be a reasonable value?
-		pmon = placementMonitor{
-			count: delta,
-			delta: delta,
-			added: make([]int64, len(ttinfo.Activities)),
-		}
-	}
-	//added := make(map[ttbase.ActivityIndex]int64, len(ttinfo.Activities))
-	//var delta int64 = 7 // This might be a reasonable value?
-	//var count int64 = delta
 	for {
 		l := len(failed) - 1
 		if l < 0 {
 			if len(pending) == 0 {
 				for {
 
+					//
 					//fmt.Printf("========= DONE (%d)\n",
 					//	pmon.count-pmon.delta)
 					//return
+					//
 
 					toplace := findGapProblems(ttinfo, &pmon)
 					if len(toplace) == 0 {
@@ -95,8 +95,8 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 							pmon.count-pmon.delta)
 						return
 					} else {
-						fmt.Printf("~~~ (%d) toplace %+v\n",
-							pmon.count-pmon.delta, toplace)
+						//fmt.Printf("~~~ (%d) toplace %+v\n",
+						//	pmon.count-pmon.delta, toplace)
 						if len(toplace) != 0 {
 							pending = toplace
 							break
@@ -130,16 +130,20 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 			slot    int
 			clashes []ttbase.ActivityIndex
 		}
-		var sclist []slotClashes
+		sclist := []slotClashes{}
+	repeat:
 		for _, slot := range poss {
 			clashes := ttinfo.FindClashes(aix, slot)
 			for _, clash := range clashes {
 
 				if pmon.check(clash) {
-					// fixed or count-added[clash] < delta {
+					// fixed or count-added[clash] < delta
+					// Don't consider this slot because a clashing activity
+					// cannot or should not be removed.
 					goto skip
 				}
 			}
+			// Add to list for this number of clashing activities
 			if len(clashes) < ncmin {
 				ncmin = len(clashes)
 				sclist = []slotClashes{{slot, clashes}}
@@ -159,38 +163,93 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 					aix, pmon.count-pmon.delta, ttinfo.Activities[aix])
 				return
 			}
+
+			//TODO???
+			pmon.count++
+			goto repeat
+			//
+
 			if n == 1 {
 				slot = poss[0]
 			} else {
-				slot = poss[rand.IntN(n)]
+				//
+				//slot = poss[rand.IntN(n)]
+				//
+				slot = poss[chooseWeightedSlot(preferEarlier, poss)]
 			}
 			clashes = ttinfo.FindClashes(aix, slot)
 		} else {
-			i := 0
+			//
+			//i := 0
+			//
 			if scn > 1 {
-				i = rand.IntN(scn)
+				//
+				//i = rand.IntN(scn)
+				//
+				slots := []int{}
+				for _, sc := range sclist {
+					slots = append(slots, sc.slot)
+				}
+				i := chooseWeightedSlot(preferEarlier, slots)
+				slot = slots[i]
+				clashes = sclist[i].clashes
+			} else {
+				sc := sclist[0]
+				slot = sc.slot
+				clashes = sc.clashes
 			}
-			sc := sclist[i]
-			slot = sc.slot
-			clashes = sc.clashes
+			//
+			//sc := sclist[i]
+			//slot = sc.slot
+			//clashes = sc.clashes
+			//
 		}
 
+		integrityCheck(ttinfo)
+
 		//for _, aixx := range ttinfo.FindClashes(aix, slot) {
+		if len(clashes) != 0 {
+			//fmt.Println("*********** REMOVE ***********")
+		}
 		for _, aixx := range clashes {
 			//fmt.Printf("   --- Remove %d\n", aixx)
 			ttinfo.UnplaceActivity(aixx)
 			pending = append(pending, aixx)
 		}
 
-		//TODO--- Just testing
+		//TODO--- Just for testing, but useful there!
 		if !ttinfo.TestPlacement(aix, slot) {
+			a := ttinfo.Activities[aix]
+			fmt.Printf("!!! %d: %+v\n", slot, a)
+			fmt.Printf("  ++ %s\n", ttinfo.View(a.CourseInfo))
+
+			//--
+
+			day := slot / ttinfo.NHours
+			for _, addix := range a.DifferentDays {
+				add := ttinfo.Activities[addix]
+				if add.Placement >= 0 && add.Placement/ttinfo.NHours == day {
+					fmt.Printf("  --dd %+v\n", add)
+				}
+			}
+			for _, rix := range a.Resources {
+				i := rix*ttinfo.SlotsPerWeek + slot
+				for ix := 0; ix < a.Duration; ix++ {
+					if ttinfo.TtSlots[i+ix] != 0 {
+						fmt.Printf("  --res %d %d\n", rix, ttinfo.TtSlots[i+ix])
+					}
+				}
+			}
+
+			//
+
 			base.Bug.Fatalf("Clashes removed but still failed: %d\n", aix)
 		}
 		ttinfo.PlaceActivity(aix, slot)
 		pmon.added[aix] = pmon.count
 		pmon.count++
 		//if pmon.count >= 400 {
-		if pmon.count >= 1000000 {
+		if pmon.count >= MAX_STEPS {
 			// Show unplaced lessons
 			for _, aix := range append(failed, pending...) {
 				a := ttinfo.Activities[aix]
@@ -230,96 +289,4 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 			break
 		}
 	}
-}
-
-func possibleSlots(
-	ttinfo *ttbase.TtInfo,
-	aix ttbase.ActivityIndex,
-) []int {
-	// Get possible slots for the given activity
-	a := ttinfo.Activities[aix]
-	poss := []int{}
-	for _, slot := range a.PossibleSlots {
-		day := slot / ttinfo.NHours
-		for _, addix := range a.DifferentDays {
-			add := ttinfo.Activities[addix]
-			if add.Placement >= 0 && add.Placement/ttinfo.NHours == day {
-				//TODO: Maybe it's OK if the course is different?
-				// Could try accepting these later, if there are
-				// otherwise no possible slots?
-				goto fail
-			}
-		}
-		poss = append(poss, slot)
-	fail:
-	}
-	return poss
-}
-
-func tryToPlace(ttinfo *ttbase.TtInfo, aix ttbase.ActivityIndex) bool {
-	a := ttinfo.Activities[aix]
-	n := len(a.PossibleSlots)
-	// Pick one at random
-	i0 := rand.IntN(n)
-	// Test all possible slots, starting at this index, until a free one
-	// is found.
-	i := i0
-	for {
-		if ttinfo.TestPlacement(aix, a.PossibleSlots[i]) {
-			ttinfo.PlaceActivity(aix, a.PossibleSlots[i])
-			return true
-		}
-		i++
-		if i == n {
-			i = 0
-		}
-		if i == i0 {
-			break
-		}
-	}
-	return false
-}
-
-func freeSlots(ttinfo *ttbase.TtInfo, aix ttbase.ActivityIndex) []int {
-	// Get free slots for the given activity
-	a := ttinfo.Activities[aix]
-	var slots []int
-	for _, p := range a.PossibleSlots {
-		if ttinfo.TestPlacement(aix, p) {
-			slots = append(slots, p)
-		}
-	}
-	return slots
-}
-
-// The weights will be constructed for each class, slots within minLessons all
-// being equally high. Later slots can be much less,
-// for example: 10, 10, 10, 10, 5, 4, 3, 2, 1, 1
-func chooseWeightedFreeSlot(weights []int, free []int) int {
-	wlist := make([]int, len(free))
-	w := -1
-	for _, slot := range free {
-		w += weights[slot]
-		wlist = append(wlist, w)
-	}
-	n, _ := slices.BinarySearch(wlist, rand.IntN(w+1))
-	return free[n]
-
-	//TODO--
-
-	/* test
-	wlist = []int{9, 19, 29, 34, 39, 41, 43, 44, 45}
-	collect := map[int]int{}
-	for i := 0; i < 100000000; i++ {
-		w := rand.IntN(45 + 1)
-		n, _ := slices.BinarySearch(weights, w)
-		collect[n]++
-		//fmt.Printf("===== %d: %d\n", w, n)
-	}
-
-	for i := 0; i < len(weights); i++ {
-		fmt.Printf(">>>>> %d: %d\n", i, collect[i])
-	}
-	*/
-
 }

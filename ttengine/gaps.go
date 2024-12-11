@@ -2,31 +2,12 @@ package ttengine
 
 import (
 	"W365toFET/ttbase"
+	"fmt"
 )
 
-// TODO: Probably need to remember where the real activities end. Though these
-// dummies would have some special feature (CourseInfo == nil?, Lesson == nil?)
-// that would enable them to be identified easily ...
-func DummyActivity(ttinfo *ttbase.TtInfo) *ttbase.Activity {
-	// Index of new Activity:
-	ttlix := len(ttinfo.Activities)
-	ttl := &ttbase.Activity{
-		Index:    ttlix,
-		Duration: 1,
-		//Lesson:     nil,
-		//CourseInfo: nil,
-		//Resources: to be set,
-		//Fixed: true, // for blocking lesson
-		//Placement: to be set
-	}
-	ttinfo.Activities = append(ttinfo.Activities, ttl)
-	return ttl
-}
+// Handle gaps (and TODO: lunch breaks)
 
-// Handle gaps and lunch breaks
-
-//TODO: This doesn't work at all. My guess is that individual atomic groups are
-// getting too many blockers. Probably only whole classes should get blockers ...
+//TODO: Under construction
 
 // Testing a blanket approach initially – try to minimize gaps in students'
 // timetables and ensure that all get a lunch break.
@@ -36,136 +17,112 @@ func findGapProblems(ttinfo *ttbase.TtInfo, pmon *placementMonitor,
 	nhours := ttinfo.NHours
 	nslots := ttinfo.SlotsPerWeek
 	ttslots := ttinfo.TtSlots
+	//lunchbreaks := ttinfo.Db.Info.MiddayBreak
 	var unplaced []ttbase.ActivityIndex
+	gapmap := map[string]int{}
 	for _, cl := range ttinfo.Db.Classes {
-		// Skip invalid classes
-		//TODO: How and where are invalid classes detected?
-		if cl.Tag == "" {
-			continue
-		}
-
-		//TODO: This handles the lower classes first, which may be a good
-		// idea, but later classes may never be reached!
-
-		aglist := ttinfo.AtomicGroups[cl.ClassGroup]
-		aggaps := make([]int, len(aglist))
-		for agn, ag := range aglist {
-			aggaps[agn] = 0
+		//
+		//TODO: Go through all classes and – if the gap constraints are not
+		// met – place some activity in one of the gaps.
+		//
+		ng := 0
+		for _, ag := range ttinfo.AtomicGroups[cl.ClassGroup] {
 			agix := ag.Index // Resource index
+			//sameag:
+			gaps := []int{}
+			//aixlasts := []ttbase.ActivityIndex{}
 			for d := 0; d < ndays; d++ {
+				pending := []int{}
 				//aixlast := 0
-				ngaps := 0
-				npending := 0
-				//hlast := -1
-				slot0 := agix*nslots + d*nhours
 				for h := 0; h < nhours; h++ {
-					aix := ttslots[slot0+h]
+					p := d*nhours + h
+					aix := ttslots[agix*nslots+p]
 					if aix == 0 {
-						npending++
+						pending = append(pending, p)
 					} else if aix < 0 {
 
 						//TODO??
 
-					} else if pmon.added[aix] < 0 {
-
-						//TODO: handle blockers??
-
 					} else {
 						//aixlast = aix
-						//hlast = h
-						//if len(pending) != 0 {
-						if npending != 0 {
+						if len(pending) != 0 {
 							// Gaps are only gaps if an activity follows
-							//gaps = append(gaps, pending...)
-							ngaps += npending
-							npending = 0
-							//pending = pending[:0]
+							gaps = append(gaps, pending...)
+							pending = []int{}
 						}
 					}
-				} // end of hour loop
-				aggaps[agn] += ngaps
-
-				//TODO: Do I need the last filled cells, the last aix, ...
-
-			} // end of day loop
-
-		} // end of ag loop
-		/*
-			// Check whether a lunch break would be necessary and one
-			// is not present.
-			if hlast-ngaps >= ttinfo.PMStart {
-				// Add a lunch-break, if there isn't one already
-				for _, h := range ttinfo.LunchTimes {
-					aixl := ttslots[slot0+h]
-					if aixl < 0 {
-						goto nolb
-					}
-					if aixl == 0 {
-						continue
-					}
-					if ttinfo.Activities[aixl].Lesson == nil {
-						// There is already a lunch-break
-						goto nolb
-					}
-				}
-				// Add a lunch break
-				{
-					a := DummyActivity(ttinfo)
-					pmon.added = append(pmon.added, 0)
-					a.Resources = []ttbase.ResourceIndex{agix}
-					a.Placement = -1
-					lbslots := make([]int, len(ttinfo.LunchTimes))
-					for i, h := range ttinfo.LunchTimes {
-						lbslots[i] = d*nhours + h
-					}
-					a.PossibleSlots = lbslots
-					unplaced = append(unplaced, a.Index)
-					goto nextclass
-				}
-			nolb:
-
-				if ngaps == 0 {
-					continue // Go to next day
-				}
-
-				if a.Fixed || pmon.check(aixlast) {
-					// fixed or placed only recently
-					continue // Go to next day
-				}
-
-				ttinfo.UnplaceActivity(aixlast)
-				unplaced = append(unplaced, aixlast)
-
-				////// TODO: Not like this ...
-				// Add blockers, but don't encroach on minHours limit.
-				for hlast >= cl.MinLessonsPerDay {
-					b := DummyActivity(ttinfo)
-					b.Fixed = true
-					b.Resources = []ttbase.ResourceIndex{agix}
-					ttinfo.PlaceActivity(b.Index, d*nhours+hlast)
-					pmon.added = append(pmon.added, -1)
-					ngaps--
-					if ngaps == 0 {
-						break
-					}
-					hlast--
-					if ttslots[slot0+hlast] != 0 {
-						// continue only if there is a free lesson
-						break
-					}
-				}
-				//////
-				goto nextclass
+				} // end hour loop
+				//if aixlast != 0 {
+				//	aixlasts = append(aixlasts, aixlast)
+				//}
+			} // end day loop
+			ng = len(gaps)
+			//fmt.Printf("??? %s: %d\n", ag.Tag, ng)
+			if ng == 0 {
+				continue // -> next ag (or class)
 			}
-		*/
-		//nextclass:
-	} // end of class loop
+			var gap int
+			if ng == 1 {
+				gap = gaps[0]
+			} else {
+				gap = gaps[chooseWeightedSlot(pmon.preferEarlier, gaps)]
+			}
 
-	//TODO: When a class completes, check its gap constraints. If not fulfilled,
-	// increment count and try again.
+			// Get possible activities for this ag & slot
+			alist := pmon.resourceSlotActivityMap[agix][gap]
+			if len(alist) == 0 {
+				// no possible activities for this ag and slot
+				continue
+			}
 
-	// An empty "unplaced" doesn't necessarily mean that there are no gaps or
-	// that no further improvement is possible ...
+			plist := []int{}
+			aixp := 0
+			for _, aix := range alist {
+				p := ttinfo.Activities[aix].Placement
+				if p < 0 {
 
+					//TODO: Break and use this one immediately?
+					aixp = aix
+					break
+
+				} else {
+					plist = append(plist, p)
+				}
+
+			}
+
+			//fmt.Println("????????????? +++++")
+			if aixp == 0 {
+				// All activities are placed
+				if len(alist) == 1 {
+					aixp = alist[0]
+				} else {
+					aixp = alist[chooseWeightedSlot(pmon.preferLater, plist)]
+				}
+				//fmt.Printf("????????????? ::::: %d\n", aixp)
+				ttinfo.UnplaceActivity(aixp)
+			}
+			toremove := ttinfo.FindClashes(aixp, gap)
+			for _, aixx := range toremove {
+				ttinfo.UnplaceActivity(aixx)
+			}
+			unplaced = append(unplaced, toremove...)
+			ttinfo.PlaceActivity(aixp, gap)
+			tmp := []ttbase.ActivityIndex{}
+			for _, aixt := range unplaced {
+				if aixt != aixp {
+					tmp = append(tmp, aixt)
+				}
+			}
+			unplaced = tmp
+			pmon.added[aixp] = pmon.count
+			pmon.count++
+			//fmt.Println("????????????? -----")
+			break // -> nextclass
+		} // end ag loop
+		gapmap[cl.Tag] = ng
+	} // end class loop
+	fmt.Printf("&&&&& GAPS: %+v\n", gapmap)
+	//fmt.Println("????????????? /////")
 	return unplaced
 }

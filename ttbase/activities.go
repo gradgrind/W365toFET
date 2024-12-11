@@ -327,12 +327,31 @@ func (ttinfo *TtInfo) FindClashes(aix ActivityIndex, slot int) []ActivityIndex {
 func (ttinfo *TtInfo) UnplaceActivity(aix ActivityIndex) {
 	a := ttinfo.Activities[aix]
 	slot := a.Placement
+
+	//TODO--- for testing
+	if a.Fixed {
+		base.Bug.Fatalf("Can't unplace %d – fixed\n", aix)
+	}
+	if slot < 0 {
+		base.Bug.Printf("Can't unplace %d – not placed\n", aix)
+		return
+	}
+
+	//TODO--
+	//rixs := []int{}
+
 	for _, rix := range a.Resources {
+
+		//rixs = append(rixs, rix)
+
 		i := rix*ttinfo.SlotsPerWeek + slot
 		for ix := 0; ix < a.Duration; ix++ {
 			ttinfo.TtSlots[i+ix] = 0
 		}
 	}
+
+	//fmt.Printf("------------- REMOVE ----------- %d: %+v\n", aix, rixs)
+
 	a.Placement = -1
 	for _, aixp := range a.Parallel {
 		a := ttinfo.Activities[aixp]
@@ -408,6 +427,7 @@ func (tt *TtCore) testPlacement2(aix ActivityIndex, slot int) (int, int) {
 
 func (ttinfo *TtInfo) PlaceActivity(aix ActivityIndex, slot int) {
 	// Allocate the resources, assuming none of the slots are blocked!
+	//fmt.Printf("++++++++ PLACE ++++++++ %d: %d\n", aix, slot)
 	a := ttinfo.Activities[aix]
 	for _, rix := range a.Resources {
 		i := rix*ttinfo.SlotsPerWeek + slot
