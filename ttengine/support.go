@@ -12,6 +12,7 @@ type placementMonitor struct {
 	delta int64
 	added []int64
 	//
+	ttinfo                  *ttbase.TtInfo
 	preferEarlier           []int
 	preferLater             []int
 	resourceSlotActivityMap map[ttbase.ResourceIndex]map[int][]ttbase.ActivityIndex
@@ -243,4 +244,57 @@ func integrityCheck(ttinfo *ttbase.TtInfo) {
 
 		}
 	}
+}
+
+type activityPlacement struct {
+	placement int
+	//fixed bool
+	xrooms []ttbase.ResourceIndex
+}
+
+type ttState struct {
+	placements []activityPlacement
+	added      []int64
+	count      int64
+}
+
+func (pmon *placementMonitor) saveState() ttState {
+	alist := pmon.ttinfo.Activities
+	state := ttState{}
+	state.placements = make([]activityPlacement, len(alist))
+	for aix := 1; aix < len(alist); aix++ {
+		a := alist[aix]
+		ap := activityPlacement{
+			placement: a.Placement,
+			//fixed: a.Fixed,
+			//xrooms: a.Xrooms,
+		}
+		state.placements[aix] = ap
+	}
+	state.added = make([]int64, len(pmon.added))
+	copy(state.added, pmon.added)
+	state.count = pmon.count
+	return state
+}
+
+func (pmon *placementMonitor) restoreState(state ttState) {
+	// This assumes the length of the activities list is fixed. If new
+	// activities are added, or some removed, appropriate changes would
+	// need to be made.
+	alist := pmon.ttinfo.Activities
+	// Integrity check
+	if len(alist) != len(state.placements) {
+		base.Bug.Fatalln("State restoration: number of activities changed")
+	}
+	for aix := 1; aix < len(alist); aix++ {
+		a := alist[aix]
+		ap := state.placements[aix]
+		a.Placement = ap.placement
+		//a.Fixed = ap.fixed
+		//a.Xrooms = ap.xrooms
+	}
+	pmon.added = make([]int64, len(state.added))
+	copy(pmon.added, state.added)
+	pmon.count = state.count
+	//TODO: Set the resource allocation
 }

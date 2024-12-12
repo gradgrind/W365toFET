@@ -56,6 +56,7 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 			count:                   delta,
 			delta:                   delta,
 			added:                   make([]int64, len(ttinfo.Activities)),
+			ttinfo:                  ttinfo,
 			preferEarlier:           preferEarlier,
 			preferLater:             preferLater,
 			resourceSlotActivityMap: resourceSlotActivityMap,
