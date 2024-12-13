@@ -10,14 +10,17 @@ type ResourceIndex = TtIndex
 type ActivityIndex = TtIndex
 
 type Activity struct {
-	Index         ActivityIndex
-	Duration      int
-	Resources     []ResourceIndex
-	Fixed         bool
-	Placement     int // day * nhours + hour, or -1 if unplaced
-	PossibleSlots []SlotIndex
-	DifferentDays []ActivityIndex // hard constraint only
-	Parallel      []ActivityIndex // hard constraint only
+	Index     ActivityIndex
+	Duration  int
+	Resources []ResourceIndex
+	// ExtendedGroups is a list of atomic group indexes for those groups
+	// in the activity's class(es) which are NOT involved in the activity.
+	ExtendedGroups []ResourceIndex
+	Fixed          bool
+	Placement      int // day * nhours + hour, or -1 if unplaced
+	PossibleSlots  []SlotIndex
+	DifferentDays  []ActivityIndex // hard constraint only
+	Parallel       []ActivityIndex // hard constraint only
 
 	// Access to basic information
 	CourseInfo *CourseInfo
@@ -81,10 +84,28 @@ func (ttinfo *TtInfo) addActivityInfo(
 			resources = append(resources, t2tt[tref])
 		}
 
+		// Get class(es) ... and atomic groups
+		// This is for finding the "extended groups" – in the activity's
+		// class(es) but not involved in the activity. This list may help
+		// finding activities which may be placed parallel.
+		cagmap := map[base.Ref][]ResourceIndex{}
 		for _, gref := range cinfo.Groups {
-			for _, ag := range g2tt[gref] {
+			cagmap[ttinfo.Db.Elements[gref].(*base.Group).Class] = nil
+		}
+		aagmap := map[ResourceIndex]bool{}
+		for cref := range cagmap {
+			c := ttinfo.Db.Elements[cref].(*base.Class)
+			aglist := g2tt[c.ClassGroup]
+			//fmt.Printf("???????? %s: %+v\n", c.Tag, aglist)
+			for _, agix := range aglist {
+				aagmap[agix] = true
+			}
+		}
+		// Handle groups
+		for _, gref := range cinfo.Groups {
+			for _, agix := range g2tt[gref] {
 				// Check for repetitions
-				if slices.Contains(resources, ag) {
+				if slices.Contains(resources, agix) {
 					if !slices.Contains(warned, cinfo) {
 						base.Warning.Printf(
 							"Lesson with repeated atomic group"+
@@ -92,8 +113,15 @@ func (ttinfo *TtInfo) addActivityInfo(
 						warned = append(warned, cinfo)
 					}
 				} else {
-					resources = append(resources, ag)
+					resources = append(resources, agix)
+					aagmap[agix] = false
 				}
+			}
+		}
+		extendedGroups := []ResourceIndex{}
+		for agix, ok := range aagmap {
+			if ok {
+				extendedGroups = append(extendedGroups, agix)
 			}
 		}
 
@@ -118,6 +146,7 @@ func (ttinfo *TtInfo) addActivityInfo(
 
 		a := ttinfo.Activities[aix]
 		a.Resources = resources
+		a.ExtendedGroups = extendedGroups
 		a.Placement = p
 		//PossibleSlots: added later (see "makePossibleSlots"),
 		//DifferentDays: ddlist, // only if not fixed, see below

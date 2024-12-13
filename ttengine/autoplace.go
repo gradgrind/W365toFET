@@ -32,6 +32,7 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 			}
 			// Get free slots for this activity
 			slots := []int{}
+			pslots := []int{} // "priority" slots
 			for _, slot := range a.PossibleSlots {
 				// Filter to include only slots which don't create gaps for a
 				// group of students.
@@ -44,7 +45,6 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 				}
 				d := slot / ttinfo.NHours
 				end := (d + 1) * ttinfo.NHours
-
 				// For each atomic group
 				for _, agix := range aglist {
 					// Fail if the slot before is empty AND there are only
@@ -70,16 +70,33 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 					// OK, check next ag
 				}
 				if ttinfo.TestPlacement(aix, slot) {
+
+					//+++
+					// Prefer a slot with something parallel in the class.
+					for _, agix := range a.ExtendedGroups {
+						if ttinfo.TtSlots[agix*ttinfo.SlotsPerWeek+slot] != 0 {
+							// There is a parallel lesson
+							pslots = append(pslots, slot)
+							goto slotfail
+						}
+					}
+					//++-
+
 					slots = append(slots, slot)
 				}
 			slotfail:
 			}
 
-			if len(slots) == 0 {
-				// There are currently no suitable free slots for this
-				// activity, add it to the pending list.
-				pending = append(pending, aix)
-				continue
+			//fmt.Printf("§FROM %+v / %+v\n", pslots, slots)
+			if len(pslots) == 0 {
+				if len(slots) == 0 {
+					// There are currently no suitable free slots for this
+					// activity, add it to the pending list.
+					pending = append(pending, aix)
+					continue
+				}
+			} else {
+				slots = pslots
 			}
 
 			var slot int
