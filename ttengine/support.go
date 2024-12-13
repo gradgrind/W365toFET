@@ -87,6 +87,7 @@ func placeFree(
 	if len(slots) == 1 {
 		slot = slots[0]
 	} else {
+		//slot = slots[rand.IntN(len(slots))]
 		slot = slots[chooseWeightedSlot(weights, slots)]
 	}
 	ttinfo.PlaceActivity(aix, slot)

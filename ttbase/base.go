@@ -53,7 +53,8 @@ type TtInfo struct {
 	ClassDivisions map[Ref][][]Ref // Class -> list of list of Groups
 
 	// Set by "makeAtomicGroups"
-	AtomicGroups map[Ref][]*AtomicGroup // Group -> list of AtomicGroups
+	AtomicGroups  map[Ref][]*AtomicGroup // Group -> list of AtomicGroups
+	NAtomicGroups int
 
 	Constraints map[string][]any
 
@@ -174,6 +175,7 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 		//fmt.Printf(" :: %+v\n", ag)
 		i++
 	}
+	ttinfo.NAtomicGroups = i
 
 	t2tt := map[Ref]ResourceIndex{}
 	for _, t := range db.Teachers {
