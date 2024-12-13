@@ -33,7 +33,7 @@ func (ttinfo *TtInfo) addActivityInfo(
 	warned := []*CourseInfo{} // used to warn only once per course
 	// Collect non-fixed activities which need placing
 	toplace := []ActivityIndex{}
-
+	//--fmt.Printf("=== %+v\n\n", ttinfo.MinDaysBetweenLessons)
 	// Collect the hard-different-days lessons (gap = 1) for each lesson.
 	diffdays := map[ActivityIndex][]ActivityIndex{}
 	for _, dbc := range ttinfo.MinDaysBetweenLessons {
@@ -117,17 +117,15 @@ func (ttinfo *TtInfo) addActivityInfo(
 		}
 
 		a := ttinfo.Activities[aix]
-		a.Duration = l.Duration
 		a.Resources = resources
-		a.Fixed = l.Fixed
 		a.Placement = p
 		//PossibleSlots: added later (see "makePossibleSlots"),
 		//DifferentDays: ddlist, // only if not fixed, see below
 		a.Parallel = plist
-		if !l.Fixed {
+		if !a.Fixed {
 			a.DifferentDays = ddlist
 		}
-
+		//--fmt.Printf("  ((%d)) %+v\n", aix, a.DifferentDays)
 		// The placement has not yet been tested, so it may still need to be
 		// revoked!
 	}
@@ -285,7 +283,7 @@ func (ttinfo *TtInfo) FindClashes(aix ActivityIndex, slot int) []ActivityIndex {
 		add := ttinfo.Activities[addix]
 		if add.Placement >= 0 && add.Placement/ttinfo.NHours == day {
 			clashes = append(clashes, addix)
-			//fmt.Printf("????0 %d\n", addix)
+			//--fmt.Printf("????0 %d\n", addix)
 		}
 	}
 	for _, rix := range a.Resources {
@@ -294,7 +292,7 @@ func (ttinfo *TtInfo) FindClashes(aix ActivityIndex, slot int) []ActivityIndex {
 			c := ttinfo.TtSlots[i+ix]
 			if c != 0 {
 				clashes = append(clashes, c)
-				//fmt.Printf("????1 %d %d\n", c, ix)
+				//--fmt.Printf("????1 %d %d\n", c, ix)
 			}
 		}
 	}
@@ -304,7 +302,7 @@ func (ttinfo *TtInfo) FindClashes(aix ActivityIndex, slot int) []ActivityIndex {
 			add := ttinfo.Activities[addix]
 			if add.Placement >= 0 && add.Placement/ttinfo.NHours == day {
 				clashes = append(clashes, addix)
-				//fmt.Printf("????2 %d\n", addix)
+				//--fmt.Printf("????2 %d\n", addix)
 			}
 		}
 		for _, rix := range a.Resources {
@@ -313,7 +311,7 @@ func (ttinfo *TtInfo) FindClashes(aix ActivityIndex, slot int) []ActivityIndex {
 				c := ttinfo.TtSlots[i+ix]
 				if c != 0 {
 					clashes = append(clashes, c)
-					//fmt.Printf("????3 %d %d\n", c, ix)
+					//--fmt.Printf("????3 %d %d\n", c, ix)
 				}
 			}
 		}
@@ -350,7 +348,7 @@ func (ttinfo *TtInfo) UnplaceActivity(aix ActivityIndex) {
 		}
 	}
 
-	//fmt.Printf("------------- REMOVE ----------- %d: %+v\n", aix, rixs)
+	//--fmt.Printf("------------- REMOVE ----------- %d: %+v\n", aix, rixs)
 
 	a.Placement = -1
 	for _, aixp := range a.Parallel {
@@ -427,7 +425,7 @@ func (tt *TtCore) testPlacement2(aix ActivityIndex, slot int) (int, int) {
 
 func (ttinfo *TtInfo) PlaceActivity(aix ActivityIndex, slot int) {
 	// Allocate the resources, assuming none of the slots are blocked!
-	//fmt.Printf("++++++++ PLACE ++++++++ %d: %d\n", aix, slot)
+	//--Printf("++++++++ PLACE ++++++++ %d: %d\n", aix, slot)
 	a := ttinfo.Activities[aix]
 	for _, rix := range a.Resources {
 		i := rix*ttinfo.SlotsPerWeek + slot

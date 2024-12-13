@@ -14,7 +14,7 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 	for {
 		for count, aix := range alist {
 			//TODO-- This counter is only for debugging
-			if count == 20 {
+			if count == 1000 {
 				return
 			}
 
@@ -89,15 +89,15 @@ func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 				slot = slots[rand.IntN(len(slots))]
 			}
 
-			//--
-			cinfo := a.CourseInfo
-			fmt.Printf(" §PLACE @%d.%d %s -- %+v\n",
-				slot/ttinfo.NHours,
-				slot%ttinfo.NHours,
-				ttinfo.View(cinfo),
-				a.DifferentDays,
-			)
-			//
+			/*
+				cinfo := a.CourseInfo
+				fmt.Printf(" §PLACE @%d.%d %s -- %+v\n",
+					slot/ttinfo.NHours,
+					slot%ttinfo.NHours,
+					ttinfo.View(cinfo),
+					a.DifferentDays,
+				)
+			*/
 
 			ttinfo.PlaceActivity(aix, slot)
 		} // end of activity loop

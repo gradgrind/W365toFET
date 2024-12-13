@@ -194,11 +194,8 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 	ttinfo.addBlockers(t2tt, r2tt)
 
 	// Add the remaining Activity information
-	ttinfo.addActivityInfo(t2tt, r2tt, g2ags)
-
-	// The constraint "preprocessing" needs the Activity info, so it must be
-	// placed here.
 	ttinfo.processConstraints()
+	ttinfo.addActivityInfo(t2tt, r2tt, g2ags)
 }
 
 func (ttinfo *TtInfo) orderResources() {
