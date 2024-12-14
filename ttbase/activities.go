@@ -87,7 +87,7 @@ func (ttinfo *TtInfo) addActivityInfo(
 		// Get class(es) ... and atomic groups
 		// This is for finding the "extended groups" – in the activity's
 		// class(es) but not involved in the activity. This list may help
-		// finding activities which may be placed parallel.
+		// finding activities which can be placed parallel.
 		cagmap := map[base.Ref][]ResourceIndex{}
 		for _, gref := range cinfo.Groups {
 			cagmap[ttinfo.Db.Elements[gref].(*base.Group).Class] = nil

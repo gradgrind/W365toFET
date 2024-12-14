@@ -6,35 +6,9 @@ import (
 	"math/rand/v2"
 )
 
-// Use a penalty-weighting approach.
+// Try a gap-aware approach with backtracking.
 
-func PlaceLessons2(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
-	//resourceSlotActivityMap := makeResourceSlotActivityMap(ttinfo)
-	var pmon placementMonitor
-	{
-		//var delta int64 = 7 // This might be a reasonable value?
-		pmon = placementMonitor{
-			//count:                   delta,
-			//delta:                   delta,
-			//added:                   make([]int64, len(ttinfo.Activities)),
-			ttinfo: ttinfo,
-			//preferEarlier:           preferEarlier,
-			//preferLater:             preferLater,
-			//resourceSlotActivityMap: resourceSlotActivityMap,
-		}
-	}
-	pmon.initConstraintData()
-
-	// Calculate initial stage 1 penalties
-	penalties := make([]int, len(ttinfo.Activities))
-	for _, aix := range alist {
-		penalties[aix] = pmon.evaluate1(aix)
-		//fmt.Printf("$ PENALTY %d: %d\n", aix, penalty0)
-	}
-	return
-
-	//
-
+func PlaceLessons(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 	npending := len(alist)
 	pending := []ttbase.ActivityIndex{}
 	for {

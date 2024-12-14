@@ -16,6 +16,7 @@ type placementMonitor struct {
 	preferEarlier           []int
 	preferLater             []int
 	resourceSlotActivityMap map[ttbase.ResourceIndex]map[int][]ttbase.ActivityIndex
+	constraintData          []any // resource index -> constraint data
 }
 
 func (pm *placementMonitor) check(aix ttbase.ActivityIndex) bool {
@@ -298,4 +299,27 @@ func (pmon *placementMonitor) restoreState(state ttState) {
 	copy(pmon.added, state.added)
 	pmon.count = state.count
 	//TODO: Set the resource allocation
+}
+
+func (pmon *placementMonitor) initConstraintData() {
+	ttinfo := pmon.ttinfo
+	db := ttinfo.Db
+
+	cdatamap := make([]any, len(ttinfo.Resources))
+	for _, c := range db.Classes {
+		cgref := c.ClassGroup
+		for _, ag := range ttinfo.AtomicGroups[cgref] {
+			agix := ag.Index
+			cdatamap[agix] = &AGConstraintData{
+				lunchbreak:     c.LunchBreak,
+				maxdaylessons:  c.MaxLessonsPerDay,
+				maxdaygaps:     c.MaxGapsPerDay,
+				maxweekgaps:    c.MaxGapsPerWeek,
+				maxpm:          c.MaxAfternoons,
+				forcefirsthour: c.ForceFirstHour,
+			}
+			//fmt.Printf(" ++ %s: %+v\n", ag.Tag, cdatamap[agix])
+		}
+	}
+	pmon.constraintData = cdatamap
 }
