@@ -4,6 +4,18 @@ import (
 	"W365toFET/ttbase"
 )
 
+func (pmon *placementMonitor) resourcePenalty1(r ttbase.ResourceIndex) int {
+	rc := pmon.constraintData[r]
+	if rc != nil {
+		rcag, ok := rc.(*AGConstraintData)
+		if ok {
+			return pmon.countAGHours(r, rcag)
+		}
+		//TODO: other resources
+	}
+	return 0
+}
+
 func (pmon *placementMonitor) evaluate1(aix ttbase.ActivityIndex) int {
 	// A full evaluation could be quite expensive. In may cases only a
 	// small number of things will have changed. The question is, which
@@ -15,16 +27,12 @@ func (pmon *placementMonitor) evaluate1(aix ttbase.ActivityIndex) int {
 	ttinfo := pmon.ttinfo
 	a := ttinfo.Activities[aix]
 	penalty := 0
+	pmon.pendingPenalties = pmon.pendingPenalties[:0]
 	for _, r := range a.Resources {
-		rc := pmon.constraintData[r]
-		if rc == nil {
-			continue
-		}
-		rcag, ok := rc.(*AGConstraintData)
-		if ok {
-			penalty += pmon.countAGHours(r, rcag)
-		}
-		//TODO: other resources
+		rp := pmon.resourcePenalty1(r)
+		pmon.pendingPenalties = append(pmon.pendingPenalties,
+			resourcePenalty{r, rp})
+		penalty += rp - pmon.resourcePenalties[r]
 	}
 
 	// Count student gaps
@@ -118,7 +126,7 @@ func (pmon *placementMonitor) countAGHours(
 	nffh := 0 // count broken first hours
 	for d := 0; d < ttinfo.NDays; d++ {
 		ndi := 0     // gaps on this day
-		lb := false  // lunch-break found
+		lb := 0      // number of lunch-break slots
 		pending := 0 // count only gaps with a following activity
 		lasth := 0   // last active hour of day
 		nl := 0      // count lessons
@@ -131,10 +139,10 @@ func (pmon *placementMonitor) countAGHours(
 			aix := ttinfo.TtSlots[slot]
 			slot++
 			if aix <= 0 {
-				if !lb && lunch[h] {
-					// Count this as a lunch-break, not a gap
-					lb = true
-				} else if aix == 0 {
+				if lunch[h] {
+					lb++
+				}
+				if aix == 0 {
 					pending++
 				}
 				continue
@@ -145,15 +153,22 @@ func (pmon *placementMonitor) countAGHours(
 			ndi += pending
 			pending = 0
 		}
-		if ndi > maxdaygaps {
-			ndx += ndi - maxdaygaps
-		}
 		if lasth >= pmstart {
 			npm++
 			// Afternoon lesson(s) on this day
-			if withlunch && !lb {
-				nlb++
+			if withlunch {
+				if lb == 0 {
+					nlb++
+				} else {
+					// One lunch break slot doesn't count as a gap.
+					//TODO: This should probably not be done if one of the
+					// lunch-break slots is blocked (aix == -1)!
+					ndi--
+				}
 			}
+		}
+		if ndi > maxdaygaps {
+			ndx += ndi - maxdaygaps
 		}
 		if nl > maxdaylessons {
 			nlx += nl - maxdaylessons

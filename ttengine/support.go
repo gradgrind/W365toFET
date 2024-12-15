@@ -7,6 +7,11 @@ import (
 	"slices"
 )
 
+type resourcePenalty struct {
+	resource ttbase.ResourceIndex
+	penalty  int
+}
+
 type placementMonitor struct {
 	count int64
 	delta int64
@@ -17,6 +22,8 @@ type placementMonitor struct {
 	preferLater             []int
 	resourceSlotActivityMap map[ttbase.ResourceIndex]map[int][]ttbase.ActivityIndex
 	constraintData          []any // resource index -> constraint data
+	resourcePenalties       []int
+	pendingPenalties        []resourcePenalty
 }
 
 func (pm *placementMonitor) check(aix ttbase.ActivityIndex) bool {

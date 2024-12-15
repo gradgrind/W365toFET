@@ -21,19 +21,20 @@ func PlaceLessons2(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 			//preferEarlier:           preferEarlier,
 			//preferLater:             preferLater,
 			//resourceSlotActivityMap: resourceSlotActivityMap,
+			resourcePenalties: make([]int, len(ttinfo.Resources)),
+			pendingPenalties:  []resourcePenalty{},
 		}
 	}
 	pmon.initConstraintData()
 
 	// Calculate initial stage 1 penalties
-	penalties := make([]int, len(ttinfo.Activities))
-	for _, aix := range alist {
-		penalties[aix] = pmon.evaluate1(aix)
-		//fmt.Printf("$ PENALTY %d: %d\n", aix, penalty0)
+	score := 0
+	for r := 0; r < len(ttinfo.Resources); r++ {
+		p := pmon.resourcePenalty1(r)
+		pmon.resourcePenalties[r] = p
+		score += p
+		//fmt.Printf("$ PENALTY %d: %d\n", r, p)
 	}
-	return
-
-	//
 
 	npending := len(alist)
 	pending := []ttbase.ActivityIndex{}
@@ -45,10 +46,11 @@ func PlaceLessons2(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 			}
 
 			// Place the activity in one of the available slots.
-			// Choose a slot such that no additional gap arises.
+			// Choose a slot such that no additional penalty arises.
 			// If there is no suitable slot, add to pending list.
 
 			// First get the atomic groups for this activity
+			// TODO: This could be pre-calculated.
 			a := ttinfo.Activities[aix]
 			aglist := []ttbase.ResourceIndex{}
 			for _, agix := range a.Resources {
@@ -56,94 +58,89 @@ func PlaceLessons2(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 					aglist = append(aglist, agix)
 				}
 			}
+
 			// Get free slots for this activity
-			slots := []int{}
+			nslots := []int{}
 			pslots := []int{} // "priority" slots
 			for _, slot := range a.PossibleSlots {
-				// Filter to include only slots which don't create gaps for a
-				// group of students.
-				h := slot % ttinfo.NHours
-				if h == 0 {
-					if ttinfo.TestPlacement(aix, slot) {
-						slots = append(slots, slot)
-					}
+				if !ttinfo.TestPlacement(aix, slot) {
 					continue
 				}
-				d := slot / ttinfo.NHours
-				end := (d + 1) * ttinfo.NHours
-				// For each atomic group
-				for _, agix := range aglist {
-					// Fail if the slot before is empty AND there are only
-					// empty slots afterwards on that day.
 
-					//TODO: Consider lunch beaks ... if the previous slot is
-					// at lunch time, check the slot before that, too.
-
-					slot0 := agix * ttinfo.SlotsPerWeek
-					if ttinfo.TtSlots[slot0+slot-1] == 0 {
-						// Check subsequent slots
-
-						for sl := slot + 1; sl < end; sl++ {
-							if ttinfo.TtSlots[slot0+sl] > 0 {
-								// Reducing an existing gap
-								goto slotok
-							}
-						}
-						// Not OK, goto next slot
-						goto slotfail
+				//+++
+				// Prefer a slot with something parallel in the class.
+				for _, agix := range a.ExtendedGroups {
+					if ttinfo.TtSlots[agix*ttinfo.SlotsPerWeek+slot] != 0 {
+						// There is a parallel lesson
+						pslots = append(pslots, slot)
+						goto nextslot
 					}
-				slotok:
-					// OK, check next ag
 				}
-				if ttinfo.TestPlacement(aix, slot) {
+				//++-
 
-					//+++
-					// Prefer a slot with something parallel in the class.
-					for _, agix := range a.ExtendedGroups {
-						if ttinfo.TtSlots[agix*ttinfo.SlotsPerWeek+slot] != 0 {
-							// There is a parallel lesson
-							pslots = append(pslots, slot)
-							goto slotfail
-						}
-					}
-					//++-
+				nslots = append(nslots, slot)
+			nextslot:
+			} // end of slot loop
 
-					slots = append(slots, slot)
-				}
-			slotfail:
-			}
+			nl := len(nslots)
+			pl := len(pslots)
 
 			//fmt.Printf("§FROM %+v / %+v\n", pslots, slots)
-			if len(pslots) == 0 {
-				if len(slots) == 0 {
-					// There are currently no suitable free slots for this
-					// activity, add it to the pending list.
-					pending = append(pending, aix)
-					continue
+			if pl == 0 && nl == 0 {
+				// There are currently no suitable free slots for this
+				// activity, so add it to the pending list.
+				goto notplaced
+			}
+
+			{
+				slots := make([]int, 0, nl+pl)
+				if len(pslots) > 1 {
+					for _, i := range rand.Perm(pl) {
+						slots = append(slots, pslots[i])
+					}
+				} else {
+					slots = append(slots, pslots...)
 				}
-			} else {
-				slots = pslots
-			}
+				if len(nslots) > 1 {
+					for _, i := range rand.Perm(nl) {
+						slots = append(slots, nslots[i])
+					}
+				} else {
+					slots = append(slots, nslots...)
+				}
 
-			var slot int
-			if len(slots) == 1 {
-				slot = slots[0]
-			} else {
-				slot = slots[rand.IntN(len(slots))]
-			}
+				for _, slot := range slots {
+					/*
+						cinfo := a.CourseInfo
+						fmt.Printf(" §PLACE @%d.%d %s -- %+v\n",
+							slot/ttinfo.NHours,
+							slot%ttinfo.NHours,
+							ttinfo.View(cinfo),
+							a.DifferentDays,
+						)
+					*/
 
-			/*
-				cinfo := a.CourseInfo
-				fmt.Printf(" §PLACE @%d.%d %s -- %+v\n",
-					slot/ttinfo.NHours,
-					slot%ttinfo.NHours,
-					ttinfo.View(cinfo),
-					a.DifferentDays,
-				)
-			*/
-
-			ttinfo.PlaceActivity(aix, slot)
+					ttinfo.PlaceActivity(aix, slot)
+					// Evaluate
+					dp := pmon.evaluate1(aix)
+					if dp > 0 {
+						// Reject the change
+						ttinfo.UnplaceActivity(aix)
+						continue // -> next slot
+					}
+					// Accept the change
+					for _, pp := range pmon.pendingPenalties {
+						pmon.resourcePenalties[pp.resource] = pp.penalty
+					}
+					score += dp
+					goto adone
+				}
+			} // end of slot-place loop
+		notplaced: // activity not placed
+			pending = append(pending, aix)
+		adone:
 		} // end of activity loop
+
 		// Repeat with initially rejected activities
 		np := len(pending)
 		if np == 0 {
