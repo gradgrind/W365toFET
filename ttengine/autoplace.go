@@ -4,6 +4,7 @@ import (
 	"W365toFET/ttbase"
 	"fmt"
 	"math/rand/v2"
+	"time"
 )
 
 // Use a penalty-weighting approach.
@@ -22,29 +23,51 @@ func PlaceLessons2(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 			//preferLater:             preferLater,
 			//resourceSlotActivityMap: resourceSlotActivityMap,
 			resourcePenalties: make([]int, len(ttinfo.Resources)),
+			score:             0,
 			pendingPenalties:  []resourcePenalty{},
 		}
 	}
 	pmon.initConstraintData()
 
 	// Calculate initial stage 1 penalties
-	score := 0
 	for r := 0; r < len(ttinfo.Resources); r++ {
 		p := pmon.resourcePenalty1(r)
 		pmon.resourcePenalties[r] = p
-		score += p
+		pmon.score += p
 		//fmt.Printf("$ PENALTY %d: %d\n", r, p)
 	}
 
+	//TODO--
+	tstart := time.Now()
+	//
+
+	pending := pmon.basicPlaceActivities(alist)
+
+	//TODO--
+	elapsed := time.Since(tstart)
+	fmt.Printf("Outer Loop took %s\n", elapsed)
+	//
+
+	fmt.Printf("$$$ Unplaced: %d\n", len(pending))
+
+	//slices.Reverse(failed)
+	//l0 := len(failed)
+	//fmt.Printf("Remaining: %d\n", l0)
+
+}
+
+func (pmon *placementMonitor) basicPlaceActivities(
+	alist []ttbase.ActivityIndex,
+) []ttbase.ActivityIndex {
+	// Place the activities as far as is possible without increasing the
+	// penalty and without displacing already placed activities.
+
+	ttinfo := pmon.ttinfo
 	npending := len(alist)
 	pending := []ttbase.ActivityIndex{}
-	for {
-		for count, aix := range alist {
-			//TODO-- This counter is only for debugging
-			if count == 1000 {
-				return
-			}
 
+	for {
+		for _, aix := range alist {
 			// Place the activity in one of the available slots.
 			// Choose a slot such that no additional penalty arises.
 			// If there is no suitable slot, add to pending list.
@@ -132,7 +155,7 @@ func PlaceLessons2(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 					for _, pp := range pmon.pendingPenalties {
 						pmon.resourcePenalties[pp.resource] = pp.penalty
 					}
-					score += dp
+					pmon.score += dp
 					goto adone
 				}
 			} // end of slot-place loop
@@ -148,7 +171,6 @@ func PlaceLessons2(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 		}
 		if np == npending {
 			// got stuck
-			//TODO: force an allocation
 			break
 		}
 		npending = np
@@ -156,10 +178,5 @@ func PlaceLessons2(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 		pending = nil
 		fmt.Printf("  --- Pending: %d\n", len(alist))
 	}
-	fmt.Printf("$$$ Unplaced: %d\n", len(pending))
-
-	//slices.Reverse(failed)
-	//l0 := len(failed)
-	//fmt.Printf("Remaining: %d\n", l0)
-
+	return pending
 }

@@ -23,6 +23,7 @@ type placementMonitor struct {
 	resourceSlotActivityMap map[ttbase.ResourceIndex]map[int][]ttbase.ActivityIndex
 	constraintData          []any // resource index -> constraint data
 	resourcePenalties       []int
+	score                   int // current total penalty
 	pendingPenalties        []resourcePenalty
 }
 
