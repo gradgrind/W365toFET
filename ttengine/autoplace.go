@@ -178,7 +178,7 @@ func (pmon *placementMonitor) basicPlaceActivities(
 					// Accept the change
 
 					//TODO--
-					fmt.Printf("§PLACE %d (%d)\n", aix, slot)
+					//fmt.Printf("§PLACE %d (%d)\n", aix, slot)
 					//
 
 					for _, pp := range pmon.pendingPenalties {
