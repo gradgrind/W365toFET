@@ -2,6 +2,7 @@ package ttbase
 
 import (
 	"W365toFET/base"
+	"fmt"
 	"slices"
 )
 
@@ -308,11 +309,12 @@ func (ttinfo *TtInfo) FindClashes(aix ActivityIndex, slot int) []ActivityIndex {
 	clashes := []ActivityIndex{}
 	a := ttinfo.Activities[aix]
 	day := slot / ttinfo.NHours
+	//--fmt.Printf("????0 aix: %d slot %d\n", aix, slot)
 	for _, addix := range a.DifferentDays {
 		add := ttinfo.Activities[addix]
 		if add.Placement >= 0 && add.Placement/ttinfo.NHours == day {
 			clashes = append(clashes, addix)
-			//--fmt.Printf("????0 %d\n", addix)
+			//--fmt.Printf("????1 %d\n", addix)
 		}
 	}
 	for _, rix := range a.Resources {
@@ -320,8 +322,9 @@ func (ttinfo *TtInfo) FindClashes(aix ActivityIndex, slot int) []ActivityIndex {
 		for ix := 0; ix < a.Duration; ix++ {
 			c := ttinfo.TtSlots[i+ix]
 			if c != 0 {
+				//--xxx := ttinfo.Activities[c].Placement
 				clashes = append(clashes, c)
-				//--fmt.Printf("????1 %d %d\n", c, ix)
+				//--fmt.Printf("????2 %d %d r: %d p: %d\n", c, ix, rix, xxx)
 			}
 		}
 	}
@@ -331,7 +334,7 @@ func (ttinfo *TtInfo) FindClashes(aix ActivityIndex, slot int) []ActivityIndex {
 			add := ttinfo.Activities[addix]
 			if add.Placement >= 0 && add.Placement/ttinfo.NHours == day {
 				clashes = append(clashes, addix)
-				//--fmt.Printf("????2 %d\n", addix)
+				//--fmt.Printf("????3 %d\n", addix)
 			}
 		}
 		for _, rix := range a.Resources {
@@ -340,7 +343,7 @@ func (ttinfo *TtInfo) FindClashes(aix ActivityIndex, slot int) []ActivityIndex {
 				c := ttinfo.TtSlots[i+ix]
 				if c != 0 {
 					clashes = append(clashes, c)
-					//--fmt.Printf("????3 %d %d\n", c, ix)
+					//--fmt.Printf("????4 %d %d\n", c, ix)
 				}
 			}
 		}
@@ -361,25 +364,21 @@ func (ttinfo *TtInfo) UnplaceActivity(aix ActivityIndex) {
 	}
 	if slot < 0 {
 		base.Bug.Printf("Can't unplace %d – not placed\n", aix)
+		panic(1)
 		return
 	}
 
-	//TODO--
-	//rixs := []int{}
-
 	for _, rix := range a.Resources {
-
-		//rixs = append(rixs, rix)
-
 		i := rix*ttinfo.SlotsPerWeek + slot
 		for ix := 0; ix < a.Duration; ix++ {
 			ttinfo.TtSlots[i+ix] = 0
 		}
 	}
 
-	//--fmt.Printf("------------- REMOVE ----------- %d: %+v\n", aix, rixs)
+	//--fmt.Printf("------------- REMOVE ----------- %d: %+v\n", aix, a.Resources)
 
 	a.Placement = -1
+
 	for _, aixp := range a.Parallel {
 		a := ttinfo.Activities[aixp]
 		for _, rix := range a.Resources {
@@ -390,7 +389,7 @@ func (ttinfo *TtInfo) UnplaceActivity(aix ActivityIndex) {
 		}
 		a.Placement = -1
 	}
-
+	//--ttinfo.CheckResourceIntegrity()
 }
 
 func (ttinfo *TtInfo) TestPlacement(aix ActivityIndex, slot int) bool {
@@ -454,8 +453,17 @@ func (tt *TtCore) testPlacement2(aix ActivityIndex, slot int) (int, int) {
 
 func (ttinfo *TtInfo) PlaceActivity(aix ActivityIndex, slot int) {
 	// Allocate the resources, assuming none of the slots are blocked!
-	//--Printf("++++++++ PLACE ++++++++ %d: %d\n", aix, slot)
+	//--fmt.Printf("++++++++ PLACE ++++++++ %d: %d\n", aix, slot)
 	a := ttinfo.Activities[aix]
+
+	//TODO-- This is for debugging
+	p := a.Placement
+	if p >= 0 && p != slot {
+		fmt.Printf("::::: %+v\n", a)
+		panic(fmt.Sprintf("Activity %d already placed: %d\n", aix, p))
+	}
+	//
+
 	for _, rix := range a.Resources {
 		i := rix*ttinfo.SlotsPerWeek + slot
 		for ix := 0; ix < a.Duration; ix++ {
@@ -463,6 +471,7 @@ func (ttinfo *TtInfo) PlaceActivity(aix ActivityIndex, slot int) {
 		}
 	}
 	a.Placement = slot
+
 	for _, aixp := range a.Parallel {
 		a := ttinfo.Activities[aixp]
 		for _, rix := range a.Resources {
@@ -472,5 +481,34 @@ func (ttinfo *TtInfo) PlaceActivity(aix ActivityIndex, slot int) {
 			}
 		}
 		a.Placement = slot
+	}
+	//--ttinfo.CheckResourceIntegrity()
+}
+
+// DEBUGGING only
+func (ttinfo *TtInfo) CheckResourceIntegrity() {
+	for rix := 0; rix < len(ttinfo.Resources); rix++ {
+		slot0 := rix * ttinfo.SlotsPerWeek
+		for p := 0; p < ttinfo.SlotsPerWeek; p++ {
+			aix := ttinfo.TtSlots[slot0+p]
+			if aix <= 0 {
+				continue
+			}
+			a := ttinfo.Activities[aix]
+			ap := a.Placement
+			if ap < 0 {
+				panic(fmt.Sprintf("Resource (%d) of unplaced Activity (%d)"+
+					" at position %d:", rix, aix, ap))
+			}
+			for i := 0; i < a.Duration; i++ {
+				if ap+i == p {
+					goto pok
+				}
+			}
+			panic(fmt.Sprintf("Resource (%d) of Activity (%d)"+
+				" at wrong position %d (should be %d):",
+				rix, aix, p, ap))
+		pok:
+		}
 	}
 }

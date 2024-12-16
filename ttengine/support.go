@@ -264,14 +264,22 @@ type activityPlacement struct {
 
 type ttState struct {
 	placements []activityPlacement
-	added      []int64
-	count      int64
+	//added      []int64
+	//count      int64
+	ttslots           []ttbase.ActivityIndex
+	resourcePenalties []int
 }
 
 func (pmon *placementMonitor) saveState() ttState {
+	//TODO. Currently this is probably saving more than would strictly be
+	// necessary. This may be more time-efficient, though?
+	ttinfo := pmon.ttinfo
 	alist := pmon.ttinfo.Activities
-	state := ttState{}
-	state.placements = make([]activityPlacement, len(alist))
+	state := ttState{
+		placements:        make([]activityPlacement, len(alist)),
+		ttslots:           make([]ttbase.ActivityIndex, len(ttinfo.TtSlots)),
+		resourcePenalties: make([]int, len(pmon.resourcePenalties)),
+	}
 	for aix := 1; aix < len(alist); aix++ {
 		a := alist[aix]
 		ap := activityPlacement{
@@ -281,9 +289,11 @@ func (pmon *placementMonitor) saveState() ttState {
 		}
 		state.placements[aix] = ap
 	}
-	state.added = make([]int64, len(pmon.added))
-	copy(state.added, pmon.added)
-	state.count = pmon.count
+	//state.added = make([]int64, len(pmon.added))
+	//copy(state.added, pmon.added)
+	//state.count = pmon.count
+	copy(state.ttslots, ttinfo.TtSlots)
+	copy(state.resourcePenalties, pmon.resourcePenalties)
 	return state
 }
 
@@ -303,10 +313,18 @@ func (pmon *placementMonitor) restoreState(state ttState) {
 		//a.Fixed = ap.fixed
 		//a.Xrooms = ap.xrooms
 	}
-	pmon.added = make([]int64, len(state.added))
-	copy(pmon.added, state.added)
-	pmon.count = state.count
-	//TODO: Set the resource allocation
+	//pmon.added = make([]int64, len(state.added))
+	//copy(pmon.added, state.added)
+	//pmon.count = state.count
+
+	// Set the resource allocation and penalties
+	copy(pmon.ttinfo.TtSlots, state.ttslots)
+	score := 0
+	for i, rp := range state.resourcePenalties {
+		pmon.resourcePenalties[i] = rp
+		score += rp
+	}
+	pmon.score = score
 }
 
 func (pmon *placementMonitor) initConstraintData() {

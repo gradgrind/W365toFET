@@ -4,6 +4,7 @@ import (
 	"W365toFET/ttbase"
 	"fmt"
 	"math/rand/v2"
+	"slices"
 	"time"
 )
 
@@ -45,10 +46,17 @@ func PlaceLessons2(ttinfo *ttbase.TtInfo, alist []ttbase.ActivityIndex) {
 
 	//TODO--
 	elapsed := time.Since(tstart)
-	fmt.Printf("Outer Loop took %s\n", elapsed)
+	fmt.Printf("Basic Placement took %s\n", elapsed)
 	//
 
-	fmt.Printf("$$$ Unplaced: %d\n", len(pending))
+	//TODO--
+	slices.Sort(pending)
+	fmt.Printf("$$$ Unplaced: %d\n  -- %+v\n", len(pending), pending)
+	//
+
+	if len(pending) != 0 {
+		pmon.furtherPlacements(pending)
+	}
 
 	//slices.Reverse(failed)
 	//l0 := len(failed)
@@ -66,21 +74,30 @@ func (pmon *placementMonitor) basicPlaceActivities(
 	npending := len(alist)
 	pending := []ttbase.ActivityIndex{}
 
+	//TODO--
+	//count := 0
+	//
+
 	for {
+
+		//TODO--
+		aslist := make([]ttbase.ActivityIndex, len(alist))
+		copy(aslist, alist)
+		slices.Sort(aslist)
+		//fmt.Printf(" alist: %+v\n", aslist)
+		for _, aix := range alist {
+			a := ttinfo.Activities[aix]
+			if a.Placement >= 0 {
+				fmt.Printf("§NOT UNPLACED: %d (%d)\n", aix, a.Placement)
+			}
+		}
+		//
+
 		for _, aix := range alist {
 			// Place the activity in one of the available slots.
 			// Choose a slot such that no additional penalty arises.
 			// If there is no suitable slot, add to pending list.
-
-			// First get the atomic groups for this activity
-			// TODO: This could be pre-calculated.
 			a := ttinfo.Activities[aix]
-			aglist := []ttbase.ResourceIndex{}
-			for _, agix := range a.Resources {
-				if agix < ttinfo.NAtomicGroups {
-					aglist = append(aglist, agix)
-				}
-			}
 
 			// Get free slots for this activity
 			nslots := []int{}
@@ -116,6 +133,8 @@ func (pmon *placementMonitor) basicPlaceActivities(
 			}
 
 			{
+				// Randomize the slots, but keep the priority ones at
+				// the head of the list.
 				slots := make([]int, 0, nl+pl)
 				if len(pslots) > 1 {
 					for _, i := range rand.Perm(pl) {
@@ -132,6 +151,7 @@ func (pmon *placementMonitor) basicPlaceActivities(
 					slots = append(slots, nslots...)
 				}
 
+				// Try the slots in turn seeking a better score.
 				for _, slot := range slots {
 					/*
 						cinfo := a.CourseInfo
@@ -143,6 +163,10 @@ func (pmon *placementMonitor) basicPlaceActivities(
 						)
 					*/
 
+					//TODO--
+					//count++
+					//
+
 					ttinfo.PlaceActivity(aix, slot)
 					// Evaluate
 					dp := pmon.evaluate1(aix)
@@ -152,6 +176,11 @@ func (pmon *placementMonitor) basicPlaceActivities(
 						continue // -> next slot
 					}
 					// Accept the change
+
+					//TODO--
+					fmt.Printf("§PLACE %d (%d)\n", aix, slot)
+					//
+
 					for _, pp := range pmon.pendingPenalties {
 						pmon.resourcePenalties[pp.resource] = pp.penalty
 					}
@@ -176,7 +205,12 @@ func (pmon *placementMonitor) basicPlaceActivities(
 		npending = np
 		alist = pending
 		pending = nil
-		fmt.Printf("  --- Pending: %d\n", len(alist))
+		//fmt.Printf("  --- Pending: %d\n", len(alist))
 	}
+
+	//TODO--
+	//fmt.Printf("??? %d slots tested\n", count)
+	//
+
 	return pending
 }
