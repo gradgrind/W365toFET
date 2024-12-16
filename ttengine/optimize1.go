@@ -1,63 +1,122 @@
 package ttengine
 
 import (
-	"W365toFET/base"
 	"W365toFET/ttbase"
 	"fmt"
 	"math/rand/v2"
-	"slices"
 )
 
 func (pmon *placementMonitor) furtherPlacements(
 	alist []ttbase.ActivityIndex,
 ) []ttbase.ActivityIndex {
-	ttinfo := pmon.ttinfo
+	//ttinfo := pmon.ttinfo
 
 	//TODO--
-	aslist := make([]ttbase.ActivityIndex, len(alist))
-	copy(aslist, alist)
-	slices.Sort(aslist)
+	//aslist := make([]ttbase.ActivityIndex, len(alist))
+	//copy(aslist, alist)
+	//slices.Sort(aslist)
 	//fmt.Printf(" furtherPlacements - aslist: %+v\n", aslist)
 	//
-	na0 := len(alist)
-	breakout := false
 
+	fmt.Printf(" furtherPlacements - len(alist): %d\n", len(alist))
+
+	pending := pmon.optimize1(alist, false)
+
+	// Save state
+	score1 := pmon.score
+	state1 := pmon.saveState()
+
+	fmt.Printf(" * All Activites tested, remaining: %d (%d)\n",
+		len(pending), score1)
+
+	//
+
+	//TODO: the question is, how might the result be improved?
+	// Perhaps by placing one of the remaining activities in spite of
+	// a worsening score. Then optimize and see if – in the end – an
+	// improvement was made. If not revert to old state and try again.
+
+	//TODO: Probably need to give each "branch" more time to find a
+	// better solution ... recurse? Or more radical breakouts?
+
+	ocount := 0
+	for {
+		pending1 := pmon.optimize1(pending, true)
+
+		if pmon.score > score1 {
+			//fmt.Printf(" * --- remaining: %d (%d)\n",
+			//	len(pending1), pmon.score)
+			pmon.restoreState(state1)
+		} else {
+			fmt.Printf(" * +++ remaining: %d (%d)\n",
+				len(pending1), pmon.score)
+			state1 = pmon.saveState()
+			score1 = pmon.score
+			pending = pending1
+		}
+		ocount++
+		if ocount%100 == 0 {
+			fmt.Printf("@ %d\n", ocount)
+			if ocount/100 == 10 {
+				break
+			}
+		}
+	}
+	//TODO--
+	fmt.Printf("\n * Return: %d (%d)\n", len(pending), score1)
+	for _, aix := range pending {
+		a := pmon.ttinfo.Activities[aix]
+		fmt.Printf("==> %s\n", pmon.ttinfo.View(a.CourseInfo))
+	}
+	//
+
+	return pending
+}
+
+func (pmon *placementMonitor) optimize1(
+	alist []ttbase.ActivityIndex,
+	breakout bool,
+) []ttbase.ActivityIndex {
+	ttinfo := pmon.ttinfo
 	var failed []ttbase.ActivityIndex
 	for {
 		// Place activities from alist so long as possible without
 		// making the score worse.
+		// If breakout is true, allow one worsening of the score.
 
 	newstate:
 		na := len(alist)
 
-		//TODO-- (debugging)
-		// Check integrity of activity placements
-		acount := 0
-		for aix := 1; aix < len(ttinfo.Activities); aix++ {
-			a := ttinfo.Activities[aix]
-			p := a.Placement
-			if p < 0 {
-				acount++
-				continue
-			}
-			// Check the resource allocation
-			for _, r := range a.Resources {
-				slot := r*ttinfo.SlotsPerWeek + p
-				for i := 0; i < a.Duration; i++ {
-					raix := ttinfo.TtSlots[slot+i]
-					if raix != aix {
-						base.Bug.Fatalf(
-							"!!! Corrupt resource allocation, aix: %d (%d)\n",
-							aix, r)
+		/*
+			//TODO-- (debugging)
+			// Check integrity of activity placements
+			acount := 0
+			for aix := 1; aix < len(ttinfo.Activities); aix++ {
+				a := ttinfo.Activities[aix]
+				p := a.Placement
+				if p < 0 {
+					acount++
+					continue
+				}
+				// Check the resource allocation
+				for _, r := range a.Resources {
+					slot := r*ttinfo.SlotsPerWeek + p
+					for i := 0; i < a.Duration; i++ {
+						raix := ttinfo.TtSlots[slot+i]
+						if raix != aix {
+							base.Bug.Fatalf(
+								"!!! Corrupt resource allocation, aix: %d (%d)\n",
+								aix, r)
+						}
 					}
 				}
 			}
-		}
-		//fmt.Printf("$Missing: %d %d\n", na, acount)
-		if acount != na {
-			base.Bug.Fatalf("!!! in alist: %d unplaced: %d\n", na, acount)
-		}
-		//--
+			//fmt.Printf("$Missing: %d %d\n", na, acount)
+			if acount != na {
+				base.Bug.Fatalf("!!! in alist: %d unplaced: %d\n", na, acount)
+			}
+			//--
+		*/
 
 		// Randomize list of activities
 		pending := make([]int, 0, na)
@@ -164,10 +223,10 @@ func (pmon *placementMonitor) furtherPlacements(
 					alist = failed
 
 					// TODO--
-					fmt.Printf(" +++ %d: %d $%d\n", aix, len(alist), pmon.score)
-					aslist := make([]ttbase.ActivityIndex, len(alist))
-					copy(aslist, alist)
-					slices.Sort(aslist)
+					//fmt.Printf(" +++ %d: %d $%d\n", aix, len(alist), pmon.score)
+					//aslist := make([]ttbase.ActivityIndex, len(alist))
+					//copy(aslist, alist)
+					//slices.Sort(aslist)
 					//fmt.Printf(" alist: %+v\n", aslist)
 					//
 
@@ -193,29 +252,6 @@ func (pmon *placementMonitor) furtherPlacements(
 		// If this point is reached normally (all activities tested),
 		// no improvement was found. That doesn't mean that no improvement
 		// is possible ...
-
-		fmt.Printf(" * All Activites tested, remaining: %d -> %d\n",
-			na0, len(pending))
-
-		//
-
-		//TODO: the question is, how might the result be improved?
-		// Perhaps by placing one of the remaining activities in spite of
-		// a worsening score. Then optimize and see if – in the end – an
-		// improvement was made. If not revert to old state and try again.
-
-		//TODO: More attention is needed to the score!
-
-		breakout = true
-		alist = pending
-		if na0 == len(pending) {
-			break
-		}
-		na0 = len(pending)
+		return pending
 	}
-	for _, aix := range alist {
-		a := ttinfo.Activities[aix]
-		fmt.Printf("==> %s\n", ttinfo.View(a.CourseInfo))
-	}
-	return alist
 }
