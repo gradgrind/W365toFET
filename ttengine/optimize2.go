@@ -3,10 +3,9 @@ package ttengine
 import (
 	"W365toFET/ttbase"
 	"fmt"
-	"math/rand/v2"
 )
 
-func (pmon *placementMonitor) furtherPlacements1(
+func (pmon *placementMonitor) furtherPlacements2(
 	alist []ttbase.ActivityIndex,
 ) []ttbase.ActivityIndex {
 	//ttinfo := pmon.ttinfo
@@ -20,12 +19,9 @@ func (pmon *placementMonitor) furtherPlacements1(
 
 	fmt.Printf(" furtherPlacements - len(alist): %d\n", len(alist))
 
-	pending := pmon.optimize1(alist, false)
+	pending := pmon.optimize2(alist)
 
-	// Save state
 	score1 := pmon.score
-	state1 := pmon.saveState()
-
 	fmt.Printf(" * All Activites tested, remaining: %d (%d)\n",
 		len(pending), score1)
 
@@ -39,131 +35,74 @@ func (pmon *placementMonitor) furtherPlacements1(
 	//TODO: Probably need to give each "branch" more time to find a
 	// better solution ... recurse? Or more radical breakouts?
 	// or worry less about penalties than getting the activities placed?
+	/*
+		// Save state
+		state1 := pmon.saveState()
 
-	ocount := 0
-	for {
-		pending1 := pmon.optimize1(pending, true)
+		ocount := 0
+		for {
+			pending1 := pmon.optimize2(pending, true)
 
-		if pmon.score >= score1 {
-			//fmt.Printf(" * --- remaining: %d (%d)\n",
-			//	len(pending1), pmon.score)
-			pmon.restoreState(state1)
-		} else {
-			fmt.Printf(" * +++ remaining: %d (%d)\n",
-				len(pending1), pmon.score)
-			state1 = pmon.saveState()
-			score1 = pmon.score
-			pending = pending1
-		}
-		ocount++
-		if ocount%100 == 0 {
-			fmt.Printf("@ %d\n", ocount)
-			if ocount/100 == 10 {
-				break
+			if pmon.score >= score1 {
+				//fmt.Printf(" * --- remaining: %d (%d)\n",
+				//	len(pending1), pmon.score)
+				pmon.restoreState(state1)
+			} else {
+				fmt.Printf(" * +++ remaining: %d (%d)\n",
+					len(pending1), pmon.score)
+				state1 = pmon.saveState()
+				score1 = pmon.score
+				pending = pending1
+			}
+			ocount++
+			if ocount%100 == 0 {
+				fmt.Printf("@ %d\n", ocount)
+				if ocount/100 == 10 {
+					break
+				}
 			}
 		}
-	}
+	*/
 	//TODO--
 	fmt.Printf("\n * Return: %d (%d)\n", len(pending), score1)
 	for _, aix := range pending {
 		a := pmon.ttinfo.Activities[aix]
 		fmt.Printf("==> %s\n", pmon.ttinfo.View(a.CourseInfo))
 	}
-	//
-
+	//--
 	return pending
 }
 
-func (pmon *placementMonitor) optimize1(
+func (pmon *placementMonitor) optimize2(
 	alist []ttbase.ActivityIndex,
-	breakout bool,
 ) []ttbase.ActivityIndex {
+	// Try to place the remaining activities.
+
 	ttinfo := pmon.ttinfo
 	var failed []ttbase.ActivityIndex
 	for {
-		// Place activities from alist so long as possible without
-		// making the score worse.
-		// If breakout is true, allow one worsening of the score.
 
 	newstate:
-		na := len(alist)
-
-		/*
-			//TODO-- (debugging)
-			// Check integrity of activity placements
-			acount := 0
-			for aix := 1; aix < len(ttinfo.Activities); aix++ {
-				a := ttinfo.Activities[aix]
-				p := a.Placement
-				if p < 0 {
-					acount++
-					continue
-				}
-				// Check the resource allocation
-				for _, r := range a.Resources {
-					slot := r*ttinfo.SlotsPerWeek + p
-					for i := 0; i < a.Duration; i++ {
-						raix := ttinfo.TtSlots[slot+i]
-						if raix != aix {
-							base.Bug.Fatalf(
-								"!!! Corrupt resource allocation, aix: %d (%d)\n",
-								aix, r)
-						}
-					}
-				}
-			}
-			//fmt.Printf("$Missing: %d %d\n", na, acount)
-			if acount != na {
-				base.Bug.Fatalf("!!! in alist: %d unplaced: %d\n", na, acount)
-			}
-			//--
-		*/
-
-		// Randomize list of activities
-		pending := make([]int, 0, na)
-		if na > 1 {
-			for _, i := range rand.Perm(na) {
-				pending = append(pending, alist[i])
-			}
-		} else {
-			pending = append(pending, alist...)
-		}
-
 		// Save state
 		score0 := pmon.score
 		state0 := pmon.saveState()
 
 		// Try each of the activities in turn.
-		for _, aix := range pending {
-			//n := len(pending)
-			//dpn := 0
-
+		for _, aix := range alist {
 			// Decide which slot to use
 			a := ttinfo.Activities[aix]
-
-			// Randomize list of slots
-			nslots := len(a.PossibleSlots)
-			var slots []int = nil
-			if nslots > 1 {
-				slots = make([]int, nslots)
-				for i, j := range rand.Perm(nslots) {
-					slots[i] = a.PossibleSlots[j]
-				}
-			} else {
-				slots = a.PossibleSlots
-			}
 
 			// The call to basicPlaceActivities needs the updated list of
 			// unplaced activities. First remove the one to be placed.
 			aixlist := []ttbase.ActivityIndex{}
-			for _, aixp := range pending {
+			for _, aixp := range alist {
 				if aixp != aix {
 					aixlist = append(aixlist, aixp)
 				}
 			}
 			aixlist0len := len(aixlist)
 
-			for _, slot := range slots {
+			for _, slot := range a.PossibleSlots {
 				// Remove added elements from aixlist
 				aixlist = aixlist[:aixlist0len]
 
@@ -210,17 +149,9 @@ func (pmon *placementMonitor) optimize1(
 				}
 				pmon.score += dp
 
-				failed = pmon.basicPlaceActivities1(aixlist)
+				failed = pmon.basicPlaceActivities2(aixlist)
 
 				if len(failed) < len(alist) {
-					if pmon.score > score0 {
-						if !breakout {
-							goto restore
-						}
-						breakout = false
-					}
-					//n = len(failed)
-					//dpn = dp
 					alist = failed
 
 					// TODO--
@@ -234,7 +165,6 @@ func (pmon *placementMonitor) optimize1(
 					goto newstate // Accept this result
 
 				}
-			restore:
 
 				//fmt.Printf(" +++ %d: %d\n", aix, len(failed))
 				pmon.restoreState(state0)
@@ -253,6 +183,6 @@ func (pmon *placementMonitor) optimize1(
 		// If this point is reached normally (all activities tested),
 		// no improvement was found. That doesn't mean that no improvement
 		// is possible ...
-		return pending
+		return alist
 	}
 }
