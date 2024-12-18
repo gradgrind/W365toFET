@@ -69,11 +69,6 @@ func (ttinfo *TtInfo) addActivityInfo(
 	// Lessons start at index 1!
 	for aix := 1; aix < len(ttinfo.Activities); aix++ {
 		ttl := ttinfo.Activities[aix]
-		l := ttl.Lesson
-		p := -1
-		if l.Day >= 0 {
-			p = l.Day*ttinfo.NHours + l.Hour
-		}
 		cinfo := ttl.CourseInfo
 		resources := []ResourceIndex{}
 
@@ -117,14 +112,11 @@ func (ttinfo *TtInfo) addActivityInfo(
 		}
 
 		a := ttinfo.Activities[aix]
-		a.Duration = l.Duration
 		a.Resources = resources
-		a.Fixed = l.Fixed
-		a.Placement = p
 		//PossibleSlots: added later (see "makePossibleSlots"),
 		//DifferentDays: ddlist, // only if not fixed, see below
 		a.Parallel = plist
-		if !l.Fixed {
+		if !ttl.Lesson.Fixed {
 			a.DifferentDays = ddlist
 		}
 
@@ -382,25 +374,6 @@ func (ttinfo *TtInfo) testPlacement(aix ActivityIndex, slot int) bool {
 	}
 	return true
 }
-
-/* For testing?
-func (tt *TtCore) testPlacement2(aix ActivityIndex, slot int) (int, int) {
-	// Simple boolean placement test. It assumes the slot is possible –
-	// so that it will not, for example, be the last slot of a day if
-	// the activity duration is 2.
-	a := ttinfo.Activities[aix]
-	for _, rix := range a.Resources {
-		i := rix*ttinfo.SlotsPerWeek + slot
-		for ix := 0; ix < a.Duration; ix++ {
-			acx := ttinfo.TtSlots[i+ix]
-			if acx != 0 {
-				return acx, rix
-			}
-		}
-	}
-	return 0, 0
-}
-*/
 
 func (ttinfo *TtInfo) placeActivity(aix ActivityIndex, slot int) {
 	// Allocate the resources, assuming none of the slots are blocked!

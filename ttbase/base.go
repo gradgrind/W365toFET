@@ -62,10 +62,18 @@ type TtInfo struct {
 }
 
 func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
+	ndays := len(db.Days)
+	nhours := len(db.Hours)
 	ttinfo := &TtInfo{
 		Db: db,
+		//
+		NDays:        ndays,
+		NHours:       nhours,
+		SlotsPerWeek: ndays * nhours,
 	}
 
+	// Get the course info and generate the Activities list – though some
+	// fields will not yet be properly set.
 	gatherCourseInfo(ttinfo) // must be before call to filterDivisions
 
 	// Build Ref -> Tag mapping for subjects, teachers, rooms, classes
@@ -110,8 +118,6 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 
 func (ttinfo *TtInfo) PrepareCoreData() {
 	db := ttinfo.Db
-	ndays := len(db.Days)
-	nhours := len(db.Hours)
 
 	// Allocate a vector for pointers to all Resources: teachers, (atomic)
 	// student groups and (real) rooms.
@@ -125,7 +131,6 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 
 	lt := len(db.Teachers)
 	lr := len(db.Rooms)
-	lw := ndays * nhours
 
 	ags := []*AtomicGroup{}
 	g2ags := map[Ref][]ResourceIndex{}
@@ -151,11 +156,8 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 	lg := len(ags)
 
 	// If using a single vector for all slots:
-	ttinfo.NDays = ndays
-	ttinfo.NHours = nhours
-	ttinfo.SlotsPerWeek = ndays * nhours
 	ttinfo.Resources = make([]any, lt+lr+lg)
-	ttinfo.TtSlots = make([]ActivityIndex, (lt+lr+lg)*lw)
+	ttinfo.TtSlots = make([]ActivityIndex, (lt+lr+lg)*ttinfo.SlotsPerWeek)
 
 	// The slice cells are initialized to 0 or nil, according to slice type.
 
@@ -183,12 +185,12 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 	// Add the pseudo activities due to the NotAvailable lists
 	ttinfo.addBlockers(t2tt, r2tt)
 
+	// Get preliminary constraint info – needed for the call to addActivity
+	ttinfo.processConstraints()
+
 	// Add the remaining Activity information
 	ttinfo.addActivityInfo(t2tt, r2tt, g2ags)
 
-	// The constraint "preprocessing" needs the Activity info, so it must be
-	// placed here.
-	ttinfo.processConstraints()
 }
 
 func (ttinfo *TtInfo) orderResources() {
