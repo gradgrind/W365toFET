@@ -2,89 +2,69 @@
 
 ## Ausgabeformat
 
-Aktuell gibt es folgende Elemente, die für die Stundenplanung relevant sind:
-
- - Day
- - TimedObject
- - Absence
- - Teacher
- - Subject
- - Room
- - Grade
- - Group
- - GradePartiton (sic)
- - Course
- - EpochPlanCourse
- - Lesson
- - Fraction
-
-Grundsätzlich könnten diese so bleiben, wie sie sind. Es müssten nur überflüssige Felder und Referenzen ohne vorhandenes Ziel entfernt werden.
-
-Einige Element-Typen sind allerdings nicht wirklich „Top-Level-Elemente“ mit unabhängiger Existenz – deren Elemente gehören praktisch einem anderen Element. Das sind:
-
- - Absence (gehört einem Teacher-, Grade- oder Room-Element)
- - GradePartit[i]on (gehört einem Grade-Element)
- - Fraction (gehört einem Lesson-Element)
-
-Die Absence- und GradePartit[i]on-Elemente würde ich, in vereinfachter Form (und ohne Id-Feld) als Eigenschaften der Elemente, denen sie gehören, umgestalten. Die Fraction-Elemente würde ich völlig weglassen, da das Schnittstellenprogramm in einer für sich geeigneten Form aus den GradePartit[i]on-Elementen und den Group-Referenzen der Course-Elemente besser erstellen kann.
-
-Meine Wunschvorstellung für die Datenstruktur würde dann ungefähr wie unten dargestellt aussehen (als JSON-Dokument gedacht).
+Die Daten werden als JSON-Objekt ausgegeben, der Dateiname sollte mit "_w365.json" enden.
 
 ### Top-Level-Objekt
 
 ```
 {
-    "W365TT": {},
-    "Days": [],
-    "Hours": [],
-    "Teachers": [],
-    "Subjects": [],
-    "Rooms": [],
-    "RoomGroups": [],
-    "Classes": [],
-    "Groups": [],
-    "Courses": [],
-    "SuperCourses": [],
-    "SubCourses": [],
-    "Lessons": [],
-    "Constraints": {}
+    "w365TT": {},
+    "printOptions": {},
+    "days": [],
+    "hours": [],
+    "teachers": [],
+    "subjects": [],
+    "rooms": [],
+    "roomGroups": [],
+    "classes": [],
+    "groups": [],
+    "courses": [],
+    "superCourses": [],
+    "lessons": [],
+    "constraints": {}
 }
 ```
 
-Ich habe die Mehrzahl für die Schlüssel benutzt, um die Listennatur zu verdeutlichen.
+Die Array-Werte enthalten die ggf. geordneten Elemente des entsprechenden Typs. Alle Elemente sind JSON-Objekte. Diese Elemente haben ein optionales „Type“-Feld, das den Namen des Elements ("Day", "Hour", usw.) enthält. Diese Namen werden großgeschrieben, als Objekteigenschaften aber kleingeschrieben.
 
-Die Array-Werte enthalten die ggf. geordneten Elemente des entsprechenden Typs. Alle Elemente sind JSON-Objekte.
-
-Einige Namen habe ich geändert, weil sie mir passender erschienen, das ist aber ein unwichtiges Detail:
+Einige Element-Namen sind anders als die entsprechenden Waldorf-365-Elemente:
 
  - „TimedObject“ -> „Hour“
  - „Grade“ -> „Class“
- - „GradePartiton“ -> „Division“ (hier nicht vorhanden, da kein Top-Level-Element)
+ - „GradePartiton“ [sic!] -> „Division“ (im Top-Level-Objekt nicht vorhanden, da kein Top-Level-Element)
  - „EpochPlanCourse“ -> „SuperCourse“
 
-Neu sind hier „W365TT“, „RoomGroup“, „SubCourse“ und „Constraint“.
+Neu sind „W365TT“, „PrintOptions“, „RoomGroup“ und „Constraint“. Es gibt auch  „SubCourse“ – einen Epochenkurs –, das als Unterelement von "SuperCourse" auftaucht.
 
 #### W365TT
 
 In diesem Objekt könnten allgemeine Informationen oder Eigenschaften, die nirgendwo anders richtig passen, erscheinen, z.B.:
+
 ```
-  "W365TT": {
-    "SchoolName": "Musterschule",
-    "Scenario": "96138a85-d78f-4bd0-a5a7-bc8debe29320"
+  "w365TT": {
+    "institution": "Musterschule Mulmingen",
+    "scenario": "96138a85-d78f-4bd0-a5a7-bc8debe29320",
+    "firstAfternoonHour":   6,
+    "middayBreak":          [5, 6, 7]
   },
 ```
 
-#### RoomGroups
+"schoolName" ist z.B. für Ausdrucke nützlich. "firstAfternoonHour" und "middayBreak" sind für Constraints notwendig, die Nachmittagsstunden und Mittagspausen regeln.
 
-Statt über das RoomGroup-Feld der Room-Elemente eine Raumgruppe (die eigentlich ganz anders als ein Room ist) zu definieren, finde ich einen eigenen Element-Typ klarer.
+#### PrintOptions
 
-#### SubCourse
-
-Für die eigentliche Stundenplanung braucht man nur Lesson-Elemente. Die Kurselemente können aber wichtige Informationen über manche Beziehungen verdeutlichen. Für die „normalen“ Kurse finde ich die Bezeichnung „Course“ passend. Die Epochenschienen (die ich mit „SuperCourse“ bezeichne) haben selbst (eigentlich) keine Lehrer, Gruppen oder Räume. Diese kommen aus den dazugehörigen Epochenkursen. Der Klarheit und Flexibilität wegen hätte ich gern auch diese Epochenkurse („SubCourse“) dabei. Den SubCourse-Elementen sind keine Lesson-Elemente zugeordnet. Ein SubCourse-Element hat aber eine Referenz zum übergeordneten SuperCourse-Element.
+Dieses Objekt enthält Parameter für die Ausdrucke (PDF-Ausgabe über Typst), für die Stundenplanung selbst ist es nicht relevant. Die Felder werden in einem anderen Dokument beschrieben: [Druckoptionen](druckoptionen.md#druckoptionen).
 
 #### Constraint
 
-Diese Objekte sind noch zu definieren.
+Diese Objekte haben verschiedene Felder, aber alle haben:
+
+```
+    "constraint": string (Constraint-Typ)
+    "weight": int (0 – 100)
+```
+
+Für diese Objekte gibt es eine eigene Dokumentation: [Die Constraint-Elemente](constraintelemente.md#die-constraint-elemente).
 
 ### Die Top-Level-Elemente
 
@@ -94,10 +74,10 @@ Ich habe in jedem Element ein „Type“-Eigenschaft, das den Typ des Elements a
 
 ```
 {
-    "Id":       "069240ee-b709-4fe2-813a-f04ce8c3614e",
-    "Type":     "Day",
-	"Name":     "Montag",
-	"Shortcut": "Mo"
+    "id":       "069240ee-b709-4fe2-813a-f04ce8c3614e",
+    "type":     "Day",
+	"name":     "Montag",
+	"shortcut": "Mo"
 }
 ```
 
@@ -105,45 +85,38 @@ Ich habe in jedem Element ein „Type“-Eigenschaft, das den Typ des Elements a
 
 ```
 {
-    "Id":       "58708f73-4703-4975-b6e2-ebb03971ff5a",
-    "Type":     "Hour",
-    "Name":     "Hauptunterricht I",
-	"Shortcut": "HU I",
-    "Start":    "07:35",
-	"End":      "08:25",
-	"FirstAfternoonHour":   false,
-	"MiddayBreak":          false
+    "id":       "58708f73-4703-4975-b6e2-ebb03971ff5a",
+    "type":     "Hour",
+    "name":     "Hauptunterricht I",
+	"shortcut": "HU I",
+    "start":    "07:35",
+	"end":      "08:25"
 }
 ```
 
-Die Eigenschaften „FirstAfternoonHour“ und „MiddayBreak“ wären vielleicht besser im W365TT-Element, in etwas klarerer Form, untergebracht:
-
-```
-    "FirstAfternoonHour":   6,
-    "MiddayBreak":          [5, 6, 7],
-```
+"start" und "end" können auch Zeiten mit Sekunden (z.B. "07:35:00") sein, die Sekunden werden ignoriert. Diese Felder sind ggf. für Constraints notwendig, die Pausenzeiten oder Stundenlängen berücksichtigen, aber vor allem für die Ausdrucke (siehe unter PrintOptions die Felder "withTimes" und "withBreaks").
 
 
 #### Teacher
 
 ```
 {
-    "Id":           "9e3251d6-0ab3-4c25-ab66-426d1c339d37",
-    "Type":         "Teacher",
-    "Name":         "Bach",
-	"Shortcut":     "SB",
-	"Firstname":    "Sebastian",
-	"Absences":     [
-        {"Day": 0, "Hour": 7},
-        {"Day": 0, "Hour": 8}
+    "id":           "9e3251d6-0ab3-4c25-ab66-426d1c339d37",
+    "type":         "Teacher",
+    "name":         "Bach",
+	"shortcut":     "SB",
+	"firstname":    "Sebastian",
+	"absences":     [
+        {"day": 0, "hour": 7},
+        {"day": 0, "hour": 8}
     ],
-	"MinLessonsPerDay": 2,
-	"MaxLessonsPerDay": -1,
-	"MaxDays":          -1,
-	"MaxGapsPerDay":    -1,
-    "MaxGapsPerWeek":   3,
-	"MaxAfternoons":    -1,
-    "LunchBreak":       true
+	"minLessonsPerDay": 2,
+	"maxLessonsPerDay": -1,
+	"maxDays":          -1,
+	"maxGapsPerDay":    -1,
+    "maxGapsPerWeek":   3,
+	"maxAfternoons":    -1,
+    "lunchBreak":       true
 }
 ```
 
@@ -153,10 +126,10 @@ Bei den Min-/Max-Constraints bedeutet -1, dass der Constraint nicht aktiv ist.
 
 ```
 {
-    "Id":           "5791c199-3fa3-4aea-8124-bec9d4a7759e",
-    "Type":         "Subject",
-    "Name":         "Hauptunterricht",
-	"Shortcut":     "HU"
+    "id":           "5791c199-3fa3-4aea-8124-bec9d4a7759e",
+    "type":         "Subject",
+    "name":         "Hauptunterricht",
+	"shortcut":     "HU"
 }
 ```
 
@@ -164,23 +137,27 @@ Bei den Min-/Max-Constraints bedeutet -1, dass der Constraint nicht aktiv ist.
 
 ```
 {
-    "Id":       "f0d7a9e4-841e-4585-adee-38cde49aa676",
-    "Type":     "Room",
-    "Name":     "Klassenzimmer 1",
-	"Shortcut": "k1",
-	"Absences": []
+    "id":       "f0d7a9e4-841e-4585-adee-38cde49aa676",
+    "type":     "Room",
+    "name":     "Klassenzimmer 1",
+	"shortcut": "k1",
+	"absences": []
 }
 ```
 
 #### RoomGroup
 
+In Waldorf 365 hat ein Kurs eine Liste „PreferredRooms“. Von dieser Liste muss eins dieser Room-Elemente für jede Stunde (Lesson-Element) des Kurses zur Verfügung stehen. Die einzelnen Stunden können unterschiedliche Räume haben. Diese Liste kann auch leer sein. Alternativ kann die Liste aus *einer* RoomGroup-Referenz bestehen. Dann braucht jede Stunde alle Räume der Raumgruppe (sie sind „Pflichträume“).
+
+In Waldorf 365 wird eine Raumgruppe über das RoomGroup-Feld der Room-Elemente definiert. Da sie eigentlich ganz andere Objekte sind, haben sie hier einen eigenen Element-Typ.
+
 ```
 {
-    "Id":       "f0d7a9e4-841e-4585-adee-38cde49aa676",
-    "Type":     "RoomGroup",
-    "Name":     "ad hoc room group for epoch plans w2, k11, auv, ch, mu",
-	"Shortcut": "adhoc11",
-	"Rooms":    [
+    "id":       "f0d7a9e4-841e-4585-adee-38cde49aa676",
+    "type":     "RoomGroup",
+    "name":     "ad hoc room group for epoch plans w2, k11, auv, ch, mu",
+	"shortcut": "adhoc11",
+	"rooms":    [
         "36dd1fff-8a20-42f2-a3b6-27b244e10150",
         "541ae8c8-5c31-4e80-8d08-a1935b13294e",
         "63d6f30e-e064-490e-9f95-cd212eb6c435",
@@ -190,84 +167,87 @@ Bei den Min-/Max-Constraints bedeutet -1, dass der Constraint nicht aktiv ist.
 }
 ```
 
-Bei den Räumen verstehe ich die Regeln so:
-
- - Die Room-Elemente stehen für die real vorhandenen Räume.
- - Die Rooms-Eigenschaft eines RoomGroup-Elements enthält nur Room-Referenzen. Diese Räume werden für die Stunde unbedingt gebraucht, sind also Pflichträume.
- - Ein Kurs (Course- oder SubCourse-Element) kann über seine PreferredRooms-Eigenschaft eine Liste Room-Referenzen angeben. Von dieser Liste muss eins dieser Room-Elemente für jede Stunde (Lesson-Element) des Kurses zur Verfügung stehen. Die einzelnen Stunden können unterschiedliche Räume haben. Diese Liste kann auch leer sein. Alternativ kann die Liste aus *einer* RoomGroup-Referenz bestehen. Dann braucht jede Stunde alle Räume der Raumgruppe.
+"rooms" enthält nur Room-Referenzen (also real vorhandene Einzelräume).
 
 #### Class
 
 ```
 {
-    "Id":           "5b6cbd2c-d27f-4e73-8a56-a1c7d348b727",
-    "Type":         "Class",
-    "Name":         "Klasse 10",
-	"Shortcut":     "10",
-	"Absences":     [],
-	"Level":        10,
-    "Letter":       "",
-    "Divisions":    [
+    "id":           "5b6cbd2c-d27f-4e73-8a56-a1c7d348b727",
+    "type":         "Class",
+    "name":         "Klasse 10",
+	"shortcut":     "10",
+	"absences":     [],
+	"level":        10,
+    "letter":       "",
+    "divisions":    [
         {
-            "Name": "A und B Gruppe",
-            "Groups": [
+            "id": "9137860d-a656-400f-b4c1-d3e90cf5a4d8",
+            "type": "Division",
+            "name": "A und B Gruppe",
+            "groups": [
                 "904e8c12-a817-49a1-9fc2-f554a19f5873",
                 "4c35be10-2519-41bb-9539-4c4caf95f8e7"
             ]
         },
         {
-            "Name": "Fremdsprachengruppen",
-            "Groups": [
+            "name": "Fremdsprachengruppen",
+            "groups": [
                 "00c1ec1b-5f65-43c1-9a73-5fff8d8751e2",
                 "32c960be-d2da-4cdf-ad80-6ab61f45aef6",
                 "cc92e228-52a2-412a-b861-de9952d87a51"
             ]
         },
         {
-            "Name": "Leistungsgruppen",
-            "Groups": [
+            "name": "Leistungsgruppen",
+            "groups": [
                 "b7a88739-e323-49a8-911d-7ba67cb746cd",
                 "0fc5740c-1706-475c-b496-ec722e8c5a58"
             ]
         }
     ],
-	"MinLessonsPerDay": 4,
-	"MaxLessonsPerDay": -1,
-	"MaxGapsPerDay":    -1,
-    "MaxGapsPerWeek":   1,
-	"MaxAfternoons":    3,
-    "LunchBreak":       true,
-	"ForceFirstHour":   true
+	"minLessonsPerDay": 4,
+	"maxLessonsPerDay": -1,
+	"maxGapsPerDay":    -1,
+    "maxGapsPerWeek":   1,
+	"maxAfternoons":    3,
+    "lunchBreak":       true,
+	"forceFirstHour":   true
 }
 ```
-Ich habe hier ein „Shortcut“-Eigenschaft hinzugefügt (= Level + Letter) – weil es mir nützlich erscheint.
+
+"shortcut“ ist eigentlich nur "level" + "letter", aber in dieser Form oft nützlicher.
+
+In Waldorf 365 ist eine Division ein Top-Level-Objekt. Deswegen haben sie ein "id"-Feld. Da sie nur hier gebraucht werden, erscheinen die Division-Elemente nur im "divisions"-Feld der Klassen.
 
 #### Group
 
 ```
 {
-    "Id":           "00c1ec1b-5f65-43c1-9a73-5fff8d8751e2",
-    "Type":         "Group",
-	"Shortcut":     "F",
+    "id":           "00c1ec1b-5f65-43c1-9a73-5fff8d8751e2",
+    "type":         "Group",
+	"shortcut":     "F",
 }
 ```
 
 #### Course
 
+Für die eigentliche Stundenplanung braucht man nur Lesson-Elemente. Die Kurselemente können aber wichtige Informationen über manche Beziehungen verdeutlichen. Anders als in Waldorf 365 steht hier ein Course-Element nur für einen „normalen“ Kurs. Die Epochenschienen werden durch die SuperCourse-Elements zusammen mit den SubCourse-Elementen (für die Epochenkurse) abgedeckt.
+
 ```
 {
-    "Id":           "c0f5c633-534a-43f5-9541-df3d93b771a9",
-    "Type":         "Course",
-    "Subjects":     [
+    "id":           "c0f5c633-534a-43f5-9541-df3d93b771a9",
+    "type":         "Course",
+    "subjects":     [
         "12165a63-6bf9-4b81-b06c-10b141d6c94e"
     ],
-	"Groups":       [
+	"groups":       [
         "2f6082ce-0eb9-45ff-b2e8-a5475462454c"
     ],
-    "Teachers":     [
+    "teachers":     [
         "f24f0ed6-f5ad-423e-9a6c-6a46536b85ab"
     ],
-    "PreferredRooms":   [
+    "preferredRooms":   [
         "541ae8c8-5c31-4e80-8d08-a1935b13294e",
         "4d44ae7e-0e31-4aa0-a539-d4b2570b1b5c",
         "7d0c09fa-eaf6-4298-8faa-afeb1f4477c4"
@@ -275,77 +255,73 @@ Ich habe hier ein „Shortcut“-Eigenschaft hinzugefügt (= Level + Letter) –
 }
 ```
 
-Es wäre schön, wenn es immer nur ein Subject gäbe, also:
-```
-	"Subject":      "12165a63-6bf9-4b81-b06c-10b141d6c94e",
-```
-Das entspricht aber nicht dem aktuellen Stand von Waldorf 365.
-
-Die Ziele der Group-Werte können Group- oder Class-Elemente sein.
+Waldorf 365 unterstützt Kurse mit mehr als einem Fach. Nur deswegen ist hier "subjects" eine Liste. Die "groups" können Group- oder Class-Elemente sein. Für "preferredRooms" siehe die "RoomGroup"-Beschreibung.
 
 #### SuperCourse
 
 ```
 {
-    "Id":           "kNWJ5jArzE_hQ9FSl6pE3",
-    "Type":         "SuperCourse",
-	"Subject":      "5791c199-3fa3-4aea-8124-bec9d4a7759e"
-}
-```
-
-#### SubCourse
-
-Das ist fast genau wie ein Course-Element, aber mit zusätzlicher Eigenschaft „SuperCourse“. Ein SubCourse-Element darf nicht als Ziel des Course-Wertes eines Lesson-Elements vorkommen.
-
-```
-{
-    "Id":           "c0f5c633-534a-43f5-9541-df3d93b771a9",
-    "Type":         "SubCourse",
-    "SuperCourse":  "kNWJ5jArzE_hQ9FSl6pE3",
-    "Subjects":     [
-        "12165a63-6bf9-4b81-b06c-10b141d6c94e"
-    ],
-	"Groups":       [
-        "2f6082ce-0eb9-45ff-b2e8-a5475462454c"
-    ],
-    "Teachers":     [
-        "f24f0ed6-f5ad-423e-9a6c-6a46536b85ab"
-    ],
-    "PreferredRooms":   [
-        "541ae8c8-5c31-4e80-8d08-a1935b13294e","4d44ae7e-0e31-4aa0-a539-d4b2570b1b5c","7d0c09fa-eaf6-4298-8faa-afeb1f4477c4"
+    "id":           "kNWJ5jArzE_hQ9FSl6pE3",
+    "type":         "SuperCourse",
+    "epochPlan":    "271baf6f-151b-4354-b50c-add01622cb10",
+	"subject":      "5791c199-3fa3-4aea-8124-bec9d4a7759e",
+    "subCourses":   [
+        SubCourse-Element,
+        SubCourse-Element
     ]
 }
 ```
 
-Auch hier wäre es schön, wenn es immer nur ein Subject gäbe, also:
+**SubCourse**
+
+Ein SubCourse-Element ist fast genau wie ein Course-Element, darf aber nicht als "course" eines Lesson-Elements vorkommen. Da die SubCourse-Element nur im Zusammenhang mit einem SuperCourse-Element relevant sind, tauchen sie nur in dessen "subCourses"-Feld auf. Auch aus Gründen, die mit wiederholten Id-Feldern zu tun haben, ist ein SubCourse kein Top-Level-Element.
+
 ```
-	"Subject":      "12165a63-6bf9-4b81-b06c-10b141d6c94e",
+{
+    "id":           "c0f5c633-534a-43f5-9541-df3d93b771a9",
+    "type":         "SubCourse",
+    "subjects":     [
+        "12165a63-6bf9-4b81-b06c-10b141d6c94e"
+    ],
+	"groups":       [
+        "2f6082ce-0eb9-45ff-b2e8-a5475462454c"
+    ],
+    "teachers":     [
+        "f24f0ed6-f5ad-423e-9a6c-6a46536b85ab"
+    ],
+    "preferredRooms":   [
+        "541ae8c8-5c31-4e80-8d08-a1935b13294e","4d44ae7e-0e31-4aa0-a539-d4b2570b1b5c","7d0c09fa-eaf6-4298-8faa-afeb1f4477c4"
+    ]
+}
 ```
 
 #### Lesson
 
 ```
 {
-    "Id":       "sSLW2M3LKhxTjMk_MWU_h",
-    "Type":     "Lesson",
-    "Course":   "kNWJ5jArzE_hQ9FSl6pE3",
-	"Duration": 1,
-	"Day":      0,
-	"Hour":     0,
-    "Fixed":    true,
-	"LocalRooms":   [
+    "id":       "sSLW2M3LKhxTjMk_MWU_h",
+    "type":     "Lesson",
+    "course":   "kNWJ5jArzE_hQ9FSl6pE3",
+	"duration": 1,
+	"day":      0,
+	"hour":     0,
+    "fixed":    true,
+	"localRooms":   [
         "f28f3540-dd02-4c6d-a166-78bb359c1f26"
-    ]
+    ],
+    "background": "FFE080"
 }
 ```
 
-Das Ziel des Course-Wertes kann ein Course- oder ein SuperCourse-Element sein.
+"course" kann ein Course- oder ein SuperCourse-Element sein. "localRooms" sind die Room-Elemente (nur reale Räume), die dem Lesson-Element zugeordnet sind. Sie sollten kompatibel mit den "preferredRooms" des Kurses sein.
 
 Ein nicht platziertes Lesson-Element hätte:
 
 ```
 	"Day":          -1,
-	"Hour":         0,
+	"Hour":         -1,
     "Fixed":        false,
     "LocalRooms":   []
 ```
+
+**TODO**: Hintergrundfarbe tatsächlich so als "RRGGBB" angeben? Wenn "background" keinen Wert hat, wird die Voreinstellung im Typst-Skript benutzt.
