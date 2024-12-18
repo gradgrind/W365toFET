@@ -176,7 +176,7 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 			Subject:  subject,
 			Groups:   groups,
 			Teachers: teachers,
-			//Rooms: filled later
+			//Room: filled later
 			Lessons: []ActivityIndex{},
 		}
 		ttinfo.CourseInfo[cref] = cinfo

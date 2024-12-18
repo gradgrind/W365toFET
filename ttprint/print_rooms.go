@@ -1,17 +1,222 @@
 package ttprint
 
-/*
 import (
-	"encoding/json"
+	"W365toFET/base"
+	"W365toFET/ttbase"
 	"fmt"
-	"log"
-	"os"
-	"os/exec"
-	"path/filepath"
-
 	"strings"
 )
 
+func genTypstRoomData(
+	ttinfo *ttbase.TtInfo,
+	plan_name string,
+	datadir string,
+	stemfile string, // basic name part of source file
+	flags map[string]bool,
+) {
+	db := ttinfo.Db
+	pages := [][]any{}
+	// Generate the tiles.
+	roomTiles := map[base.Ref][]Tile{}
+	type rdata struct { // for SuperCourses
+		groups   map[base.Ref]bool
+		teachers map[base.Ref]bool
+	}
+
+	for cref, cinfo := range ttinfo.CourseInfo {
+		subject := ttinfo.Ref2Tag[cinfo.Subject]
+		// For SuperCourses gather the resources from the relevant SubCourses.
+		subrefs, ok := ttinfo.SuperSubs[cref]
+		if ok {
+			rmap := map[base.Ref]rdata{}
+			for _, subref := range subrefs {
+				sub := db.Elements[subref].(*base.SubCourse)
+
+				//TODO: A room can be part of sub.Room OR
+				// added in the lessons.
+
+				if sub.Room != "" {
+					rref := sub.Room
+
+					//
+
+					rdata1, ok := rmap[rref]
+					if !ok {
+						rdata1 = rdata{
+							map[base.Ref]bool{},
+							map[base.Ref]bool{},
+						}
+					}
+					for _, tref1 := range sub.Teachers {
+						rdata1.teachers[tref1] = true
+					}
+					for _, gref := range sub.Groups {
+						rdata1.groups[gref] = true
+					}
+					rmap[rref] = rdata1
+				}
+			}
+			// The rooms are associated with the lessons
+
+			//TODO: Check on this. I think I had decided that the rooms
+			// in the lesson's list are the chosen ones only, not the
+			// compulsory ones.
+
+			for _, lix := range cinfo.Lessons {
+				l := ttinfo.Activities[lix].Lesson
+				if l.Day < 0 {
+					continue
+				}
+				//?? rooms := l.Rooms
+				for rref, rdata1 := range rmap {
+
+					//TODO: Note that this is probably a GENERAL room ref
+
+					tlist := []base.Ref{}
+					for t := range rdata1.teachers {
+						tlist = append(tlist, t)
+					}
+					glist := []base.Ref{}
+					for g := range rdata1.groups {
+						glist = append(glist, g)
+					}
+					// Choose the rooms in "rooms" which could be relevant for
+					// the list of (general) rooms in tdata1.rooms.
+					rlist := []base.Ref{}
+
+					/*????
+					for rref := range tdata1.rooms {
+						rx := db.Elements[rref]
+						_, ok := rx.(*base.Room)
+						if ok {
+							if slices.Contains(rooms, rref) {
+								rlist = append(rlist, rref)
+							}
+							continue
+						}
+						rg, ok := rx.(*base.RoomGroup)
+						if ok {
+							for _, rr := range rg.Rooms {
+								if slices.Contains(rooms, rr) {
+									rlist = append(rlist, rr)
+								}
+							}
+							continue
+						}
+						rc, ok := rx.(*base.RoomChoiceGroup)
+						if ok {
+							for _, rr := range rc.Rooms {
+								if slices.Contains(rooms, rr) {
+									rlist = append(rlist, rr)
+								}
+							}
+							continue
+						}
+						base.Bug.Fatalf("Not a room: %s\n", rref)
+					}
+					*/
+					gstrings := ttinfo.SortList(glist)
+					tstrings := ttinfo.SortList(tlist)
+					rstrings := ttinfo.SortList(rlist)
+					tile := Tile{
+						Day:      l.Day,
+						Hour:     l.Hour,
+						Duration: l.Duration,
+						Fraction: 1,
+						Offset:   0,
+						Total:    1,
+						Centre:   strings.Join(gstrings, ","),
+						TL:       subject,
+						TR:       strings.Join(tstrings, ","),
+						BR:       strings.Join(rstrings, ","),
+					}
+					roomTiles[rref] = append(roomTiles[rref], tile)
+				}
+			}
+		} else {
+			// A normal Course
+			glist := []base.Ref{}
+			glist = append(glist, cinfo.Groups...)
+			gstrings := ttinfo.SortList(glist)
+
+			// The rooms are associated with the lessons
+			for _, lix := range cinfo.Lessons {
+				l := ttinfo.Activities[lix].Lesson
+				if l.Day < 0 {
+					continue
+				}
+				rlist := []base.Ref{}
+				rlist = append(rlist, l.Rooms...)
+				rstrings := ttinfo.SortList(rlist)
+
+				for _, tref := range cinfo.Teachers {
+					// If there is more than one teacher, list the others
+					tlist := []base.Ref{}
+					if len(cinfo.Teachers) > 1 {
+						for _, tref1 := range cinfo.Teachers {
+							if tref1 != tref {
+								tlist = append(tlist, tref1)
+							}
+						}
+					}
+					tstrings := ttinfo.SortList(tlist)
+					tile := Tile{
+						Day:      l.Day,
+						Hour:     l.Hour,
+						Duration: l.Duration,
+						Fraction: 1,
+						Offset:   0,
+						Total:    1,
+						Centre:   strings.Join(gstrings, ","),
+						TL:       subject,
+						TR:       strings.Join(tstrings, ","),
+						BR:       strings.Join(rstrings, ","),
+					}
+					roomTiles[tref] = append(roomTiles[tref], tile)
+				}
+			}
+		}
+	}
+
+	for _, t := range db.Teachers {
+		ctiles, ok := roomTiles[t.Id]
+		if !ok {
+			continue
+		}
+		pages = append(pages, []any{
+			fmt.Sprintf("%s %s (%s)", t.Firstname, t.Name, t.Tag),
+			ctiles,
+		})
+	}
+	dlist := []string{}
+	for _, d := range db.Days {
+		dlist = append(dlist, d.Name)
+	}
+	hlist := []ttHour{}
+	for _, h := range db.Hours {
+		hlist = append(hlist, ttHour{
+			Hour:  h.Tag,
+			Start: h.Start,
+			End:   h.End,
+		})
+	}
+	info := map[string]any{
+		"School":     db.Info.Institution,
+		"Days":       dlist,
+		"Hours":      hlist,
+		"WithTimes":  flags["WithTimes"],
+		"WithBreaks": flags["WithBreaks"],
+	}
+	tt := Timetable{
+		Title: "Stundenpläne der Lehrer",
+		Info:  info,
+		Plan:  plan_name,
+		Pages: pages,
+	}
+	makeTypstJson(tt, datadir, stemfile+"_teachers")
+}
+
+/*
 func PrintRoomTimetables(
 	ttdata TimetableData,
 	plan_name string,

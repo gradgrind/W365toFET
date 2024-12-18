@@ -162,7 +162,7 @@ func (db *DbTopLevel) getCourseRoom(
 	// Deal with rooms. W365 can have a single RoomGroup or a list of Rooms.
 	// If there is a list of Rooms, this is converted to a RoomChoiceGroup.
 	// In the end there should be a single Room, RoomChoiceGroup or RoomGroup
-	// in the "Room" field. The "PreferredRooms" field in cleared.
+	// in the "Room" field.
 	// If a list of rooms recurs, the same RoomChoiceGroup is used.
 	//
 	room := base.Ref("")
