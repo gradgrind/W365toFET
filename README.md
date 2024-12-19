@@ -26,7 +26,7 @@ Die ausführbaren Dateien können auch in einem anderen (schon existierenden!) O
 go build -o bin ./cmd/W365toFET
 ```
 
-## Aktueller Stand (07.12.2024)
+## Aktueller Stand (19.12.2024)
 
 Bis auf die „Constraint“-Elemente werden alle Elemente in `docs/stundenplanschnittstelle.md` in einigermaßen entsprechende FET-Strukturen übertragen.
 
@@ -72,6 +72,7 @@ Bei Angabe entsprechender Kommandozeilenoptionen können auch die PDF-Dateien au
 | :--- | :--- |
 | -C | Erstelle PDF für Stundenpläne der Klassen |
 | -T | Erstelle PDF für Stundenpläne der Lehrer |
+| -R | Erstelle PDF für Stundenpläne der Räume |
 | -nb | Vereinfachte Pläne: Pausen nicht darstellen |
 | -nt | Vereinfachte Pläne: Stundenzeiten nicht zeigen |
 | -x | Platzierungen nicht auf Gültigkeit kontrollieren |

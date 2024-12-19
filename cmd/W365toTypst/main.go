@@ -15,6 +15,7 @@ func main() {
 	// Define and read command-line flags
 	teachers := flag.Bool("T", false, "Print individual teacher tables")
 	classes := flag.Bool("C", false, "Print individual class tables")
+	rooms := flag.Bool("R", false, "Print individual room tables")
 
 	nocheck := flag.Bool("x", false, "Don't check for invalid placements")
 	typstexec := flag.String("typst", "typst", "Typst executable")
@@ -79,6 +80,10 @@ func main() {
 	if *classes {
 		ttprint.MakePdf(
 			"print_timetable.typ", datadir, stemfile+"_classes", *typstexec)
+	}
+	if *rooms {
+		ttprint.MakePdf(
+			"print_timetable.typ", datadir, stemfile+"_rooms", *typstexec)
 	}
 
 	base.Message.Println("OK")

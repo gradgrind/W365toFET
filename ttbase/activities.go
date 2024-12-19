@@ -13,7 +13,7 @@ type Activity struct {
 	Index         ActivityIndex
 	Duration      int
 	Resources     []ResourceIndex
-	XRooms        []ResourceIndex
+	XRooms        []ResourceIndex // for room choices
 	Fixed         bool
 	Placement     int // day * nhours + hour, or -1 if unplaced
 	PossibleSlots []SlotIndex
@@ -403,7 +403,7 @@ func (ttinfo *TtInfo) unplaceActivity(aix ActivityIndex) {
 }
 
 // Note that – at present – testPlacement, findClashes and placeActivity
-// don't try to place XRooms. This is intentional, assuming that these
+// don't try to place room choices. This is intentional, assuming that these
 // will be placed by other functions ...
 
 func (ttinfo *TtInfo) testPlacement(aix ActivityIndex, slot int) bool {
