@@ -377,6 +377,12 @@ func (ttinfo *TtInfo) unplaceActivity(aix ActivityIndex) {
 			ttinfo.TtSlots[i+ix] = 0
 		}
 	}
+	for _, rix := range a.XRooms {
+		i := rix*ttinfo.SlotsPerWeek + slot
+		for ix := 0; ix < a.Duration; ix++ {
+			ttinfo.TtSlots[i+ix] = 0
+		}
+	}
 	a.Placement = -1
 	for _, aixp := range a.Parallel {
 		a := ttinfo.Activities[aixp]
@@ -386,10 +392,19 @@ func (ttinfo *TtInfo) unplaceActivity(aix ActivityIndex) {
 				ttinfo.TtSlots[i+ix] = 0
 			}
 		}
+		for _, rix := range a.XRooms {
+			i := rix*ttinfo.SlotsPerWeek + slot
+			for ix := 0; ix < a.Duration; ix++ {
+				ttinfo.TtSlots[i+ix] = 0
+			}
+		}
 		a.Placement = -1
 	}
-
 }
+
+// Note that – at present – testPlacement, findClashes and placeActivity
+// don't try to place XRooms. This is intentional, assuming that these
+// will be placed by other functions ...
 
 func (ttinfo *TtInfo) testPlacement(aix ActivityIndex, slot int) bool {
 	// Simple boolean placement test. It assumes the slot is possible –
