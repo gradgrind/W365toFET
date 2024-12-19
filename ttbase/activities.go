@@ -13,6 +13,7 @@ type Activity struct {
 	Index         ActivityIndex
 	Duration      int
 	Resources     []ResourceIndex
+	XRooms        []ResourceIndex
 	Fixed         bool
 	Placement     int // day * nhours + hour, or -1 if unplaced
 	PossibleSlots []SlotIndex
@@ -92,9 +93,38 @@ func (ttinfo *TtInfo) addActivityInfo(
 			}
 		}
 
-		for _, rref := range cinfo.Room.Rooms {
+		crooms := cinfo.Room.Rooms
+		for _, rref := range crooms {
 			// Only take the compulsory rooms here
 			resources = append(resources, r2tt[rref])
+		}
+		a := ttinfo.Activities[aix]
+		a.Resources = resources
+		// Now add room-choices. Check against room choices in course.
+		// Keep it simple, even though this will miss some errors.
+		rchoices := map[base.Ref]bool{}
+		for _, rlist := range cinfo.Room.RoomChoices {
+			for _, rref := range rlist {
+				rchoices[rref] = true
+			}
+		}
+		nrooms := len(crooms) + len(cinfo.Room.RoomChoices)
+		a.XRooms = make([]ResourceIndex, 0, nrooms)
+		for _, rref := range ttl.Lesson.Rooms {
+			if slices.Contains(crooms, rref) {
+				continue
+			}
+			if rchoices[rref] {
+				a.XRooms = append(a.XRooms, r2tt[rref])
+			} else {
+				base.Error.Printf("Room (%s) used for lesson of"+
+					" course %s:\n  Room not specified for course.\n",
+					ttinfo.Ref2Tag[rref], ttinfo.View(cinfo))
+			}
+		}
+		if len(a.XRooms) > nrooms {
+			base.Warning.Printf("Lesson in course %s uses more rooms"+
+				" than specified for course.\n", ttinfo.View(cinfo))
 		}
 
 		// Sort and compactify different-days activities
@@ -111,8 +141,6 @@ func (ttinfo *TtInfo) addActivityInfo(
 			plist = slices.Compact(plist)
 		}
 
-		a := ttinfo.Activities[aix]
-		a.Resources = resources
 		//PossibleSlots: added later (see "makePossibleSlots"),
 		//DifferentDays: ddlist, // only if not fixed, see below
 		a.Parallel = plist
@@ -211,7 +239,8 @@ func (ttinfo *TtInfo) addActivityInfo(
 					base.Error.Fatalf(
 						"Placement for Fixed Activity %d @ %d invalid:\n"+
 							"  -- %s\n",
-						aix, p, ttinfo.View(ttinfo.Activities[aix].CourseInfo))
+						aix, p, ttinfo.View(a.CourseInfo))
+					//a.XRooms = a.XRooms[:0]
 				}
 				if ttinfo.testPlacement(aix, p) {
 					// Perform placement
@@ -224,7 +253,8 @@ func (ttinfo *TtInfo) addActivityInfo(
 					base.Error.Fatalf(
 						"Placement of Fixed Activity %d @ %d failed:\n"+
 							"  -- %s\n",
-						aix, p, ttinfo.View(ttinfo.Activities[aix].CourseInfo))
+						aix, p, ttinfo.View(a.CourseInfo))
+					//a.XRooms = a.XRooms[:0]
 				}
 			} else {
 				toplace = append(toplace, aix)
@@ -261,6 +291,32 @@ func (ttinfo *TtInfo) addActivityInfo(
 					"  -- %s\n",
 				aix, p, ttinfo.View(cinfo))
 			a.Placement = -1
+			a.XRooms = a.XRooms[:0]
+		}
+	}
+
+	// Add room choices where possible.
+	for aix := 1; aix < len(ttinfo.Activities); aix++ {
+		a := ttinfo.Activities[aix]
+		if len(a.XRooms) != 0 {
+			var rnew []ResourceIndex
+			p := a.Placement
+			for _, rix := range a.XRooms {
+				slot := rix*ttinfo.SlotsPerWeek + p
+				if ttinfo.TtSlots[slot] == 0 {
+					ttinfo.TtSlots[slot] = aix
+				} else {
+					base.Warning.Printf(
+						"Lesson in course %s cannot use room %s\n",
+						ttinfo.View(a.CourseInfo),
+						ttinfo.Resources[rix].(*base.Room).Tag)
+					rnew = append(rnew, rix)
+				}
+			}
+			if len(rnew) != 0 {
+				a.XRooms = a.XRooms[:len(rnew)]
+				copy(a.XRooms, rnew)
+			}
 		}
 	}
 }
