@@ -35,4 +35,5 @@ func PrintTT(ttinfo *ttbase.TtInfo, datadir string, name string) {
 	typst := "typst"
 	ttprint.MakePdf("print_timetable.typ", datadir, name+"_teachers", typst)
 	ttprint.MakePdf("print_timetable.typ", datadir, name+"_classes", typst)
+	ttprint.MakePdf("print_timetable.typ", datadir, name+"_rooms", typst)
 }

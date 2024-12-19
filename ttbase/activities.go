@@ -11,15 +11,18 @@ type ResourceIndex = TtIndex
 type ActivityIndex = TtIndex
 
 type Activity struct {
-	Index         ActivityIndex
-	Duration      int
-	Resources     []ResourceIndex
+	Index     ActivityIndex
+	Duration  int
+	Resources []ResourceIndex
 	XRooms        []ResourceIndex // for room choices
-	Fixed         bool
-	Placement     int // day * nhours + hour, or -1 if unplaced
-	PossibleSlots []SlotIndex
-	DifferentDays []ActivityIndex // hard constraint only
-	Parallel      []ActivityIndex // hard constraint only
+	// ExtendedGroups is a list of atomic group indexes for those groups
+	// in the activity's class(es) which are NOT involved in the activity.
+	ExtendedGroups []ResourceIndex
+	Fixed          bool
+	Placement      int // day * nhours + hour, or -1 if unplaced
+	PossibleSlots  []SlotIndex
+	DifferentDays  []ActivityIndex // hard constraint only
+	Parallel       []ActivityIndex // hard constraint only
 
 	// Access to basic information
 	CourseInfo *CourseInfo
@@ -167,15 +170,11 @@ func (ttinfo *TtInfo) addActivityInfo(
 			plist = slices.Compact(plist)
 		}
 
-		a := ttinfo.Activities[aix]
-		a.Duration = l.Duration
-		a.Resources = resources
-		a.Fixed = l.Fixed
-		a.Placement = p
+		a.ExtendedGroups = extendedGroups
 		//PossibleSlots: added later (see "makePossibleSlots"),
 		//DifferentDays: ddlist, // only if not fixed, see below
 		a.Parallel = plist
-		if !l.Fixed {
+		if !a.Fixed {
 			a.DifferentDays = ddlist
 		}
 		//--fmt.Printf("  ((%d)) %+v\n", aix, a.DifferentDays)
@@ -425,6 +424,12 @@ func (ttinfo *TtInfo) UnplaceActivity(aix ActivityIndex) {
 			ttinfo.TtSlots[i+ix] = 0
 		}
 	}
+	for _, rix := range a.XRooms {
+		i := rix*ttinfo.SlotsPerWeek + slot
+		for ix := 0; ix < a.Duration; ix++ {
+			ttinfo.TtSlots[i+ix] = 0
+		}
+	}
 	a.Placement = -1
 
 	for _, aixp := range a.Parallel {
@@ -443,7 +448,7 @@ func (ttinfo *TtInfo) UnplaceActivity(aix ActivityIndex) {
 		}
 		a.Placement = -1
 	}
-
+	//--ttinfo.CheckResourceIntegrity()
 }
 
 // Note that – at present – testPlacement, findClashes and placeActivity
