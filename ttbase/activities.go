@@ -11,17 +11,15 @@ type ResourceIndex = TtIndex
 type ActivityIndex = TtIndex
 
 type Activity struct {
-	Index     ActivityIndex
-	Duration  int
-	Resources []ResourceIndex
-	// ExtendedGroups is a list of atomic group indexes for those groups
-	// in the activity's class(es) which are NOT involved in the activity.
-	ExtendedGroups []ResourceIndex
-	Fixed          bool
-	Placement      int // day * nhours + hour, or -1 if unplaced
-	PossibleSlots  []SlotIndex
-	DifferentDays  []ActivityIndex // hard constraint only
-	Parallel       []ActivityIndex // hard constraint only
+	Index         ActivityIndex
+	Duration      int
+	Resources     []ResourceIndex
+	XRooms        []ResourceIndex // for room choices
+	Fixed         bool
+	Placement     int // day * nhours + hour, or -1 if unplaced
+	PossibleSlots []SlotIndex
+	DifferentDays []ActivityIndex // hard constraint only
+	Parallel      []ActivityIndex // hard constraint only
 
 	// Access to basic information
 	CourseInfo *CourseInfo
@@ -73,11 +71,6 @@ func (ttinfo *TtInfo) addActivityInfo(
 	// Lessons start at index 1!
 	for aix := 1; aix < len(ttinfo.Activities); aix++ {
 		ttl := ttinfo.Activities[aix]
-		l := ttl.Lesson
-		p := -1
-		if l.Day >= 0 {
-			p = l.Day*ttinfo.NHours + l.Hour
-		}
 		cinfo := ttl.CourseInfo
 		resources := []ResourceIndex{}
 
@@ -126,9 +119,38 @@ func (ttinfo *TtInfo) addActivityInfo(
 			}
 		}
 
-		for _, rref := range cinfo.Room.Rooms {
+		crooms := cinfo.Room.Rooms
+		for _, rref := range crooms {
 			// Only take the compulsory rooms here
 			resources = append(resources, r2tt[rref])
+		}
+		a := ttinfo.Activities[aix]
+		a.Resources = resources
+		// Now add room-choices. Check against room choices in course.
+		// Keep it simple, even though this will miss some errors.
+		rchoices := map[base.Ref]bool{}
+		for _, rlist := range cinfo.Room.RoomChoices {
+			for _, rref := range rlist {
+				rchoices[rref] = true
+			}
+		}
+		nrooms := len(crooms) + len(cinfo.Room.RoomChoices)
+		a.XRooms = make([]ResourceIndex, 0, nrooms)
+		for _, rref := range ttl.Lesson.Rooms {
+			if slices.Contains(crooms, rref) {
+				continue
+			}
+			if rchoices[rref] {
+				a.XRooms = append(a.XRooms, r2tt[rref])
+			} else {
+				base.Error.Printf("Room (%s) used for lesson of"+
+					" course %s:\n  Room not specified for course.\n",
+					ttinfo.Ref2Tag[rref], ttinfo.View(cinfo))
+			}
+		}
+		if len(a.XRooms) > nrooms {
+			base.Warning.Printf("Lesson in course %s uses more rooms"+
+				" than specified for course.\n", ttinfo.View(cinfo))
 		}
 
 		// Sort and compactify different-days activities
@@ -146,13 +168,14 @@ func (ttinfo *TtInfo) addActivityInfo(
 		}
 
 		a := ttinfo.Activities[aix]
+		a.Duration = l.Duration
 		a.Resources = resources
-		a.ExtendedGroups = extendedGroups
+		a.Fixed = l.Fixed
 		a.Placement = p
 		//PossibleSlots: added later (see "makePossibleSlots"),
 		//DifferentDays: ddlist, // only if not fixed, see below
 		a.Parallel = plist
-		if !a.Fixed {
+		if !l.Fixed {
 			a.DifferentDays = ddlist
 		}
 		//--fmt.Printf("  ((%d)) %+v\n", aix, a.DifferentDays)
@@ -247,7 +270,8 @@ func (ttinfo *TtInfo) addActivityInfo(
 					base.Error.Fatalf(
 						"Placement for Fixed Activity %d @ %d invalid:\n"+
 							"  -- %s\n",
-						aix, p, ttinfo.View(ttinfo.Activities[aix].CourseInfo))
+						aix, p, ttinfo.View(a.CourseInfo))
+					//a.XRooms = a.XRooms[:0]
 				}
 				if ttinfo.TestPlacement(aix, p) {
 					// Perform placement
@@ -260,7 +284,8 @@ func (ttinfo *TtInfo) addActivityInfo(
 					base.Error.Fatalf(
 						"Placement of Fixed Activity %d @ %d failed:\n"+
 							"  -- %s\n",
-						aix, p, ttinfo.View(ttinfo.Activities[aix].CourseInfo))
+						aix, p, ttinfo.View(a.CourseInfo))
+					//a.XRooms = a.XRooms[:0]
 				}
 			} else {
 				toplace = append(toplace, aix)
@@ -297,6 +322,32 @@ func (ttinfo *TtInfo) addActivityInfo(
 					"  -- %s\n",
 				aix, p, ttinfo.View(cinfo))
 			a.Placement = -1
+			a.XRooms = a.XRooms[:0]
+		}
+	}
+
+	// Add room choices where possible.
+	for aix := 1; aix < len(ttinfo.Activities); aix++ {
+		a := ttinfo.Activities[aix]
+		if len(a.XRooms) != 0 {
+			var rnew []ResourceIndex
+			p := a.Placement
+			for _, rix := range a.XRooms {
+				slot := rix*ttinfo.SlotsPerWeek + p
+				if ttinfo.TtSlots[slot] == 0 {
+					ttinfo.TtSlots[slot] = aix
+				} else {
+					base.Warning.Printf(
+						"Lesson in course %s cannot use room %s\n",
+						ttinfo.View(a.CourseInfo),
+						ttinfo.Resources[rix].(*base.Room).Tag)
+					rnew = append(rnew, rix)
+				}
+			}
+			if len(rnew) != 0 {
+				a.XRooms = a.XRooms[:len(rnew)]
+				copy(a.XRooms, rnew)
+			}
 		}
 	}
 }
@@ -374,9 +425,6 @@ func (ttinfo *TtInfo) UnplaceActivity(aix ActivityIndex) {
 			ttinfo.TtSlots[i+ix] = 0
 		}
 	}
-
-	//--fmt.Printf("------------- REMOVE ----------- %d: %+v\n", aix, a.Resources)
-
 	a.Placement = -1
 
 	for _, aixp := range a.Parallel {
@@ -387,10 +435,20 @@ func (ttinfo *TtInfo) UnplaceActivity(aix ActivityIndex) {
 				ttinfo.TtSlots[i+ix] = 0
 			}
 		}
+		for _, rix := range a.XRooms {
+			i := rix*ttinfo.SlotsPerWeek + slot
+			for ix := 0; ix < a.Duration; ix++ {
+				ttinfo.TtSlots[i+ix] = 0
+			}
+		}
 		a.Placement = -1
 	}
-	//--ttinfo.CheckResourceIntegrity()
+
 }
+
+// Note that – at present – testPlacement, findClashes and placeActivity
+// don't try to place room choices. This is intentional, assuming that these
+// will be placed by other functions ...
 
 func (ttinfo *TtInfo) TestPlacement(aix ActivityIndex, slot int) bool {
 	// Simple boolean placement test. It assumes the slot is possible –
@@ -431,25 +489,6 @@ func (ttinfo *TtInfo) TestPlacement(aix ActivityIndex, slot int) bool {
 	}
 	return true
 }
-
-/* For testing?
-func (tt *TtCore) testPlacement2(aix ActivityIndex, slot int) (int, int) {
-	// Simple boolean placement test. It assumes the slot is possible –
-	// so that it will not, for example, be the last slot of a day if
-	// the activity duration is 2.
-	a := ttinfo.Activities[aix]
-	for _, rix := range a.Resources {
-		i := rix*ttinfo.SlotsPerWeek + slot
-		for ix := 0; ix < a.Duration; ix++ {
-			acx := ttinfo.TtSlots[i+ix]
-			if acx != 0 {
-				return acx, rix
-			}
-		}
-	}
-	return 0, 0
-}
-*/
 
 func (ttinfo *TtInfo) PlaceActivity(aix ActivityIndex, slot int) {
 	// Allocate the resources, assuming none of the slots are blocked!

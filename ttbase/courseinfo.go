@@ -176,7 +176,7 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 			Subject:  subject,
 			Groups:   groups,
 			Teachers: teachers,
-			//Rooms: filled later
+			//Room: filled later
 			Lessons: []ActivityIndex{},
 		}
 		ttinfo.CourseInfo[cref] = cinfo
@@ -189,8 +189,13 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 			}
 			// Index of new Activity:
 			ttlix := len(ttinfo.Activities)
+			p := -1
+			if l.Day >= 0 {
+				p = l.Day*ttinfo.NHours + l.Hour
+			}
 			ttl := &Activity{
 				Index:      ttlix,
+				Placement:  p,
 				Duration:   l.Duration,
 				Fixed:      l.Fixed,
 				Lesson:     l,

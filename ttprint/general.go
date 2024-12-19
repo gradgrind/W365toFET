@@ -46,6 +46,7 @@ func GenTypstData(
 ) {
 	genTypstClassData(ttinfo, plan_name, datadir, stemfile, flags)
 	genTypstTeacherData(ttinfo, plan_name, datadir, stemfile, flags)
+	genTypstRoomData(ttinfo, plan_name, datadir, stemfile, flags)
 }
 
 func makeTypstJson(tt Timetable, datadir string, outfile string) {

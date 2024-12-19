@@ -86,6 +86,9 @@ func (ttinfo *TtInfo) processConstraints() {
 			}
 		}
 		{
+			//TODO: This must happen BEFORE the result is used to add stuff
+			// to the Activities!
+
 			cn, ok := c.(*base.ParallelCourses)
 			if ok {
 				// The courses must have the same number of lessons and the
