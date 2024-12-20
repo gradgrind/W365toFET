@@ -5,7 +5,6 @@ import (
 	"W365toFET/ttbase"
 	"fmt"
 	"slices"
-	"strings"
 )
 
 func genTypstClassData(
@@ -123,10 +122,10 @@ func genTypstClassData(
 							Fraction: chip.Fraction,
 							Offset:   chip.Offset,
 							Total:    chip.Total,
-							Centre:   subject,
-							TL:       strings.Join(tstrings, ","),
-							TR:       strings.Join(gstrings, ","),
-							BR:       strings.Join(rstrings, ","),
+							Subject:  subject,
+							Groups:   gstrings,
+							Teachers: tstrings,
+							Rooms:    rstrings,
 						}
 						classTiles[cref] = append(classTiles[cref], tile)
 					}
@@ -164,10 +163,10 @@ func genTypstClassData(
 							Fraction: chip.Fraction,
 							Offset:   chip.Offset,
 							Total:    chip.Total,
-							Centre:   subject,
-							TL:       strings.Join(tstrings, ","),
-							TR:       strings.Join(gstrings, ","),
-							BR:       strings.Join(rstrings, ","),
+							Subject:  subject,
+							Groups:   gstrings,
+							Teachers: tstrings,
+							Rooms:    rstrings,
 						}
 						classTiles[cref] = append(classTiles[cref], tile)
 					}
@@ -208,10 +207,11 @@ func genTypstClassData(
 		"WithBreaks": flags["WithBreaks"],
 	}
 	tt := Timetable{
-		Title: "Stundenpläne der Klassen",
-		Info:  info,
-		Plan:  plan_name,
-		Pages: pages,
+		TableType: "Class",
+		Title:     "Stundenpläne der Klassen",
+		Info:      info,
+		Plan:      plan_name,
+		Pages:     pages,
 	}
 	makeTypstJson(tt, datadir, stemfile+"_classes")
 }

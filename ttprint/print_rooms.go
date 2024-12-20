@@ -4,7 +4,6 @@ import (
 	"W365toFET/base"
 	"W365toFET/ttbase"
 	"fmt"
-	"strings"
 )
 
 func genTypstRoomData(
@@ -97,9 +96,10 @@ func genTypstRoomData(
 						Fraction: 1,
 						Offset:   0,
 						Total:    1,
-						Centre:   strings.Join(gstrings, ","),
-						TL:       subject,
-						BR:       strings.Join(tstrings, ","),
+						Subject:  subject,
+						Groups:   gstrings,
+						Teachers: tstrings,
+						Rooms:    []string{},
 					}
 					roomTiles[rref] = append(roomTiles[rref], tile)
 				}
@@ -127,9 +127,10 @@ func genTypstRoomData(
 						Fraction: 1,
 						Offset:   0,
 						Total:    1,
-						Centre:   strings.Join(gstrings, ","),
-						TL:       subject,
-						BR:       strings.Join(tstrings, ","),
+						Subject:  subject,
+						Groups:   gstrings,
+						Teachers: tstrings,
+						Rooms:    []string{},
 					}
 					roomTiles[rref] = append(roomTiles[rref], tile)
 				}
@@ -167,10 +168,11 @@ func genTypstRoomData(
 		"WithBreaks": flags["WithBreaks"],
 	}
 	tt := Timetable{
-		Title: "Stundenpläne der Räume",
-		Info:  info,
-		Plan:  plan_name,
-		Pages: pages,
+		TableType: "Room",
+		Title:     "Stundenpläne der Räume",
+		Info:      info,
+		Plan:      plan_name,
+		Pages:     pages,
 	}
 	makeTypstJson(tt, datadir, stemfile+"_rooms")
 }
