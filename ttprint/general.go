@@ -13,15 +13,15 @@ import (
 type Tile struct {
 	Day        int      `json:"day"`
 	Hour       int      `json:"hour"`
-	Duration   int      `json:"duration"`
-	Fraction   int      `json:"fraction"`
-	Offset     int      `json:"offset"`
-	Total      int      `json:"total"`
+	Duration   int      `json:"duration,omitempty"`
+	Fraction   int      `json:"fraction,omitempty"`
+	Offset     int      `json:"offset,omitempty"`
+	Total      int      `json:"total,omitempty"`
 	Subject    string   `json:"subject"`
-	Groups     []string `json:"groups"`
-	Teachers   []string `json:"teachers"`
-	Rooms      []string `json:"rooms"`
-	Background string   `json:"background"`
+	Groups     []string `json:"groups,omitempty"`
+	Teachers   []string `json:"teachers,omitempty"`
+	Rooms      []string `json:"rooms,omitempty"`
+	Background string   `json:"background,omitempty"`
 }
 
 type Timetable struct {

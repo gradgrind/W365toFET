@@ -93,13 +93,12 @@ func genTypstRoomData(
 						Day:      l.Day,
 						Hour:     l.Hour,
 						Duration: l.Duration,
-						Fraction: 1,
-						Offset:   0,
-						Total:    1,
+						//Fraction: 1,
+						//Offset: 0,
+						//Total:    1,
 						Subject:  subject,
 						Groups:   gstrings,
 						Teachers: tstrings,
-						Rooms:    []string{},
 					}
 					roomTiles[rref] = append(roomTiles[rref], tile)
 				}
@@ -124,13 +123,12 @@ func genTypstRoomData(
 						Day:      l.Day,
 						Hour:     l.Hour,
 						Duration: l.Duration,
-						Fraction: 1,
-						Offset:   0,
-						Total:    1,
+						//Fraction: 1,
+						//Offset:   0,
+						//Total:    1,
 						Subject:  subject,
 						Groups:   gstrings,
 						Teachers: tstrings,
-						Rooms:    []string{},
 					}
 					roomTiles[rref] = append(roomTiles[rref], tile)
 				}
