@@ -26,16 +26,27 @@ type Tile struct {
 
 type Timetable struct {
 	TableType string
-	Title     string
 	Info      map[string]any
-	Plan      string
-	Pages     [][]any
+	Typst     map[string]any `json:",omitempty"`
+	Pages     []ttPage
+}
+
+type ttDay struct {
+	Name  string
+	Short string
 }
 
 type ttHour struct {
-	Hour  string
+	Name  string
+	Short string
 	Start string
 	End   string
+}
+
+type ttPage struct {
+	Name       string
+	Short      string
+	Activities []Tile
 }
 
 func GenTypstData(

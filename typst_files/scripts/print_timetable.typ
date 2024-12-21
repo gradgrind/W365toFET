@@ -15,9 +15,9 @@
  *                     only work if the lesson periods (hours) are supplied
  *                     with correctly formatted start and end times (hh:mm,
  *                     24-hour clock).
- *                     To select this variant, the parameter Info.WithBreaks
+ *                     To select this variant, the option Typst.WithBreaks
  *                     must be true.
- * If lesson period times are supplied, the parameter Info.WithTimes must be
+ * If lesson period times are supplied, the parameter Typst.WithTimes must be
  * true (default: false) for them to be shown in the period headers.
  */
 
@@ -53,42 +53,54 @@
         c: "SUBJECT",
         tl: "TEACHER",
         tr: "GROUP",
-        bl: "",
+        //bl: "",
         br: "ROOM",
     ),
     Teacher: (
         c: "GROUP",
         tl: "SUBJECT",
         tr: "TEACHER",
-        bl: "",
+        //bl: "",
         br: "ROOM",
     ),
     Room: (
         c: "GROUP",
         tl: "SUBJECT",
-        tr: "",
-        bl: "",
+        //tr: "",
+        //bl: "",
         br: "TEACHER",
     ),
+)
+
+// Page heading fallbacks
+#let pageHeadings = (
+    Class: "Klasse: %S",
+    Teacher: "%N (%S)",
+    Room: "Raum: %N (%S)",
 )
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 //#PLAN_AREA_WIDTH x #PLAN_AREA_HEIGHT
 #let xdata = json(sys.inputs.ifile)
+#let typstMap = xdata.at("Typst", default: (:))
 
-#let DAYS = xdata.Info.Days
-//#let DAYS = ("Mo", "Di", "Mi", "Do", "Fr")
+#let DAYS = ()
+#for ddata in xdata.Info.Days {
+    //TODO: Which field to use
+    DAYS.push(ddata.Name)
+}
+
 #let HOURS = ()
 #let TIMES = ()
-
-#let WITHTIMES = xdata.Info.at("WithTimes", default: false)
-#let WITHBREAKS = xdata.Info.at("WithBreaks", default: false)
+#let WITHTIMES = typstMap.at("WithTimes", default: false)
+#let WITHBREAKS = typstMap.at("WithBreaks", default: false)
 //#let WITHTIMES = true
 //#let WITHBREAKS = true
 
 #for hdata in xdata.Info.Hours {
-  let hour = hdata.at("Hour")
+    //TODO: Which field to use
+  let hour = hdata.Short
   let time1 = hdata.at("Start")
   let time2 = hdata.at("End")
   if WITHTIMES {
@@ -105,19 +117,15 @@
   }
 }
 
-// Type of table ("CLASS", "TEACHER" or "ROOM")
-#let tableType = xdata.TableType // or xdata.Info.TableType?
-//TODO: default?
-
-#let typstMap = xdata.at("Typst", default: (:)) // ??
+// Type of table ("Class", "Teacher" or "Room")
+#let tableType = xdata.TableType
 
 // Determine the field placements in the tiles
-#let fieldPlacements = typstMap.at("FieldPlacements", default: (:)) // ??
+#let fieldPlacements = typstMap.at("FieldPlacements", default: (:))
 #if fieldPlacements.len() == 0 {
     // fallback
     fieldPlacements = boxText.at(tableType, default: (:))
 }
-
 
 #let vfactor = if WITHBREAKS {
   // Here it is a factor with which to multiply the minutes
@@ -368,24 +376,27 @@
     bottom-edge: "descender",
     pad(left: 5mm, it))
 
+#let pheadings = typstMap.at("PageHeading", default: (:))
+#let phead = pheadings.at(tableType, default: "-")
+#if phead == "-" {
+    phead = pageHeadings.at(tableType, default: "")
+}
 #let page = 0
-#for (k, kdata) in xdata.Pages [
-    #{
-        if page != 0 {
-            pagebreak()
-        }
-        page += 1
+#for p in xdata.Pages {
+    if page != 0 {
+        pagebreak()
     }
+    page += 1
 
-    #block(height: TITLE_HEIGHT, above: 0mm, below: 0mm)[
+    block(height: TITLE_HEIGHT, above: 0mm, below: 0mm)[
         #v(5mm)
-        = #k
+        = #phead.replace("%N", p.Name).replace("%S", p.Short)
     ]
 
-    #box([
+    box([
         #tbody
-        #for kd in kdata {
-            ttcell(..kd)
+        #for a in p.Activities {
+            ttcell(..a)
         }
     ])
-]
+}

@@ -147,7 +147,7 @@ type Course struct {
 	Subjects       []Ref  `json:"subjects"`
 	Groups         []Ref  `json:"groups"`
 	Teachers       []Ref  `json:"teachers"`
-	PreferredRooms []Ref  `json:"preferredRooms,omitempty"`
+	PreferredRooms []Ref  `json:"preferredRooms"`
 }
 
 type SuperCourse struct {
@@ -186,18 +186,8 @@ type EpochPlan struct {
 }
 
 type PrintOptions struct {
-	Title              string           `json:"title"`
-	Subtitle           string           `json:"subtitle"`
-	PageHeadingClass   string           `json:"pageHeadingClass"`
-	PageHeadingTeacher string           `json:"pageHeadingTeacher"`
-	PageHeadingRoom    string           `json:"pageHeadingRoom"`
-	WithTimes          bool             `json:"withTimes"`
-	WithBreaks         bool             `json:"withBreaks"`
-	BoxTextClass       []map[string]any `json:"boxTextClass"`
-	BoxTextTeacher     []map[string]any `json:"boxTextTeacher"`
-	BoxTextRoom        []map[string]any `json:"boxTextRoom"`
-	PrintTables        []string         `json:"printTables"`
-	PrintId            base.Ref         `json:"printId"`
+	PrintTables []string       `json:"printTables"`
+	Typst       map[string]any `json:"typst"`
 }
 
 type DbTopLevel struct {

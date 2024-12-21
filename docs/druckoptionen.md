@@ -2,54 +2,111 @@
 
 Manche Eigenschaften der Ausdrucke werden in den Typst-Skripten festgelegt. Andere können über die JSON-Datei geregelt werden, insbesondere über das PrintOptions-Objekt.
 
-für die Überschriften gibt es folgende Optionen:
-```
-    "title": "Hauptüberschrift",
-    "subtitle": "Entwurf Erstes Halbjahr | Letzte Änderung 15.06.2020 19:30 Uhr",
-    "pageHeadingClass": "Klasse: %S",
-    "pageHeadingTeacher": "%N (%S)",
-    "pageHeadingRoom": "Raum: %N (%S)",
-```
+Viele der Optionen werden über die "Typst"-Eigenschaft direkt an das Typst-Skript übergeben. Die möglichen Felder hängen also vom eingesetzten Typst-Skript ab. Das Typst-Skript sollte idealerweise sinnvolle Voreinstellungen für so viele Felder wie möglich haben.
 
-Der Name der Schule steht im W365TT-Objekt, Feld "institution" zur Verfügung.
-
-Im „pageHeadingXXX“ gibt es über „%N“ und „%S“ die Möglichkeit Vollnamen und Kurznamen der jeweiligen Klasse, usw., einzubinden.
-
-Die Gestaltung der Tabellen kann durch folgende Optionen angepasst werden:
+Welche Pläne erstellt werden, wird durch das Feld "PrintTables" festgelegt. Einzelpläne können erstellt werden, indem das Id der entsprechenden Objekte (Klasse, Lehrer oder Raum) angegeben wird.
 
 ```
-    "withTimes": false,
-    "withBreaks": false,
-    "boxTextClass": {
-        "c": "SUBJECT",
-        "tl": "TEACHER",
-        "tr": "GROUP",
-        "bl": "-",
-        "br": "ROOM"
-    },
-    "boxTextTeacher": {
-        "c": "GROUP",
-        "tl": "SUBJECT",
-        "tr": "TEACHER",
-        "bl": "-",
-        "br": "ROOM"
+"printOptions": {
+
+    "printTables": ["Teacher", "Class", "Room"],
+
+    "typst": {
+        "Title": "Hauptüberschrift",
+        
+        "Subtitle": "Entwurf Erstes Halbjahr | Letzte Änderung 15.06.2020 19:30 Uhr",
+        
+        "PageHeading": {
+            "Class": "Klasse: %S",
+            "Teacher": "%N (%S)",
+            "Room": "Raum: %N (%S)",
+        },
+        
+        "WithTimes": false,
+        
+        "WithBreaks": false,
+        
+        "FieldPlacements": {
+            "Class": {
+                "c": "SUBJECT",
+                "tl": "TEACHER",
+                "tr": "GROUP",
+                //"bl": "",
+                "br": "ROOM",
+            },
+            "Teacher": {
+                "c": "GROUP",
+                "tl": "SUBJECT",
+                "tr": "TEACHER",
+                //"bl": "",
+                "br": "ROOM",
+            },
+            "Room": {
+                "c": "GROUP",
+                "tl": "SUBJECT",
+                //"tr": "",
+                //"bl": "",
+                "br": "TEACHER",
+            },
+        }
     }
+}
 ```
 
-Über die Option „withTimes“ gibt es die Möglichkeit die Zeitangabe ein- bzw. auszuschalten. Über die Option „withBreaks“ wird entschieden, ob nur die Unterrichtsstunden oder auch die Pausen in der Tabelle dargestellt werden. Damit diese funktionieren können, müssen die „Hours“ korrekte „Start“- und „End“- Werte haben.
+Bei den "PageHeadings" gibt es über "%N" und "%S" die Möglichkeit Vollnamen und Kurznamen der jeweiligen Klasse, usw., einzubinden.
 
-Die Stundenbezeichnungen sind aktuell die Kürzel, die Tag-Bezeichnungen die Namen. **TODO**: Vielleicht sollte man in beiden Fällen Kürzel oder Namen wählen können? Oder die Bezeichnungen in Waldorf 365 festlegen und als Optionen übergeben?
+Über die Option "WithTimes" kann die Zeitangabe ein- bzw. ausgeschaltet werden. Anhand der Option "WithBreaks" wird entschieden, ob nur die Unterrichtsstunden oder auch die Pausen in der Tabelle dargestellt werden. Damit diese funktionieren können, müssen die "Hours" korrekte "Start"- und "End"- Werte haben.
 
-Welche Pläne erstellt werden, wird durch die Option „printTables“ festgelegt, z.B.:
-
-```
-    "printTables": ["TEACHER", "CLASS", "ROOM"],
-```
-
-Ein Einzelplan kann erstellt werden, indem das Id des entsprechenden Objekts (Klasse, Lehrer oder Raum) angegeben wird:
+Die Daten werden an das Typst-Skript als JSON-Datei mit folgender Struktur übergeben:
 
 ```
-    "printId": "9e3251d6-0ab3-4c25-ab66-426d1c339d37",
+{
+    "TableType": "Room",
+    "Info": {
+        "Institution": "Musterschule Mulmingen",
+        "Days": [
+            {
+                "Name": "Montag",
+                "Short": "Mo"
+            },
+            ...
+        ],
+        "Hours": [
+            {
+                "Name": "1. Stunde",
+                "Short": "(1)",
+                "Start": "07:35",
+                "End": "08:25"
+            },
+            ...
+        ]
+    },
+    "Typst": {
+        ... // von PrintOptions
+    },
+    "Pages": [
+        {
+            "Name": "Chemieraum",
+            "Short": "ch",
+            "Activities": [
+                {
+                    Day:      0,
+                    Hour:     4,
+                    Duration: 2,
+                    Subject:  "Ch",
+                    Groups:   ["10"],
+                    Teachers: ["AT"]
+                    //Rooms:    ["ch"],
+                    //Fraction: 1,
+                    //Offset:   0,
+                    //Total:    1,
+                    //Background: "FFA080"
+                },
+                ...
+            ]
+        },
+        ...
+    ]
 ```
 
-Wenn dieses Feld leer ist, werden alle Pläne erstellt.
+Der Name der Institution sollte im W365TT-Objekt, Feld "institution", zur Verfügung stehen.

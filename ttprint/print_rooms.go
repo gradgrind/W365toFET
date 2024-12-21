@@ -3,7 +3,6 @@ package ttprint
 import (
 	"W365toFET/base"
 	"W365toFET/ttbase"
-	"fmt"
 )
 
 func genTypstRoomData(
@@ -14,7 +13,7 @@ func genTypstRoomData(
 	flags map[string]bool,
 ) {
 	db := ttinfo.Db
-	pages := [][]any{}
+	pages := []ttPage{}
 	// Generate the tiles.
 	roomTiles := map[base.Ref][]Tile{}
 	type rdata struct { // for SuperCourses
@@ -99,6 +98,7 @@ func genTypstRoomData(
 						Subject:  subject,
 						Groups:   gstrings,
 						Teachers: tstrings,
+						//TODO: Background:
 					}
 					roomTiles[rref] = append(roomTiles[rref], tile)
 				}
@@ -129,6 +129,7 @@ func genTypstRoomData(
 						Subject:  subject,
 						Groups:   gstrings,
 						Teachers: tstrings,
+						//TODO: Background:
 					}
 					roomTiles[rref] = append(roomTiles[rref], tile)
 				}
@@ -141,36 +142,41 @@ func genTypstRoomData(
 		if !ok {
 			continue
 		}
-		pages = append(pages, []any{
-			fmt.Sprintf("%s (%s)", r.Name, r.Tag),
-			rtiles,
+		pages = append(pages, ttPage{
+			Name:       r.Name,
+			Short:      r.Tag,
+			Activities: rtiles,
 		})
 	}
-	dlist := []string{}
+	dlist := []ttDay{}
 	for _, d := range db.Days {
-		dlist = append(dlist, d.Name)
+		dlist = append(dlist, ttDay{
+			Name:  d.Name,
+			Short: d.Tag,
+		})
 	}
 	hlist := []ttHour{}
 	for _, h := range db.Hours {
 		hlist = append(hlist, ttHour{
-			Hour:  h.Tag,
+			Name:  h.Name,
+			Short: h.Tag,
 			Start: h.Start,
 			End:   h.End,
 		})
 	}
 	info := map[string]any{
-		"School":     db.Info.Institution,
-		"Days":       dlist,
-		"Hours":      hlist,
-		"WithTimes":  flags["WithTimes"],
-		"WithBreaks": flags["WithBreaks"],
+		"Institution": db.Info.Institution,
+		"Days":        dlist,
+		"Hours":       hlist,
+		//"WithTimes":   flags["WithTimes"],
+		//"WithBreaks":  flags["WithBreaks"],
 	}
 	tt := Timetable{
 		TableType: "Room",
-		Title:     "Stundenpläne der Räume",
 		Info:      info,
-		Plan:      plan_name,
-		Pages:     pages,
+		//TODO:
+		Typst: nil,
+		Pages: pages,
 	}
 	makeTypstJson(tt, datadir, stemfile+"_rooms")
 }
