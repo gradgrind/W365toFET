@@ -170,9 +170,8 @@ func genTypstRoomData(
 	tt := Timetable{
 		TableType: "Room",
 		Info:      info,
-		//TODO:
-		Typst: nil,
-		Pages: pages,
+		Typst:     db.PrintOptions.Typst,
+		Pages:     pages,
 	}
 	f := stemfile + "_rooms"
 	makeTypstJson(tt, datadir, f)

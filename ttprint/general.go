@@ -72,6 +72,9 @@ func GenTypstData(
 			typst_files = append(typst_files, genTypstRoomData(
 				ttinfo, datadir, stemfile))
 		}
+
+		//TODO: single tables, overview tables
+
 	}
 	return typst_files
 }

@@ -215,7 +215,7 @@
 // On text lines (top or bottom of cell) with two text items:
 // If one is smaller than 25% of the space, leave this and shrink the
 // other to 90% of the reamining space. Otherwise shrink both.
-#let fit2inspace(width, text1, text2) = {
+#let scale2inline(vpos, width, text1, text2) = {
     let t1 = text(size: SMALL_SIZE, text1)
     let t2 = text(size: SMALL_SIZE, text2)
     let w4 = width / 4
@@ -227,45 +227,37 @@
                 // shrink only text2
                 let w2 = width - s1.width
                 let scl = (w2 * 0.9) / s2.width
-                box(width: width, inset: 2pt,
-                    t1
-                    + h(1fr)
-                    + text(size: scl * SMALL_SIZE, text2)
-                )
+                place(vpos + left, t1)
+                place(vpos + right, text(size: scl * SMALL_SIZE, text2))
             } else if s2.width < w4 {
                 // shrink only text1
                 let w2 = width - s2.width
                 let scl = (w2 * 0.9) / s1.width
-                box(width: width, inset: 2pt,
-                    text(size: scl * SMALL_SIZE, text1)
-                    + h(1fr)
-                    + t2
-                )
+                place(vpos + left, text(size: scl * SMALL_SIZE, text1))
+                place(vpos + right, t2)
             } else {
                 // shrink both
                 let scl = (width * 0.9) / (s1.width + s2.width)
-                box(width: width, inset: 2pt,
-                    text(size: scl * SMALL_SIZE, text1)
-                    + h(1fr)
-                    + text(size: scl * SMALL_SIZE, text2)
-                )
+                place(vpos + left, text(size: scl * SMALL_SIZE, text1))
+                place(vpos + right, text(size: scl * SMALL_SIZE, text2))
             }
         } else {
-            box(width: width, inset: 2pt, t1 + h(1fr) + t2)
+            place(vpos + left, t1)
+            place(vpos + right, t2)
         }
     }
 }
 
-#let fitinspace(width, textc) = {
+#let scaleinline(vpos, width, textc) = {
     let t = text(size: NORMAL_SIZE, weight: "bold", textc)
     context {
         let s = measure(t)
         if s.width > width * 0.9 {
             let scl = (width * 0.9 / s.width)
             let ts = text(size: scl * NORMAL_SIZE, weight: "bold", textc)
-            box(width: width, h(1fr) + ts + h(1fr))
+            place(vpos + center, ts)
         } else {
-            box(width: width, h(1fr) + t + h(1fr))
+            place(vpos + center, t)
         }
     }
 }
@@ -341,15 +333,13 @@
     let b = box(
         fill: rgb(background),
         stroke: CELL_BORDER,
-        inset: 0pt,
+        inset: 2pt,
         height: y1 - y0 - CELL_BORDER*2,
         width: wfrac,
     )[
-        #fit2inspace(wfrac, tl, tr)
-        #v(1fr)
-        #fitinspace(wfrac, centre)
-        #v(1fr)
-        #fit2inspace(wfrac, bl, br)
+        #scale2inline(top, wfrac, tl, tr)
+        #scaleinline(horizon, wfrac, centre)
+        #scale2inline(bottom, wfrac, bl, br)
     ]
     place(top + left,
         dx: x0 + CELL_BORDER + xshift,
@@ -393,9 +383,11 @@
     }
     page += 1
 
-    block(height: TITLE_HEIGHT, above: 0mm, below: 0mm)[
-        #v(5mm)
-        = #phead.replace("%N", p.Name).replace("%S", p.Short)
+    let title = phead.replace("%N", p.Name).replace("%S", p.Short)
+    block(height: TITLE_HEIGHT, above: 0mm, below: 0mm, inset: 2mm)[
+        #place(top)[#h(1fr)#xdata.Info.Institution]
+        #place(left + horizon)[= #title]
+        #place(bottom)[#h(1fr)#typstMap.at("Subtitle", default: "")]
     ]
 
     box([

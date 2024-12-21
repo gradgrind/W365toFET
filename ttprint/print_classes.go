@@ -204,16 +204,15 @@ func genTypstClassData(
 		})
 	}
 	info := map[string]any{
-		"School": db.Info.Institution,
-		"Days":   dlist,
-		"Hours":  hlist,
+		"Institution": db.Info.Institution,
+		"Days":        dlist,
+		"Hours":       hlist,
 	}
 	tt := Timetable{
 		TableType: "Class",
 		Info:      info,
-		//TODO:
-		Typst: nil,
-		Pages: pages,
+		Typst:     db.PrintOptions.Typst,
+		Pages:     pages,
 	}
 	f := stemfile + "_classes"
 	makeTypstJson(tt, datadir, f)

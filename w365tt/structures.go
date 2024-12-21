@@ -11,7 +11,7 @@ import (
 type Ref = base.Ref // Element reference
 
 type Info struct {
-	Institution        string `json:"schoolName"`
+	Institution        string `json:"institution"`
 	FirstAfternoonHour int    `json:"firstAfternoonHour"`
 	MiddayBreak        []int  `json:"middayBreak"`
 	Reference          string `json:"scenario"`
