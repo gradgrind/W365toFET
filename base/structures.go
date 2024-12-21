@@ -163,14 +163,15 @@ type GeneralRoom interface {
 }
 
 type Lesson struct {
-	Id       Ref
-	Course   Ref // Course or SuperCourse Elements
-	Duration int
-	Day      int
-	Hour     int
-	Fixed    bool
-	Rooms    []Ref
-	Flags    []string `json:",omitempty"`
+	Id         Ref
+	Course     Ref // Course or SuperCourse Elements
+	Duration   int
+	Day        int
+	Hour       int
+	Fixed      bool
+	Rooms      []Ref
+	Flags      []string `json:",omitempty"`
+	Background string
 }
 
 type LessonCourse interface {
@@ -182,8 +183,14 @@ type Constraint interface {
 	CType() string
 }
 
+type PrintOptions struct {
+	PrintTables []string
+	Typst       map[string]any
+}
+
 type DbTopLevel struct {
 	Info             Info
+	PrintOptions     PrintOptions
 	Days             []*Day
 	Hours            []*Hour
 	Teachers         []*Teacher

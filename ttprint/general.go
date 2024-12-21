@@ -53,12 +53,27 @@ func GenTypstData(
 	ttinfo *ttbase.TtInfo,
 	datadir string,
 	stemfile string,
-	plan_name string,
-	flags map[string]bool,
-) {
-	genTypstClassData(ttinfo, plan_name, datadir, stemfile, flags)
-	genTypstTeacherData(ttinfo, plan_name, datadir, stemfile, flags)
-	genTypstRoomData(ttinfo, plan_name, datadir, stemfile, flags)
+) []string {
+	typst_files := []string{}
+	printTables := ttinfo.Db.PrintOptions.PrintTables
+	if len(printTables) == 0 {
+		printTables = []string{"Class", "Teacher", "Room"}
+	}
+	for _, ptable := range printTables {
+		if ptable == "Class" {
+			typst_files = append(typst_files, genTypstClassData(
+				ttinfo, datadir, stemfile))
+		}
+		if ptable == "Teacher" {
+			typst_files = append(typst_files, genTypstTeacherData(
+				ttinfo, datadir, stemfile))
+		}
+		if ptable == "Room" {
+			typst_files = append(typst_files, genTypstRoomData(
+				ttinfo, datadir, stemfile))
+		}
+	}
+	return typst_files
 }
 
 func makeTypstJson(tt Timetable, datadir string, outfile string) {
@@ -93,6 +108,7 @@ func MakePdf(script string, datadir string, stemfile string, typst string) {
 	outpath := filepath.Join(outdir, stemfile+".pdf")
 
 	cmd := exec.Command(typst, "compile",
+		"--font-path", filepath.Join(datadir, "_fonts"),
 		"--root", datadir,
 		"--input", "ifile="+filepath.Join("/_data", stemfile+".json"),
 		filepath.Join(datadir, "scripts", script),

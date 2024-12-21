@@ -8,11 +8,9 @@ import (
 
 func genTypstClassData(
 	ttinfo *ttbase.TtInfo,
-	plan_name string,
 	datadir string,
 	stemfile string, // basic name part of source file
-	flags map[string]bool,
-) {
+) string {
 	db := ttinfo.Db
 	pages := []ttPage{}
 	ref2id := ttinfo.Ref2Tag
@@ -115,17 +113,17 @@ func genTypstClassData(
 					for _, chip := range chips {
 						gstrings := append(chip.Groups, chip.ExtraGroups...)
 						tile := Tile{
-							Day:      l.Day,
-							Hour:     l.Hour,
-							Duration: l.Duration,
-							Fraction: chip.Fraction,
-							Offset:   chip.Offset,
-							Total:    chip.Total,
-							Subject:  subject,
-							Groups:   gstrings,
-							Teachers: tstrings,
-							Rooms:    rstrings,
-							//TODO: Background:
+							Day:        l.Day,
+							Hour:       l.Hour,
+							Duration:   l.Duration,
+							Fraction:   chip.Fraction,
+							Offset:     chip.Offset,
+							Total:      chip.Total,
+							Subject:    subject,
+							Groups:     gstrings,
+							Teachers:   tstrings,
+							Rooms:      rstrings,
+							Background: l.Background,
 						}
 						classTiles[cref] = append(classTiles[cref], tile)
 					}
@@ -157,17 +155,17 @@ func genTypstClassData(
 					for _, chip := range chips {
 						gstrings := append(chip.Groups, chip.ExtraGroups...)
 						tile := Tile{
-							Day:      l.Day,
-							Hour:     l.Hour,
-							Duration: l.Duration,
-							Fraction: chip.Fraction,
-							Offset:   chip.Offset,
-							Total:    chip.Total,
-							Subject:  subject,
-							Groups:   gstrings,
-							Teachers: tstrings,
-							Rooms:    rstrings,
-							//TODO: Background:
+							Day:        l.Day,
+							Hour:       l.Hour,
+							Duration:   l.Duration,
+							Fraction:   chip.Fraction,
+							Offset:     chip.Offset,
+							Total:      chip.Total,
+							Subject:    subject,
+							Groups:     gstrings,
+							Teachers:   tstrings,
+							Rooms:      rstrings,
+							Background: l.Background,
 						}
 						classTiles[cref] = append(classTiles[cref], tile)
 					}
@@ -209,8 +207,6 @@ func genTypstClassData(
 		"School": db.Info.Institution,
 		"Days":   dlist,
 		"Hours":  hlist,
-		//"WithTimes":  flags["WithTimes"],
-		//"WithBreaks": flags["WithBreaks"],
 	}
 	tt := Timetable{
 		TableType: "Class",
@@ -219,5 +215,7 @@ func genTypstClassData(
 		Typst: nil,
 		Pages: pages,
 	}
-	makeTypstJson(tt, datadir, stemfile+"_classes")
+	f := stemfile + "_classes"
+	makeTypstJson(tt, datadir, f)
+	return f
 }

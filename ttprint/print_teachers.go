@@ -8,11 +8,9 @@ import (
 
 func genTypstTeacherData(
 	ttinfo *ttbase.TtInfo,
-	plan_name string,
 	datadir string,
 	stemfile string, // basic name part of source file
-	flags map[string]bool,
-) {
+) string {
 	db := ttinfo.Db
 	pages := []ttPage{}
 	// Generate the tiles.
@@ -196,8 +194,6 @@ func genTypstTeacherData(
 		"School": db.Info.Institution,
 		"Days":   dlist,
 		"Hours":  hlist,
-		//"WithTimes":  flags["WithTimes"],
-		//"WithBreaks": flags["WithBreaks"],
 	}
 	tt := Timetable{
 		TableType: "Teacher",
@@ -206,5 +202,7 @@ func genTypstTeacherData(
 		Typst: nil,
 		Pages: pages,
 	}
-	makeTypstJson(tt, datadir, stemfile+"_teachers")
+	f := stemfile + "_teachers"
+	makeTypstJson(tt, datadir, f)
+	return f
 }

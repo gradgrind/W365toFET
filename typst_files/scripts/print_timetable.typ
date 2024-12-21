@@ -21,6 +21,11 @@
  * true (default: false) for them to be shown in the period headers.
  */
 
+// To use a different font:
+//#set text(font: "B612")
+// If the font is not installed on the system, the .ttf or .otf files can be
+// placed in "typst_files/_fonts".
+
 #let PAGE_HEIGHT = 210mm
 #let PAGE_WIDTH = 297mm
 #let PAGE_BORDER = (top:15mm, bottom: 15mm, left: 15mm, right: 15mm)

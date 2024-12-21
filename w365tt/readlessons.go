@@ -33,5 +33,6 @@ func (db *DbTopLevel) readLessons(newdb *base.DbTopLevel) {
 		n.Fixed = e.Fixed
 		n.Rooms = reflist
 		n.Flags = e.Flags
+		n.Background = e.Background
 	}
 }

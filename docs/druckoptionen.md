@@ -96,17 +96,18 @@ Die Daten werden an das Typst-Skript als JSON-Datei mit folgender Struktur über
                     Subject:  "Ch",
                     Groups:   ["10"],
                     Teachers: ["AT"]
-                    //Rooms:    ["ch"],
+                    //Rooms:    [],
                     //Fraction: 1,
                     //Offset:   0,
                     //Total:    1,
-                    //Background: "FFA080"
+                    //Background: "#FFFFFF"
                 },
                 ...
             ]
         },
         ...
     ]
+}
 ```
 
 Der Name der Institution sollte im W365TT-Objekt, Feld "institution", zur Verfügung stehen.

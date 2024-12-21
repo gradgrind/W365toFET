@@ -167,15 +167,16 @@ type SubCourse struct {
 }
 
 type Lesson struct {
-	Id       Ref      `json:"id"`
-	Type     string   `json:"type"`
-	Course   Ref      `json:"course"` // Course or SuperCourse Elements
-	Duration int      `json:"duration"`
-	Day      int      `json:"day"`
-	Hour     int      `json:"hour"`
-	Fixed    bool     `json:"fixed"`
-	Rooms    []Ref    `json:"localRooms"` // only Room Elements
-	Flags    []string `json:"flags"`
+	Id         Ref      `json:"id"`
+	Type       string   `json:"type"`
+	Course     Ref      `json:"course"` // Course or SuperCourse Elements
+	Duration   int      `json:"duration"`
+	Day        int      `json:"day"`
+	Hour       int      `json:"hour"`
+	Fixed      bool     `json:"fixed"`
+	Rooms      []Ref    `json:"localRooms"` // only Room Elements
+	Flags      []string `json:"flags"`
+	Background string   `json:"background"`
 }
 
 type EpochPlan struct {

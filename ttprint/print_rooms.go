@@ -7,11 +7,9 @@ import (
 
 func genTypstRoomData(
 	ttinfo *ttbase.TtInfo,
-	plan_name string,
 	datadir string,
 	stemfile string, // basic name part of source file
-	flags map[string]bool,
-) {
+) string {
 	db := ttinfo.Db
 	pages := []ttPage{}
 	// Generate the tiles.
@@ -168,8 +166,6 @@ func genTypstRoomData(
 		"Institution": db.Info.Institution,
 		"Days":        dlist,
 		"Hours":       hlist,
-		//"WithTimes":   flags["WithTimes"],
-		//"WithBreaks":  flags["WithBreaks"],
 	}
 	tt := Timetable{
 		TableType: "Room",
@@ -178,5 +174,7 @@ func genTypstRoomData(
 		Typst: nil,
 		Pages: pages,
 	}
-	makeTypstJson(tt, datadir, stemfile+"_rooms")
+	f := stemfile + "_rooms"
+	makeTypstJson(tt, datadir, f)
+	return f
 }
