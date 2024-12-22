@@ -58,8 +58,14 @@ func main() {
 
 	// Generate PDF files
 	for _, tfile := range typst_files {
-		ttprint.MakePdf(
-			"print_timetable.typ", datadir, tfile, *typstexec)
+		t, overview := strings.CutSuffix(tfile, "_overview")
+		if overview {
+			ttprint.MakePdf(
+				"print_overview.typ", datadir, t, tfile, *typstexec)
+		} else {
+			ttprint.MakePdf(
+				"print_timetable.typ", datadir, t, tfile, *typstexec)
+		}
 	}
 
 	base.Message.Println("OK")

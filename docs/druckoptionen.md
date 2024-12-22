@@ -12,13 +12,19 @@ Welche Pläne erstellt werden, wird durch das Feld "PrintTables" festgelegt. Ein
     "printTables": ["Teacher", "Class", "Room"],
 
     "typst": {
+        "Titles": {
+            "Class": "Stundenplan der Klassen",
+            "Teacher": "Stundenplan der Lehrkräfte",
+            "Room": "Stundenplan der Räume"
+        },
+
+        "Subtitle": "Entwurf Erstes Halbjahr | Letzte Änderung 15.06.2020 19:30 Uhr",
+        
         "PageHeading": {
             "Class": "Klasse: %S",
             "Teacher": "%N (%S)",
-            "Room": "Raum: %N (%S)",
+            "Room": "Raum: %N (%S)"
         },
-        
-        "Subtitle": "Entwurf Erstes Halbjahr | Letzte Änderung 15.06.2020 19:30 Uhr",
         
         "WithTimes": false,
         

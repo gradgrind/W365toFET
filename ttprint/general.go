@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 type Tile struct {
@@ -57,24 +58,29 @@ func GenTypstData(
 	typst_files := []string{}
 	printTables := ttinfo.Db.PrintOptions.PrintTables
 	if len(printTables) == 0 {
-		printTables = []string{"Class", "Teacher", "Room"}
+		printTables = []string{
+			"Class", "Teacher", "Room",
+			"Class_overview", "Teacher_overview", "Room_overview",
+		}
 	}
 	for _, ptable := range printTables {
-		if ptable == "Class" {
-			typst_files = append(typst_files, genTypstClassData(
-				ttinfo, datadir, stemfile))
+		p, overview := strings.CutSuffix(ptable, "_overview")
+		var f string
+		switch p {
+		case "Class":
+			f = genTypstClassData(ttinfo, datadir, stemfile)
+		case "Teacher":
+			f = genTypstTeacherData(ttinfo, datadir, stemfile)
+		case "Room":
+			f = genTypstRoomData(ttinfo, datadir, stemfile)
+		default:
+			base.Error.Printf("\n", ptable)
+			continue
 		}
-		if ptable == "Teacher" {
-			typst_files = append(typst_files, genTypstTeacherData(
-				ttinfo, datadir, stemfile))
+		typst_files = append(typst_files, f)
+		if overview {
+			typst_files = append(typst_files, f+"_overview")
 		}
-		if ptable == "Room" {
-			typst_files = append(typst_files, genTypstRoomData(
-				ttinfo, datadir, stemfile))
-		}
-
-		//TODO: single tables, overview tables
-
 	}
 	return typst_files
 }
@@ -100,7 +106,13 @@ func makeTypstJson(tt Timetable, datadir string, outfile string) {
 	base.Message.Printf("Wrote: %s\n", jsonpath)
 }
 
-func MakePdf(script string, datadir string, stemfile string, typst string) {
+func MakePdf(
+	script string,
+	datadir string,
+	stemfile string,
+	outfile string,
+	typst string,
+) {
 	outdir := filepath.Join(datadir, "_pdf")
 	if _, err := os.Stat(outdir); errors.Is(err, os.ErrNotExist) {
 		err := os.Mkdir(outdir, os.ModePerm)
@@ -108,7 +120,7 @@ func MakePdf(script string, datadir string, stemfile string, typst string) {
 			base.Error.Fatalln(err)
 		}
 	}
-	outpath := filepath.Join(outdir, stemfile+".pdf")
+	outpath := filepath.Join(outdir, outfile+".pdf")
 
 	cmd := exec.Command(typst, "compile",
 		"--font-path", filepath.Join(datadir, "_fonts"),
