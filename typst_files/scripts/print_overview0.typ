@@ -14,9 +14,10 @@
 #let TITLE_HEIGHT = 15mm
 #let H_HEADER_HEIGHT1 = 10mm
 #let H_HEADER_HEIGHT2 = 10mm
+#let H_HEADER_HEIGHT = H_HEADER_HEIGHT1 + H_HEADER_HEIGHT2
 #let V_HEADER_WIDTH = 30mm
 #let ROW_HEIGHT = 12mm
-#let ROW_HEIGHT_CLASS = 30mm // larger because of divisions
+//TODO: Make row height bigger – just for classes or for all?
 
 #let CELL_BORDER = 1pt
 #let BIG_SIZE = 14pt
@@ -28,6 +29,12 @@
 #let FRAME_COLOUR = "#707070"
 #let HEADER_COLOUR = "#e0e0e0"
 #let EMPTY_COLOUR = "#f0f0f0"
+
+#let PLAN_AREA_HEIGHT = (PAGE_HEIGHT - PAGE_BORDER.top
+    - PAGE_BORDER.bottom - TITLE_HEIGHT)
+#let PLAN_AREA_WIDTH = (PAGE_WIDTH - PAGE_BORDER.left
+    - PAGE_BORDER.right)
+//#PLAN_AREA_WIDTH x #PLAN_AREA_HEIGHT
 
 // Field placement fallbacks
 #let boxText = (
@@ -59,15 +66,6 @@
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-#let PLAN_AREA_HEIGHT = (PAGE_HEIGHT - PAGE_BORDER.top
-    - PAGE_BORDER.bottom - TITLE_HEIGHT)
-#let PLAN_AREA_WIDTH = (PAGE_WIDTH - PAGE_BORDER.left
-    - PAGE_BORDER.right)
-//#PLAN_AREA_WIDTH x #PLAN_AREA_HEIGHT
-
-#let H_HEADER_HEIGHT = H_HEADER_HEIGHT1 + H_HEADER_HEIGHT2
-#let TABLE_BODY_HEIGHT = PLAN_AREA_HEIGHT - H_HEADER_HEIGHT
-
 #let xdata = json(sys.inputs.ifile)
 #let typstMap = xdata.at("Typst", default: (:))
 
@@ -84,9 +82,6 @@
 
 // Type of table ("Class", "Teacher" or "Room")
 #let tableType = xdata.TableType
-#if tableType == "Class" {
-    ROW_HEIGHT = ROW_HEIGHT_CLASS
-}
 
 // Determine the field placements in the tiles
 #let fieldPlacements = typstMap.at("FieldPlacements", default: (:))
@@ -96,9 +91,10 @@
 }
 
 // +++ Set up the table
-#let nhours = HOURS.len()
-#let pcols = DAYS.len() * nhours
+
+#let pcols = DAYS.len()*HOURS.len()
 #let colwidth = (PLAN_AREA_WIDTH - V_HEADER_WIDTH) / pcols
+#let tcolumns = (V_HEADER_WIDTH,) + (colwidth,)*pcols
 
 #show table.cell: it => {
     if it.y == 0 {
@@ -175,43 +171,7 @@
 	if l > 0.179 { black } else { white }
 }
 
-// Prepare horizontal header, also column sizes and boundaries
-#let dheader = ([],)
-#let pheader = ([],)
-#let vlines = (V_HEADER_WIDTH,)
-#let x = V_HEADER_WIDTH
-#for d in DAYS {
-    dheader.push(table.cell(colspan: nhours, d))
-    for p in HOURS {
-        pheader.push(p)
-        x += colwidth
-        vlines.push(x)
-    }
-}
-#let tcolumns = (V_HEADER_WIDTH,) + (colwidth,)*pcols
-#let hcellfill = ([],) * pcols
-
-//#tcolumns
-//#vlines
-
-// Prepare vertical header and row sizes and boundaries
-#let nprows = int(TABLE_BODY_HEIGHT / ROW_HEIGHT)
-#let trows = ((H_HEADER_HEIGHT1, H_HEADER_HEIGHT2) + (ROW_HEIGHT,)*nprows)
-#let hlines = (H_HEADER_HEIGHT,)
-#let y = H_HEADER_HEIGHT
-#let i = 0
-#while i < nprows {
-    i += 1
-    y += ROW_HEIGHT
-    hlines.push(y)
-}
-//#trows
-//#hlines
-
 #let ttvcell(
-    row,
-    day: 0,
-    hour: 0,
     duration: 1,
     offset: 0,
     fraction: 1,
@@ -222,10 +182,6 @@
     rooms: (),
     background: "",
 ) = {
-    // Determine grid lines
-    let ix = day * nhours + hour
-    let x0 = vlines.at(ix)
-    let y0 = hlines.at(row)
     // Prepare texts
     let texts = (
         SUBJECT: subject,
@@ -266,11 +222,16 @@
         #shrinkwrap(w, ctext, tsize: CELL_TEXT_SIZE, bold: true)
         #shrinkwrap(w, btext, tsize: CELL_TEXT_SIZE, hpos: right, vpos: bottom)
     ]
-    place(top + left,
-        dx: x0 + CELL_BORDER,
-        dy: y0 + CELL_BORDER + yshift,
-        b
-    )
+    table.cell(colspan: duration, b)
+}
+
+#let dheader = ([],)
+#let pheader = ([],)
+#for d in DAYS {
+    dheader.push(table.cell(colspan: HOURS.len(), d))
+    for p in HOURS {
+        pheader.push(p)
+    }
 }
 
 #show heading: it => text(weight: "bold", size: BIG_SIZE,
@@ -303,70 +264,64 @@
     ]
 )
 
-// +++ Divide the data into pages
-#let irow = 0
-#let rows = xdata.Pages
-#let nrows = rows.len()
+#block(height: TITLE_HEIGHT, above: 0mm, below: 0mm, inset: 2mm)[
+    #place(top)[#h(1fr)#xdata.Info.Institution]
+    #place(left + horizon)[= #title]
+    #place(bottom)[#h(1fr)#subtitle]
+]
+
 #let xrows = ()
-#let iy = 0
-#let aix = 0
-#while irow < nrows {
-    let row = rows.at(irow)
-    irow += 1
-
-    //TODO: Which page field (Name or Short)?
-    
-    let rh = row.Name
-    if rh == "" {
-        rh = row.Short
-    }
-    xrows += (rh,) + hcellfill
-    iy += 1
-    if iy == nprows or irow == nrows {
-        
-        // Page done
-
-        //TODO: add page number/of
-        
-        block(height: TITLE_HEIGHT, above: 0mm, below: 0mm, inset: 2mm)[
-            #place(top)[#h(1fr)#xdata.Info.Institution]
-            #place(left + horizon)[= #title]
-            #place(bottom)[#h(1fr)#typstMap.at("Subtitle", default: "")]
-        ]
-
-        box([
-            #table(
-                columns: tcolumns,
-                rows: trows,
-                gutter: 0pt,
-                stroke: rgb(FRAME_COLOUR),
-                inset: 0pt,
-                fill: (x, y) =>
-                    if y > 1 and x > 0 {
-                        rgb(EMPTY_COLOUR)
-                    } else {
-                        rgb(HEADER_COLOUR)
-                    },
-                table.header(
-                    ..dheader, ..pheader,
-                ),
-                ..xrows,
-            )
-
-            #let rix = 0
-            #while aix < irow {
-                for a in rows.at(aix).Activities {
-                    ttvcell(rix, ..a)
-                }
-                rix += 1
-                aix += 1
-            }
-        ])
-
-        if irow != nrows {
-            pagebreak()
+#for row in xdata.Pages {
+    let newrow = ([],)*pcols
+    let excess = ()
+    for item in row.Activities {
+        let i = item.remove("day") * HOURS.len() + item.remove("hour")
+        /*
+        let n = item.duration
+        while n > 1 {
+            n -= 1
+            excess.push(i + n)
         }
-        xrows = ()
-        iy = 0
+        */
+
+//TODO: This can only work with one item per cell ...
+// Can I collect all cell items, then combine them? Perhaps not, because
+// parallel items don't necessarily have the same duration! In other words,
+// I probably have to try the overlay approach here too. That might mean
+// dividing the pages myself ...
+
+        newrow.at(i) = ttvcell(..item)
     }
+    /*
+    if excess.len() != 0 {
+        let xs = excess.sorted()
+        while xs.len() != 0 {
+            newrow.remove(xs.pop())
+        }
+    }
+    */
+    xrows += (row.Name,) + newrow
 }
+
+#let trows = (
+    (H_HEADER_HEIGHT1, H_HEADER_HEIGHT2)
+    + (ROW_HEIGHT,)*xdata.Pages.len()
+)
+
+#table(
+    columns: tcolumns,
+    rows: trows,
+    gutter: 0pt,
+    stroke: rgb(FRAME_COLOUR),
+    inset: 1pt,
+    fill: (x, y) =>
+        if y > 1 and x > 0 {
+            rgb(EMPTY_COLOUR)
+        } else {
+            rgb(HEADER_COLOUR)
+        },
+    table.header(
+        ..dheader, ..pheader,
+    ),
+    ..xrows,
+)
