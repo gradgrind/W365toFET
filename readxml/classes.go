@@ -65,12 +65,8 @@ func (cdata *conversionData) readClasses() {
 			maxpm = -1
 		}
 
-		// Add a Group for the whole class (not provided by W365).
-		classGroup := db.NewGroup("")
-		classGroup.Tag = ""
-		e.ClassGroup = classGroup.Id
-
 		if cdata.isStandIns(n.Categories, n.Id) {
+			e.ClassGroup = ""
 			e.Year = -1
 			e.Letter = ""
 			e.Tag = ""
@@ -84,6 +80,11 @@ func (cdata *conversionData) readClasses() {
 			e.ForceFirstHour = false
 			continue
 		}
+
+		// Add a Group for the whole class (not provided by W365).
+		classGroup := db.NewGroup("")
+		classGroup.Tag = ""
+		e.ClassGroup = classGroup.Id
 
 		// Handle no-lunch-break flag on class.
 		lb := cdata.withLunchBreak(n.Categories, n.Id)
@@ -195,7 +196,9 @@ func (cdata *conversionData) getCourseGroups(c *Course) []Ref {
 			}
 			c, ok := s.(*base.Class)
 			if ok {
-				glist = append(glist, c.ClassGroup)
+				if c.ClassGroup != "" {
+					glist = append(glist, c.ClassGroup)
+				}
 				continue
 			}
 		}

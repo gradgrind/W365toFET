@@ -114,10 +114,10 @@ func (ttinfo *TtInfo) processConstraints() {
 							strings.Join(clist, ","))
 					}
 					for j, lix := range cinfo.Lessons {
-						l := ttinfo.Activities[lix].Lesson
+						a := ttinfo.Activities[lix]
 						if i == 0 {
-							footprint = append(footprint, l.Duration)
-						} else if l.Duration != footprint[j] {
+							footprint = append(footprint, a.Duration)
+						} else if a.Duration != footprint[j] {
 							clist := []string{}
 							for _, cr := range cn.Courses {
 								clist = append(clist, string(cr))

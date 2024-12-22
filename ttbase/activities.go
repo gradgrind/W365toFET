@@ -2,6 +2,7 @@ package ttbase
 
 import (
 	"W365toFET/base"
+	"fmt"
 	"slices"
 )
 
@@ -10,15 +11,18 @@ type ResourceIndex = TtIndex
 type ActivityIndex = TtIndex
 
 type Activity struct {
-	Index         ActivityIndex
-	Duration      int
-	Resources     []ResourceIndex
+	Index     ActivityIndex
+	Duration  int
+	Resources []ResourceIndex
 	XRooms        []ResourceIndex // for room choices
-	Fixed         bool
-	Placement     int // day * nhours + hour, or -1 if unplaced
-	PossibleSlots []SlotIndex
-	DifferentDays []ActivityIndex // hard constraint only
-	Parallel      []ActivityIndex // hard constraint only
+	// ExtendedGroups is a list of atomic group indexes for those groups
+	// in the activity's class(es) which are NOT involved in the activity.
+	ExtendedGroups []ResourceIndex
+	Fixed          bool
+	Placement      int // day * nhours + hour, or -1 if unplaced
+	PossibleSlots  []SlotIndex
+	DifferentDays  []ActivityIndex // hard constraint only
+	Parallel       []ActivityIndex // hard constraint only
 
 	// Access to basic information
 	CourseInfo *CourseInfo
@@ -34,7 +38,7 @@ func (ttinfo *TtInfo) addActivityInfo(
 	warned := []*CourseInfo{} // used to warn only once per course
 	// Collect non-fixed activities which need placing
 	toplace := []ActivityIndex{}
-
+	//--fmt.Printf("=== %+v\n\n", ttinfo.MinDaysBetweenLessons)
 	// Collect the hard-different-days lessons (gap = 1) for each lesson.
 	diffdays := map[ActivityIndex][]ActivityIndex{}
 	for _, dbc := range ttinfo.MinDaysBetweenLessons {
@@ -77,10 +81,28 @@ func (ttinfo *TtInfo) addActivityInfo(
 			resources = append(resources, t2tt[tref])
 		}
 
+		// Get class(es) ... and atomic groups
+		// This is for finding the "extended groups" – in the activity's
+		// class(es) but not involved in the activity. This list may help
+		// finding activities which can be placed parallel.
+		cagmap := map[base.Ref][]ResourceIndex{}
 		for _, gref := range cinfo.Groups {
-			for _, ag := range g2tt[gref] {
+			cagmap[ttinfo.Db.Elements[gref].(*base.Group).Class] = nil
+		}
+		aagmap := map[ResourceIndex]bool{}
+		for cref := range cagmap {
+			c := ttinfo.Db.Elements[cref].(*base.Class)
+			aglist := g2tt[c.ClassGroup]
+			//fmt.Printf("???????? %s: %+v\n", c.Tag, aglist)
+			for _, agix := range aglist {
+				aagmap[agix] = true
+			}
+		}
+		// Handle groups
+		for _, gref := range cinfo.Groups {
+			for _, agix := range g2tt[gref] {
 				// Check for repetitions
-				if slices.Contains(resources, ag) {
+				if slices.Contains(resources, agix) {
 					if !slices.Contains(warned, cinfo) {
 						base.Warning.Printf(
 							"Lesson with repeated atomic group"+
@@ -88,8 +110,15 @@ func (ttinfo *TtInfo) addActivityInfo(
 						warned = append(warned, cinfo)
 					}
 				} else {
-					resources = append(resources, ag)
+					resources = append(resources, agix)
+					aagmap[agix] = false
 				}
+			}
+		}
+		extendedGroups := []ResourceIndex{}
+		for agix, ok := range aagmap {
+			if ok {
+				extendedGroups = append(extendedGroups, agix)
 			}
 		}
 
@@ -141,13 +170,14 @@ func (ttinfo *TtInfo) addActivityInfo(
 			plist = slices.Compact(plist)
 		}
 
+		a.ExtendedGroups = extendedGroups
 		//PossibleSlots: added later (see "makePossibleSlots"),
 		//DifferentDays: ddlist, // only if not fixed, see below
 		a.Parallel = plist
-		if !ttl.Lesson.Fixed {
+		if !a.Fixed {
 			a.DifferentDays = ddlist
 		}
-
+		//--fmt.Printf("  ((%d)) %+v\n", aix, a.DifferentDays)
 		// The placement has not yet been tested, so it may still need to be
 		// revoked!
 	}
@@ -242,9 +272,9 @@ func (ttinfo *TtInfo) addActivityInfo(
 						aix, p, ttinfo.View(a.CourseInfo))
 					//a.XRooms = a.XRooms[:0]
 				}
-				if ttinfo.testPlacement(aix, p) {
+				if ttinfo.TestPlacement(aix, p) {
 					// Perform placement
-					ttinfo.placeActivity(aix, p)
+					ttinfo.PlaceActivity(aix, p)
 					placed[aix] = true
 					for _, paix := range a.Parallel {
 						placed[paix] = true
@@ -273,10 +303,10 @@ func (ttinfo *TtInfo) addActivityInfo(
 		a := ttinfo.Activities[aix]
 		p := a.Placement
 		if slices.Contains(a.PossibleSlots, p) &&
-			ttinfo.testPlacement(aix, p) {
+			ttinfo.TestPlacement(aix, p) {
 
 			// Perform placement
-			ttinfo.placeActivity(aix, p)
+			ttinfo.PlaceActivity(aix, p)
 			placed[aix] = true
 			for _, paix := range a.Parallel {
 				placed[paix] = true
@@ -321,7 +351,7 @@ func (ttinfo *TtInfo) addActivityInfo(
 	}
 }
 
-func (ttinfo *TtInfo) findClashes(aix ActivityIndex, slot int) []ActivityIndex {
+func (ttinfo *TtInfo) FindClashes(aix ActivityIndex, slot int) []ActivityIndex {
 	// Return a list of activities (indexes) which are in conflict with
 	// the proposed placement. It assumes the slot is in principle possible –
 	// so that it will not, for example, be the last slot of a day if
@@ -329,10 +359,12 @@ func (ttinfo *TtInfo) findClashes(aix ActivityIndex, slot int) []ActivityIndex {
 	clashes := []ActivityIndex{}
 	a := ttinfo.Activities[aix]
 	day := slot / ttinfo.NHours
+	//--fmt.Printf("????0 aix: %d slot %d\n", aix, slot)
 	for _, addix := range a.DifferentDays {
 		add := ttinfo.Activities[addix]
 		if add.Placement >= 0 && add.Placement/ttinfo.NHours == day {
 			clashes = append(clashes, addix)
+			//--fmt.Printf("????1 %d\n", addix)
 		}
 	}
 	for _, rix := range a.Resources {
@@ -340,7 +372,9 @@ func (ttinfo *TtInfo) findClashes(aix ActivityIndex, slot int) []ActivityIndex {
 		for ix := 0; ix < a.Duration; ix++ {
 			c := ttinfo.TtSlots[i+ix]
 			if c != 0 {
+				//--xxx := ttinfo.Activities[c].Placement
 				clashes = append(clashes, c)
+				//--fmt.Printf("????2 %d %d r: %d p: %d\n", c, ix, rix, xxx)
 			}
 		}
 	}
@@ -350,6 +384,7 @@ func (ttinfo *TtInfo) findClashes(aix ActivityIndex, slot int) []ActivityIndex {
 			add := ttinfo.Activities[addix]
 			if add.Placement >= 0 && add.Placement/ttinfo.NHours == day {
 				clashes = append(clashes, addix)
+				//--fmt.Printf("????3 %d\n", addix)
 			}
 		}
 		for _, rix := range a.Resources {
@@ -358,6 +393,7 @@ func (ttinfo *TtInfo) findClashes(aix ActivityIndex, slot int) []ActivityIndex {
 				c := ttinfo.TtSlots[i+ix]
 				if c != 0 {
 					clashes = append(clashes, c)
+					//--fmt.Printf("????4 %d %d\n", c, ix)
 				}
 			}
 		}
@@ -368,9 +404,20 @@ func (ttinfo *TtInfo) findClashes(aix ActivityIndex, slot int) []ActivityIndex {
 
 // TODO: Can I safely assume that no attempt will be made to unplace fixed
 // Activities?
-func (ttinfo *TtInfo) unplaceActivity(aix ActivityIndex) {
+func (ttinfo *TtInfo) UnplaceActivity(aix ActivityIndex) {
 	a := ttinfo.Activities[aix]
 	slot := a.Placement
+
+	//TODO--- for testing
+	if a.Fixed {
+		base.Bug.Fatalf("Can't unplace %d – fixed\n", aix)
+	}
+	if slot < 0 {
+		base.Bug.Printf("Can't unplace %d – not placed\n", aix)
+		panic(1)
+		return
+	}
+
 	for _, rix := range a.Resources {
 		i := rix*ttinfo.SlotsPerWeek + slot
 		for ix := 0; ix < a.Duration; ix++ {
@@ -384,6 +431,7 @@ func (ttinfo *TtInfo) unplaceActivity(aix ActivityIndex) {
 		}
 	}
 	a.Placement = -1
+
 	for _, aixp := range a.Parallel {
 		a := ttinfo.Activities[aixp]
 		for _, rix := range a.Resources {
@@ -400,13 +448,14 @@ func (ttinfo *TtInfo) unplaceActivity(aix ActivityIndex) {
 		}
 		a.Placement = -1
 	}
+	//--ttinfo.CheckResourceIntegrity()
 }
 
 // Note that – at present – testPlacement, findClashes and placeActivity
 // don't try to place room choices. This is intentional, assuming that these
 // will be placed by other functions ...
 
-func (ttinfo *TtInfo) testPlacement(aix ActivityIndex, slot int) bool {
+func (ttinfo *TtInfo) TestPlacement(aix ActivityIndex, slot int) bool {
 	// Simple boolean placement test. It assumes the slot is possible –
 	// so that it will not, for example, be the last slot of a day if
 	// the activity duration is 2.
@@ -446,9 +495,19 @@ func (ttinfo *TtInfo) testPlacement(aix ActivityIndex, slot int) bool {
 	return true
 }
 
-func (ttinfo *TtInfo) placeActivity(aix ActivityIndex, slot int) {
+func (ttinfo *TtInfo) PlaceActivity(aix ActivityIndex, slot int) {
 	// Allocate the resources, assuming none of the slots are blocked!
+	//--fmt.Printf("++++++++ PLACE ++++++++ %d: %d\n", aix, slot)
 	a := ttinfo.Activities[aix]
+
+	//TODO-- This is for debugging
+	p := a.Placement
+	if p >= 0 && p != slot {
+		fmt.Printf("::::: %+v\n", a)
+		panic(fmt.Sprintf("Activity %d already placed: %d\n", aix, p))
+	}
+	//
+
 	for _, rix := range a.Resources {
 		i := rix*ttinfo.SlotsPerWeek + slot
 		for ix := 0; ix < a.Duration; ix++ {
@@ -456,6 +515,7 @@ func (ttinfo *TtInfo) placeActivity(aix ActivityIndex, slot int) {
 		}
 	}
 	a.Placement = slot
+
 	for _, aixp := range a.Parallel {
 		a := ttinfo.Activities[aixp]
 		for _, rix := range a.Resources {
@@ -465,5 +525,34 @@ func (ttinfo *TtInfo) placeActivity(aix ActivityIndex, slot int) {
 			}
 		}
 		a.Placement = slot
+	}
+	//--ttinfo.CheckResourceIntegrity()
+}
+
+// DEBUGGING only
+func (ttinfo *TtInfo) CheckResourceIntegrity() {
+	for rix := 0; rix < len(ttinfo.Resources); rix++ {
+		slot0 := rix * ttinfo.SlotsPerWeek
+		for p := 0; p < ttinfo.SlotsPerWeek; p++ {
+			aix := ttinfo.TtSlots[slot0+p]
+			if aix <= 0 {
+				continue
+			}
+			a := ttinfo.Activities[aix]
+			ap := a.Placement
+			if ap < 0 {
+				panic(fmt.Sprintf("Resource (%d) of unplaced Activity (%d)"+
+					" at position %d:", rix, aix, ap))
+			}
+			for i := 0; i < a.Duration; i++ {
+				if ap+i == p {
+					goto pok
+				}
+			}
+			panic(fmt.Sprintf("Resource (%d) of Activity (%d)"+
+				" at wrong position %d (should be %d):",
+				rix, aix, p, ap))
+		pok:
+		}
 	}
 }

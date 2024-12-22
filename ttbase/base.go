@@ -29,6 +29,8 @@ type TtInfo struct {
 	NDays        int
 	NHours       int
 	SlotsPerWeek int
+	PMStart      int
+	LunchTimes   []int
 	Activities   []*Activity // first entry (index 0) free!
 	Resources    []any       // pointers to Resources
 	TtSlots      []ActivityIndex
@@ -51,7 +53,8 @@ type TtInfo struct {
 	ClassDivisions map[Ref][][]Ref // Class -> list of list of Groups
 
 	// Set by "makeAtomicGroups"
-	AtomicGroups map[Ref][]*AtomicGroup // Group -> list of AtomicGroups
+	AtomicGroups  map[Ref][]*AtomicGroup // Group -> list of AtomicGroups
+	NAtomicGroups int
 
 	Constraints map[string][]any
 
@@ -164,10 +167,15 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 	// Copy the AtomicGroups to the beginning of the Resources slice.
 	i := 0
 	for _, ag := range ags {
+		if ag.Index != i {
+			base.Bug.Fatalf("Atomic group index != resource index:\n"+
+				"  -- %d: %+v\n", i, ag)
+		}
 		ttinfo.Resources[i] = ag
 		//fmt.Printf(" :: %+v\n", ag)
 		i++
 	}
+	ttinfo.NAtomicGroups = i
 
 	t2tt := map[Ref]ResourceIndex{}
 	for _, t := range db.Teachers {
@@ -189,6 +197,7 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 	ttinfo.processConstraints()
 
 	// Add the remaining Activity information
+	ttinfo.processConstraints()
 	ttinfo.addActivityInfo(t2tt, r2tt, g2ags)
 
 }

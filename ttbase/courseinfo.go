@@ -31,7 +31,7 @@ func (ttinfo *TtInfo) View(cinfo *CourseInfo) string {
 		glist = append(glist, gx)
 	}
 
-	return fmt.Sprintf("<Course %s/%s:%s>\n",
+	return fmt.Sprintf("<Course %s/%s:%s>",
 		strings.Join(glist, ","),
 		strings.Join(tlist, ","),
 		ttinfo.Ref2Tag[cinfo.Subject],
