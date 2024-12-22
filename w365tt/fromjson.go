@@ -32,6 +32,7 @@ func ReadJSON(jsonpath string) *DbTopLevel {
 func LoadJSON(newdb *base.DbTopLevel, jsonpath string) {
 	db := ReadJSON(jsonpath)
 	newdb.Info = base.Info(db.Info)
+	newdb.PrintOptions = base.PrintOptions(db.PrintOptions)
 	db.readDays(newdb)
 	db.readHours(newdb)
 	db.readTeachers(newdb)

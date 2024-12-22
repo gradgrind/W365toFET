@@ -15,11 +15,16 @@
  *                     only work if the lesson periods (hours) are supplied
  *                     with correctly formatted start and end times (hh:mm,
  *                     24-hour clock).
- *                     To select this variant, the parameter Info.WithBreaks
+ *                     To select this variant, the option Typst.WithBreaks
  *                     must be true.
- * If lesson period times are supplied, the parameter Info.WithTimes must be
+ * If lesson period times are supplied, the parameter Typst.WithTimes must be
  * true (default: false) for them to be shown in the period headers.
  */
+
+// To use a different font:
+//#set text(font: "B612")
+// If the font is not installed on the system, the .ttf or .otf files can be
+// placed in "typst_files/_fonts".
 
 #let PAGE_HEIGHT = 210mm
 #let PAGE_WIDTH = 297mm
@@ -47,21 +52,60 @@
 #let PLAN_AREA_WIDTH = (PAGE_WIDTH - PAGE_BORDER.left
     - PAGE_BORDER.right)
 
+// Field placement fallbacks
+#let boxText = (
+    Class: (
+        c: "SUBJECT",
+        tl: "TEACHER",
+        tr: "GROUP",
+        //bl: "",
+        br: "ROOM",
+    ),
+    Teacher: (
+        c: "GROUP",
+        tl: "SUBJECT",
+        tr: "TEACHER",
+        //bl: "",
+        br: "ROOM",
+    ),
+    Room: (
+        c: "GROUP",
+        tl: "SUBJECT",
+        //tr: "",
+        //bl: "",
+        br: "TEACHER",
+    ),
+)
+
+// Page heading fallbacks
+#let pageHeadings = (
+    Class: "Klasse: %S",
+    Teacher: "%N (%S)",
+    Room: "Raum: %N (%S)",
+)
+
+// ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 //#PLAN_AREA_WIDTH x #PLAN_AREA_HEIGHT
 #let xdata = json(sys.inputs.ifile)
+#let typstMap = xdata.at("Typst", default: (:))
 
-#let DAYS = xdata.Info.Days
-//#let DAYS = ("Mo", "Di", "Mi", "Do", "Fr")
+#let DAYS = ()
+#for ddata in xdata.Info.Days {
+    //TODO: Which field to use
+    DAYS.push(ddata.Name)
+}
+
 #let HOURS = ()
 #let TIMES = ()
-
-#let WITHTIMES = xdata.Info.at("WithTimes", default: false)
-#let WITHBREAKS = xdata.Info.at("WithBreaks", default: false)
+#let WITHTIMES = typstMap.at("WithTimes", default: false)
+#let WITHBREAKS = typstMap.at("WithBreaks", default: false)
 //#let WITHTIMES = true
 //#let WITHBREAKS = true
 
 #for hdata in xdata.Info.Hours {
-  let hour = hdata.at("Hour")
+    //TODO: Which field to use
+  let hour = hdata.Short
   let time1 = hdata.at("Start")
   let time2 = hdata.at("End")
   if WITHTIMES {
@@ -76,6 +120,16 @@
     // Convert the times to minutes only.
     TIMES.push((int(h1) * 60 + int(m1), int(h2) * 60 + int(m2)))
   }
+}
+
+// Type of table ("Class", "Teacher" or "Room")
+#let tableType = xdata.TableType
+
+// Determine the field placements in the tiles
+#let fieldPlacements = typstMap.at("FieldPlacements", default: (:))
+#if fieldPlacements.len() == 0 {
+    // fallback
+    fieldPlacements = boxText.at(tableType, default: (:))
 }
 
 #let vfactor = if WITHBREAKS {
@@ -161,7 +215,7 @@
 // On text lines (top or bottom of cell) with two text items:
 // If one is smaller than 25% of the space, leave this and shrink the
 // other to 90% of the reamining space. Otherwise shrink both.
-#let fit2inspace(width, text1, text2) = {
+#let scale2inline(vpos, width, text1, text2) = {
     let t1 = text(size: SMALL_SIZE, text1)
     let t2 = text(size: SMALL_SIZE, text2)
     let w4 = width / 4
@@ -173,51 +227,60 @@
                 // shrink only text2
                 let w2 = width - s1.width
                 let scl = (w2 * 0.9) / s2.width
-                box(width: width, inset: 2pt,
-                    t1
-                    + h(1fr)
-                    + text(size: scl * SMALL_SIZE, text2)
-                )
+                place(vpos + left, t1)
+                place(vpos + right, text(size: scl * SMALL_SIZE, text2))
             } else if s2.width < w4 {
                 // shrink only text1
                 let w2 = width - s2.width
                 let scl = (w2 * 0.9) / s1.width
-                box(width: width, inset: 2pt,
-                    text(size: scl * SMALL_SIZE, text1)
-                    + h(1fr)
-                    + t2
-                )
+                place(vpos + left, text(size: scl * SMALL_SIZE, text1))
+                place(vpos + right, t2)
             } else {
                 // shrink both
                 let scl = (width * 0.9) / (s1.width + s2.width)
-                box(width: width, inset: 2pt,
-                    text(size: scl * SMALL_SIZE, text1)
-                    + h(1fr)
-                    + text(size: scl * SMALL_SIZE, text2)
-                )
+                place(vpos + left, text(size: scl * SMALL_SIZE, text1))
+                place(vpos + right, text(size: scl * SMALL_SIZE, text2))
             }
         } else {
-            box(width: width, inset: 2pt, t1 + h(1fr) + t2)
+            place(vpos + left, t1)
+            place(vpos + right, t2)
         }
     }
 }
 
-#let fitinspace(width, textc) = {
+#let scaleinline(vpos, width, textc) = {
     let t = text(size: NORMAL_SIZE, weight: "bold", textc)
     context {
         let s = measure(t)
         if s.width > width * 0.9 {
             let scl = (width * 0.9 / s.width)
             let ts = text(size: scl * NORMAL_SIZE, weight: "bold", textc)
-            box(width: width, h(1fr) + ts + h(1fr))
+            place(vpos + center, ts)
         } else {
-            box(width: width, h(1fr) + t + h(1fr))
+            place(vpos + center, t)
         }
     }
 }
 
 #let cell_inset = CELL_BORDER
 #let cell_width = colwidth - cell_inset * 2
+
+// Used by fgWCAG2
+#let rgblumin(c) = {
+    c = c / 100%
+	if c <= 0.04045 {
+		c/12.92
+	} else {
+		calc.pow((c+0.055)/1.055, 2.4)
+	}
+}
+
+// Decide on black or white for text, based on background colour (WCAG2).
+#let fgWCAG2(colour) = {
+	let (r,g,b,a) = rgb(colour).components()
+	let l = 0.2126 * rgblumin(r) + 0.7152 * rgblumin(g) + 0.0722 * rgblumin(b)
+	if l > 0.179 { black } else { white }
+}
 
 #let ttcell(
     day: 0,
@@ -226,12 +289,39 @@
     offset: 0,
     fraction: 1,
     total: 1,
-    centre: "",
-    tl: "",
-    tr: "",
-    bl: "",
-    br: "",
+    subject: "",
+    groups: (),
+    teachers: (),
+    rooms: (),
+    background: "",
 ) = {
+    // Prepare texts
+    let texts = (
+        SUBJECT: subject,
+        GROUP: groups.join(","),
+        TEACHER: teachers.join(","),
+        ROOM: rooms.join(","),
+    )
+    let centre = texts.at(fieldPlacements.at("c", default: ""), default: "")
+    let tl = texts.at(fieldPlacements.at("tl", default: ""), default: "") 
+    let tr = texts.at(fieldPlacements.at("tr", default: ""), default: "") 
+    let bl = texts.at(fieldPlacements.at("bl", default: ""), default: "") 
+    let br = texts.at(fieldPlacements.at("br", default: ""), default: "") 
+
+    if background == "" {
+        background = "#FFFFFF"
+    }
+    let bg = rgb(background)
+    // Get text colour
+    //TODO: choose algorithm for text colour.
+    // 1) This converts the background to grey-scale and uses a threshold:
+    let bw = luma(bg)
+    let textcolour = if bw.components().at(0) < 55% { white } else { black }
+    // 2) This uses the WCAG2 guidelines:
+    //let textcolour = fgWCAG2(bg)
+    set text(textcolour)
+
+    // Determine grid lines
     let (y0, y1) = hlines.at(hour)
     let x0 = vlines.at(day)
     if duration > 1 {
@@ -241,17 +331,15 @@
     let xshift = cell_width * offset / total
     // Shrink excessively large components.
     let b = box(
-        fill: luma(100%),
+        fill: rgb(background),
         stroke: CELL_BORDER,
-        inset: 0pt,
+        inset: 2pt,
         height: y1 - y0 - CELL_BORDER*2,
         width: wfrac,
     )[
-        #fit2inspace(wfrac, tl, tr)
-        #v(1fr)
-        #fitinspace(wfrac, centre)
-        #v(1fr)
-        #fit2inspace(wfrac, bl, br)
+        #scale2inline(top, wfrac, tl, tr)
+        #scaleinline(horizon, wfrac, centre)
+        #scale2inline(bottom, wfrac, bl, br)
     ]
     place(top + left,
         dx: x0 + CELL_BORDER + xshift,
@@ -283,24 +371,29 @@
     bottom-edge: "descender",
     pad(left: 5mm, it))
 
+#let pheadings = typstMap.at("PageHeading", default: (:))
+#let phead = pheadings.at(tableType, default: "-")
+#if phead == "-" {
+    phead = pageHeadings.at(tableType, default: "")
+}
 #let page = 0
-#for (k, kdata) in xdata.Pages [
-    #{
-        if page != 0 {
-            pagebreak()
-        }
-        page += 1
+#for p in xdata.Pages {
+    if page != 0 {
+        pagebreak()
     }
+    page += 1
 
-    #block(height: TITLE_HEIGHT, above: 0mm, below: 0mm)[
-        #v(5mm)
-        = #k
+    let title = phead.replace("%N", p.Name).replace("%S", p.Short)
+    block(height: TITLE_HEIGHT, above: 0mm, below: 0mm, inset: 2mm)[
+        #place(top)[#h(1fr)#xdata.Info.Institution]
+        #place(left + horizon)[= #title]
+        #place(bottom)[#h(1fr)#typstMap.at("Subtitle", default: "")]
     ]
 
-    #box([
+    box([
         #tbody
-        #for kd in kdata {
-            ttcell(..kd)
+        #for a in p.Activities {
+            ttcell(..a)
         }
     ])
-]
+}

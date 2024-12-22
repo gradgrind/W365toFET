@@ -13,14 +13,9 @@ import (
 
 func main() {
 	// Define and read command-line flags
-	teachers := flag.Bool("T", false, "Print individual teacher tables")
-	classes := flag.Bool("C", false, "Print individual class tables")
-	rooms := flag.Bool("R", false, "Print individual room tables")
 
 	nocheck := flag.Bool("x", false, "Don't check for invalid placements")
 	typstexec := flag.String("typst", "typst", "Typst executable")
-	without_times := flag.Bool("nt", false, "Don't show lesson-period times")
-	without_breaks := flag.Bool("nb", false, "Don't show breaks")
 
 	flag.Parse()
 
@@ -58,32 +53,19 @@ func main() {
 	datadir := filepath.Join(filepath.Dir(abspath), "typst_files")
 	stemfile := filepath.Base(stempath)
 
-	//TODO: Provide plan_name somehow?
-	plan_name := ""
-
-	extraflags := map[string]bool{}
-	if !*without_times {
-		extraflags["WithTimes"] = true
-	}
-	if !*without_breaks {
-		extraflags["WithBreaks"] = true
-	}
-
 	// Generate Typst data
-	ttprint.GenTypstData(ttinfo, datadir, stemfile, plan_name, extraflags)
+	typst_files := ttprint.GenTypstData(ttinfo, datadir, stemfile)
 
-	// Optionally generate PDF files
-	if *teachers {
-		ttprint.MakePdf(
-			"print_timetable.typ", datadir, stemfile+"_teachers", *typstexec)
-	}
-	if *classes {
-		ttprint.MakePdf(
-			"print_timetable.typ", datadir, stemfile+"_classes", *typstexec)
-	}
-	if *rooms {
-		ttprint.MakePdf(
-			"print_timetable.typ", datadir, stemfile+"_rooms", *typstexec)
+	// Generate PDF files
+	for _, tfile := range typst_files {
+		t, overview := strings.CutSuffix(tfile, "_overview")
+		if overview {
+			ttprint.MakePdf(
+				"print_overview.typ", datadir, t, tfile, *typstexec)
+		} else {
+			ttprint.MakePdf(
+				"print_timetable.typ", datadir, t, tfile, *typstexec)
+		}
 	}
 
 	base.Message.Println("OK")

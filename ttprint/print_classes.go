@@ -3,20 +3,16 @@ package ttprint
 import (
 	"W365toFET/base"
 	"W365toFET/ttbase"
-	"fmt"
 	"slices"
-	"strings"
 )
 
 func genTypstClassData(
 	ttinfo *ttbase.TtInfo,
-	plan_name string,
 	datadir string,
 	stemfile string, // basic name part of source file
-	flags map[string]bool,
-) {
+) string {
 	db := ttinfo.Db
-	pages := [][]any{}
+	pages := []ttPage{}
 	ref2id := ttinfo.Ref2Tag
 	type cdata struct { // for SuperCourses
 		groups   map[base.Ref]bool
@@ -117,16 +113,17 @@ func genTypstClassData(
 					for _, chip := range chips {
 						gstrings := append(chip.Groups, chip.ExtraGroups...)
 						tile := Tile{
-							Day:      l.Day,
-							Hour:     l.Hour,
-							Duration: l.Duration,
-							Fraction: chip.Fraction,
-							Offset:   chip.Offset,
-							Total:    chip.Total,
-							Centre:   subject,
-							TL:       strings.Join(tstrings, ","),
-							TR:       strings.Join(gstrings, ","),
-							BR:       strings.Join(rstrings, ","),
+							Day:        l.Day,
+							Hour:       l.Hour,
+							Duration:   l.Duration,
+							Fraction:   chip.Fraction,
+							Offset:     chip.Offset,
+							Total:      chip.Total,
+							Subject:    subject,
+							Groups:     gstrings,
+							Teachers:   tstrings,
+							Rooms:      rstrings,
+							Background: l.Background,
 						}
 						classTiles[cref] = append(classTiles[cref], tile)
 					}
@@ -158,16 +155,17 @@ func genTypstClassData(
 					for _, chip := range chips {
 						gstrings := append(chip.Groups, chip.ExtraGroups...)
 						tile := Tile{
-							Day:      l.Day,
-							Hour:     l.Hour,
-							Duration: l.Duration,
-							Fraction: chip.Fraction,
-							Offset:   chip.Offset,
-							Total:    chip.Total,
-							Centre:   subject,
-							TL:       strings.Join(tstrings, ","),
-							TR:       strings.Join(gstrings, ","),
-							BR:       strings.Join(rstrings, ","),
+							Day:        l.Day,
+							Hour:       l.Hour,
+							Duration:   l.Duration,
+							Fraction:   chip.Fraction,
+							Offset:     chip.Offset,
+							Total:      chip.Total,
+							Subject:    subject,
+							Groups:     gstrings,
+							Teachers:   tstrings,
+							Rooms:      rstrings,
+							Background: l.Background,
 						}
 						classTiles[cref] = append(classTiles[cref], tile)
 					}
@@ -183,35 +181,40 @@ func genTypstClassData(
 		if !ok {
 			continue
 		}
-		pages = append(pages, []any{
-			fmt.Sprintf("Klasse %s", c.Tag),
-			ctiles,
+		pages = append(pages, ttPage{
+			Name:       c.Name,
+			Short:      c.Tag,
+			Activities: ctiles,
 		})
 	}
-	dlist := []string{}
+	dlist := []ttDay{}
 	for _, d := range db.Days {
-		dlist = append(dlist, d.Name)
+		dlist = append(dlist, ttDay{
+			Name:  d.Name,
+			Short: d.Tag,
+		})
 	}
 	hlist := []ttHour{}
 	for _, h := range db.Hours {
 		hlist = append(hlist, ttHour{
-			Hour:  h.Tag,
+			Name:  h.Name,
+			Short: h.Tag,
 			Start: h.Start,
 			End:   h.End,
 		})
 	}
 	info := map[string]any{
-		"School":     db.Info.Institution,
-		"Days":       dlist,
-		"Hours":      hlist,
-		"WithTimes":  flags["WithTimes"],
-		"WithBreaks": flags["WithBreaks"],
+		"Institution": db.Info.Institution,
+		"Days":        dlist,
+		"Hours":       hlist,
 	}
 	tt := Timetable{
-		Title: "Stundenpläne der Klassen",
-		Info:  info,
-		Plan:  plan_name,
-		Pages: pages,
+		TableType: "Class",
+		Info:      info,
+		Typst:     db.PrintOptions.Typst,
+		Pages:     pages,
 	}
-	makeTypstJson(tt, datadir, stemfile+"_classes")
+	f := stemfile + "_classes"
+	makeTypstJson(tt, datadir, f)
+	return f
 }
