@@ -3,6 +3,7 @@ package ttengine
 import (
 	"W365toFET/ttbase"
 	"W365toFET/ttprint"
+	"strings"
 )
 
 func PrintTT(ttinfo *ttbase.TtInfo, datadir string, name string) {
@@ -24,16 +25,20 @@ func PrintTT(ttinfo *ttbase.TtInfo, datadir string, name string) {
 			l.Rooms = ttinfo.CourseInfo[l.Course].Room.Rooms
 		}
 	}
-	plan_name := "Generated Plan"
 
-	flags := map[string]bool{
-		"WithTimes":  true,
-		"WithBreaks": true,
-	}
-	ttprint.GenTypstData(ttinfo, datadir, name, plan_name, flags)
+	// Generate Typst data
+	typst_files := ttprint.GenTypstData(ttinfo, datadir, name)
 
+	// Generate PDF files
 	typst := "typst"
-	ttprint.MakePdf("print_timetable.typ", datadir, name+"_teachers", typst)
-	ttprint.MakePdf("print_timetable.typ", datadir, name+"_classes", typst)
-	ttprint.MakePdf("print_timetable.typ", datadir, name+"_rooms", typst)
+	for _, tfile := range typst_files {
+		t, overview := strings.CutSuffix(tfile, "_overview")
+		if overview {
+			ttprint.MakePdf(
+				"print_overview.typ", datadir, t, tfile, typst)
+		} else {
+			ttprint.MakePdf(
+				"print_timetable.typ", datadir, t, tfile, typst)
+		}
+	}
 }
