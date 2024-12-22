@@ -64,16 +64,13 @@ Der Ordner für die PDF-Ausgabe muss schon existieren.
 
 Bei Erfolg wären die Ergebnisse dann im Ordner `path/to/typst_files/_pdf` zu finden. Fehlermeldungen kann man von `stderr` lesen.
 
-Bei Angabe entsprechender Kommandozeilenoptionen können auch die PDF-Dateien automatisch erstellt werden.
+Aktuell werden die PDF-Dateien automatisch erstellt ... TODO?.
+
+TODO: Gesamtpläne ... und PrintOptions.
 
 ## Kommandozeilenoptionen
 
 | Option | Bedeutung |
 | :--- | :--- |
-| -C | Erstelle PDF für Stundenpläne der Klassen |
-| -T | Erstelle PDF für Stundenpläne der Lehrer |
-| -R | Erstelle PDF für Stundenpläne der Räume |
-| -nb | Vereinfachte Pläne: Pausen nicht darstellen |
-| -nt | Vereinfachte Pläne: Stundenzeiten nicht zeigen |
 | -x | Platzierungen nicht auf Gültigkeit kontrollieren |
 | -typst=...| Typst-Befehl (Pfad) angeben |
