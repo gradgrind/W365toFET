@@ -197,7 +197,6 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 	ttinfo.processConstraints()
 
 	// Add the remaining Activity information
-	ttinfo.processConstraints()
 	ttinfo.addActivityInfo(t2tt, r2tt, g2ags)
 
 }
