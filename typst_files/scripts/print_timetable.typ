@@ -1,11 +1,15 @@
-/* The basic idea is to use a table for structuring each timetable. This
- * manages the headers, lines and background colouring.
- * The tiles of the actual timetable are overlaid on this using the line
- * coordinates for orientation.
+/* This is a script to generate a multiple page document where each class,
+ * teacher or room has a page of its own for its weekly timetable.
+ *
+ * The basic idea is to use a Typst-table to manages the headers, lines and
+ * background colouring. The tiles of the timetable activities are overlaid
+ * on this using the table cell boundary coordinates for orientation.
+ *
  * A space (block) is left at the top of each page for a page title. This
  * is in the space left free by the TITLE_HEIGHT value.
  * The rest of the page will be used for the table, adjusting the cell size
  * to fit.
+ *
  * Two variants of table are supported:
  *  - plain (default): A simple table is used with each lesson period having
  *                     the same length.
@@ -47,11 +51,6 @@
 #let BREAK_COLOUR = "#e0e0e0"
 #let EMPTY_COLOUR = "#f0f0f0"
 
-#let PLAN_AREA_HEIGHT = (PAGE_HEIGHT - PAGE_BORDER.top
-    - PAGE_BORDER.bottom - TITLE_HEIGHT)
-#let PLAN_AREA_WIDTH = (PAGE_WIDTH - PAGE_BORDER.left
-    - PAGE_BORDER.right)
-
 // Field placement fallbacks
 #let boxText = (
     Class: (
@@ -86,7 +85,11 @@
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-//#PLAN_AREA_WIDTH x #PLAN_AREA_HEIGHT
+#let PLAN_AREA_HEIGHT = (PAGE_HEIGHT - PAGE_BORDER.top
+    - PAGE_BORDER.bottom - TITLE_HEIGHT)
+#let PLAN_AREA_WIDTH = (PAGE_WIDTH - PAGE_BORDER.left
+    - PAGE_BORDER.right)
+
 #let xdata = json(sys.inputs.ifile)
 #let typstMap = xdata.at("Typst", default: (:))
 
@@ -100,8 +103,6 @@
 #let TIMES = ()
 #let WITHTIMES = typstMap.at("WithTimes", default: false)
 #let WITHBREAKS = typstMap.at("WithBreaks", default: false)
-//#let WITHTIMES = true
-//#let WITHBREAKS = true
 
 #for hdata in xdata.Info.Hours {
     //TODO: Which field to use
@@ -140,7 +141,6 @@
   // Here it is just the height of a period box
   (PLAN_AREA_HEIGHT - H_HEADER_HEIGHT) / HOURS.len()
 }
-//#vfactor
 
 // Build the row structure
 #let table_content = ([],) + DAYS
@@ -177,9 +177,6 @@
     i += 1
 }
 
-//#trows
-//#hlines
-
 // Build the vertical lines
 
 #let vlines = (V_HEADER_WIDTH,)
@@ -191,8 +188,6 @@
     vlines.push(d0)
 }
 #let tcolumns = (V_HEADER_WIDTH,) + (colwidth,)*DAYS.len()
-//#tcolumns
-//#vlines
 
 #show table.cell: it => {
   if it.y == 0 {
@@ -348,7 +343,6 @@
     )
 }
 
-//#context here().position()
 #let tbody = table(
     columns: tcolumns,
     rows: trows,
@@ -363,7 +357,6 @@
                 rgb(EMPTY_COLOUR)
             }
         },
-//  align: center + horizon,
     ..table_content
 )
 

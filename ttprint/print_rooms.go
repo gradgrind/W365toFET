@@ -5,13 +5,60 @@ import (
 	"W365toFET/ttbase"
 )
 
-func genTypstRoomData(
+func getRooms(
 	ttinfo *ttbase.TtInfo,
 	datadir string,
 	stemfile string, // basic name part of source file
 ) string {
-	db := ttinfo.Db
+	data := getRoomData(ttinfo, datadir, stemfile)
 	pages := []ttPage{}
+	for _, r := range ttinfo.Db.Rooms {
+		rtiles, ok := data[r.Id]
+		if !ok {
+			continue
+		}
+		pages = append(pages, ttPage{
+			Name:       r.Name,
+			Short:      r.Tag,
+			Activities: rtiles,
+		})
+	}
+	tt := timetable(ttinfo.Db, pages, "Room")
+	f := stemfile + "_rooms"
+	makeTypstJson(tt, datadir, f)
+	return f
+}
+
+func getOneRoom(
+	ttinfo *ttbase.TtInfo,
+	datadir string,
+	stemfile string, // basic name part of source file
+	e *base.Room,
+) string {
+	data := getRoomData(ttinfo, datadir, stemfile)
+	tiles, ok := data[e.Id]
+	if !ok {
+		tiles = []Tile{} // Avoid none in JSON if table empty
+	}
+	pages := []ttPage{
+		ttPage{
+			Name:       e.Name,
+			Short:      e.Tag,
+			Activities: tiles,
+		},
+	}
+	tt := timetable(ttinfo.Db, pages, "Room")
+	f := stemfile + "_room_" + e.Tag
+	makeTypstJson(tt, datadir, f)
+	return f
+}
+
+func getRoomData(
+	ttinfo *ttbase.TtInfo,
+	datadir string,
+	stemfile string, // basic name part of source file
+) map[base.Ref][]Tile {
+	db := ttinfo.Db
 	// Generate the tiles.
 	roomTiles := map[base.Ref][]Tile{}
 	type rdata struct { // for SuperCourses
@@ -134,46 +181,5 @@ func genTypstRoomData(
 			}
 		}
 	}
-
-	for _, r := range db.Rooms {
-		rtiles, ok := roomTiles[r.Id]
-		if !ok {
-			continue
-		}
-		pages = append(pages, ttPage{
-			Name:       r.Name,
-			Short:      r.Tag,
-			Activities: rtiles,
-		})
-	}
-	dlist := []ttDay{}
-	for _, d := range db.Days {
-		dlist = append(dlist, ttDay{
-			Name:  d.Name,
-			Short: d.Tag,
-		})
-	}
-	hlist := []ttHour{}
-	for _, h := range db.Hours {
-		hlist = append(hlist, ttHour{
-			Name:  h.Name,
-			Short: h.Tag,
-			Start: h.Start,
-			End:   h.End,
-		})
-	}
-	info := map[string]any{
-		"Institution": db.Info.Institution,
-		"Days":        dlist,
-		"Hours":       hlist,
-	}
-	tt := Timetable{
-		TableType: "Room",
-		Info:      info,
-		Typst:     db.PrintOptions.Typst,
-		Pages:     pages,
-	}
-	f := stemfile + "_rooms"
-	makeTypstJson(tt, datadir, f)
-	return f
+	return roomTiles
 }

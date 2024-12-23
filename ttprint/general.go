@@ -63,26 +63,96 @@ func GenTypstData(
 			"Class_overview", "Teacher_overview", "Room_overview",
 		}
 	}
+	// The same JSON is used for overview tables as for individual tables,
+	// so suppress generation of doubles.
+	done := map[string]string{}
+	var f string
+	var ok bool
 	for _, ptable := range printTables {
 		p, overview := strings.CutSuffix(ptable, "_overview")
-		var f string
-		switch p {
-		case "Class":
-			f = genTypstClassData(ttinfo, datadir, stemfile)
-		case "Teacher":
-			f = genTypstTeacherData(ttinfo, datadir, stemfile)
-		case "Room":
-			f = genTypstRoomData(ttinfo, datadir, stemfile)
-		default:
-			base.Error.Printf("\n", ptable)
-			continue
+		f, ok = done[p]
+		if !ok {
+			switch p {
+			case "Class":
+				f = getClasses(ttinfo, datadir, stemfile)
+			case "Teacher":
+				f = getTeachers(ttinfo, datadir, stemfile)
+			case "Room":
+				f = getRooms(ttinfo, datadir, stemfile)
+			default:
+				// Table for individual element
+				f = genTypstOneElement(ttinfo, datadir, stemfile, p)
+			}
+			done[p] = f
+		}
+		if overview {
+			f += "_overview"
 		}
 		typst_files = append(typst_files, f)
-		if overview {
-			typst_files = append(typst_files, f+"_overview")
-		}
 	}
 	return typst_files
+}
+
+func genTypstOneElement(
+	ttinfo *ttbase.TtInfo,
+	datadir string,
+	stemfile string, // basic name part of source file
+	id string,
+) string {
+	ref := base.Ref(id)
+	e := ttinfo.Db.Elements[ref]
+	c, ok := e.(*base.Class)
+	if ok {
+		// Make class JSON, but with only one class
+		return getOneClass(ttinfo, datadir, stemfile, c)
+	}
+	t, ok := e.(*base.Teacher)
+	if ok {
+		// Make teacher JSON, but with only one teacher
+		return getOneTeacher(ttinfo, datadir, stemfile, t)
+	}
+	r, ok := e.(*base.Room)
+	if ok {
+		// Make room JSON, but with only one room
+		return getOneRoom(ttinfo, datadir, stemfile, r)
+	}
+	base.Error.Fatalf("Can't print timetable for invalid element: %+v\n", e)
+	return ""
+}
+
+// TODO
+func timetable(
+	db *base.DbTopLevel,
+	pages []ttPage,
+	tabletype string, // "Class" or "Teacher" or "Room"
+) Timetable {
+	dlist := []ttDay{}
+	for _, d := range db.Days {
+		dlist = append(dlist, ttDay{
+			Name:  d.Name,
+			Short: d.Tag,
+		})
+	}
+	hlist := []ttHour{}
+	for _, h := range db.Hours {
+		hlist = append(hlist, ttHour{
+			Name:  h.Name,
+			Short: h.Tag,
+			Start: h.Start,
+			End:   h.End,
+		})
+	}
+	info := map[string]any{
+		"Institution": db.Info.Institution,
+		"Days":        dlist,
+		"Hours":       hlist,
+	}
+	return Timetable{
+		TableType: tabletype,
+		Info:      info,
+		Typst:     db.PrintOptions.Typst,
+		Pages:     pages,
+	}
 }
 
 func makeTypstJson(tt Timetable, datadir string, outfile string) {

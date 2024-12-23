@@ -1,6 +1,20 @@
-/* Print the complete timetable for classes, teachers or rooms in a fairly
- * compact form.
-*/
+/* This is a script to generate a view of the complete timetable for all
+ * classes, teachers or rooms in a fairly compact form. Each of the items
+ * has a row showing its weekly timetable.
+ *
+ * The basic idea is to use a Typst-table to manages the headers, lines and
+ * background colouring. The tiles of the timetable activities are overlaid
+ * on this using the table cell boundary coordinates for orientation.
+ *
+ * A space (block) is left at the top of each page for a page title. This
+ * is in the space left free by the TITLE_HEIGHT value.
+ * The rest of the page will be used for the table, adjusting the cell size
+ * to fit.
+ * 
+ * It is quite likely that there will be too many items for a single page. In
+ * this case, the item list is divided – the available space on the page is
+ * known, as are the row heights, so this division is fairly straightforward.
+ */
 
 // To use a different font:
 //#set text(font: "B612")
@@ -28,6 +42,8 @@
 #let FRAME_COLOUR = "#707070"
 #let HEADER_COLOUR = "#e0e0e0"
 #let EMPTY_COLOUR = "#f0f0f0"
+
+#let JOINSTR = ","
 
 // Field placement fallbacks
 #let boxText = (
@@ -63,7 +79,6 @@
     - PAGE_BORDER.bottom - TITLE_HEIGHT)
 #let PLAN_AREA_WIDTH = (PAGE_WIDTH - PAGE_BORDER.left
     - PAGE_BORDER.right)
-//#PLAN_AREA_WIDTH x #PLAN_AREA_HEIGHT
 
 #let H_HEADER_HEIGHT = H_HEADER_HEIGHT1 + H_HEADER_HEIGHT2
 #let TABLE_BODY_HEIGHT = PLAN_AREA_HEIGHT - H_HEADER_HEIGHT
@@ -127,11 +142,33 @@
     let wt = "regular"
     if bold { wt = "bold" }
     context {
-        let t = text(size: tsize, weight: wt, textc)
-        let s = measure(t)
-        if s.width > width * 0.9 {
-            let scl = (width * 0.9 / s.width)
-            t = text(size: scl * tsize, weight: wt, textc)
+        let t
+        let text2 = textc
+        let xwhile = true
+        while true {
+            t = text(size: tsize, weight: wt, text2)
+            let s = measure(t)
+            if s.width > width * 0.9 {
+                let scl = (width * 0.9 / s.width)
+                // Shorten if the text is too long
+                if xwhile and scl < 0.5 {
+                    // Take just the first items in the list and add a "+".
+                    xwhile = false
+                    let tlist = textc.split(JOINSTR)
+                    let n = int(tlist.len() * 2 * scl)
+                    if n == 0 {
+                        // Long first entry, truncate it
+                        tlist = tlist.at(0).clusters()
+                        n = int(tlist.len() * 2 * scl)
+                        text2 = tlist.slice(0, n).join("") + "\u{00A0}+"
+                    } else {
+                        text2 = tlist.slice(0, n).join(JOINSTR) + "\u{00A0}+"
+                    }
+                    continue
+                }
+                t = text(size: scl * tsize, weight: wt, text2)
+            }
+            break
         }
         place(vpos + hpos, t)
     }
@@ -191,9 +228,6 @@
 #let tcolumns = (V_HEADER_WIDTH,) + (colwidth,)*pcols
 #let hcellfill = ([],) * pcols
 
-//#tcolumns
-//#vlines
-
 // Prepare vertical header and row sizes and boundaries
 #let nprows = int(TABLE_BODY_HEIGHT / ROW_HEIGHT)
 #let trows = ((H_HEADER_HEIGHT1, H_HEADER_HEIGHT2) + (ROW_HEIGHT,)*nprows)
@@ -205,8 +239,6 @@
     y += ROW_HEIGHT
     hlines.push(y)
 }
-//#trows
-//#hlines
 
 #let ttvcell(
     row,
@@ -229,9 +261,9 @@
     // Prepare texts
     let texts = (
         SUBJECT: subject,
-        GROUP: groups.join(","),
-        TEACHER: teachers.join(","),
-        ROOM: rooms.join(","),
+        GROUP: groups.join(JOINSTR),
+        TEACHER: teachers.join(JOINSTR),
+        ROOM: rooms.join(JOINSTR),
     )
     let ctext = texts.at(fieldPlacements.at("c", default: ""), default: "")
     let ttext = texts.at(fieldPlacements.at("t", default: ""), default: "") 
@@ -275,7 +307,7 @@
 
 #show heading: it => text(weight: "bold", size: BIG_SIZE,
     bottom-edge: "descender",
-    pad(left: 5mm, it))
+    pad(left: 20mm, it))
 
 // Determine the document title
 #let titles = typstMap.at("Titles", default: (:))
@@ -285,22 +317,10 @@
 }
 #let title = titles.at(tableType, default: "")
 #let subtitle = typstMap.at("Subtitle", default: "")
-#let foot1 = [*#title*]
-#if subtitle != "" {
-    foot1 += [: #subtitle]
-}
 
 #set page(height: PAGE_HEIGHT, width: PAGE_WIDTH,
     //numbering: "1/1",
     margin: PAGE_BORDER,
-    footer: context [
-        #foot1
-        #h(1fr)
-        #counter(page).display(
-            "1/1",
-            both: true,
-        )
-    ]
 )
 
 // +++ Divide the data into pages
@@ -310,6 +330,9 @@
 #let xrows = ()
 #let iy = 0
 #let aix = 0
+// Count page numbers
+#let pageno = 1
+#let pagetotal = int((rows.len() + nprows - 1) / nprows)
 #while irow < nrows {
     let row = rows.at(irow)
     irow += 1
@@ -323,15 +346,16 @@
     xrows += (rh,) + hcellfill
     iy += 1
     if iy == nprows or irow == nrows {
-        
         // Page done
 
-        //TODO: add page number/of
-        
         block(height: TITLE_HEIGHT, above: 0mm, below: 0mm, inset: 2mm)[
             #place(top)[#h(1fr)#xdata.Info.Institution]
             #place(left + horizon)[= #title]
-            #place(bottom)[#h(1fr)#typstMap.at("Subtitle", default: "")]
+            #place(bottom)[
+                #pageno / #pagetotal
+                #h(1fr)
+                #typstMap.at("Subtitle", default: "")
+            ]
         ]
 
         box([
@@ -368,5 +392,6 @@
         }
         xrows = ()
         iy = 0
+        pageno += 1
     }
 }

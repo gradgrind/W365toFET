@@ -9,7 +9,9 @@ Welche Pläne erstellt werden, wird durch das Feld "PrintTables" festgelegt. Ein
 ```
 "printOptions": {
 
-    "printTables": ["Teacher", "Class", "Room"],
+    "printTables": [
+        "Teacher", "Class", "Room",
+        "Teacher_overview", "Class_overview", "Room_overview"],
 
     "typst": {
         "Titles": {
