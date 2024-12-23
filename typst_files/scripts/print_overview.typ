@@ -144,14 +144,16 @@
     context {
         let t
         let text2 = textc
+        let xwhile = true
         while true {
             t = text(size: tsize, weight: wt, text2)
             let s = measure(t)
             if s.width > width * 0.9 {
                 let scl = (width * 0.9 / s.width)
                 // Shorten if the text is too long
-                if scl < 0.5 {
+                if xwhile and scl < 0.5 {
                     // Take just the first items in the list and add a "+".
+                    xwhile = false
                     let tlist = textc.split(JOINSTR)
                     let n = int(tlist.len() * 2 * scl)
                     if n == 0 {
@@ -330,7 +332,7 @@
 #let aix = 0
 // Count page numbers
 #let pageno = 1
-#let pagetotal = int((rows.len() + nrows - 1) / nrows)
+#let pagetotal = int((rows.len() + nprows - 1) / nprows)
 #while irow < nrows {
     let row = rows.at(irow)
     irow += 1

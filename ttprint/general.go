@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strings"
 )
 
@@ -66,11 +65,13 @@ func GenTypstData(
 	}
 	// The same JSON is used for overview tables as for individual tables,
 	// so suppress generation of doubles.
-	done := []string{}
+	done := map[string]string{}
 	var f string
+	var ok bool
 	for _, ptable := range printTables {
 		p, overview := strings.CutSuffix(ptable, "_overview")
-		if !slices.Contains(done, p) {
+		f, ok = done[p]
+		if !ok {
 			switch p {
 			case "Class":
 				f = getClasses(ttinfo, datadir, stemfile)
@@ -82,7 +83,7 @@ func GenTypstData(
 				// Table for individual element
 				f = genTypstOneElement(ttinfo, datadir, stemfile, p)
 			}
-			done = append(done, p)
+			done[p] = f
 		}
 		if overview {
 			f += "_overview"
