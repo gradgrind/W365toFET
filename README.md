@@ -36,7 +36,7 @@ In dieser Version haben Lehrer und Klassen den gleichen Ansatz für Mittagspause
 
 Es wurde bisher nur wenig getestet!
 
-In dieser Version werden die Daten in eine etwas andere interne Struktur gebracht – W365-unabhängig – bevor sie übersetzt werden, siehe „base-package“. Auch unabhängig von der FET-Ausgabe werden Grundlagen für die Stundenplanung in package "ttbase" vorbereitet.
+Die Daten werden in eine etwas andere interne Struktur gebracht – W365-unabhängig – bevor sie übersetzt werden, siehe „base-package“. Auch unabhängig von der FET-Ausgabe werden Grundlagen für die Stundenplanung in package "ttbase" vorbereitet.
 
 ## Neu: Druckausgabe
 
@@ -74,4 +74,4 @@ Bei Erfolg wären die Ergebnisse dann im Ordner `path/to/typst_files/_pdf` zu fi
 
 ### Druckoptionen
 
-Welche Tabellen ausgegeben werden und einige Details deren Gestaltung können über das "printOptions"-Feld in der Eingabe-Datei zu W365toTypst gesetzt werden. Weitere Informationen dazu sind in der Dokumentation („druckoptionen.md“) zu finden.
+Welche Tabellen ausgegeben werden und einige Details deren Gestaltung können über die "printOptions"-Eigenschaft in der Eingabe-Datei zu W365toTypst gesetzt werden. Weitere Informationen dazu sind in der Dokumentation („druckoptionen.md“) zu finden.

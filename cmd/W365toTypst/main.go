@@ -16,6 +16,7 @@ func main() {
 
 	nocheck := flag.Bool("x", false, "Don't check for invalid placements")
 	typstexec := flag.String("typst", "typst", "Typst executable")
+	nopdf := flag.Bool("np", false, "Don't run Typst")
 
 	flag.Parse()
 
@@ -56,15 +57,17 @@ func main() {
 	// Generate Typst data
 	typst_files := ttprint.GenTypstData(ttinfo, datadir, stemfile)
 
-	// Generate PDF files
-	for _, tfile := range typst_files {
-		t, overview := strings.CutSuffix(tfile, "_overview")
-		if overview {
-			ttprint.MakePdf(
-				"print_overview.typ", datadir, t, tfile, *typstexec)
-		} else {
-			ttprint.MakePdf(
-				"print_timetable.typ", datadir, t, tfile, *typstexec)
+	if !*nopdf {
+		// Generate PDF files
+		for _, tfile := range typst_files {
+			t, overview := strings.CutSuffix(tfile, "_overview")
+			if overview {
+				ttprint.MakePdf(
+					"print_overview.typ", datadir, t, tfile, *typstexec)
+			} else {
+				ttprint.MakePdf(
+					"print_timetable.typ", datadir, t, tfile, *typstexec)
+			}
 		}
 	}
 

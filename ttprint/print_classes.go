@@ -6,13 +6,63 @@ import (
 	"slices"
 )
 
-func genTypstClassData(
+func getClasses(
 	ttinfo *ttbase.TtInfo,
 	datadir string,
 	stemfile string, // basic name part of source file
 ) string {
-	db := ttinfo.Db
+	data := getClassData(ttinfo, datadir, stemfile)
 	pages := []ttPage{}
+	for _, c := range ttinfo.Db.Classes {
+		if c.Tag == "" {
+			continue
+		}
+		tiles, ok := data[c.Id]
+		if !ok {
+			continue
+		}
+		pages = append(pages, ttPage{
+			Name:       c.Name,
+			Short:      c.Tag,
+			Activities: tiles,
+		})
+	}
+	tt := timetable(ttinfo.Db, pages, "Class")
+	f := stemfile + "_classes"
+	makeTypstJson(tt, datadir, f)
+	return f
+}
+
+func getOneClass(
+	ttinfo *ttbase.TtInfo,
+	datadir string,
+	stemfile string, // basic name part of source file
+	e *base.Class,
+) string {
+	data := getClassData(ttinfo, datadir, stemfile)
+	tiles, ok := data[e.Id]
+	if !ok {
+		tiles = []Tile{} // Avoid none in JSON if table empty
+	}
+	pages := []ttPage{
+		ttPage{
+			Name:       e.Name,
+			Short:      e.Tag,
+			Activities: tiles,
+		},
+	}
+	tt := timetable(ttinfo.Db, pages, "Class")
+	f := stemfile + "_class_" + e.Tag
+	makeTypstJson(tt, datadir, f)
+	return f
+}
+
+func getClassData(
+	ttinfo *ttbase.TtInfo,
+	datadir string,
+	stemfile string, // basic name part of source file
+) map[base.Ref][]Tile {
+	db := ttinfo.Db
 	ref2id := ttinfo.Ref2Tag
 	type cdata struct { // for SuperCourses
 		groups   map[base.Ref]bool
@@ -173,48 +223,5 @@ func genTypstClassData(
 			}
 		}
 	}
-	for _, c := range db.Classes {
-		if c.Tag == "" {
-			continue
-		}
-		ctiles, ok := classTiles[c.Id]
-		if !ok {
-			continue
-		}
-		pages = append(pages, ttPage{
-			Name:       c.Name,
-			Short:      c.Tag,
-			Activities: ctiles,
-		})
-	}
-	dlist := []ttDay{}
-	for _, d := range db.Days {
-		dlist = append(dlist, ttDay{
-			Name:  d.Name,
-			Short: d.Tag,
-		})
-	}
-	hlist := []ttHour{}
-	for _, h := range db.Hours {
-		hlist = append(hlist, ttHour{
-			Name:  h.Name,
-			Short: h.Tag,
-			Start: h.Start,
-			End:   h.End,
-		})
-	}
-	info := map[string]any{
-		"Institution": db.Info.Institution,
-		"Days":        dlist,
-		"Hours":       hlist,
-	}
-	tt := Timetable{
-		TableType: "Class",
-		Info:      info,
-		Typst:     db.PrintOptions.Typst,
-		Pages:     pages,
-	}
-	f := stemfile + "_classes"
-	makeTypstJson(tt, datadir, f)
-	return f
+	return classTiles
 }
