@@ -1,0 +1,30 @@
+Druckausgabe, Stand 23.12.2024
+
+Ein printOptions-Objekt wird jetzt unterstützt. Dessen printTables-Eigenschaft gibt an, welche Pläne ausgegeben werden sollen. Die aktuellen Möglichkeiten sind:
+
+  "Teacher", "Class", "Room"
+  und "Teacher_overview", "Class_overview", "Room_overview" (Gesamtpläne)
+  
+Ich bin nicht 100% überzeugt vom Wert der Möglichkeit, Pläne für einzelne Klassen, usw., zu erstellen, da das kaum einfacher als für alle ist. Das printTables-Objekt kann dennoch auch Element-Ids enthalten, deren Pläne dann als Einzeldokumente ausgegeben werden.
+
+Die Kommandozeilenoptionen für W365toTypst habe ich auf folgende reduziert:
+
+  -x – Platzierungen nicht auf Gültigkeit kontrollieren
+  -np – nur JSON für die Typst-Skripte erstellen (kein PDF)
+  -typst=... – Typst-Befehl (Pfad) angeben
+
+Alle Gestaltungsoptionen werden in den Typst-Skripten geregelt. Parameter können über die typst-Eigenschaft des printOptions-Objekts an das Skript weitergegeben. Die typst-Eigenschaft ist ein Objekt, deren unterstützten Eigenschaften vom Typst-Skript abhängen. Sie wird nicht in W365toTypst verarbeitet. In der JSON-Datei, die an das Typst-Skript übergeben wird, steht dieses Objekt als "Typst"-Eigenschaft des Top-Level-Objekts zur Verfügung.
+
+Der Schulname wird als Eigenschaft "institution" im w365TT-Objekt erwartet (Eingabedatei zu W365toTypst) und wird im Info-Objekt als Eigenschaft "Institution" an das Typst-Skript weitergegeben.
+
+Es gibt zur Zeit ein Typst-Skript (print_timetable.typ) für die „normalen“ Pläne (eine Seite pro Klasse, Lehrer oder Raum) und eins (print_overview.typ) für die Gesamtpläne. Diese zwei Skripte können aber die gleichen JSON-Dateien einlesen. auch wenn sie etwas andere Optionen haben. Nicht relevante Optionen werden ignoriert. Die Daten für die Klassen-, Lehrer- und Raumtabellen sind auch sehr ähnlich, eigentlich nur die "Pages" müssen unterschiedlich sein – diese haben aber die gleichen Felder. Damit das Typst-Skript weiß, welche Daten vorhanden sind, gibt es auch die Eigenschaft "TableType" mit möglichem Wert "Class", "Teacher" oder "Room".
+
+Idealerweise hat ein Typst-Skript sinnvolle Voreinstellungen für die Optionen, sodass im Typst-Objekt nur die Abweichungen erscheinen müssen.
+
+Für die Tage und die Stunden werden Kurz- und Vollnamen an das Typst-Skript weitergegeben. Das Skript entscheidet, wie diese Felder gestaltet werden.
+
+Falls eine nicht installierte Schriftart benutzt werden soll, können die ttf- oder otf-Dateien im Ordner typst_files/_fonts abgelegt werden. Dieser Pfad wird von W365toTypst automatisch an das Typst-Skript (als Kommandozeilenparameter) weitergegeben.
+
+Die Hintergrundfarbe einer Stunde kann mit der neuen Lesson-Eigenschaft "background" gewählt werden (Format: "#RRGGBB"). Die Textfarbe (Weiß oder Schwarz) wird anhand dieser Farbe automatisch gewählt.
+
+Welche Felder an welcher Stelle in den Lessonkacheln erscheinen, wird jetzt über die "FieldPlacements"-Eigenschaft geregelt (siehe docs/druckoptionen.md). Für "Class", "Teacher" und "Room" können die Layouts unabhängig voneinander gewählt werden. Die Felder dieser Objekte hängen vom Typst-Skript ab. Die Voreinstellungen sollten aber in den Typst-Skripten leicht zu finden sein.

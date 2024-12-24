@@ -48,19 +48,19 @@
 // Field placement fallbacks
 #let boxText = (
     Class: (
-        c: "SUBJECT",
+        m: "SUBJECT",
         t: "TEACHER",
         b: "GROUP",
         //b: "ROOM",
     ),
     Teacher: (
-        c: "GROUP",
+        m: "GROUP",
         t: "SUBJECT",
         b: "TEACHER",
         //b: "ROOM",
     ),
     Room: (
-        c: "GROUP",
+        m: "GROUP",
         t: "SUBJECT",
         b: "TEACHER",
     ),
@@ -265,7 +265,7 @@
         TEACHER: teachers.join(JOINSTR),
         ROOM: rooms.join(JOINSTR),
     )
-    let ctext = texts.at(fieldPlacements.at("c", default: ""), default: "")
+    let ctext = texts.at(fieldPlacements.at("m", default: ""), default: "")
     let ttext = texts.at(fieldPlacements.at("t", default: ""), default: "") 
     let btext = texts.at(fieldPlacements.at("b", default: ""), default: "") 
 
