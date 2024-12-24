@@ -118,6 +118,19 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 	}
 
 	// Create the CourseInfos and Activities
+
+	fmt.Println("======= COURSES ========")
+	for _, c := range db.Courses {
+		fmt.Printf("??? %+v\n", c)
+	}
+	fmt.Println("======= SUPERCOURSES ========")
+	for _, c := range db.SuperCourses {
+		fmt.Printf("??? %+v\n", c)
+	}
+	fmt.Println("======= ------- ========")
+
+	//
+
 	for cref, llist := range courses {
 		// If there are placements, sort chronologically
 		slices.SortStableFunc(llist, func(a, b *base.Lesson) int {
