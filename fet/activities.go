@@ -61,8 +61,7 @@ func getActivities(fetinfo *fetInfo) []idMap {
 
 	// ************* Now the activities
 	activities := []fetActivity{}
-	//for i := 0; i <
-	for _, cinfo := range ttinfo.CourseInfo {
+	for _, cinfo := range ttinfo.LessonCourses {
 		// Teachers
 		tlist := []string{}
 		for _, ti := range cinfo.Teachers {
