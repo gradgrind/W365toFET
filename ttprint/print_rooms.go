@@ -10,7 +10,7 @@ func getRooms(
 	datadir string,
 	stemfile string, // basic name part of source file
 ) string {
-	data := getRoomData(ttinfo, datadir, stemfile)
+	data := getRoomData(ttinfo)
 	pages := []ttPage{}
 	for _, r := range ttinfo.Db.Rooms {
 		rtiles, ok := data[r.Id]
@@ -35,13 +35,13 @@ func getOneRoom(
 	stemfile string, // basic name part of source file
 	e *base.Room,
 ) string {
-	data := getRoomData(ttinfo, datadir, stemfile)
+	data := getRoomData(ttinfo)
 	tiles, ok := data[e.Id]
 	if !ok {
 		tiles = []Tile{} // Avoid none in JSON if table empty
 	}
 	pages := []ttPage{
-		ttPage{
+		{
 			Name:       e.Name,
 			Short:      e.Tag,
 			Activities: tiles,
@@ -53,11 +53,7 @@ func getOneRoom(
 	return f
 }
 
-func getRoomData(
-	ttinfo *ttbase.TtInfo,
-	datadir string,
-	stemfile string, // basic name part of source file
-) map[base.Ref][]Tile {
+func getRoomData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 	db := ttinfo.Db
 	// Generate the tiles.
 	roomTiles := map[base.Ref][]Tile{}

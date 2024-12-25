@@ -11,7 +11,7 @@ func getTeachers(
 	datadir string,
 	stemfile string, // basic name part of source file
 ) string {
-	data := getTeacherData(ttinfo, datadir, stemfile)
+	data := getTeacherData(ttinfo)
 	pages := []ttPage{}
 	for _, t := range ttinfo.Db.Teachers {
 		ttiles, ok := data[t.Id]
@@ -36,13 +36,13 @@ func getOneTeacher(
 	stemfile string, // basic name part of source file
 	e *base.Teacher,
 ) string {
-	data := getTeacherData(ttinfo, datadir, stemfile)
+	data := getTeacherData(ttinfo)
 	tiles, ok := data[e.Id]
 	if !ok {
 		tiles = []Tile{} // Avoid none in JSON if table empty
 	}
 	pages := []ttPage{
-		ttPage{
+		{
 			Name:       e.Firstname + " " + e.Name,
 			Short:      e.Tag,
 			Activities: tiles,
@@ -54,11 +54,7 @@ func getOneTeacher(
 	return f
 }
 
-func getTeacherData(
-	ttinfo *ttbase.TtInfo,
-	datadir string,
-	stemfile string, // basic name part of source file
-) map[base.Ref][]Tile {
+func getTeacherData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 	db := ttinfo.Db
 	// Generate the tiles.
 	teacherTiles := map[base.Ref][]Tile{}
