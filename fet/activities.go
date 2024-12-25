@@ -68,11 +68,13 @@ func getActivities(fetinfo *fetInfo) []idMap {
 		for _, ti := range cinfo.Teachers {
 			tlist = append(tlist, ref2fet[ti])
 		}
+		slices.Sort(tlist)
 		// Groups
 		glist := []string{}
 		for _, cgref := range cinfo.Groups {
 			glist = append(glist, ref2fet[cgref])
 		}
+		slices.Sort(glist)
 		/* ???
 		atag := ""
 		if slices.Contains(tagged_subjects, sbj) {
@@ -133,7 +135,7 @@ func getActivities(fetinfo *fetInfo) []idMap {
 func addPlacementConstraints(fetinfo *fetInfo) {
 	ttinfo := fetinfo.ttinfo
 	ref2fet := ttinfo.Ref2Tag
-	for _, cinfo := range ttinfo.CourseInfo {
+	for _, cinfo := range ttinfo.LessonCourses {
 		// Set "preferred" rooms.
 		rooms := fetinfo.getFetRooms(cinfo.Room)
 		// Add the constraints.

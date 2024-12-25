@@ -46,7 +46,8 @@ type TtInfo struct {
 	ResourceOrder map[Ref]int
 
 	// Set up by "gatherCourseInfo"
-	CourseInfo map[Ref]*CourseInfo // Key can be Course or SuperCourse
+	LessonCourses []*CourseInfo
+	CourseInfo    map[Ref]*CourseInfo // Key can be Course or SuperCourse
 
 	// Set by "filterDivisions"
 	ClassDivisions map[Ref][][]Ref // Class -> list of list of Groups

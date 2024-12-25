@@ -166,6 +166,9 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 		roomData[cref] = rooms
 	}
 
+	// Retain this ordered list of courses (with lessons)
+	ttinfo.LessonCourses = cinfo_list
+
 	for i, cinfo := range cinfo_list {
 		// Add lessons to CourseInfo
 		llist := clessons[i]
