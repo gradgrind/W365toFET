@@ -69,10 +69,10 @@ func getRoomData(
 	for cref, cinfo := range ttinfo.CourseInfo {
 		subject := ttinfo.Ref2Tag[cinfo.Subject]
 		// For SuperCourses gather the resources from the relevant SubCourses.
-		subrefs, ok := ttinfo.SuperSubs[cref]
+		sc, ok := db.Elements[cref].(*base.SuperCourse)
 		if ok {
 			rmap := map[base.Ref]rdata{}
-			for _, subref := range subrefs {
+			for _, subref := range sc.SubCourses {
 				sub := db.Elements[subref].(*base.SubCourse)
 				if sub.Room != "" {
 					rlist := []base.Ref{}

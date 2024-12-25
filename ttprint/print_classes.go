@@ -71,13 +71,13 @@ func getClassData(
 	}
 	// Generate the tiles.
 	classTiles := map[base.Ref][]Tile{}
-	for courseref, cinfo := range ttinfo.CourseInfo {
+	for cref, cinfo := range ttinfo.CourseInfo {
 		subject := ref2id[cinfo.Subject]
 		// For SuperCourses gather the resources from the relevant SubCourses.
-		subrefs, ok := ttinfo.SuperSubs[courseref]
+		sc, ok := db.Elements[cref].(*base.SuperCourse)
 		if ok {
 			cmap := map[base.Ref]cdata{}
-			for _, subref := range subrefs {
+			for _, subref := range sc.SubCourses {
 				sub := db.Elements[subref].(*base.SubCourse)
 				for _, gref := range sub.Groups {
 					g := db.Elements[gref].(*base.Group)
