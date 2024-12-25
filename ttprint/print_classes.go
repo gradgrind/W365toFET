@@ -11,7 +11,7 @@ func getClasses(
 	datadir string,
 	stemfile string, // basic name part of source file
 ) string {
-	data := getClassData(ttinfo, datadir, stemfile)
+	data := getClassData(ttinfo)
 	pages := []ttPage{}
 	for _, c := range ttinfo.Db.Classes {
 		if c.Tag == "" {
@@ -39,13 +39,13 @@ func getOneClass(
 	stemfile string, // basic name part of source file
 	e *base.Class,
 ) string {
-	data := getClassData(ttinfo, datadir, stemfile)
+	data := getClassData(ttinfo)
 	tiles, ok := data[e.Id]
 	if !ok {
 		tiles = []Tile{} // Avoid none in JSON if table empty
 	}
 	pages := []ttPage{
-		ttPage{
+		{
 			Name:       e.Name,
 			Short:      e.Tag,
 			Activities: tiles,
@@ -57,11 +57,7 @@ func getOneClass(
 	return f
 }
 
-func getClassData(
-	ttinfo *ttbase.TtInfo,
-	datadir string,
-	stemfile string, // basic name part of source file
-) map[base.Ref][]Tile {
+func getClassData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 	db := ttinfo.Db
 	ref2id := ttinfo.Ref2Tag
 	type cdata struct { // for SuperCourses

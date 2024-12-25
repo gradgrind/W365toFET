@@ -70,25 +70,23 @@ func doPrinting(ttinfo *ttbase.TtInfo, datadir string, stempath string) {
 		l.Hour = p.Hour
 		a.Placement = p.Day*ttinfo.NHours + p.Hour
 	}
-	plan_name := "Test Plan"
 
 	stemfile := filepath.Base(stempath)
-	flags := map[string]bool{
-		"WithTimes":  true,
-		"WithBreaks": true,
-	}
-	GenTypstData(ttinfo, datadir, stemfile, plan_name, flags)
 
+	typst_files := GenTypstData(ttinfo, datadir, stemfile)
+
+	// Generate PDF files
 	typst := "typst"
-	MakePdf("print_timetable.typ", datadir, stemfile+"_teachers", typst)
-	MakePdf("print_timetable.typ", datadir, stemfile+"_classes", typst)
-
-	/*
-		PrintRoomTimetables(lessons, plan_name, datadir,
-			strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Räume.pdf")
-		PrintRoomOverview(lessons, plan_name, datadir,
-			strings.TrimSuffix(abspath, filepath.Ext(abspath))+"_Räume-gesamt.pdf")
-	*/
+	for _, tfile := range typst_files {
+		t, overview := strings.CutSuffix(tfile, "_overview")
+		if overview {
+			MakePdf(
+				"print_overview.typ", datadir, t, tfile, typst)
+		} else {
+			MakePdf(
+				"print_timetable.typ", datadir, t, tfile, typst)
+		}
+	}
 }
 
 func readActivityMap(mapfile string) map[int]base.Ref {
