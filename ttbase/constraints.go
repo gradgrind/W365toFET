@@ -146,7 +146,8 @@ func (ttinfo *TtInfo) processConstraints() {
 	if diffDays.weight < 0 {
 		diffDays.weight = base.MAXWEIGHT
 	}
-	for cref, cinfo := range ttinfo.CourseInfo {
+	for _, cinfo := range ttinfo.LessonCourses {
+		cref := cinfo.Id
 		// Determine groups of lessons to couple by means of the fixed flags.
 		fixeds := []int{}
 		unfixeds := []int{}

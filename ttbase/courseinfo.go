@@ -45,15 +45,12 @@ func gatherCourseInfo(ttinfo *TtInfo) {
 	// Also, the SuperCourses (with lessons) get a list of their
 	// SubCourses.
 	db := ttinfo.Db
-	ttinfo.SuperSubs = map[Ref][]Ref{}
+	//--ttinfo.SuperSubs = map[Ref][]Ref{}
 	ttinfo.CourseInfo = map[Ref]*CourseInfo{}
 	ttinfo.Activities = make([]*Activity, 1) // 1-based indexing, 0 is invalid
 
 	// Collect Courses with Lessons.
 	roomData := collectCourses(ttinfo)
-
-	// Now find the SubCourses, adding their groups, teachers and rooms.
-	findSubCourses(ttinfo, roomData)
 
 	// Prepare the internal room structure, filtering the room lists of
 	// the SuperCourses.
@@ -111,79 +108,72 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 	roomData := map[Ref][]Ref{} // course -> []room (any sort of "room")
 	db := ttinfo.Db
 
-	// Collect the relevant courses and their lessons
-	courses := map[Ref][]*base.Lesson{}
-	for _, l := range db.Lessons {
-		courses[l.Course] = append(courses[l.Course], l)
-	}
+	// Create the CourseInfos and Activities.
+	// Gather first the SuperCourses, then the Courses.
 
-	// Create the CourseInfos and Activities
-	for cref, llist := range courses {
-		// If there are placements, sort chronologically
-		slices.SortStableFunc(llist, func(a, b *base.Lesson) int {
-			if a.Day < b.Day {
-				return -1
+	cinfo_list := []*CourseInfo{}
+	clessons := [][]Ref{}
+	for _, spc := range db.SuperCourses {
+		cref := spc.Id
+		groups := []Ref{}
+		teachers := []Ref{}
+		rooms := []Ref{}
+		for _, sbcref := range spc.SubCourses {
+			sbc := db.Elements[sbcref].(*base.SubCourse)
+			// Add groups
+			if len(sbc.Groups) != 0 {
+				groups = append(groups, sbc.Groups...)
 			}
-			if a.Day == b.Day {
-				if a.Day < 0 {
-					return 0
-				}
-				if a.Hour < b.Hour {
-					return -1
-				}
-				if a.Hour == b.Hour {
-					return 0
-				}
+			// Add teachers
+			if len(sbc.Teachers) != 0 {
+				teachers = append(teachers, sbc.Teachers...)
 			}
-			return 1
-		})
-
-		// Prepare CourseInfo
-		var subject Ref
-		var groups []Ref
-		var teachers []Ref
-		var rooms []Ref
-
-		c := db.Elements[cref] // can be Course or SuperCourse
-		cnode, ok := c.(*base.Course)
-		if ok {
-			groups = cnode.Groups
-			subject = cnode.Subject
-			teachers = cnode.Teachers
-			rooms = []Ref{}
-			if cnode.Room != "" {
-				rooms = append(rooms, cnode.Room)
+			// Add rooms
+			if sbc.Room != "" {
+				rooms = append(rooms, sbc.Room)
 			}
-		} else {
-			spc, ok := c.(*base.SuperCourse)
-			if !ok {
-				ll := []Ref{}
-				for _, l := range llist {
-					ll = append(ll, l.Id)
-				}
-				base.Error.Fatalf(
-					"Invalid Course in Lessons %+v:\n  %s\n",
-					ll, cref)
-			}
-			ttinfo.SuperSubs[cref] = []Ref{}
-			subject = spc.Subject
-			groups = []Ref{}
-			teachers = []Ref{}
-			rooms = []Ref{}
 		}
-		cinfo := &CourseInfo{
+		// Eliminate duplicates by sorting and then compacting
+		slices.Sort(groups)
+		slices.Sort(teachers)
+		slices.Sort(rooms)
+		cinfo_list = append(cinfo_list, &CourseInfo{
 			Id:       cref,
-			Subject:  subject,
-			Groups:   groups,
-			Teachers: teachers,
+			Subject:  spc.Subject,
+			Groups:   slices.Compact(groups),
+			Teachers: slices.Compact(teachers),
 			//Room: filled later
 			Lessons: []ActivityIndex{},
+		})
+		clessons = append(clessons, spc.Lessons)
+		roomData[cref] = slices.Compact(rooms)
+	}
+	for _, c := range db.Courses {
+		cref := c.Id
+		rooms := []Ref{}
+		if c.Room != "" {
+			rooms = append(rooms, c.Room)
 		}
-		ttinfo.CourseInfo[cref] = cinfo
+		cinfo_list = append(cinfo_list, &CourseInfo{
+			Id:       cref,
+			Subject:  c.Subject,
+			Groups:   c.Groups,
+			Teachers: c.Teachers,
+			//Room: filled later
+			Lessons: []ActivityIndex{},
+		})
+		clessons = append(clessons, c.Lessons)
 		roomData[cref] = rooms
+	}
 
+	// Retain this ordered list of courses (with lessons)
+	ttinfo.LessonCourses = cinfo_list
+
+	for i, cinfo := range cinfo_list {
 		// Add lessons to CourseInfo
-		for _, l := range llist {
+		llist := clessons[i]
+		for _, lref := range llist {
+			l := db.Elements[lref].(*base.Lesson)
 			if slices.Contains(l.Flags, "SubstitutionService") {
 				cinfo.Groups = nil
 			}
@@ -204,47 +194,9 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 			ttinfo.Activities = append(ttinfo.Activities, ttl)
 			cinfo.Lessons = append(cinfo.Lessons, ttlix)
 		}
+
+		// Add to CourseInfo map
+		ttinfo.CourseInfo[cinfo.Id] = cinfo
 	}
 	return roomData
-}
-
-func findSubCourses(ttinfo *TtInfo, roomData map[Ref][]Ref) {
-	// Find the SubCourses for each lesson-containing SuperCourse.
-	for _, sbc := range ttinfo.Db.SubCourses {
-		for _, spc := range sbc.SuperCourses {
-			// Only fill SuperCourses which have Lessons
-			cinfo, ok := ttinfo.CourseInfo[spc]
-			if ok {
-				ttinfo.SuperSubs[spc] = append(ttinfo.SuperSubs[spc], sbc.Id)
-
-				// Add groups
-				if len(sbc.Groups) != 0 {
-					cglist := append(cinfo.Groups, sbc.Groups...)
-					slices.Sort(cglist)
-					cglist = slices.Compact(cglist)
-					cinfo.Groups = make([]Ref, len(cglist))
-					copy(cinfo.Groups, cglist)
-				}
-
-				// Add teachers
-				if len(sbc.Teachers) != 0 {
-					ctlist := append(cinfo.Teachers, sbc.Teachers...)
-					slices.Sort(ctlist)
-					ctlist = slices.Compact(ctlist)
-					cinfo.Teachers = make([]Ref, len(ctlist))
-					copy(cinfo.Teachers, ctlist)
-				}
-
-				// Add rooms
-				if sbc.Room != "" {
-					crlist := append(roomData[spc], sbc.Room)
-					slices.Sort(crlist)
-					crlist = slices.Compact(crlist)
-					roomData[spc] = crlist
-				}
-
-				ttinfo.CourseInfo[spc] = cinfo
-			}
-		}
-	}
 }

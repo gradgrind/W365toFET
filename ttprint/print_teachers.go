@@ -70,10 +70,10 @@ func getTeacherData(
 	for cref, cinfo := range ttinfo.CourseInfo {
 		subject := ttinfo.Ref2Tag[cinfo.Subject]
 		// For SuperCourses gather the resources from the relevant SubCourses.
-		subrefs, ok := ttinfo.SuperSubs[cref]
+		sc, ok := db.Elements[cref].(*base.SuperCourse)
 		if ok {
 			tmap := map[base.Ref]tdata{}
-			for _, subref := range subrefs {
+			for _, subref := range sc.SubCourses {
 				sub := db.Elements[subref].(*base.SubCourse)
 				for _, tref := range sub.Teachers {
 					tdata1, ok := tmap[tref]
