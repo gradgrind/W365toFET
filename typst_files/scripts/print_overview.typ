@@ -271,10 +271,10 @@
     let ctext = texts.at(fieldPlacements.at("m", default: ""), default: "")
     let ttext = texts.at(fieldPlacements.at("t", default: ""), default: "")
     let btext = texts.at(fieldPlacements.at("b", default: ""), default: "")
-    let cellBorderColor =background
+    let cellBorderColour = background
     if background == "" {
         background = "#FFFFFF"
-        cellBorderColor="#000000"
+        cellBorderColour="#000000"
     }
     let bg = rgb(background)
     // Get text colour
@@ -293,7 +293,7 @@
     // Shrink excessively large components.
     let b = box(
         fill: rgb(background),
-        stroke: (paint: rgb(cellBorderColor),thickness:CELL_BORDER),
+        stroke: (paint: rgb(cellBorderColour),thickness:CELL_BORDER),
         inset: 2pt,
         height: hfrac,
         width: w,
