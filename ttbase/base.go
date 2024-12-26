@@ -75,13 +75,10 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 		SlotsPerWeek: ndays * nhours,
 	}
 
-	// Get the course info and generate the Activities list – though some
-	// fields will not yet be properly set.
-	gatherCourseInfo(ttinfo) // must be before call to filterDivisions
-
 	// Build Ref -> Tag mapping for subjects, teachers, rooms, classes
 	// and groups.
 	ref2Tag := map[Ref]string{}
+	ttinfo.Ref2Tag = ref2Tag
 	for _, r := range db.Subjects {
 		ref2Tag[r.Id] = r.Tag
 	}
@@ -91,6 +88,10 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	for _, r := range db.Teachers {
 		ref2Tag[r.Id] = r.Tag
 	}
+
+	// Get the course info and generate the Activities list – though some
+	// fields will not yet be properly set.
+	gatherCourseInfo(ttinfo) // must be before call to filterDivisions
 
 	// Get filtered divisions (only those with lessons)
 	filterDivisions(ttinfo)
@@ -109,7 +110,6 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 		}
 	}
 
-	ttinfo.Ref2Tag = ref2Tag
 	//fmt.Printf("Ref2Tag: %v\n", ttinfo.Ref2Tag)
 	ttinfo.orderResources()
 
