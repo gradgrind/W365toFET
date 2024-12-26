@@ -17,7 +17,8 @@
  */
 
 // To use a different font:
-//#set text(font: "B612")
+// CHANGE_UG
+#set text(font: ("Nunito","DejaVu Sans"))
 // If the font is not installed on the system, the .ttf or .otf files can be
 // placed in "typst_files/_fonts".
 
@@ -29,19 +30,20 @@
 #let H_HEADER_HEIGHT1 = 10mm
 #let H_HEADER_HEIGHT2 = 10mm
 #let V_HEADER_WIDTH = 30mm
+#let V_HEADER_WIDTH_CLASS = 15mm // smaller for classes
 #let ROW_HEIGHT = 12mm
 #let ROW_HEIGHT_CLASS = 30mm // larger because of divisions
 
-#let CELL_BORDER = 1pt
-#let BIG_SIZE = 14pt
-#let NORMAL_SIZE = 12pt
+#let CELL_BORDER =0.5pt
+#let BIG_SIZE = 24pt
+#let NORMAL_SIZE = 13pt
 #let CELL_TEXT_SIZE = 10pt
 #let DAY_SIZE = 13pt
 #let HOUR_SIZE = 9pt
 
 #let FRAME_COLOUR = "#707070"
-#let HEADER_COLOUR = "#e0e0e0"
-#let EMPTY_COLOUR = "#f0f0f0"
+#let HEADER_COLOUR = "#f0f0f0"
+#let EMPTY_COLOUR = "#ffffff"
 
 #let JOINSTR = ","
 
@@ -101,6 +103,7 @@
 #let tableType = xdata.TableType
 #if tableType == "Class" {
     ROW_HEIGHT = ROW_HEIGHT_CLASS
+    V_HEADER_WIDTH = V_HEADER_WIDTH_CLASS
 }
 
 // Determine the field placements in the tiles
@@ -268,9 +271,10 @@
     let ctext = texts.at(fieldPlacements.at("m", default: ""), default: "")
     let ttext = texts.at(fieldPlacements.at("t", default: ""), default: "") 
     let btext = texts.at(fieldPlacements.at("b", default: ""), default: "") 
-
+	let cellBorderColor =background
     if background == "" {
         background = "#FFFFFF"
+        cellBorderColor="#000000"
     }
     let bg = rgb(background)
     // Get text colour
@@ -289,7 +293,7 @@
     // Shrink excessively large components.
     let b = box(
         fill: rgb(background),
-        stroke: CELL_BORDER,
+        stroke: (paint: rgb(cellBorderColor),thickness:CELL_BORDER),
         inset: 2pt,
         height: hfrac,
         width: w,
@@ -307,16 +311,16 @@
 
 #show heading: it => text(weight: "bold", size: BIG_SIZE,
     bottom-edge: "descender",
-    pad(left: 20mm, it))
+    pad(left: 0mm, it))
 
 // Determine the document title
-#let titles = typstMap.at("Titles", default: (:))
+#let titles = typstMap.at("titles", default: (:))
 #if titles.len() == 0 {
     // fallback
     titles = titleFallbacks
 }
 #let title = titles.at(tableType, default: "")
-#let subtitle = typstMap.at("Subtitle", default: "")
+#let subtitle = typstMap.at("subtitle", default: "hallo")
 
 #set page(height: PAGE_HEIGHT, width: PAGE_WIDTH,
     //numbering: "1/1",
@@ -349,12 +353,12 @@
         // Page done
 
         block(height: TITLE_HEIGHT, above: 0mm, below: 0mm, inset: 2mm)[
-            #place(top)[#h(1fr)#xdata.Info.Institution]
-            #place(left + horizon)[= #title]
+            #place(top)[= #title#h(1fr) #text(17pt)[ #xdata.Info.Institution]]
+          
             #place(bottom)[
+            	#typstMap.at("subtitle", default: "")
+            	#h(1fr)
                 #pageno / #pagetotal
-                #h(1fr)
-                #typstMap.at("Subtitle", default: "")
             ]
         ]
 
@@ -363,7 +367,7 @@
                 columns: tcolumns,
                 rows: trows,
                 gutter: 0pt,
-                stroke: rgb(FRAME_COLOUR),
+                stroke: (paint: rgb(FRAME_COLOUR), thickness: 1pt) ,
                 inset: 0pt,
                 fill: (x, y) =>
                     if y > 1 and x > 0 {
@@ -395,3 +399,6 @@
         pageno += 1
     }
 }
+
+
+
