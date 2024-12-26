@@ -50,7 +50,9 @@ func main() {
 		alist := ttengine.CollectCourseLessons(ttinfo)
 		//fmt.Printf("??? %+v\n", alist)
 
-		ttengine.PlaceLessons2(ttinfo, alist)
+		if !ttengine.PlaceLessons3(ttinfo, alist) {
+			return
+		}
 
 		abspath, err := filepath.Abs(fxml)
 		if err != nil {
