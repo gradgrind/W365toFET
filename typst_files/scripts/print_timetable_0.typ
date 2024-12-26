@@ -26,7 +26,7 @@
  */
 
 // To use a different font:
-#set text(font: ("Nunito","DejaVu Sans"))
+//#set text(font: "B612")
 // If the font is not installed on the system, the .ttf or .otf files can be
 // placed in "typst_files/_fonts".
 
@@ -41,16 +41,15 @@
 //  numbering: "1",
   margin: PAGE_BORDER,
 )
-#let CELL_BORDER = 0.5pt
-#let BIG_SIZE = 18pt
-#let NORMAL_SIZE = 16pt
+#let CELL_BORDER = 1pt
+#let BIG_SIZE = 16pt
+#let NORMAL_SIZE = 14pt
 #let PLAIN_SIZE = 12pt
-#let SMALL_SIZE = 12pt
+#let SMALL_SIZE = 10pt
 
 #let FRAME_COLOUR = "#707070"
 #let BREAK_COLOUR = "#e0e0e0"
-#let HEADER_COLOUR = "#f0f0f0"
-#let EMPTY_COLOUR = "#ffffff"
+#let EMPTY_COLOUR = "#f0f0f0"
 
 // Field placement fallbacks
 #let boxText = (
@@ -79,9 +78,9 @@
 
 // Page heading fallbacks
 #let pageHeadings = (
-    Class: "Klasse %S",
+    Class: "Klasse: %S",
     Teacher: "%N (%S)",
-    Room: "Raumplan %N (%S)",
+    Room: "Raum: %N (%S)",
 )
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -264,18 +263,18 @@
 // Used by fgWCAG2
 #let rgblumin(c) = {
     c = c / 100%
-    if c <= 0.04045 {
-        c/12.92
-    } else {
-        calc.pow((c+0.055)/1.055, 2.4)
-    }
+	if c <= 0.04045 {
+		c/12.92
+	} else {
+		calc.pow((c+0.055)/1.055, 2.4)
+	}
 }
 
 // Decide on black or white for text, based on background colour (WCAG2).
 #let fgWCAG2(colour) = {
-    let (r,g,b,a) = rgb(colour).components()
-    let l = 0.2126 * rgblumin(r) + 0.7152 * rgblumin(g) + 0.0722 * rgblumin(b)
-    if l > 0.179 { black } else { white }
+	let (r,g,b,a) = rgb(colour).components()
+	let l = 0.2126 * rgblumin(r) + 0.7152 * rgblumin(g) + 0.0722 * rgblumin(b)
+	if l > 0.179 { black } else { white }
 }
 
 #let ttcell(
@@ -299,15 +298,13 @@
         ROOM: rooms.join(","),
     )
     let centre = texts.at(fieldPlacements.at("c", default: ""), default: "")
-    let tl = texts.at(fieldPlacements.at("tl", default: ""), default: "")
-    let tr = texts.at(fieldPlacements.at("tr", default: ""), default: "")
-    let bl = texts.at(fieldPlacements.at("bl", default: ""), default: "")
-    let br = texts.at(fieldPlacements.at("br", default: ""), default: "")
+    let tl = texts.at(fieldPlacements.at("tl", default: ""), default: "") 
+    let tr = texts.at(fieldPlacements.at("tr", default: ""), default: "") 
+    let bl = texts.at(fieldPlacements.at("bl", default: ""), default: "") 
+    let br = texts.at(fieldPlacements.at("br", default: ""), default: "") 
 
-    let cellBorderColor = background
     if background == "" {
         background = "#FFFFFF"
-        cellBorderColor="#000000"
     }
     let bg = rgb(background)
     // Get text colour
@@ -330,7 +327,7 @@
     // Shrink excessively large components.
     let b = box(
         fill: rgb(background),
-        stroke: (paint: rgb(cellBorderColor), thickness:CELL_BORDER),
+        stroke: CELL_BORDER,
         inset: 2pt,
         height: y1 - y0 - CELL_BORDER*2,
         width: wfrac,
@@ -365,7 +362,7 @@
 
 #show heading: it => text(weight: "bold", size: BIG_SIZE,
     bottom-edge: "descender",
-    pad(left: 0mm, it))
+    pad(left: 5mm, it))
 
 #let pheadings = typstMap.at("PageHeading", default: (:))
 #let phead = pheadings.at(tableType, default: "-")
@@ -381,9 +378,9 @@
 
     let title = phead.replace("%N", p.Name).replace("%S", p.Short)
     block(height: TITLE_HEIGHT, above: 0mm, below: 0mm, inset: 2mm)[
-        #place(top)[= #title #h(1fr)#text(17pt)[#xdata.Info.Institution]]
-       // #place(left + horizon)[]
-        #place(bottom)[#typstMap.at("subtitle", default: "")]
+        #place(top)[#h(1fr)#xdata.Info.Institution]
+        #place(left + horizon)[= #title]
+        #place(bottom)[#h(1fr)#typstMap.at("Subtitle", default: "")]
     ]
 
     box([
@@ -393,4 +390,3 @@
         }
     ])
 }
-
