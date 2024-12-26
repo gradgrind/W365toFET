@@ -96,9 +96,80 @@ func gatherCourseInfo(ttinfo *TtInfo) {
 		})
 
 		// Add virtual room to CourseInfo item
-		ttinfo.CourseInfo[cref].Room = VirtualRoom{
+		cinfo := ttinfo.CourseInfo[cref]
+		cinfo.Room = VirtualRoom{
 			Rooms:       rooms,
 			RoomChoices: roomChoices,
+		}
+
+		// Check the allocated rooms at Lesson.Rooms
+		ttinfo.checkAllocatedRooms(cinfo)
+	}
+}
+
+func (ttinfo *TtInfo) checkAllocatedRooms(cinfo *CourseInfo) {
+	// Check the room allocations for the lessons of the given course.
+	// Report just one error per course.
+	for _, lix := range cinfo.Lessons {
+		l := ttinfo.Activities[lix].Lesson
+		lrooms := l.Rooms
+		// If no rooms are allocated, don't regard this as invalid.
+		if len(lrooms) == 0 {
+			return
+		}
+		// First check number of rooms
+		vr := cinfo.Room
+		if len(vr.Rooms)+len(vr.RoomChoices) != len(lrooms) {
+			rlist := []string{}
+			for _, rref := range lrooms {
+				rlist = append(rlist, ttinfo.Ref2Tag[rref])
+			}
+			base.Warning.Printf("Lesson in Course %s has wrong number"+
+				" of rooms allocated:\n  -- %+v (expected %d)\n",
+				cinfo.Id, rlist, len(vr.Rooms)+len(vr.RoomChoices))
+			return
+		}
+		// Check validity of "compulsory" rooms
+		lrmap := map[Ref]bool{}
+		for _, rref := range lrooms {
+			lrmap[rref] = true
+		}
+		for _, rref := range vr.Rooms {
+			if lrmap[rref] {
+				delete(lrmap, rref)
+			} else {
+				base.Warning.Printf("Lesson in Course %s needs room %s\n",
+					cinfo.Id, ttinfo.Ref2Tag[rref])
+				return
+			}
+		}
+		// Check validity of "chosen" rooms
+		cmap := make([]Ref, 0, len(vr.RoomChoices))
+		var fx func(i int) bool
+		fx = func(i int) bool {
+			if i == len(vr.RoomChoices) {
+				return true
+			}
+			for _, rref := range vr.RoomChoices[i] {
+				if lrmap[rref] && !slices.Contains(cmap, rref) {
+					cmap = append(cmap, rref)
+					if fx(i + 1) {
+						return true
+					}
+					cmap = cmap[:i]
+				}
+			}
+			return false
+		}
+		if !fx(0) {
+			rlist := []string{}
+			for rref := range lrmap {
+				rlist = append(rlist, ttinfo.Ref2Tag[rref])
+			}
+			base.Warning.Printf("Lesson in Course %s has invalid"+
+				" room-choice allocations: %+v\n",
+				cinfo.Id, rlist)
+			return
 		}
 	}
 }

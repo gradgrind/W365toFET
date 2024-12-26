@@ -188,10 +188,8 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 				n, ok := fetinfo.fetVirtualRoomN[rooms[0]]
 				if ok {
 					if len(rlist) != n {
-						base.Error.Printf(
-							"Lesson %s:\n  Number of Rooms doesn't"+
-								" match virtual room (%s) in course. \n",
-							l.Id, rooms[0])
+						// FET can't cope with this.
+						// A warning should have been issued in ttbase.
 						continue
 					}
 					scl.ConstraintActivityPreferredRoom = append(
