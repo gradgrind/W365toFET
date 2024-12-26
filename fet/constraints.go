@@ -16,7 +16,7 @@ type startingTime struct {
 
 type minDaysBetweenActivities struct {
 	XMLName                 xml.Name `xml:"ConstraintMinDaysBetweenActivities"`
-	Weight_Percentage       int
+	Weight_Percentage       string
 	Consecutive_If_Same_Day bool
 	Number_of_Activities    int
 	Activity_Id             []int
@@ -152,72 +152,4 @@ type maxLateStarts struct {
 	Max_Beginnings_At_Second_Hour int
 	Students                      string
 	Active                        bool
-}
-
-/*
-The different-days constraint for lessons belonging to a single course can
-be added automatically, but it should be posible to disable it by passing in
-an appropriate constraint. Thus, the built-in constraint must be traceable.
-TODO: There could be a separate constraint to link different courses – the
-alternative being a subject/atomic-group search.
-*/
-func addDifferentDaysConstraints(fetinfo *fetInfo) {
-	mdba := []minDaysBetweenActivities{}
-	for cref, cinfo := range fetinfo.courseInfo {
-		nact := len(cinfo.activities)
-		if nact < 2 || nact > len(fetinfo.days) {
-			continue
-		}
-		// Need the Acivity_Ids for the Lessons, and whether they are fixed.
-		// No two fixed activities should be different-dayed.
-
-		fixeds := []int{}
-		unfixeds := []int{}
-		for i, l := range cinfo.lessons {
-			if l.Fixed {
-				fixeds = append(fixeds, cinfo.activities[i])
-			} else {
-				unfixeds = append(unfixeds, cinfo.activities[i])
-			}
-		}
-
-		if len(fixeds) <= 1 {
-			fetinfo.differentDayConstraints[cref] = []int{len(mdba)}
-			mdba = append(mdba, minDaysBetweenActivities{
-				Weight_Percentage:       100,
-				Consecutive_If_Same_Day: true,
-				Number_of_Activities:    len(cinfo.activities),
-				Activity_Id:             cinfo.activities,
-				MinDays:                 1,
-				Active:                  true,
-			})
-			continue
-		}
-
-		if len(unfixeds) == 0 {
-			continue
-		}
-
-		ddc := []int{} // Collect indexes within mdba
-		for _, aid := range fixeds {
-			aids := []int{aid}
-			aids = append(aids, unfixeds...)
-			ddc = append(ddc, len(mdba))
-			mdba = append(mdba, minDaysBetweenActivities{
-				Weight_Percentage:       100,
-				Consecutive_If_Same_Day: true,
-				Number_of_Activities:    len(aids),
-				Activity_Id:             aids,
-				MinDays:                 1,
-				Active:                  true,
-			})
-		}
-		fetinfo.differentDayConstraints[cref] = ddc
-	}
-	// Append constraints to full list
-	fetinfo.fetdata.Time_Constraints_List.
-		ConstraintMinDaysBetweenActivities = append(
-		fetinfo.fetdata.Time_Constraints_List.
-			ConstraintMinDaysBetweenActivities,
-		mdba...)
 }

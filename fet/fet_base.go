@@ -2,25 +2,25 @@
 package fet
 
 import (
-	"W365toFET/logging"
-	"W365toFET/w365tt"
-	"encoding/json"
+	"W365toFET/base"
+	"W365toFET/ttbase"
 	"encoding/xml"
-	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
 
-type Ref = w365tt.Ref
+type Ref = base.Ref
 
 const CLASS_GROUP_SEP = "."
 const ATOMIC_GROUP_SEP1 = "#"
 const ATOMIC_GROUP_SEP2 = "~"
 const VIRTUAL_ROOM_PREFIX = "!"
-const LUNCH_BREAK_TAG = "-lb-"
-const LUNCH_BREAK_NAME = "Lunch Break"
 
-const fet_version = "6.25.2"
+// const LUNCH_BREAK_TAG = "-lb-"
+// const LUNCH_BREAK_NAME = "Lunch Break"
+
+const fet_version = "6.28.2"
 
 // Function makeXML produces a chunk of pretty-printed XML output from
 // the input data.
@@ -29,7 +29,7 @@ func makeXML(data interface{}, indent_level int) string {
 	prefix := strings.Repeat(indent, indent_level)
 	xmlData, err := xml.MarshalIndent(data, prefix, indent)
 	if err != nil {
-		logging.Error.Fatalf("%v\n", err)
+		base.Error.Fatalf("%v\n", err)
 	}
 	return string(xmlData)
 }
@@ -52,46 +52,32 @@ type fet struct {
 	Space_Constraints_List spaceConstraints
 }
 
-type virtualRoom struct {
-	rooms       []Ref   // only Rooms
-	roomChoices [][]Ref // list of pure Room lists
-}
-
-type courseInfo struct {
-	subject    Ref
-	groups     []Ref
-	teachers   []Ref
-	room       virtualRoom
-	lessons    []*w365tt.Lesson
-	activities []int
+func weight2fet(w int) string {
+	if w <= 0 {
+		return "0"
+	}
+	if w >= 100 {
+		return "100"
+	}
+	wf := float64(w)
+	n := wf + math.Pow(2, wf/12)
+	wfet := 100.0 - 100.0/n
+	return strconv.FormatFloat(wfet, 'f', 3, 64)
 }
 
 type idMap struct {
 	activityId int
-	w365Id     w365tt.Ref
+	baseId     string
 }
 
 type fetInfo struct {
-	db            *w365tt.DbTopLevel
-	ref2fet       map[Ref]string
+	ttinfo        *ttbase.TtInfo
 	ref2grouponly map[Ref]string
-	days          []string
-	hours         []string
 	fetdata       fet
-	// These cover only courses and groups with lessons:
-	ONLY_FIXED bool // normally true, false allows generation of
-	// placement constraints for non-fixed lessons
-	WITHOUT_ROOM_PLACEMENTS bool
-	superSubs               map[Ref][]Ref
-	courseInfo              map[Ref]courseInfo // Key can be Course or SuperCourse
-	classDivisions          map[Ref][][]Ref
-	atomicGroups            map[Ref][]AtomicGroup
-	fetVirtualRooms         map[string]string // cache for FET virtual rooms,
+
+	fetVirtualRooms map[string]string // cache for FET virtual rooms,
 	// "hash" -> FET-virtual-room tag
-	fetVirtualRoomN         map[string]int // FET-virtual-room tag -> number of room sets
-	differentDayConstraints map[Ref][]int  // Retain the indexes of the entries
-	// in the ConstraintMinDaysBetweenActivities list for each course. This
-	// allows the default constraints to be modified later.
+	fetVirtualRoomN map[string]int // FET-virtual-room tag -> number of room sets
 }
 
 type timeConstraints struct {
@@ -101,9 +87,13 @@ type timeConstraints struct {
 	ConstraintStudentsSetNotAvailableTimes []studentsNotAvailable
 	ConstraintTeacherNotAvailableTimes     []teacherNotAvailable
 
-	ConstraintActivityPreferredStartingTime []startingTime
-	ConstraintActivitiesPreferredTimeSlots  []preferredSlots
-	ConstraintMinDaysBetweenActivities      []minDaysBetweenActivities
+	ConstraintActivityPreferredStartingTime    []startingTime
+	ConstraintActivityPreferredTimeSlots       []activityPreferredTimes
+	ConstraintActivitiesPreferredTimeSlots     []preferredSlots
+	ConstraintActivitiesPreferredStartingTimes []preferredStarts
+	ConstraintMinDaysBetweenActivities         []minDaysBetweenActivities
+	ConstraintActivityEndsStudentsDay          []lessonEndsDay
+	ConstraintActivitiesSameStartingTime       []sameStartingTime
 
 	ConstraintStudentsSetMaxGapsPerDay                  []maxGapsPerDay
 	ConstraintStudentsSetMaxGapsPerWeek                 []maxGapsPerWeek
@@ -133,6 +123,7 @@ type spaceConstraints struct {
 	ConstraintBasicCompulsorySpace   basicSpaceConstraint
 	ConstraintActivityPreferredRooms []roomChoice
 	ConstraintActivityPreferredRoom  []placedRoom
+	ConstraintRoomNotAvailableTimes  []roomNotAvailable
 }
 
 type basicSpaceConstraint struct {
@@ -141,45 +132,27 @@ type basicSpaceConstraint struct {
 	Active            bool
 }
 
-func MakeFetFile(dbdata *w365tt.DbTopLevel) (string, string) {
-	//fmt.Printf("\n????? %+v\n", dbdata.Info)
+func MakeFetFile(ttinfo *ttbase.TtInfo) (string, string) {
+	dbdata := ttinfo.Db
 
 	// Build ref-index -> fet-key mapping
-	ref2fet := map[Ref]string{}
-	for _, r := range dbdata.Subjects {
-		ref2fet[r.Id] = r.Tag
-	}
-	for _, r := range dbdata.Rooms {
-		ref2fet[r.Id] = r.Tag
-	}
-	for _, r := range dbdata.Teachers {
-		ref2fet[r.Id] = r.Tag
-	}
 	ref2grouponly := map[Ref]string{}
 	for _, r := range dbdata.Groups {
-		ref2grouponly[r.Id] = r.Tag
-	}
-	for _, r := range dbdata.Classes {
-		ref2fet[r.Id] = r.Tag
-		// Handle the groups
-		for _, d := range r.Divisions {
-			for _, g := range d.Groups {
-				ref2fet[g] = r.Tag + CLASS_GROUP_SEP + ref2grouponly[g]
-			}
+		if r.Tag != "" {
+			ref2grouponly[r.Id] = r.Tag
 		}
 	}
 
 	//fmt.Printf("ref2fet: %v\n", ref2fet)
 
 	fetinfo := fetInfo{
-		db:            dbdata,
-		ref2fet:       ref2fet,
+		ttinfo:        ttinfo,
 		ref2grouponly: ref2grouponly,
 		fetdata: fet{
 			Version:          fet_version,
 			Mode:             "Official",
 			Institution_Name: dbdata.Info.Institution,
-			Comments:         getString(dbdata.Info.Reference),
+			Comments:         dbdata.Info.Reference,
 			Time_Constraints_List: timeConstraints{
 				ConstraintBasicCompulsoryTime: basicTimeConstraint{
 					Weight_Percentage: 100, Active: true},
@@ -189,11 +162,12 @@ func MakeFetFile(dbdata *w365tt.DbTopLevel) (string, string) {
 					Weight_Percentage: 100, Active: true},
 			},
 		},
-		ONLY_FIXED:              true,
-		WITHOUT_ROOM_PLACEMENTS: true,
-		fetVirtualRooms:         map[string]string{},
-		fetVirtualRoomN:         map[string]int{},
-		differentDayConstraints: map[Ref][]int{},
+		fetVirtualRooms: map[string]string{},
+		fetVirtualRoomN: map[string]int{},
+
+		//ONLY_FIXED:              true,
+		//WITHOUT_ROOM_PLACEMENTS: true,
+		//daysBetween:             map[Ref][]*base.DaysBetween{},
 	}
 
 	getDays(&fetinfo)
@@ -201,30 +175,35 @@ func MakeFetFile(dbdata *w365tt.DbTopLevel) (string, string) {
 	getTeachers(&fetinfo)
 	getSubjects(&fetinfo)
 	getRooms(&fetinfo)
-	fmt.Println("=====================================")
-	gatherCourseInfo(&fetinfo)
+
+	//TODO--
+	//fmt.Println("=====================================")
+	//gatherCourseInfo(&fetinfo)
 
 	//readCourseIndexes(&fetinfo)
-	makeAtomicGroups(&fetinfo)
+	//makeAtomicGroups(&fetinfo)
 	//fmt.Println("\n +++++++++++++++++++++++++++")
 	//printAtomicGroups(&fetinfo)
+
 	getClasses(&fetinfo)
 	lessonIdMap := getActivities(&fetinfo)
 
 	addTeacherConstraints(&fetinfo)
 	addClassConstraints(&fetinfo)
+	getExtraConstraints(&fetinfo)
 
 	// Convert lessonIdMap to string
 	idmlines := []string{}
 	for _, idm := range lessonIdMap {
 		idmlines = append(idmlines,
-			strconv.Itoa(idm.activityId)+":"+string(idm.w365Id))
+			strconv.Itoa(idm.activityId)+":"+string(idm.baseId))
 	}
 	lidmap := strings.Join(idmlines, "\n")
 
 	return xml.Header + makeXML(fetinfo.fetdata, 0), lidmap
 }
 
+/*
 func getString(val interface{}) string {
 	s, ok := val.(string)
 	if !ok {
@@ -233,3 +212,4 @@ func getString(val interface{}) string {
 	}
 	return s
 }
+*/

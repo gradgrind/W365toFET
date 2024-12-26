@@ -1,8 +1,9 @@
 package fet
 
 import (
-	"W365toFET/logging"
+	"W365toFET/base"
 	"encoding/xml"
+	"strconv"
 	"strings"
 )
 
@@ -55,18 +56,19 @@ type studentsNotAvailable struct {
 }
 
 func getClasses(fetinfo *fetInfo) {
+	ttinfo := fetinfo.ttinfo
 	items := []fetClass{}
 	natimes := []studentsNotAvailable{}
-	for _, cl := range fetinfo.db.Classes {
+	for _, cl := range ttinfo.Db.Classes {
 		cname := cl.Tag
 		// Skip "special" classes.
 		if cname == "" {
 			continue
 		}
-		divs, ok := fetinfo.classDivisions[cl.Id]
+		divs, ok := ttinfo.ClassDivisions[cl.Id]
 		if !ok {
-			logging.Bug.Fatalf(
-				"Class %s has no entry in fetinfo.classDivisions\n",
+			base.Bug.Fatalf(
+				"Class %s has no entry in ttinfo.ClassDivisions\n",
 				cname)
 		}
 
@@ -74,9 +76,9 @@ func getClasses(fetinfo *fetInfo) {
 		groups := []fetGroup{}
 		for _, div := range divs {
 			for _, gref := range div {
-				g := fetinfo.ref2fet[gref]
+				g := ttinfo.Ref2Tag[gref]
 				subgroups := []fetSubgroup{}
-				ags := fetinfo.atomicGroups[gref]
+				ags := ttinfo.AtomicGroups[gref]
 				for _, ag := range ags {
 					subgroups = append(subgroups,
 						fetSubgroup{Name: ag.Tag},
@@ -122,7 +124,7 @@ func getClasses(fetinfo *fetInfo) {
 		for _, na := range cl.NotAvailable {
 			if na.Day != day {
 				if na.Day < day {
-					logging.Error.Fatalf(
+					base.Error.Fatalf(
 						"Class %s has unordered NotAvailable times.\n",
 						cname)
 				}
@@ -130,7 +132,7 @@ func getClasses(fetinfo *fetInfo) {
 			}
 			nats = append(nats,
 				notAvailableTime{
-					Day: fetinfo.days[day], Hour: fetinfo.hours[na.Hour]})
+					Day: strconv.Itoa(day), Hour: strconv.Itoa(na.Hour)})
 		}
 		if len(nats) > 0 {
 			natimes = append(natimes,
@@ -147,57 +149,4 @@ func getClasses(fetinfo *fetInfo) {
 	fetinfo.fetdata.Students_List = fetStudentsList{Year: items}
 	fetinfo.fetdata.Time_Constraints_List.
 		ConstraintStudentsSetNotAvailableTimes = natimes
-
-	//TODO: Further constraints
-
-	/*
-
-			//fmt.Printf("\nCLASS %s: %+v\n", cl.SORTING, cl.DIVISIONS)
-
-			//fmt.Printf("==== %s: %+v\n", cname, nats)
-
-			// Limit gaps on a weekly basis.
-			mgpw := 0 //TODO: An additional tweak may be needed for some classes.
-			// Handle lunch breaks: The current approach counts lunch breaks as
-			// gaps, so the gaps-per-week must be adjusted accordingly.
-			if len(lbdays) > 0 {
-				// Need lunch break(s).
-				// This uses a general "max-lessons-in-interval" constraint.
-				// As an alternative, adding dummy lessons (with time constraint)
-				// can offer some advantages, like easing gap handling.
-				// Set max-gaps-per-week accordingly.
-				if lunch_break(fetinfo, &lunchconstraints, cname, lunchperiods) {
-					mgpw += len(lbdays)
-				}
-			}
-			// Add the gaps constraint.
-			maxgaps = append(maxgaps, maxGapsPerWeek{
-				Weight_Percentage: 100,
-				Max_Gaps:          mgpw,
-				Students:          cname,
-				Active:            true,
-			})
-
-			// Minimum lessons per day
-			mlpd0 := cl.CONSTRAINTS["MinLessonsPerDay"]
-			mlpd, err := strconv.Atoi(mlpd0)
-			if err != nil {
-				logging.Error.Fatalf(
-					"INVALID MinLessonsPerDay: %s // %v\n", mlpd0, err)
-			}
-			minlessons = append(minlessons, minLessonsPerDay{
-				Weight_Percentage:   100,
-				Minimum_Hours_Daily: mlpd,
-				Students:            cname,
-				Allow_Empty_Days:    false,
-				Active:              true,
-			})
-		}
-		fetinfo.fetdata.Time_Constraints_List.
-			ConstraintStudentsSetMaxHoursDailyInInterval = lunchconstraints
-		fetinfo.fetdata.Time_Constraints_List.
-			ConstraintStudentsSetMaxGapsPerWeek = maxgaps
-		fetinfo.fetdata.Time_Constraints_List.
-			ConstraintStudentsSetMinHoursDaily = minlessons
-	*/
 }

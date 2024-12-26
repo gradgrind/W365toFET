@@ -2,6 +2,7 @@ package fet
 
 import (
 	"slices"
+	"strconv"
 )
 
 /* Lunch-breaks
@@ -30,16 +31,17 @@ func addClassConstraints(fetinfo *fetInfo) {
 	cmaxaft := []maxDaysinIntervalPerWeek{}
 	cmaxls := []maxLateStarts{}
 	clblist := []lunchBreak{}
-	ndays := len(fetinfo.days)
-	nhours := len(fetinfo.hours)
+	ttinfo := fetinfo.ttinfo
+	ndays := ttinfo.NDays
+	nhours := ttinfo.NHours
+	db := ttinfo.Db
 
-	for clix := 0; clix < len(fetinfo.db.Classes); clix++ {
-		cl := &fetinfo.db.Classes[clix]
+	for _, cl := range db.Classes {
 		if cl.Tag == "" {
 			continue
 		}
 
-		n := int(cl.MinLessonsPerDay.(float64))
+		n := cl.MinLessonsPerDay
 		if n >= 2 && n <= nhours {
 			cminlpd = append(cminlpd, minLessonsPerDay{
 				Weight_Percentage:   100,
@@ -50,7 +52,7 @@ func addClassConstraints(fetinfo *fetInfo) {
 			})
 		}
 
-		n = int(cl.MaxLessonsPerDay.(float64))
+		n = cl.MaxLessonsPerDay
 		if n >= 0 && n < nhours {
 			cmaxlpd = append(cmaxlpd, maxLessonsPerDay{
 				Weight_Percentage:   100,
@@ -60,13 +62,13 @@ func addClassConstraints(fetinfo *fetInfo) {
 			})
 		}
 
-		i := fetinfo.db.Info.FirstAfternoonHour
-		maxpm := int(cl.MaxAfternoons.(float64))
+		i := db.Info.FirstAfternoonHour
+		maxpm := cl.MaxAfternoons
 		if maxpm >= 0 && i > 0 {
 			cmaxaft = append(cmaxaft, maxDaysinIntervalPerWeek{
 				Weight_Percentage:   100,
 				Students:            cl.Tag,
-				Interval_Start_Hour: fetinfo.hours[i],
+				Interval_Start_Hour: strconv.Itoa(i),
 				Interval_End_Hour:   "", // end of day
 				Max_Days_Per_Week:   maxpm,
 				Active:              true,
@@ -83,13 +85,16 @@ func addClassConstraints(fetinfo *fetInfo) {
 		}
 
 		// The lunch-break constraint may require adjustment of these:
-		mgpday := int(cl.MaxGapsPerDay.(float64))
-		mgpweek := int(cl.MaxGapsPerWeek.(float64))
+		mgpday := cl.MaxGapsPerDay
+		mgpweek := cl.MaxGapsPerWeek
+		if mgpweek < 0 {
+			mgpweek = 0
+		}
 
 		if cl.LunchBreak {
 			// Generate the constraint unless all days have a blocked lesson
 			// at lunchtime.
-			mbhours := fetinfo.db.Info.MiddayBreak
+			mbhours := db.Info.MiddayBreak
 			lbdays := ndays
 			d := 0
 			for _, ts := range cl.NotAvailable {
@@ -106,11 +111,13 @@ func addClassConstraints(fetinfo *fetInfo) {
 				clblist = append(clblist, lunchBreak{
 					Weight_Percentage:   100,
 					Students:            cl.Tag,
-					Interval_Start_Hour: fetinfo.hours[mbhours[0]],
-					Interval_End_Hour:   fetinfo.hours[mbhours[0]+len(mbhours)],
+					Interval_Start_Hour: strconv.Itoa(mbhours[0]),
+					Interval_End_Hour:   strconv.Itoa(mbhours[0] + len(mbhours)),
 					Maximum_Hours_Daily: len(mbhours) - 1,
 					Active:              true,
 				})
+				//fmt.Printf("%s:: lbdays: %d maxpm: %d\n",
+				//  cl.Tag, lbdays, maxpm)
 				// Adjust gaps
 				if maxpm < lbdays {
 					lbdays = maxpm
@@ -118,9 +125,12 @@ func addClassConstraints(fetinfo *fetInfo) {
 				if mgpday == 0 {
 					mgpday = 1
 				}
-				mgpweek += lbdays
+				if mgpweek >= 0 {
+					mgpweek += lbdays
+				}
 			}
-
+			//fmt.Printf("  --> %s::GapsPerDay: %d GapsPerWeek: %d\n",
+			//	cl.Tag, mgpday, mgpweek)
 		}
 		if mgpday >= 0 {
 			cmaxgpd = append(cmaxgpd, maxGapsPerDay{

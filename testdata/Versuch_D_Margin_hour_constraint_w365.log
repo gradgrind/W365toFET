@@ -1,0 +1,4 @@
+*INFO* fromjson.go:22: *+ Reading: /home/user/Development/github/W365toFET/testdata/Versuch_D_Margin_hour_constraint_w365.json
+*INFO* W365toFET.go:66: FET file written to: /home/user/Development/github/W365toFET/testdata/Versuch_D_Margin_hour_constraint.fet
+*INFO* W365toFET.go:79: Id-map written to: /home/user/Development/github/W365toFET/testdata/Versuch_D_Margin_hour_constraint.map
+*INFO* W365toFET.go:81: OK

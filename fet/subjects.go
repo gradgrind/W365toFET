@@ -18,7 +18,7 @@ type fetSubjectsList struct {
 
 func getSubjects(fetinfo *fetInfo) {
 	items := []fetSubject{}
-	for _, n := range fetinfo.db.Subjects {
+	for _, n := range fetinfo.ttinfo.Db.Subjects {
 		items = append(items, fetSubject{
 			Name:      n.Tag,
 			Long_Name: n.Name,
