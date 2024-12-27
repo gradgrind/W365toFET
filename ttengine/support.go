@@ -18,6 +18,7 @@ type placementMonitor struct {
 	added []int64
 	//
 	ttinfo                  *ttbase.TtInfo
+	unplaced                []ttbase.ActivityIndex
 	preferEarlier           []int
 	preferLater             []int
 	resourceSlotActivityMap map[ttbase.ResourceIndex]map[int][]ttbase.ActivityIndex

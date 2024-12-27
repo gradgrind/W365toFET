@@ -3,6 +3,7 @@ package ttengine
 import (
 	"W365toFET/ttbase"
 	"fmt"
+	"math/rand/v2"
 )
 
 const PENALTY_UNPLACED_ACTIVITY = 1000
@@ -19,7 +20,8 @@ func PlaceLessons3(
 			//count:                   delta,
 			//delta:                   delta,
 			//added:                   make([]int64, len(ttinfo.Activities)),
-			ttinfo: ttinfo,
+			ttinfo:   ttinfo,
+			unplaced: alist,
 			//preferEarlier:           preferEarlier,
 			//preferLater:             preferLater,
 			//resourceSlotActivityMap: resourceSlotActivityMap,
@@ -81,13 +83,56 @@ func (pmon placementMonitor) testPlacement(
 	return []ttbase.ActivityIndex{aix}
 }
 
-func (pmon placementMonitor) getNeighbour() int {
+func (pmon placementMonitor) step() int {
 	// Try all possible placements of the next activity, accepting one
 	// if it reduces the penalty. (Start testing at random slot?)
 	// Accept a worsening with a certain probability (SA?)?.
 	// If all fail choose a weighted probability?
+	ttinfo := pmon.ttinfo
 
 	delta := 0
+
+	var aix ttbase.ActivityIndex
+	if len(pmon.unplaced) == 0 {
+		//TODO
+		// Seek the activity with the highest penalty?
+		// Or, based on the penalties, choose an activity at random?
+		// Block activities which have only recently been placed?
+
+		// Unplace it
+	} else {
+		aix = pmon.unplaced[len(pmon.unplaced)-1]
+	}
+	a := ttinfo.Activities[aix]
+	nposs := len(a.PossibleSlots)
+	i0 := rand.IntN(nposs)
+
+	// Start with non-colliding placements
+	i := i0
+	for {
+		slot := a.PossibleSlots[i]
+		if ttinfo.TestPlacement(aix, slot) {
+			// Place and reevaluate
+			ttinfo.PlaceActivity(aix, slot)
+			dpen := pmon.evaluate1(aix)
+			// Update penalty info
+			for _, pp := range pmon.pendingPenalties {
+				pmon.resourcePenalties[pp.resource] = pp.penalty
+			}
+			pmon.score += dpen
+			// Remove from "unplaced" list
+			pmon.unplaced = pmon.unplaced[:len(pmon.unplaced)-1]
+			return dpen - PENALTY_UNPLACED_ACTIVITY
+		}
+		i += 1
+		if i == nposs {
+			i = 0
+		}
+		if i == i0 {
+			// No non-colliding placements possible
+			break
+		}
+	}
 
 	return delta
 }
