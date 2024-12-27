@@ -10,15 +10,14 @@
  * is in the space left free by the TITLE_HEIGHT value.
  * The rest of the page will be used for the table, adjusting the cell size
  * to fit.
- *
+ * 
  * It is quite likely that there will be too many items for a single page. In
  * this case, the item list is divided – the available space on the page is
  * known, as are the row heights, so this division is fairly straightforward.
  */
 
 // To use a different font:
-// CHANGE_UG
-#set text(font: ("Nunito","DejaVu Sans"))
+//#set text(font: "B612")
 // If the font is not installed on the system, the .ttf or .otf files can be
 // placed in "typst_files/_fonts".
 
@@ -30,19 +29,19 @@
 #let H_HEADER_HEIGHT1 = 10mm
 #let H_HEADER_HEIGHT2 = 10mm
 #let V_HEADER_WIDTH = 30mm
-#let V_HEADER_WIDTH_CLASS = 15mm // smaller for classes
 #let ROW_HEIGHT = 12mm
 #let ROW_HEIGHT_CLASS = 30mm // larger because of divisions
-#let CELL_BORDER = 0.5pt
-#let BIG_SIZE = 24pt
-#let NORMAL_SIZE = 13pt
+
+#let CELL_BORDER = 1pt
+#let BIG_SIZE = 14pt
+#let NORMAL_SIZE = 12pt
 #let CELL_TEXT_SIZE = 10pt
 #let DAY_SIZE = 13pt
 #let HOUR_SIZE = 9pt
 
 #let FRAME_COLOUR = "#707070"
-#let HEADER_COLOUR = "#f0f0f0"
-#let EMPTY_COLOUR = "#ffffff"
+#let HEADER_COLOUR = "#e0e0e0"
+#let EMPTY_COLOUR = "#f0f0f0"
 
 #let JOINSTR = ","
 
@@ -102,7 +101,6 @@
 #let tableType = xdata.TableType
 #if tableType == "Class" {
     ROW_HEIGHT = ROW_HEIGHT_CLASS
-    V_HEADER_WIDTH = V_HEADER_WIDTH_CLASS
 }
 
 // Determine the field placements in the tiles
@@ -134,10 +132,10 @@
 //TODO: Maybe the vertical headers should be boxed, to have auto-adjusting size?
 
 #let shrinkwrap(
-    width,
-    textc,
-    tsize: NORMAL_SIZE,
-    bold: false,
+    width, 
+    textc, 
+    tsize: NORMAL_SIZE, 
+    bold: false, 
     hpos: center,
     vpos: horizon,
 ) = {
@@ -183,18 +181,18 @@
 // Used by fgWCAG2
 #let rgblumin(c) = {
     c = c / 100%
-    if c <= 0.04045 {
-        c/12.92
-    } else {
-        calc.pow((c+0.055)/1.055, 2.4)
-    }
+	if c <= 0.04045 {
+		c/12.92
+	} else {
+		calc.pow((c+0.055)/1.055, 2.4)
+	}
 }
 
 // Decide on black or white for text, based on background colour (WCAG2).
 #let fgWCAG2(colour) = {
-    let (r,g,b,a) = rgb(colour).components()
-    let l = 0.2126 * rgblumin(r) + 0.7152 * rgblumin(g) + 0.0722 * rgblumin(b)
-    if l > 0.179 { black } else { white }
+	let (r,g,b,a) = rgb(colour).components()
+	let l = 0.2126 * rgblumin(r) + 0.7152 * rgblumin(g) + 0.0722 * rgblumin(b)
+	if l > 0.179 { black } else { white }
 }
 
 // Used by fgWCAG2
@@ -209,9 +207,9 @@
 
 // Decide on black or white for text, based on background colour (WCAG2).
 #let fgWCAG2(colour) = {
-    let (r,g,b,a) = rgb(colour).components()
-    let l = 0.2126 * rgblumin(r) + 0.7152 * rgblumin(g) + 0.0722 * rgblumin(b)
-    if l > 0.179 { black } else { white }
+	let (r,g,b,a) = rgb(colour).components()
+	let l = 0.2126 * rgblumin(r) + 0.7152 * rgblumin(g) + 0.0722 * rgblumin(b)
+	if l > 0.179 { black } else { white }
 }
 
 // Prepare horizontal header, also column sizes and boundaries
@@ -268,12 +266,11 @@
         ROOM: rooms.join(JOINSTR),
     )
     let ctext = texts.at(fieldPlacements.at("m", default: ""), default: "")
-    let ttext = texts.at(fieldPlacements.at("t", default: ""), default: "")
-    let btext = texts.at(fieldPlacements.at("b", default: ""), default: "")
-    let cellBorderColour = background
+    let ttext = texts.at(fieldPlacements.at("t", default: ""), default: "") 
+    let btext = texts.at(fieldPlacements.at("b", default: ""), default: "") 
+
     if background == "" {
         background = "#FFFFFF"
-        cellBorderColour="#000000"
     }
     let bg = rgb(background)
     // Get text colour
@@ -291,8 +288,8 @@
     let yshift = cell_height * offset / total
     // Shrink excessively large components.
     let b = box(
-        fill: bg,
-        stroke: (paint: rgb(cellBorderColour),thickness:CELL_BORDER),
+        fill: rgb(background),
+        stroke: CELL_BORDER,
         inset: 2pt,
         height: hfrac,
         width: w,
@@ -310,16 +307,16 @@
 
 #show heading: it => text(weight: "bold", size: BIG_SIZE,
     bottom-edge: "descender",
-    pad(left: 0mm, it))
+    pad(left: 20mm, it))
 
 // Determine the document title
-#let titles = typstMap.at("titles", default: (:))
+#let titles = typstMap.at("Titles", default: (:))
 #if titles.len() == 0 {
     // fallback
     titles = titleFallbacks
 }
 #let title = titles.at(tableType, default: "")
-#let subtitle = typstMap.at("subtitle", default: "hallo")
+#let subtitle = typstMap.at("Subtitle", default: "")
 
 #set page(height: PAGE_HEIGHT, width: PAGE_WIDTH,
     //numbering: "1/1",
@@ -341,7 +338,7 @@
     irow += 1
 
     //TODO: Which page field (Name or Short)?
-
+    
     let rh = row.Name
     if rh == "" {
         rh = row.Short
@@ -352,12 +349,12 @@
         // Page done
 
         block(height: TITLE_HEIGHT, above: 0mm, below: 0mm, inset: 2mm)[
-            #place(top)[= #title#h(1fr) #text(17pt)[ #xdata.Info.Institution]]
-
+            #place(top)[#h(1fr)#xdata.Info.Institution]
+            #place(left + horizon)[= #title]
             #place(bottom)[
-                #typstMap.at("subtitle", default: "")
-                #h(1fr)
                 #pageno / #pagetotal
+                #h(1fr)
+                #typstMap.at("Subtitle", default: "")
             ]
         ]
 
@@ -366,7 +363,7 @@
                 columns: tcolumns,
                 rows: trows,
                 gutter: 0pt,
-                stroke: (paint: rgb(FRAME_COLOUR), thickness: 1pt) ,
+                stroke: rgb(FRAME_COLOUR),
                 inset: 0pt,
                 fill: (x, y) =>
                     if y > 1 and x > 0 {
@@ -398,6 +395,3 @@
         pageno += 1
     }
 }
-
-
-
