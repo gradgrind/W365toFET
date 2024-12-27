@@ -292,7 +292,7 @@
     let yshift = cell_height * offset / total
     // Shrink excessively large components.
     let b = box(
-        fill: rgb(background),
+        fill: bg,
         stroke: (paint: rgb(cellBorderColour),thickness:CELL_BORDER),
         inset: 2pt,
         height: hfrac,

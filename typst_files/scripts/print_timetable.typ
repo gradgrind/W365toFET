@@ -48,9 +48,9 @@
 #let SMALL_SIZE = 12pt
 
 #let FRAME_COLOUR = "#707070"
-#let BREAK_COLOUR = "#e0e0e0"
 #let HEADER_COLOUR = "#f0f0f0"
 #let EMPTY_COLOUR = "#ffffff"
+#let BREAK_COLOUR = EMPTY_COLOUR
 
 // Field placement fallbacks
 #let boxText = (
@@ -329,7 +329,7 @@
     let xshift = cell_width * offset / total
     // Shrink excessively large components.
     let b = box(
-        fill: rgb(background),
+        fill: bg,
         stroke: (paint: rgb(cellBorderColour), thickness:CELL_BORDER),
         inset: 2pt,
         height: y1 - y0 - CELL_BORDER*2,
