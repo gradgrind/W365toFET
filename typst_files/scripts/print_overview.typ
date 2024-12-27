@@ -33,7 +33,6 @@
 #let V_HEADER_WIDTH_CLASS = 15mm // smaller for classes
 #let ROW_HEIGHT = 12mm
 #let ROW_HEIGHT_CLASS = 30mm // larger because of divisions
-
 #let CELL_BORDER = 0.5pt
 #let BIG_SIZE = 24pt
 #let NORMAL_SIZE = 13pt
