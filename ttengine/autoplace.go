@@ -15,11 +15,11 @@ func PlaceLessons3(
 	//resourceSlotActivityMap := makeResourceSlotActivityMap(ttinfo)
 	var pmon placementMonitor
 	{
-		//var delta int64 = 7 // This might be a reasonable value?
+		var delta int64 = 7 // This might be a reasonable value?
 		pmon = placementMonitor{
-			//count:                   delta,
-			//delta:                   delta,
-			//added:                   make([]int64, len(ttinfo.Activities)),
+			count:    delta,
+			delta:    delta,
+			added:    make([]int64, len(ttinfo.Activities)),
 			ttinfo:   ttinfo,
 			unplaced: alist,
 			//preferEarlier:           preferEarlier,
@@ -90,8 +90,6 @@ func (pmon placementMonitor) step() int {
 	// If all fail choose a weighted probability?
 	ttinfo := pmon.ttinfo
 
-	delta := 0
-
 	var aix ttbase.ActivityIndex
 	if len(pmon.unplaced) == 0 {
 		//TODO
@@ -109,12 +107,15 @@ func (pmon placementMonitor) step() int {
 
 	// Start with non-colliding placements
 	i := i0
+	var dpen int
 	for {
 		slot := a.PossibleSlots[i]
 		if ttinfo.TestPlacement(aix, slot) {
 			// Place and reevaluate
 			ttinfo.PlaceActivity(aix, slot)
-			dpen := pmon.evaluate1(aix)
+			pmon.added[aix] = pmon.count
+			pmon.count++
+			dpen = pmon.evaluate1(aix)
 			// Update penalty info
 			for _, pp := range pmon.pendingPenalties {
 				pmon.resourcePenalties[pp.resource] = pp.penalty
@@ -133,8 +134,48 @@ func (pmon placementMonitor) step() int {
 			break
 		}
 	}
+	// As a non-colliding placement is not possible, try a colliding one.
+	for {
+		slot := a.PossibleSlots[i]
 
-	return delta
+		clashes := ttinfo.FindClashes(aix, slot)
+		for _, aixx := range clashes {
+			if pmon.check(aixx) {
+				goto nextslot
+			}
+		}
+
+		dpen = 0
+		for _, aixx := range clashes {
+			ttinfo.UnplaceActivity(aixx)
+			dpen += pmon.evaluate1(aixx)
+		}
+		ttinfo.PlaceActivity(aix, slot)
+		pmon.added[aix] = pmon.count
+		pmon.count++
+		dpen += pmon.evaluate1(aix) + PENALTY_UNPLACED_ACTIVITY*
+			(len(clashes)-1)
+
+			//TODO: Decide whether to accept
+
+			//TODO: If not, revert
+
+			//--
+
+	nextslot:
+		i += 1
+		if i == nposs {
+			i = 0
+		}
+		if i == i0 {
+			// No non-colliding placements possible
+			break
+		}
+	}
+
+	//TODO: Couldn't place anything
+
+	return 0
 }
 
 func (pmon placementMonitor) sa1() {
