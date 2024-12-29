@@ -2,16 +2,29 @@
 
 Manche Eigenschaften der Ausdrucke werden in den Typst-Skripten festgelegt. Andere können über die JSON-Datei geregelt werden, insbesondere über das PrintOptions-Objekt.
 
-Viele der Optionen werden über die "Typst"-Eigenschaft direkt an das Typst-Skript übergeben. Die möglichen Felder hängen also vom eingesetzten Typst-Skript ab. Das Typst-Skript sollte idealerweise sinnvolle Voreinstellungen für so viele Felder wie möglich haben.
+Viele der Optionen werden über die "typst"-Eigenschaft direkt an das Typst-Skript übergeben. Die möglichen Felder hängen also vom eingesetzten Typst-Skript ab. Das Typst-Skript sollte idealerweise sinnvolle Voreinstellungen für so viele Felder wie möglich haben.
 
-Welche Pläne erstellt werden, wird durch das Feld "PrintTables" festgelegt. Einzelpläne können erstellt werden, indem das Id der entsprechenden Objekte (Klasse, Lehrer oder Raum) angegeben wird.
+Welche Pläne erstellt werden, wird durch die Eigenschaft "printTables" festgelegt. Diese Eigenschaft ist eine Liste „Befehlsobjekte“. Wenn "printTables" leer (oder nicht vorhanden) ist, werden JSON-Dateien und PDF-Dateien (mit Standardnamen) für folgende Tabellen erstellt:
+
+ - Klassen (eine Klasse pro Seite)
+ - Klassen, Gesamtplan
+ - Lehrer (eine Lehrkraft pro Seite)
+ - Lehrer, Gesamtplan
+ - Räume (ein Raum pro Seite)
+ - Räume, Gesamtplan
+
+Einzelpläne können erstellt werden, indem das Id des entsprechenden Objekts (Klasse, Lehrer oder Raum) als "Type" angegeben wird.
 
 ```
 "printOptions": {
 
     "printTables": [
-        "Teacher", "Class", "Room",
-        "Teacher_overview", "Class_overview", "Room_overview"],
+        {
+            "Type": "Teacher", // oder "Class" oder "Room" oder Element-Id
+            "TypstTemplate": "template1.typ",
+            "TypstJson": "timetable.json",
+            "Pdf": "timetable.pdf"
+        }, ... ],
 
     "typst": {
         "Titles": {
@@ -58,6 +71,8 @@ Welche Pläne erstellt werden, wird durch das Feld "PrintTables" festgelegt. Ein
     }
 }
 ```
+
+## Vorschlag für die Gestaltung des typst-Objekts
 
 Bei den "PageHeadings" gibt es über "%N" und "%S" die Möglichkeit Vollnamen und Kurznamen der jeweiligen Klasse, usw., einzubinden.
 
