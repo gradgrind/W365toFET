@@ -50,77 +50,91 @@ type ttPage struct {
 	Activities []Tile
 }
 
-func GenTypstData(
+func GenTimetables(
 	ttinfo *ttbase.TtInfo,
 	datadir string,
 	stemfile string,
-) []string {
-	typst_files := []string{}
-	printTables := ttinfo.Db.PrintOptions.PrintTables
-	if len(printTables) == 0 {
-		printTables = []string{
-			"Class", "Teacher", "Room",
-			"Class_overview", "Teacher_overview", "Room_overview",
-		}
-	}
-	// The same JSON is used for overview tables as for individual tables,
-	// so suppress generation of doubles.
-	done := map[string]string{}
+	commands []base.PrintCommand,
+	genpdf string,
+) {
 	var f string
-	var ok bool
-	for _, ptable := range printTables {
-		p, overview := strings.CutSuffix(ptable, "_overview")
-		f, ok = done[p]
-		if !ok {
-			switch p {
-			case "Class":
-				f = getClasses(ttinfo, datadir, stemfile)
-			case "Teacher":
-				f = getTeachers(ttinfo, datadir, stemfile)
-			case "Room":
-				f = getRooms(ttinfo, datadir, stemfile)
-			default:
-				// Table for individual element
-				f = genTypstOneElement(ttinfo, datadir, stemfile, p)
+	var tt Timetable
+	for _, cmd := range commands {
+		f = cmd.TypstJson
+		switch cmd.Type {
+		case "Class":
+			pages := getClasses(ttinfo)
+			tt = timetable(ttinfo.Db, pages, "Class")
+			if f == "" {
+				f = stemfile + "_classes"
 			}
-			done[p] = f
+		case "Teacher":
+			pages := getTeachers(ttinfo)
+			tt = timetable(ttinfo.Db, pages, "Class")
+			if f == "" {
+				f = stemfile + "_classes"
+			}
+		case "Room":
+			pages := getRooms(ttinfo)
+			tt = timetable(ttinfo.Db, pages, "Class")
+			if f == "" {
+				f = stemfile + "_classes"
+			}
+		default:
+			// Table for individual element
+			var tag string
+			tt, tag = genTypstOneElement(ttinfo, cmd.TypstJson)
+			if f == "" {
+				f = stemfile + tag
+			}
 		}
-		if overview {
-			f += "_overview"
+		makeTypstJson(tt, datadir, f)
+		if genpdf != "" {
+			//TODO: Leave off endings in command?
+			tmpl := cmd.TypstTemplate
+			pdf := cmd.Pdf
+			if pdf == "" {
+				if strings.HasSuffix(tmpl, "_overview") {
+					pdf = f + "_overview"
+				} else {
+					pdf = f
+				}
+			}
+			makePdf(tmpl+".typ", datadir, f, pdf+".pdf", genpdf)
 		}
-		typst_files = append(typst_files, f)
 	}
-	return typst_files
 }
 
-func genTypstOneElement(
-	ttinfo *ttbase.TtInfo,
-	datadir string,
-	stemfile string, // basic name part of source file
-	id string,
-) string {
+func genTypstOneElement(ttinfo *ttbase.TtInfo, id string,
+) (Timetable, string) {
+	var tt Timetable
 	ref := base.Ref(id)
 	e := ttinfo.Db.Elements[ref]
 	c, ok := e.(*base.Class)
 	if ok {
 		// Make class JSON, but with only one class
-		return getOneClass(ttinfo, datadir, stemfile, c)
+		pages := getOneClass(ttinfo, c)
+		tt = timetable(ttinfo.Db, pages, "Class")
+		return tt, "class_" + c.Tag
 	}
 	t, ok := e.(*base.Teacher)
 	if ok {
 		// Make teacher JSON, but with only one teacher
-		return getOneTeacher(ttinfo, datadir, stemfile, t)
+		pages := getOneTeacher(ttinfo, t)
+		tt = timetable(ttinfo.Db, pages, "Teacher")
+		return tt, "teacher_" + t.Tag
 	}
 	r, ok := e.(*base.Room)
 	if ok {
 		// Make room JSON, but with only one room
-		return getOneRoom(ttinfo, datadir, stemfile, r)
+		pages := getOneRoom(ttinfo, r)
+		tt = timetable(ttinfo.Db, pages, "Room")
+		return tt, "room_" + r.Tag
 	}
 	base.Error.Fatalf("Can't print timetable for invalid element: %+v\n", e)
-	return ""
+	return tt, ""
 }
 
-// TODO
 func timetable(
 	db *base.DbTopLevel,
 	pages []ttPage,
@@ -176,7 +190,7 @@ func makeTypstJson(tt Timetable, datadir string, outfile string) {
 	base.Message.Printf("Wrote: %s\n", jsonpath)
 }
 
-func MakePdf(
+func makePdf(
 	script string,
 	datadir string,
 	stemfile string,

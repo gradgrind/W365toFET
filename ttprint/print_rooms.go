@@ -5,11 +5,7 @@ import (
 	"W365toFET/ttbase"
 )
 
-func getRooms(
-	ttinfo *ttbase.TtInfo,
-	datadir string,
-	stemfile string, // basic name part of source file
-) string {
+func getRooms(ttinfo *ttbase.TtInfo) []ttPage {
 	data := getRoomData(ttinfo)
 	pages := []ttPage{}
 	for _, r := range ttinfo.Db.Rooms {
@@ -23,18 +19,10 @@ func getRooms(
 			Activities: rtiles,
 		})
 	}
-	tt := timetable(ttinfo.Db, pages, "Room")
-	f := stemfile + "_rooms"
-	makeTypstJson(tt, datadir, f)
-	return f
+	return pages
 }
 
-func getOneRoom(
-	ttinfo *ttbase.TtInfo,
-	datadir string,
-	stemfile string, // basic name part of source file
-	e *base.Room,
-) string {
+func getOneRoom(ttinfo *ttbase.TtInfo, e *base.Room) []ttPage {
 	data := getRoomData(ttinfo)
 	tiles, ok := data[e.Id]
 	if !ok {
@@ -47,10 +35,7 @@ func getOneRoom(
 			Activities: tiles,
 		},
 	}
-	tt := timetable(ttinfo.Db, pages, "Room")
-	f := stemfile + "_room_" + e.Tag
-	makeTypstJson(tt, datadir, f)
-	return f
+	return pages
 }
 
 func getRoomData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {

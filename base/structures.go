@@ -183,8 +183,15 @@ type Constraint interface {
 	CType() string
 }
 
+type PrintCommand struct {
+	Type          string
+	TypstTemplate string
+	TypstJson     string
+	Pdf           string
+}
+
 type PrintOptions struct {
-	PrintTables []string
+	PrintTables []PrintCommand
 	Typst       map[string]any
 }
 

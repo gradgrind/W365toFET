@@ -6,11 +6,7 @@ import (
 	"slices"
 )
 
-func getClasses(
-	ttinfo *ttbase.TtInfo,
-	datadir string,
-	stemfile string, // basic name part of source file
-) string {
+func getClasses(ttinfo *ttbase.TtInfo) []ttPage {
 	data := getClassData(ttinfo)
 	pages := []ttPage{}
 	for _, c := range ttinfo.Db.Classes {
@@ -27,18 +23,10 @@ func getClasses(
 			Activities: tiles,
 		})
 	}
-	tt := timetable(ttinfo.Db, pages, "Class")
-	f := stemfile + "_classes"
-	makeTypstJson(tt, datadir, f)
-	return f
+	return pages
 }
 
-func getOneClass(
-	ttinfo *ttbase.TtInfo,
-	datadir string,
-	stemfile string, // basic name part of source file
-	e *base.Class,
-) string {
+func getOneClass(ttinfo *ttbase.TtInfo, e *base.Class) []ttPage {
 	data := getClassData(ttinfo)
 	tiles, ok := data[e.Id]
 	if !ok {
@@ -51,10 +39,7 @@ func getOneClass(
 			Activities: tiles,
 		},
 	}
-	tt := timetable(ttinfo.Db, pages, "Class")
-	f := stemfile + "_class_" + e.Tag
-	makeTypstJson(tt, datadir, f)
-	return f
+	return pages
 }
 
 func getClassData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
