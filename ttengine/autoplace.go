@@ -56,10 +56,18 @@ func PlaceLessons3(
 	var satemp Penalty = 1000
 
 	satemp = pmon.place1(satemp)
+	fmt.Printf("§§§ Score place1: %d\n", pmon.score+
+		Penalty(len(pmon.currentState.unplaced))*PENALTY_UNPLACED_ACTIVITY)
+
+	//	return false
+
 	var sat1 Penalty
+	i := 5000
 	for len(pmon.unplaced) != 0 {
 		score := pmon.bestState.score
-		if score < pmon.currentState.score {
+		pdelta := Penalty((len(pmon.bestState.unplaced) -
+			len(pmon.currentState.unplaced))) * PENALTY_UNPLACED_ACTIVITY
+		if score+pdelta < pmon.currentState.score {
 			pmon.currentState = pmon.bestState
 			pmon.resetState()
 			sat1 = satemp
@@ -67,10 +75,19 @@ func PlaceLessons3(
 			satemp = sat1
 		}
 		pmon.place2()
+		fmt.Printf("§§§ Score place2: %d\n", pmon.score+
+			Penalty(len(pmon.currentState.unplaced))*PENALTY_UNPLACED_ACTIVITY)
 		sat1 = pmon.place1(100)
+		fmt.Printf("§§§ Score place1: %d\n", pmon.score+
+			Penalty(len(pmon.currentState.unplaced))*PENALTY_UNPLACED_ACTIVITY)
+		i -= 1
+		if i == 0 {
+			break
+		}
 	}
 
-	return true
+	fmt.Printf("§Unplaced: %d\n", len(pmon.currentState.unplaced))
+	return false
 }
 
 func (pmon *placementMonitor) place1(satemp Penalty) Penalty {
@@ -79,11 +96,20 @@ func (pmon *placementMonitor) place1(satemp Penalty) Penalty {
 		if !ok {
 			return -1
 		}
+
 		pmon.currentState = pmon.saveState()
+
 		//fmt.Printf("++ T=%d Unplaced: %d Penalty: %d\n",
 		//	satemp, len(pmon.unplaced), dp)
-		if pmon.currentState.score < pmon.bestState.score {
+		lc := len(pmon.unplaced)
+		lb := len(pmon.bestState.unplaced)
+		if lc < lb || (lc == lb && pmon.score < pmon.bestState.score) {
 			pmon.bestState = pmon.currentState
+			pmon.printScore("BEST")
+		} else {
+			fmt.Printf("??? %d %d %d\n",
+				pmon.score, pmon.currentState.score, pmon.bestState.score)
+			pmon.printScore("SET")
 		}
 		satemp *= 9980
 		satemp /= 10000
@@ -105,8 +131,8 @@ func (pmon *placementMonitor) place2() Penalty {
 	ttinfo.PlaceActivity(aix, slot)
 	pmon.added[aix] = pmon.count
 	pmon.count++
-	dpen = pmon.evaluate1(aix) +
-		PENALTY_UNPLACED_ACTIVITY*Penalty(len(clashes)-1)
+	clear(pmon.pendingPenalties)
+	dpen = pmon.evaluate1(aix) //+ PENALTY_UNPLACED_ACTIVITY*Penalty(len(clashes)-1)
 	for _, aixx := range clashes {
 		dpen += pmon.evaluate1(aixx)
 	}
@@ -119,7 +145,7 @@ func (pmon *placementMonitor) place2() Penalty {
 	pmon.unplaced = pmon.unplaced[:len(pmon.unplaced)-1]
 	pmon.unplaced = append(pmon.unplaced, clashes...)
 	pmon.currentState = pmon.saveState()
-	fmt.Printf("$$$ %d %d %d\n", aix, dpen, pmon.score)
+	//fmt.Printf("$$$ %d %d %d\n", aix, dpen, pmon.score)
 	return dpen
 }
 
@@ -152,13 +178,6 @@ func (pmon *placementMonitor) place2() Penalty {
 }
 */
 
-func (pmon *placementMonitor) testPlacement(
-	aix ttbase.ActivityIndex,
-) []ttbase.ActivityIndex {
-
-	return []ttbase.ActivityIndex{aix}
-}
-
 func (pmon *placementMonitor) step(temp Penalty) (Penalty, bool) {
 	// Try all possible placements of the next activity, accepting one
 	// if it reduces the penalty. (Start testing at random slot?)
@@ -187,7 +206,6 @@ func (pmon *placementMonitor) step(temp Penalty) (Penalty, bool) {
 	nposs := len(a.PossibleSlots)
 	i0 := rand.IntN(nposs)
 
-	clear(pmon.pendingPenalties)
 	// Start with non-colliding placements
 	i := i0
 	var dpen Penalty
@@ -198,7 +216,8 @@ func (pmon *placementMonitor) step(temp Penalty) (Penalty, bool) {
 			ttinfo.PlaceActivity(aix, slot)
 			pmon.added[aix] = pmon.count
 			pmon.count++
-			dpen = pmon.evaluate1(aix) - PENALTY_UNPLACED_ACTIVITY
+			clear(pmon.pendingPenalties)
+			dpen = pmon.evaluate1(aix) //- PENALTY_UNPLACED_ACTIVITY
 			goto accept
 		}
 		i += 1
@@ -212,7 +231,7 @@ func (pmon *placementMonitor) step(temp Penalty) (Penalty, bool) {
 	}
 	// As a non-colliding placement is not possible, try a colliding one.
 	for {
-		var dpen Penalty
+		var dpenx Penalty
 		slot := a.PossibleSlots[i]
 		clashes = ttinfo.FindClashes(aix, slot)
 		for _, aixx := range clashes {
@@ -227,17 +246,18 @@ func (pmon *placementMonitor) step(temp Penalty) (Penalty, bool) {
 		ttinfo.PlaceActivity(aix, slot)
 		pmon.added[aix] = pmon.count
 		pmon.count++
-		dpen = pmon.evaluate1(aix) +
-			PENALTY_UNPLACED_ACTIVITY*Penalty(len(clashes)-1)
+		clear(pmon.pendingPenalties)
+		dpen = pmon.evaluate1(aix)
 		for _, aixx := range clashes {
 			dpen += pmon.evaluate1(aixx)
 		}
+		dpenx = dpen + PENALTY_UNPLACED_ACTIVITY*Penalty(len(clashes)-1)
 
 		// Decide whether to accept
-		if dpen <= 0 {
+		if dpenx <= 0 {
 			goto accept // (not very likely!)
 		} else {
-			dfac := dpen / temp
+			dfac := dpenx / temp
 			t := N1 / (dfac*dfac + N2)
 			if t != 0 && Penalty(rand.IntN(N0)) < t {
 				goto accept
@@ -268,6 +288,19 @@ accept:
 	pmon.unplaced = append(pmon.unplaced, clashes...)
 	pmon.currentState = pmon.saveState()
 	return dpen, true
+}
+
+func (pmon *placementMonitor) printScore(msg string) {
+	var p Penalty = 0
+	for r := 0; r < len(pmon.ttinfo.Resources); r++ {
+		p += pmon.resourcePenalty1(r)
+	}
+	fmt.Printf("§ Score: %s %d\n", msg,
+		pmon.score+Penalty(len(pmon.unplaced))*PENALTY_UNPLACED_ACTIVITY)
+	if p != pmon.score {
+		fmt.Printf("§ ... error: %d != %d\n", p, pmon.score)
+		panic("!!!")
+	}
 }
 
 func (pmon *placementMonitor) sa1() {

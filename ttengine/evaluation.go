@@ -29,7 +29,6 @@ func (pmon *placementMonitor) evaluate1(aix ttbase.ActivityIndex) Penalty {
 	ttinfo := pmon.ttinfo
 	a := ttinfo.Activities[aix]
 	var penalty Penalty = 0
-	clear(pmon.pendingPenalties)
 	for _, r := range a.Resources {
 
 		// Add to pendingPenalties if not already there.
