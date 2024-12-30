@@ -6,17 +6,24 @@ import (
 	"math/rand/v2"
 )
 
-const PENALTY_UNPLACED_ACTIVITY = 1000
+const N0 = 1000
+const NSTEPS = 1000
+
+// -----------------
+const N1 = NSTEPS * NSTEPS
+const N2 = N1 / N0
+
+const PENALTY_UNPLACED_ACTIVITY Penalty = 1000
 
 func PlaceLessons3(
 	ttinfo *ttbase.TtInfo,
 	alist []ttbase.ActivityIndex,
 ) bool {
 	//resourceSlotActivityMap := makeResourceSlotActivityMap(ttinfo)
-	var pmon placementMonitor
+	var pmon *placementMonitor
 	{
 		var delta int64 = 7 // This might be a reasonable value?
-		pmon = placementMonitor{
+		pmon = &placementMonitor{
 			count:    delta,
 			delta:    delta,
 			added:    make([]int64, len(ttinfo.Activities)),
@@ -25,9 +32,9 @@ func PlaceLessons3(
 			//preferEarlier:           preferEarlier,
 			//preferLater:             preferLater,
 			//resourceSlotActivityMap: resourceSlotActivityMap,
-			resourcePenalties: make([]int, len(ttinfo.Resources)),
+			resourcePenalties: make([]Penalty, len(ttinfo.Resources)),
 			score:             0,
-			pendingPenalties:  []resourcePenalty{},
+			pendingPenalties:  map[ttbase.ResourceIndex]Penalty{},
 		}
 	}
 	pmon.initConstraintData()
@@ -42,9 +49,78 @@ func PlaceLessons3(
 
 	// Add penalty for unplaced lessons
 	fmt.Printf("$ PENALTY %d: %d\n", len(alist),
-		pmon.score+PENALTY_UNPLACED_ACTIVITY*len(alist))
+		pmon.score+PENALTY_UNPLACED_ACTIVITY*Penalty(len(alist)))
 
-	return false
+	pmon.currentState = pmon.saveState()
+	pmon.bestState = pmon.currentState
+	var satemp Penalty = 1000
+
+	satemp = pmon.place1(satemp)
+	var sat1 Penalty
+	for len(pmon.unplaced) != 0 {
+		score := pmon.bestState.score
+		if score < pmon.currentState.score {
+			pmon.currentState = pmon.bestState
+			pmon.resetState()
+			sat1 = satemp
+		} else {
+			satemp = sat1
+		}
+		pmon.place2()
+		sat1 = pmon.place1(100)
+	}
+
+	return true
+}
+
+func (pmon *placementMonitor) place1(satemp Penalty) Penalty {
+	for satemp != 0 {
+		_, ok := pmon.step(satemp)
+		if !ok {
+			return -1
+		}
+		pmon.currentState = pmon.saveState()
+		//fmt.Printf("++ T=%d Unplaced: %d Penalty: %d\n",
+		//	satemp, len(pmon.unplaced), dp)
+		if pmon.currentState.score < pmon.bestState.score {
+			pmon.bestState = pmon.currentState
+		}
+		satemp *= 9980
+		satemp /= 10000
+	}
+	return satemp
+}
+
+func (pmon *placementMonitor) place2() Penalty {
+	ttinfo := pmon.ttinfo
+	aix := pmon.unplaced[len(pmon.unplaced)-1]
+	a := ttinfo.Activities[aix]
+	nposs := len(a.PossibleSlots)
+	var dpen Penalty
+	slot := a.PossibleSlots[rand.IntN(nposs)]
+	clashes := ttinfo.FindClashes(aix, slot)
+	for _, aixx := range clashes {
+		ttinfo.UnplaceActivity(aixx)
+	}
+	ttinfo.PlaceActivity(aix, slot)
+	pmon.added[aix] = pmon.count
+	pmon.count++
+	dpen = pmon.evaluate1(aix) +
+		PENALTY_UNPLACED_ACTIVITY*Penalty(len(clashes)-1)
+	for _, aixx := range clashes {
+		dpen += pmon.evaluate1(aixx)
+	}
+	// Update penalty info
+	for r, p := range pmon.pendingPenalties {
+		pmon.resourcePenalties[r] = p
+	}
+	pmon.score += dpen
+	// Remove from "unplaced" list
+	pmon.unplaced = pmon.unplaced[:len(pmon.unplaced)-1]
+	pmon.unplaced = append(pmon.unplaced, clashes...)
+	pmon.currentState = pmon.saveState()
+	fmt.Printf("$$$ %d %d %d\n", aix, dpen, pmon.score)
+	return dpen
 }
 
 /*
@@ -76,28 +152,34 @@ func PlaceLessons3(
 }
 */
 
-func (pmon placementMonitor) testPlacement(
+func (pmon *placementMonitor) testPlacement(
 	aix ttbase.ActivityIndex,
 ) []ttbase.ActivityIndex {
 
 	return []ttbase.ActivityIndex{aix}
 }
 
-func (pmon placementMonitor) step() int {
+func (pmon *placementMonitor) step(temp Penalty) (Penalty, bool) {
 	// Try all possible placements of the next activity, accepting one
 	// if it reduces the penalty. (Start testing at random slot?)
 	// Accept a worsening with a certain probability (SA?)?.
 	// If all fail choose a weighted probability?
 	ttinfo := pmon.ttinfo
+	var clashes []ttbase.ActivityIndex
 
 	var aix ttbase.ActivityIndex
 	if len(pmon.unplaced) == 0 {
+
 		//TODO
+
 		// Seek the activity with the highest penalty?
 		// Or, based on the penalties, choose an activity at random?
 		// Block activities which have only recently been placed?
 
-		// Unplace it
+		// Unplace it ...
+
+		return 0, false
+
 	} else {
 		aix = pmon.unplaced[len(pmon.unplaced)-1]
 	}
@@ -105,9 +187,10 @@ func (pmon placementMonitor) step() int {
 	nposs := len(a.PossibleSlots)
 	i0 := rand.IntN(nposs)
 
+	clear(pmon.pendingPenalties)
 	// Start with non-colliding placements
 	i := i0
-	var dpen int
+	var dpen Penalty
 	for {
 		slot := a.PossibleSlots[i]
 		if ttinfo.TestPlacement(aix, slot) {
@@ -115,15 +198,8 @@ func (pmon placementMonitor) step() int {
 			ttinfo.PlaceActivity(aix, slot)
 			pmon.added[aix] = pmon.count
 			pmon.count++
-			dpen = pmon.evaluate1(aix)
-			// Update penalty info
-			for _, pp := range pmon.pendingPenalties {
-				pmon.resourcePenalties[pp.resource] = pp.penalty
-			}
-			pmon.score += dpen
-			// Remove from "unplaced" list
-			pmon.unplaced = pmon.unplaced[:len(pmon.unplaced)-1]
-			return dpen - PENALTY_UNPLACED_ACTIVITY
+			dpen = pmon.evaluate1(aix) - PENALTY_UNPLACED_ACTIVITY
+			goto accept
 		}
 		i += 1
 		if i == nposs {
@@ -136,31 +212,40 @@ func (pmon placementMonitor) step() int {
 	}
 	// As a non-colliding placement is not possible, try a colliding one.
 	for {
+		var dpen Penalty
 		slot := a.PossibleSlots[i]
-
-		clashes := ttinfo.FindClashes(aix, slot)
+		clashes = ttinfo.FindClashes(aix, slot)
 		for _, aixx := range clashes {
 			if pmon.check(aixx) {
 				goto nextslot
 			}
 		}
 
-		dpen = 0
 		for _, aixx := range clashes {
 			ttinfo.UnplaceActivity(aixx)
-			dpen += pmon.evaluate1(aixx)
 		}
 		ttinfo.PlaceActivity(aix, slot)
 		pmon.added[aix] = pmon.count
 		pmon.count++
-		dpen += pmon.evaluate1(aix) + PENALTY_UNPLACED_ACTIVITY*
-			(len(clashes)-1)
+		dpen = pmon.evaluate1(aix) +
+			PENALTY_UNPLACED_ACTIVITY*Penalty(len(clashes)-1)
+		for _, aixx := range clashes {
+			dpen += pmon.evaluate1(aixx)
+		}
 
-			//TODO: Decide whether to accept
+		// Decide whether to accept
+		if dpen <= 0 {
+			goto accept // (not very likely!)
+		} else {
+			dfac := dpen / temp
+			t := N1 / (dfac*dfac + N2)
+			if t != 0 && Penalty(rand.IntN(N0)) < t {
+				goto accept
+			}
+		}
 
-			//TODO: If not, revert
-
-			//--
+		// Don't accept change, revert
+		pmon.resetState()
 
 	nextslot:
 		i += 1
@@ -169,16 +254,23 @@ func (pmon placementMonitor) step() int {
 		}
 		if i == i0 {
 			// No non-colliding placements possible
-			break
+			return 0, false
 		}
 	}
-
-	//TODO: Couldn't place anything
-
-	return 0
+accept:
+	// Update penalty info
+	for r, p := range pmon.pendingPenalties {
+		pmon.resourcePenalties[r] = p
+	}
+	pmon.score += dpen
+	// Remove from "unplaced" list
+	pmon.unplaced = pmon.unplaced[:len(pmon.unplaced)-1]
+	pmon.unplaced = append(pmon.unplaced, clashes...)
+	pmon.currentState = pmon.saveState()
+	return dpen, true
 }
 
-func (pmon placementMonitor) sa1() {
+func (pmon *placementMonitor) sa1() {
 	/*
 		step := 1
 		accept := 0

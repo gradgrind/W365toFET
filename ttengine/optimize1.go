@@ -1,5 +1,7 @@
 package ttengine
 
+/*
+
 import (
 	"W365toFET/ttbase"
 	"fmt"
@@ -117,7 +119,7 @@ func (pmon *placementMonitor) optimize1(
 				base.Bug.Fatalf("!!! in alist: %d unplaced: %d\n", na, acount)
 			}
 			//--
-		*/
+		////
 
 		// Randomize list of activities
 		pending := make([]int, 0, na)
@@ -256,3 +258,4 @@ func (pmon *placementMonitor) optimize1(
 		return pending
 	}
 }
+*/

@@ -4,7 +4,9 @@ import (
 	"W365toFET/ttbase"
 )
 
-func (pmon *placementMonitor) resourcePenalty1(r ttbase.ResourceIndex) int {
+func (pmon *placementMonitor) resourcePenalty1(
+	r ttbase.ResourceIndex,
+) Penalty {
 	rc := pmon.constraintData[r]
 	if rc != nil {
 		rcag, ok := rc.(*AGConstraintData)
@@ -16,7 +18,7 @@ func (pmon *placementMonitor) resourcePenalty1(r ttbase.ResourceIndex) int {
 	return 0
 }
 
-func (pmon *placementMonitor) evaluate1(aix ttbase.ActivityIndex) int {
+func (pmon *placementMonitor) evaluate1(aix ttbase.ActivityIndex) Penalty {
 	// A full evaluation could be quite expensive. In may cases only a
 	// small number of things will have changed. The question is, which
 	// ones?
@@ -26,13 +28,16 @@ func (pmon *placementMonitor) evaluate1(aix ttbase.ActivityIndex) int {
 
 	ttinfo := pmon.ttinfo
 	a := ttinfo.Activities[aix]
-	penalty := 0
-	pmon.pendingPenalties = pmon.pendingPenalties[:0]
+	var penalty Penalty = 0
+	clear(pmon.pendingPenalties)
 	for _, r := range a.Resources {
-		rp := pmon.resourcePenalty1(r)
-		pmon.pendingPenalties = append(pmon.pendingPenalties,
-			resourcePenalty{r, rp})
-		penalty += rp - pmon.resourcePenalties[r]
+
+		// Add to pendingPenalties if not already there.
+		if _, ok := pmon.pendingPenalties[r]; !ok {
+			rp := pmon.resourcePenalty1(r)
+			pmon.pendingPenalties[r] = rp
+			penalty += rp - pmon.resourcePenalties[r]
+		}
 	}
 
 	// Count student gaps
@@ -80,7 +85,7 @@ type AGConstraintData struct {
 func (pmon *placementMonitor) countAGHours(
 	agix ttbase.ResourceIndex,
 	cdata *AGConstraintData,
-) int {
+) Penalty {
 	ttinfo := pmon.ttinfo
 	maxdaylessons := cdata.maxdaylessons
 	maxdaygaps := cdata.maxdaygaps
@@ -191,5 +196,5 @@ func (pmon *placementMonitor) countAGHours(
 	if nffh != 0 {
 		penalty += nffh * WEIGHT_AG_ForceFirstHour
 	}
-	return penalty
+	return Penalty(penalty)
 }

@@ -1,5 +1,7 @@
 package ttengine
 
+/*
+
 import (
 	"W365toFET/ttbase"
 	"fmt"
@@ -62,7 +64,7 @@ func (pmon *placementMonitor) furtherPlacements2(
 				}
 			}
 		}
-	*/
+	////
 	//TODO--
 	fmt.Printf("\n * Return: %d (%d)\n", len(pending), score1)
 	for _, aix := range pending {
@@ -186,3 +188,4 @@ func (pmon *placementMonitor) optimize2(
 		return alist
 	}
 }
+*/

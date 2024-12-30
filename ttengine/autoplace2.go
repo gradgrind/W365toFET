@@ -1,5 +1,7 @@
 package ttengine
 
+/*
+
 import (
 	"W365toFET/ttbase"
 	"fmt"
@@ -151,15 +153,6 @@ func (pmon *placementMonitor) basicPlaceActivities0(
 
 				// Try the slots in turn seeking a better score.
 				for _, slot := range slots {
-					/*
-						cinfo := a.CourseInfo
-						fmt.Printf(" §PLACE @%d.%d %s -- %+v\n",
-							slot/ttinfo.NHours,
-							slot%ttinfo.NHours,
-							ttinfo.View(cinfo),
-							a.DifferentDays,
-						)
-					*/
 
 					//TODO--
 					//count++
@@ -306,7 +299,7 @@ func (pmon *placementMonitor) basicPlaceActivities1(
 				}
 			} // end of slot-test loop
 
-		*/
+		////
 
 		// Choose one of the best
 		slen = len(slots)
@@ -406,3 +399,4 @@ func (pmon *placementMonitor) basicPlaceActivities2(
 
 	return pending
 }
+*/

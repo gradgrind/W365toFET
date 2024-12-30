@@ -7,10 +7,7 @@ import (
 	"slices"
 )
 
-type resourcePenalty struct {
-	resource ttbase.ResourceIndex
-	penalty  int
-}
+type Penalty int64
 
 type placementMonitor struct {
 	count int64
@@ -23,9 +20,12 @@ type placementMonitor struct {
 	preferLater             []int
 	resourceSlotActivityMap map[ttbase.ResourceIndex]map[int][]ttbase.ActivityIndex
 	constraintData          []any // resource index -> constraint data
-	resourcePenalties       []int
-	score                   int // current total penalty
-	pendingPenalties        []resourcePenalty
+	resourcePenalties       []Penalty
+	score                   Penalty // current total penalty
+	pendingPenalties        map[ttbase.ResourceIndex]Penalty
+	// Should pendingPenalties rather be a list (for speed)?
+	currentState *ttState
+	bestState    *ttState
 }
 
 func (pm *placementMonitor) check(aix ttbase.ActivityIndex) bool {
@@ -264,40 +264,77 @@ type activityPlacement struct {
 }
 
 type ttState struct {
-	placements []activityPlacement
-	//added      []int64
-	//count      int64
+	placements        []activityPlacement
+	unplaced          []ttbase.ActivityIndex
+	added             []int64
+	count             int64
+	score             Penalty
 	ttslots           []ttbase.ActivityIndex
-	resourcePenalties []int
+	resourcePenalties []Penalty
 }
 
-func (pmon *placementMonitor) saveState() ttState {
+func (pmon *placementMonitor) saveState() *ttState {
 	//TODO. Currently this is probably saving more than would strictly be
 	// necessary. This may be more time-efficient, though?
 	ttinfo := pmon.ttinfo
 	alist := pmon.ttinfo.Activities
-	state := ttState{
+	state := &ttState{
 		placements:        make([]activityPlacement, len(alist)),
+		unplaced:          make([]ttbase.ActivityIndex, len(pmon.unplaced)),
+		added:             make([]int64, len(pmon.added)),
 		ttslots:           make([]ttbase.ActivityIndex, len(ttinfo.TtSlots)),
-		resourcePenalties: make([]int, len(pmon.resourcePenalties)),
+		resourcePenalties: make([]Penalty, len(pmon.resourcePenalties)),
 	}
 	for aix := 1; aix < len(alist); aix++ {
 		a := alist[aix]
 		ap := activityPlacement{
 			placement: a.Placement,
 			//fixed: a.Fixed,
-			//xrooms: a.Xrooms,
+			xrooms: a.XRooms,
 		}
 		state.placements[aix] = ap
 	}
-	//state.added = make([]int64, len(pmon.added))
-	//copy(state.added, pmon.added)
-	//state.count = pmon.count
+	copy(state.unplaced, pmon.unplaced)
+	copy(state.added, pmon.added)
+	state.count = pmon.count
+	state.score = pmon.score
 	copy(state.ttslots, ttinfo.TtSlots)
 	copy(state.resourcePenalties, pmon.resourcePenalties)
 	return state
 }
 
+func (pmon *placementMonitor) resetState() {
+	// This assumes the length of the activities list is fixed. If new
+	// activities are added, or some removed, appropriate changes would
+	// need to be made.
+	state := pmon.currentState
+	alist := pmon.ttinfo.Activities
+	// Integrity check
+	if len(alist) != len(state.placements) {
+		base.Bug.Fatalln("State resetting: number of activities changed")
+	}
+	for aix := 1; aix < len(alist); aix++ {
+		a := alist[aix]
+		ap := state.placements[aix]
+		a.Placement = ap.placement
+		//a.Fixed = ap.fixed
+		a.XRooms = ap.xrooms
+	}
+	pmon.unplaced = pmon.unplaced[:0]
+	for _, aix := range state.unplaced {
+		pmon.unplaced = append(pmon.unplaced, aix)
+	}
+	pmon.added = make([]int64, len(state.added))
+	copy(pmon.added, state.added)
+	pmon.count = state.count
+	pmon.score = state.score
+
+	// Set the resource allocation and penalties
+	copy(pmon.ttinfo.TtSlots, state.ttslots)
+	copy(pmon.resourcePenalties, state.resourcePenalties)
+}
+
+/*
 func (pmon *placementMonitor) restoreState(state ttState) {
 	// This assumes the length of the activities list is fixed. If new
 	// activities are added, or some removed, appropriate changes would
@@ -320,13 +357,14 @@ func (pmon *placementMonitor) restoreState(state ttState) {
 
 	// Set the resource allocation and penalties
 	copy(pmon.ttinfo.TtSlots, state.ttslots)
-	score := 0
+	var score Penalty = 0
 	for i, rp := range state.resourcePenalties {
 		pmon.resourcePenalties[i] = rp
 		score += rp
 	}
 	pmon.score = score
 }
+*/
 
 func (pmon *placementMonitor) initConstraintData() {
 	ttinfo := pmon.ttinfo
