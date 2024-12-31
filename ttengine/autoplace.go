@@ -6,6 +6,7 @@ import (
 	"math/rand/v2"
 )
 
+const TEMPERATURE0 = 1000
 const N0 = 1000
 const NSTEPS = 1000
 
@@ -53,100 +54,110 @@ func PlaceLessons3(
 
 	pmon.currentState = pmon.saveState()
 	pmon.bestState = pmon.currentState
-	var satemp Penalty = 1000
 
-	satemp = pmon.place1(satemp)
-	fmt.Printf("§§§ Score place1: %d\n", pmon.score+
-		Penalty(len(pmon.currentState.unplaced))*PENALTY_UNPLACED_ACTIVITY)
+	pmon.place1(TEMPERATURE0)
+
+	pmon.printScore("place1")
 
 	//	return false
 
-	var sat1 Penalty
-	i := 5000
 	for len(pmon.unplaced) != 0 {
-		score := pmon.bestState.score
-		pdelta := Penalty((len(pmon.bestState.unplaced) -
-			len(pmon.currentState.unplaced))) * PENALTY_UNPLACED_ACTIVITY
-		if score+pdelta < pmon.currentState.score {
-			pmon.currentState = pmon.bestState
-			pmon.resetState()
-			sat1 = satemp
-		} else {
-			satemp = sat1
-		}
-		pmon.place2()
-		fmt.Printf("§§§ Score place2: %d\n", pmon.score+
-			Penalty(len(pmon.currentState.unplaced))*PENALTY_UNPLACED_ACTIVITY)
-		sat1 = pmon.place1(100)
-		fmt.Printf("§§§ Score place1: %d\n", pmon.score+
-			Penalty(len(pmon.currentState.unplaced))*PENALTY_UNPLACED_ACTIVITY)
-		i -= 1
-		if i == 0 {
+		if !pmon.place2() {
 			break
 		}
+		pmon.printScore("place2")
 	}
-
 	fmt.Printf("§Unplaced: %d\n", len(pmon.currentState.unplaced))
 	return false
 }
 
-func (pmon *placementMonitor) place1(satemp Penalty) Penalty {
+func (pmon *placementMonitor) place1(satemp Penalty) bool {
+	// Primary placement algorithm, based on "Simulated Annealing".
+	// Final state = currentState = bestState
+	// Return true if an improvement was made.
+	better := false
 	for satemp != 0 {
 		_, ok := pmon.step(satemp)
 		if !ok {
-			return -1
+			// No step made, premature exit
+			break
 		}
-
-		pmon.currentState = pmon.saveState()
 
 		//fmt.Printf("++ T=%d Unplaced: %d Penalty: %d\n",
 		//	satemp, len(pmon.unplaced), dp)
-		lc := len(pmon.unplaced)
-		lb := len(pmon.bestState.unplaced)
-		if lc < lb || (lc == lb && pmon.score < pmon.bestState.score) {
+		lcur := len(pmon.unplaced)
+		lbest := len(pmon.bestState.unplaced)
+		if lcur < lbest || (lcur == lbest && pmon.score < pmon.bestState.score) {
 			pmon.bestState = pmon.currentState
-			pmon.printScore("BEST")
-		} else {
-			fmt.Printf("??? %d %d %d\n",
-				pmon.score, pmon.currentState.score, pmon.bestState.score)
-			pmon.printScore("SET")
+			better = true
 		}
 		satemp *= 9980
 		satemp /= 10000
 	}
-	return satemp
+	if pmon.currentState != pmon.bestState {
+		pmon.currentState = pmon.bestState
+		pmon.resetState()
+	}
+	return better
 }
 
-func (pmon *placementMonitor) place2() Penalty {
+func (pmon *placementMonitor) place2() bool {
+	// Force a placement of the next activity if one of the possibilities
+	// leads to an improved score.
 	ttinfo := pmon.ttinfo
 	aix := pmon.unplaced[len(pmon.unplaced)-1]
 	a := ttinfo.Activities[aix]
 	nposs := len(a.PossibleSlots)
 	var dpen Penalty
-	slot := a.PossibleSlots[rand.IntN(nposs)]
-	clashes := ttinfo.FindClashes(aix, slot)
-	for _, aixx := range clashes {
-		ttinfo.UnplaceActivity(aixx)
+
+	i0 := rand.IntN(nposs)
+	i := i0
+
+	for {
+		slot := a.PossibleSlots[i]
+		clashes := ttinfo.FindClashes(aix, slot)
+		for _, aixx := range clashes {
+			ttinfo.UnplaceActivity(aixx)
+		}
+		ttinfo.PlaceActivity(aix, slot)
+		pmon.added[aix] = pmon.count
+		pmon.count++
+		clear(pmon.pendingPenalties)
+		dpen = pmon.evaluate1(aix)
+		for _, aixx := range clashes {
+			dpen += pmon.evaluate1(aixx)
+		}
+		// Update penalty info
+		for r, p := range pmon.pendingPenalties {
+			pmon.resourcePenalties[r] = p
+		}
+		pmon.score += dpen
+		// Remove from "unplaced" list
+		pmon.unplaced = pmon.unplaced[:len(pmon.unplaced)-1]
+		pmon.unplaced = append(pmon.unplaced, clashes...)
+		pmon.currentState = pmon.saveState()
+
+		//TODO: Initial temperature?
+		if pmon.place1(20) {
+			return true
+		}
+		//TODO: Repeat with different start temperature?
+		//if pmon.place1(100) {
+		//	return true
+		//}
+		pmon.currentState = pmon.bestState
+		pmon.resetState()
+
+		i += 1
+		if i == nposs {
+			i = 0
+		}
+		if i == i0 {
+			// No improved placement found
+			break
+		}
 	}
-	ttinfo.PlaceActivity(aix, slot)
-	pmon.added[aix] = pmon.count
-	pmon.count++
-	clear(pmon.pendingPenalties)
-	dpen = pmon.evaluate1(aix) //+ PENALTY_UNPLACED_ACTIVITY*Penalty(len(clashes)-1)
-	for _, aixx := range clashes {
-		dpen += pmon.evaluate1(aixx)
-	}
-	// Update penalty info
-	for r, p := range pmon.pendingPenalties {
-		pmon.resourcePenalties[r] = p
-	}
-	pmon.score += dpen
-	// Remove from "unplaced" list
-	pmon.unplaced = pmon.unplaced[:len(pmon.unplaced)-1]
-	pmon.unplaced = append(pmon.unplaced, clashes...)
-	pmon.currentState = pmon.saveState()
-	//fmt.Printf("$$$ %d %d %d\n", aix, dpen, pmon.score)
-	return dpen
+	return false
 }
 
 /*
@@ -179,10 +190,17 @@ func (pmon *placementMonitor) place2() Penalty {
 */
 
 func (pmon *placementMonitor) step(temp Penalty) (Penalty, bool) {
+
+	//TODO:
 	// Try all possible placements of the next activity, accepting one
 	// if it reduces the penalty. (Start testing at random slot?)
 	// Accept a worsening with a certain probability (SA?)?.
 	// If all fail choose a weighted probability?
+
+	// Assumes entry state = currentState,
+	// Final state = (probably changed) currentState,
+	// bestState is not affected.
+
 	ttinfo := pmon.ttinfo
 	var clashes []ttbase.ActivityIndex
 
@@ -257,6 +275,8 @@ func (pmon *placementMonitor) step(temp Penalty) (Penalty, bool) {
 		if dpenx <= 0 {
 			goto accept // (not very likely!)
 		} else {
+
+			//TODO: Compare with exponential function, exp(-dpenx / temp)
 			dfac := dpenx / temp
 			t := N1 / (dfac*dfac + N2)
 			if t != 0 && Penalty(rand.IntN(N0)) < t {
@@ -301,49 +321,4 @@ func (pmon *placementMonitor) printScore(msg string) {
 		fmt.Printf("§ ... error: %d != %d\n", p, pmon.score)
 		panic("!!!")
 	}
-}
-
-func (pmon *placementMonitor) sa1() {
-	/*
-		step := 1
-		accept := 0
-		for step < STEP_MAX && t >= TEMP_MIN {
-			proposed_neighbour := pmon.getNeighbour()
-			dpen := pmon.costFunc(proposed_neighbour)
-
-			//
-
-			//
-
-			t = updateT(step)
-			step += 1
-		}
-		/*
-		   	# begin optimizing
-
-		   self.step, self.accept = 1, 0
-		   while self.step < self.step_max and self.t >= self.t_min:
-
-		   	# get neighbor
-		   	proposed_neighbor = self.get_neighbor()
-
-		   	# check energy level of neighbor
-		   	E_n = self.cost_func(proposed_neighbor)
-		   	dE = E_n - self.current_energy
-
-		   	# determine if we should accept the current neighbor
-		   	if random() < self.safe_exp(-dE / self.t):
-		   	    self.current_energy = E_n
-		   	    self.current_state = proposed_neighbor[:]
-		   	    self.accept += 1
-
-		   	# check if the current neighbor is best solution so far
-		   	if E_n < self.best_energy:
-		   	    self.best_energy = E_n
-		   	    self.best_state = proposed_neighbor[:]
-
-		   	# update some stuff
-		   	self.t = self.update_t(self.step)
-		   	self.step += 1
-	*/
 }

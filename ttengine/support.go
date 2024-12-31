@@ -304,6 +304,7 @@ func (pmon *placementMonitor) saveState() *ttState {
 }
 
 func (pmon *placementMonitor) resetState() {
+	// Restore the pmon-state from currentState.
 	// This assumes the length of the activities list is fixed. If new
 	// activities are added, or some removed, appropriate changes would
 	// need to be made.
