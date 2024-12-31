@@ -20,6 +20,7 @@ func PlaceLessons3(
 	ttinfo *ttbase.TtInfo,
 	alist []ttbase.ActivityIndex,
 ) bool {
+	//slices.Reverse(alist) – no obvoius improvement
 	//resourceSlotActivityMap := makeResourceSlotActivityMap(ttinfo)
 	var pmon *placementMonitor
 	{
@@ -63,11 +64,108 @@ func PlaceLessons3(
 
 	for len(pmon.unplaced) != 0 {
 		if !pmon.place2() {
-			break
+
+			if !pmon.breakout(1) {
+				break
+			}
+
+			/* Might be useful in some form?
+			//TODO: It looks like one retry can help a bit, but repeating it
+			// may be unproductive.
+			// Reorder unplaced activities
+			i -= 1
+			if i == 0 {
+				break
+			}
+			laix := pmon.unplaced[lpu-1]
+			copy(pmon.unplaced[1:], pmon.unplaced)
+			pmon.unplaced[0] = laix
+			copy(pmon.currentState.unplaced, pmon.unplaced)
+			pmon.printScore("Shuffle")
+			//
+
+			continue
+			*/
 		}
 		pmon.printScore("place2")
 	}
-	fmt.Printf("§Unplaced: %d\n", len(pmon.currentState.unplaced))
+	fmt.Printf("§Unplaced: %d\n", len(pmon.unplaced))
+	return true
+}
+
+const MAX_BREAKOUT_LEVEL = 5
+
+func (pmon *placementMonitor) breakout(level int) bool {
+	if level > MAX_BREAKOUT_LEVEL {
+		return false
+	}
+
+	// Remember current best state
+	best := pmon.bestState
+
+	ttinfo := pmon.ttinfo
+	aix := pmon.unplaced[len(pmon.unplaced)-1]
+	a := ttinfo.Activities[aix]
+	nposs := len(a.PossibleSlots)
+	var dpen Penalty
+	i0 := rand.IntN(nposs)
+	i := i0
+	for {
+		slot := a.PossibleSlots[i]
+		clashes := ttinfo.FindClashes(aix, slot)
+		for _, aixx := range clashes {
+			ttinfo.UnplaceActivity(aixx)
+		}
+		ttinfo.PlaceActivity(aix, slot)
+		pmon.added[aix] = pmon.count
+		pmon.count++
+		clear(pmon.pendingPenalties)
+		dpen = pmon.evaluate1(aix)
+		for _, aixx := range clashes {
+			dpen += pmon.evaluate1(aixx)
+		}
+		// Update penalty info
+		for r, p := range pmon.pendingPenalties {
+			pmon.resourcePenalties[r] = p
+		}
+		pmon.score += dpen
+		// Remove from "unplaced" list
+		pmon.unplaced = pmon.unplaced[:len(pmon.unplaced)-1]
+		pmon.unplaced = append(pmon.unplaced, clashes...)
+		pmon.currentState = pmon.saveState()
+		pmon.bestState = pmon.currentState
+
+		for len(pmon.unplaced) != 0 {
+			if !pmon.place2() && !pmon.breakout(level+1) {
+				break
+			}
+			pmon.printScore(fmt.Sprintf("place2 (%d)", level))
+		}
+		// state = currentState = bestState, but probably not the same as
+		// before the loop ...
+
+		// If better than "best" return true
+		lcur := len(pmon.unplaced)
+		lbest := len(best.unplaced)
+		if lcur < lbest || (lcur == lbest && pmon.score < best.score) {
+			pmon.printScore(fmt.Sprintf("return true (%d)", level))
+			return true
+		}
+		pmon.currentState = best
+		pmon.bestState = pmon.currentState
+		pmon.resetState()
+
+		i += 1
+		if i == nposs {
+			i = 0
+		}
+		if i == i0 {
+			break
+		}
+	}
+	pmon.currentState = best
+	pmon.bestState = best
+	pmon.resetState()
 	return false
 }
 
@@ -104,15 +202,16 @@ func (pmon *placementMonitor) place1(satemp Penalty) bool {
 func (pmon *placementMonitor) place2() bool {
 	// Force a placement of the next activity if one of the possibilities
 	// leads to an improved score.
+	// If it fails (return false) the state will be unchanged.
 	ttinfo := pmon.ttinfo
 	aix := pmon.unplaced[len(pmon.unplaced)-1]
 	a := ttinfo.Activities[aix]
 	nposs := len(a.PossibleSlots)
 	var dpen Penalty
-
 	i0 := rand.IntN(nposs)
 	i := i0
-
+	//TODO: Initial temperature = ?
+	var temp Penalty = 5
 	for {
 		slot := a.PossibleSlots[i]
 		clashes := ttinfo.FindClashes(aix, slot)
@@ -137,16 +236,10 @@ func (pmon *placementMonitor) place2() bool {
 		pmon.unplaced = append(pmon.unplaced, clashes...)
 		pmon.currentState = pmon.saveState()
 
-		//TODO: Initial temperature?
-		if pmon.place1(20) {
+		if pmon.place1(temp) {
 			return true
 		}
-		//TODO: Repeat with different start temperature?
-		//if pmon.place1(100) {
-		//	return true
-		//}
-		pmon.currentState = pmon.bestState
-		pmon.resetState()
+		// state = currentState = bestState
 
 		i += 1
 		if i == nposs {
@@ -154,40 +247,17 @@ func (pmon *placementMonitor) place2() bool {
 		}
 		if i == i0 {
 			// No improved placement found
-			break
+			temp *= 2 // TODO??
+			fmt.Printf("???? %d\n", temp)
+			if temp > 9 {
+				// A larger value could be counterproductive?
+				//if temp > TEMPERATURE0 {
+				break
+			}
 		}
 	}
 	return false
 }
-
-/*
-	//TODO--
-	tstart := time.Now()
-	//
-
-	pending := pmon.basicPlaceActivities2(alist)
-
-	//TODO--
-	elapsed := time.Since(tstart)
-	fmt.Printf("Basic Placement took %s\n", elapsed)
-	//
-
-	//TODO--
-	slices.Sort(pending)
-	fmt.Printf("$$$ Unplaced: %d (%d)\n  -- %+v\n",
-		len(pending), pmon.score, pending)
-	//
-
-	if len(pending) != 0 {
-		pmon.furtherPlacements2(pending)
-	}
-
-	//slices.Reverse(failed)
-	//l0 := len(failed)
-	//fmt.Printf("Remaining: %d\n", l0)
-
-}
-*/
 
 func (pmon *placementMonitor) step(temp Penalty) (Penalty, bool) {
 

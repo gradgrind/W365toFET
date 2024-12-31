@@ -3,48 +3,12 @@ package ttengine
 import (
 	"W365toFET/base"
 	"W365toFET/ttbase"
-	"cmp"
 	"fmt"
 	"math/rand/v2"
 	"slices"
 )
 
 const MAX_STEPS = 1000000
-
-func CollectCourseLessons(ttinfo *ttbase.TtInfo) []ttbase.ActivityIndex {
-	// Collect the lessons that need placing and sort them according to a
-	// measure of their "placeability", based on the number of slots into
-	// which they could be placed.
-	// The idea is that those lessons with fewer available slots should
-	// probably be placed first. These should end up at the beginning of
-	// the list.
-	type wlix struct {
-		lix ttbase.ActivityIndex
-		w   float32
-	}
-	toplace := []wlix{}
-	for _, cinfo := range ttinfo.CourseInfo {
-		var w float32 = -1.0
-		for _, lix := range cinfo.Lessons {
-			a := ttinfo.Activities[lix]
-			if a.Placement < 0 {
-				if w < 0.0 {
-					w = float32(len(a.PossibleSlots)) / float32(len(cinfo.Lessons))
-				}
-				toplace = append(toplace, wlix{lix, w})
-			}
-		}
-	}
-	slices.SortStableFunc(toplace, func(a, b wlix) int {
-		return cmp.Compare(a.w, b.w)
-	})
-	alist := make([]ttbase.ActivityIndex, len(toplace))
-	for i, wl := range toplace {
-		alist[i] = wl.lix
-		//fmt.Printf("??? %+v\n", wl)
-	}
-	return alist
-}
 
 //TODO: IMPORTANT! Chack that I am handling (hard) parallel lessons correctly.
 // If possible, only one of a parallel set should be in the list of activities
