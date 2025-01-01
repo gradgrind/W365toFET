@@ -85,8 +85,8 @@ func GenTimetables(
 			for k, v := range pd {
 				if k != "Id" {
 					pdlist[i] = xPage{k, v}
+					i += 1
 				}
-				i += 1
 			}
 			pageData[ref] = pdlist
 		}
@@ -121,7 +121,6 @@ func GenTimetables(
 		}
 		makeTypstJson(tt, datadir, f)
 		if genpdf != "" {
-			//TODO: Leave off endings in command?
 			tmpl := cmd.TypstTemplate
 			pdf := cmd.Pdf
 			if pdf == "" {
