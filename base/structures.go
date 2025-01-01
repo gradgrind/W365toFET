@@ -172,6 +172,7 @@ type Lesson struct {
 	Rooms      []Ref
 	Flags      []string `json:",omitempty"`
 	Background string
+	Footnote   string
 }
 
 type LessonCourse interface {
@@ -183,14 +184,18 @@ type Constraint interface {
 	CType() string
 }
 
-type PrintOptions struct {
-	PrintTables []string
-	Typst       map[string]any
+type PrintTable struct {
+	Type          string
+	TypstTemplate string
+	TypstJson     string
+	Pdf           string
+	Typst         map[string]any
+	Pages         []map[string]any
 }
 
 type DbTopLevel struct {
 	Info             Info
-	PrintOptions     PrintOptions
+	PrintTables      []*PrintTable
 	Days             []*Day
 	Hours            []*Hour
 	Teachers         []*Teacher

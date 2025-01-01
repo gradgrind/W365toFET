@@ -8,53 +8,46 @@ import (
 
 func getClasses(
 	ttinfo *ttbase.TtInfo,
-	datadir string,
-	stemfile string, // basic name part of source file
-) string {
+	pagemap map[base.Ref][]xPage,
+) []ttPage {
 	data := getClassData(ttinfo)
 	pages := []ttPage{}
-	for _, c := range ttinfo.Db.Classes {
-		if c.Tag == "" {
+	for _, e := range ttinfo.Db.Classes {
+		if e.Tag == "" {
 			continue
 		}
-		tiles, ok := data[c.Id]
+		tiles, ok := data[e.Id]
 		if !ok {
 			continue
 		}
-		pages = append(pages, ttPage{
-			Name:       c.Name,
-			Short:      c.Tag,
-			Activities: tiles,
-		})
+		page := ttPage{
+			"Name":       e.Name,
+			"Short":      e.Tag,
+			"Activities": tiles,
+		}
+		page.extendPage(pagemap[e.Id])
+		pages = append(pages, page)
 	}
-	tt := timetable(ttinfo.Db, pages, "Class")
-	f := stemfile + "_classes"
-	makeTypstJson(tt, datadir, f)
-	return f
+	return pages
 }
 
 func getOneClass(
 	ttinfo *ttbase.TtInfo,
-	datadir string,
-	stemfile string, // basic name part of source file
+	pagemap map[base.Ref][]xPage,
 	e *base.Class,
-) string {
+) []ttPage {
 	data := getClassData(ttinfo)
 	tiles, ok := data[e.Id]
 	if !ok {
 		tiles = []Tile{} // Avoid none in JSON if table empty
 	}
-	pages := []ttPage{
-		{
-			Name:       e.Name,
-			Short:      e.Tag,
-			Activities: tiles,
-		},
+	page := ttPage{
+		"Name":       e.Name,
+		"Short":      e.Tag,
+		"Activities": tiles,
 	}
-	tt := timetable(ttinfo.Db, pages, "Class")
-	f := stemfile + "_class_" + e.Tag
-	makeTypstJson(tt, datadir, f)
-	return f
+	page.extendPage(pagemap[e.Id])
+	return []ttPage{page}
 }
 
 func getClassData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
@@ -170,6 +163,7 @@ func getClassData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 							Teachers:   tstrings,
 							Rooms:      rstrings,
 							Background: l.Background,
+							Footnote:   l.Footnote,
 						}
 						classTiles[cref] = append(classTiles[cref], tile)
 					}
@@ -212,6 +206,7 @@ func getClassData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 							Teachers:   tstrings,
 							Rooms:      rstrings,
 							Background: l.Background,
+							Footnote:   l.Footnote,
 						}
 						classTiles[cref] = append(classTiles[cref], tile)
 					}

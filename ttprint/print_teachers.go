@@ -8,50 +8,43 @@ import (
 
 func getTeachers(
 	ttinfo *ttbase.TtInfo,
-	datadir string,
-	stemfile string, // basic name part of source file
-) string {
+	pagemap map[base.Ref][]xPage,
+) []ttPage {
 	data := getTeacherData(ttinfo)
 	pages := []ttPage{}
-	for _, t := range ttinfo.Db.Teachers {
-		ttiles, ok := data[t.Id]
+	for _, e := range ttinfo.Db.Teachers {
+		tiles, ok := data[e.Id]
 		if !ok {
 			continue
 		}
-		pages = append(pages, ttPage{
-			Name:       t.Firstname + " " + t.Name,
-			Short:      t.Tag,
-			Activities: ttiles,
-		})
+		page := ttPage{
+			"Name":       e.Name,
+			"Short":      e.Tag,
+			"Activities": tiles,
+		}
+		page.extendPage(pagemap[e.Id])
+		pages = append(pages, page)
 	}
-	tt := timetable(ttinfo.Db, pages, "Teacher")
-	f := stemfile + "_teachers"
-	makeTypstJson(tt, datadir, f)
-	return f
+	return pages
 }
 
 func getOneTeacher(
 	ttinfo *ttbase.TtInfo,
-	datadir string,
-	stemfile string, // basic name part of source file
+	pagemap map[base.Ref][]xPage,
 	e *base.Teacher,
-) string {
+) []ttPage {
 	data := getTeacherData(ttinfo)
 	tiles, ok := data[e.Id]
 	if !ok {
 		tiles = []Tile{} // Avoid none in JSON if table empty
 	}
-	pages := []ttPage{
-		{
-			Name:       e.Firstname + " " + e.Name,
-			Short:      e.Tag,
-			Activities: tiles,
-		},
+	page := ttPage{
+		"Name":       e.Firstname + " " + e.Name,
+		"Short":      e.Tag,
+		"Activities": tiles,
 	}
-	tt := timetable(ttinfo.Db, pages, "Teacher")
-	f := stemfile + "_teacher_" + e.Tag
-	makeTypstJson(tt, datadir, f)
-	return f
+	page.extendPage(pagemap[e.Id])
+	return []ttPage{page}
 }
 
 func getTeacherData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
@@ -153,10 +146,12 @@ func getTeacherData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 						//Fraction: 1,
 						//Offset:   0,
 						//Total:    1,
-						Subject:  subject,
-						Groups:   gstrings,
-						Teachers: tstrings,
-						Rooms:    rstrings,
+						Subject:    subject,
+						Groups:     gstrings,
+						Teachers:   tstrings,
+						Rooms:      rstrings,
+						Background: l.Background,
+						Footnote:   l.Footnote,
 					}
 					teacherTiles[tref] = append(teacherTiles[tref], tile)
 				}
@@ -195,10 +190,12 @@ func getTeacherData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 						//Fraction: 1,
 						//Offset:   0,
 						//Total:    1,
-						Subject:  subject,
-						Groups:   gstrings,
-						Teachers: tstrings,
-						Rooms:    rstrings,
+						Subject:    subject,
+						Groups:     gstrings,
+						Teachers:   tstrings,
+						Rooms:      rstrings,
+						Background: l.Background,
+						Footnote:   l.Footnote,
 					}
 					teacherTiles[tref] = append(teacherTiles[tref], tile)
 				}

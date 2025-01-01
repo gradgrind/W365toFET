@@ -314,13 +314,18 @@
     pad(left: 0mm, it))
 
 // Determine the document title
-#let titles = typstMap.at("titles", default: (:))
-#if titles.len() == 0 {
+#let doctitle = typstMap.at("Title", default: "")
+#if doctitle == "" {
     // fallback
-    titles = titleFallbacks
+    doctitle = titleFallbacks.at(tableType, default: "")
 }
-#let title = titles.at(tableType, default: "")
-#let subtitle = typstMap.at("subtitle", default: "hallo")
+#let subtitle = typstMap.at("Subtitle", default: "")
+#let lastChange = typstMap.at("LastChange", default: "")
+#if subtitle == "" {
+    subtitle = lastChange
+} else if lastChange != "" {
+    subtitle += " | " + lastChange
+}
 
 #set page(height: PAGE_HEIGHT, width: PAGE_WIDTH,
     //numbering: "1/1",
@@ -353,10 +358,10 @@
         // Page done
 
         block(height: TITLE_HEIGHT, above: 0mm, below: 0mm, inset: 2mm)[
-            #place(top)[= #title#h(1fr) #text(17pt)[ #xdata.Info.Institution]]
-
+            #place(top)[= #doctitle]
+            #place(top)[#h(1fr) #text(17pt, xdata.Info.Institution)]
             #place(bottom)[
-                #typstMap.at("subtitle", default: "")
+                #subtitle
                 #h(1fr)
                 #pageno / #pagetotal
             ]

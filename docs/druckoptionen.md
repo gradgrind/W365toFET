@@ -1,118 +1,145 @@
 # Druckoptionen
 
-Manche Eigenschaften der Ausdrucke werden in den Typst-Skripten festgelegt. Andere können über die JSON-Datei geregelt werden, insbesondere über das PrintOptions-Objekt.
+Manche Eigenschaften der Ausdrucke werden in den Typst-Skripten festgelegt. Andere können über die JSON-Datei geregelt werden, insbesondere über die PrintTables-Objekte.
+
+## Die PrintTables-Objekte
 
 Viele der Optionen werden über die "Typst"-Eigenschaft direkt an das Typst-Skript übergeben. Die möglichen Felder hängen also vom eingesetzten Typst-Skript ab. Das Typst-Skript sollte idealerweise sinnvolle Voreinstellungen für so viele Felder wie möglich haben.
 
-Welche Pläne erstellt werden, wird durch das Feld "PrintTables" festgelegt. Einzelpläne können erstellt werden, indem das Id der entsprechenden Objekte (Klasse, Lehrer oder Raum) angegeben wird.
+Welche Pläne erstellt werden, wird durch die Objekte in der "printTables"-Liste festgelegt. Jedes Objekt beschreibt ein Stundenplandokument. Folgende Dokumenttypen sind vorgesehen:
+
+ - Gesamtplan Klassen (eine Klasse pro Seite)
+ - Übersichtsplan Klassen
+ - Gesamtplan Lehrer (eine Lehrkraft pro Seite)
+ - Übersichtsplan Lehrer
+ - Gesamtplan Räume (ein Raum pro Seite)
+ - Übersichtsplan Räume
+
+Ob ein Übersichtsplan oder ein Gesamtplan erzeugt wird, hängt vom verwendeten Typst-Skript ("TypstTemplate") ab – sie werden von den gleichen Daten konstruiert.
+
+Auch Einzelpläne können erstellt werden, indem die Element-ID des entsprechenden Objekts (Klasse, Lehrer oder Raum) als "Type" angegeben wird.
 
 ```
-"printOptions": {
+  "printTables": [
+    {
+      "Type": "Class", // oder "Teacher" oder "Room" oder Element-Id
+      "TypstTemplate": "template1",
+      "TypstJson": "timetable",
+      "Pdf": "timetable"
 
-    "printTables": [
-        "Teacher", "Class", "Room",
-        "Teacher_overview", "Class_overview", "Room_overview"],
+      "Typst": {
+        "Title": "Stundenpläne der Klassen",
+        "Subtitle": "Entwurf Erstes Halbjahr",
+        "PageHeading": "Klasse: %S",
 
-    "typst": {
-        "Titles": {
-            "Class": "Stundenplan der Klassen",
-            "Teacher": "Stundenplan der Lehrkräfte",
-            "Room": "Stundenplan der Räume"
+        "WithTimes": true,
+        "WithBreaks": true,
+        "FieldPlacement": {
+          "c": "SUBJECT",
+          "tl": "TEACHER",
+          "tr": "GROUP",
+          "bl": "",
+          "br": "ROOM"
         },
-
-        "Subtitle": "Entwurf Erstes Halbjahr | Letzte Änderung 15.06.2020 19:30 Uhr",
-        
-        "PageHeading": {
-            "Class": "Klasse: %S",
-            "Teacher": "%N (%S)",
-            "Room": "Raum: %N (%S)"
+        "LastChange": "12.04.2024 um 8:30 Uhr",
+        "Legend": {
+          "Remark": "Eine Anmerkung",
+          "Subjects": [["EU", "Eurythmie"]],
+          "Teachers": [["HM", "Hans Müller"], ["MM", "Mara Musterfrau"]],
+          "Rooms": []
         },
-        
-        "WithTimes": false,
-        
-        "WithBreaks": false,
-        
-        "FieldPlacements": {
-            "Class": {
-                "c": "SUBJECT",
-                "tl": "TEACHER",
-                "tr": "GROUP",
-                //"bl": "",
-                "br": "ROOM",
-            },
-            "Teacher": {
-                "c": "GROUP",
-                "tl": "SUBJECT",
-                "tr": "TEACHER",
-                //"bl": "",
-                "br": "ROOM",
-            },
-            "Room": {
-                "c": "GROUP",
-                "tl": "SUBJECT",
-                //"tr": "",
-                //"bl": "",
-                "br": "TEACHER",
-            },
-        }
-    }
-}
+      },
+
+      "Pages": [
+        {
+          "Id": Element-Id,
+          "LastChange": "18.04.2024 um 18:30 Uhr",
+          "Legend": {
+            "Remark": "Meine Anmerkung",
+            "Subjects": [["EU", "Eurythmie"]],
+            "Teachers": [["HM", "Hans Müller"], ["MM", "Mara Musterfrau"]],
+            "Rooms": []
+          }
+        },
+            ...
+      ]
+    },
+      ...
+  ],
 ```
 
-Bei den "PageHeadings" gibt es über "%N" und "%S" die Möglichkeit Vollnamen und Kurznamen der jeweiligen Klasse, usw., einzubinden.
+### Das Typst-Objekt
+
+Die Eigenschaften dieser Objekte können unabhängig von W365toTypst-Programm gestaltet werden. Sie werden unverändert an das Typst-Skript weitergegeben.
+
+Bei "PageHeading" gibt es über "%N" und "%S" die Möglichkeit Vollnamen und Kurznamen der jeweiligen Klasse, usw., einzubinden.
 
 Über die Option "WithTimes" kann die Zeitangabe ein- bzw. ausgeschaltet werden. Anhand der Option "WithBreaks" wird entschieden, ob nur die Unterrichtsstunden oder auch die Pausen in der Tabelle dargestellt werden. Damit diese funktionieren können, müssen die "Hours" korrekte "Start"- und "End"- Werte haben.
+
+### Die Pages-Objekte
+
+Die Eigenschaften dieser Objekte werden (außer "Id") in die entsprechenden "Pages"-Objekte der Typst-JSON-Eingabe-Datei (siehe unten). Sie ermöglichen individuelle Anpassungen der einzelnen Seite eines Gesamtplans.
+
+## Die Typst-JSON-Eingabe-Datei
 
 Die Daten werden an das Typst-Skript als JSON-Datei mit folgender Struktur übergeben:
 
 ```
 {
-    "TableType": "Room",
-    "Info": {
-        "Institution": "Musterschule Mulmingen",
-        "Days": [
-            {
-                "Name": "Montag",
-                "Short": "Mo"
-            },
-            ...
-        ],
-        "Hours": [
-            {
-                "Name": "1. Stunde",
-                "Short": "(1)",
-                "Start": "07:35",
-                "End": "08:25"
-            },
-            ...
-        ]
-    },
-    "Typst": {
-        ... // von PrintOptions
-    },
-    "Pages": [
+  "TableType": "Class",
+  "Info": {
+    "Institution": "Musterschule Mulmingen",
+    "Days": [
+      {
+        "Name": "Montag",
+        "Short": "Mo"
+      },
+      ...
+    ],
+    "Hours": [
+      {
+        "Name": "1. Stunde",
+        "Short": "(1)",
+        "Start": "07:35",
+        "End": "08:25"
+      },
+      ...
+    ]
+  },
+  "Typst": {
+    ... // von PrintTable
+  },
+  "Pages": [
+    {
+      "Name": "1. Klasse",
+      "Short": "1",
+      "LastChange": "18.04.2024 um 18:30 Uhr",
+      "Legend": {
+        "Remark": "Meine Anmerkung",
+        "Subjects": [["EU", "Eurythmie"]],
+        "Teachers": [["HM", "Hans Müller"], ["MM", "Mara Musterfrau"]],
+        "Rooms": []
+      }
+      "Activities": [
         {
-            "Name": "Chemieraum",
-            "Short": "ch",
-            "Activities": [
-                {
-                    Day:      0,
-                    Hour:     4,
-                    Duration: 2,
-                    Subject:  "Ch",
-                    Groups:   ["10"],
-                    Teachers: ["AT"]
-                    //Rooms:    [],
-                    //Fraction: 1,
-                    //Offset:   0,
-                    //Total:    1,
-                    //Background: "#FFFFFF"
-                },
-                ...
-            ]
+          Day:      0,
+          Hour:     4,
+          Duration: 2,
+          Subject:  "Ch",
+          Groups:   ["10"],
+          Teachers: ["AT"]
+          //Rooms:    [],
+          //Fraction: 1,
+          //Offset:   0,
+          //Total:    1,
+          //Background: "#FFFFFF",
+          //Footnote: "Meine andere Anmerkung"
         },
         ...
-    ]
+      ]
+    },
+    ...
+  ]
 }
 ```
 

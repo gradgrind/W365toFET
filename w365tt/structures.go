@@ -177,6 +177,7 @@ type Lesson struct {
 	Rooms      []Ref    `json:"localRooms"` // only Room Elements
 	Flags      []string `json:"flags"`
 	Background string   `json:"background"`
+	Footnote   string   `json:"footnote"`
 }
 
 type EpochPlan struct {
@@ -186,27 +187,22 @@ type EpochPlan struct {
 	Name string `json:"name"`
 }
 
-type PrintOptions struct {
-	PrintTables []string       `json:"printTables"`
-	Typst       map[string]any `json:"typst"`
-}
-
 type DbTopLevel struct {
-	Info         Info             `json:"w365TT"`
-	PrintOptions PrintOptions     `json:"printOptions"`
-	Days         []*Day           `json:"days"`
-	Hours        []*Hour          `json:"hours"`
-	Teachers     []*Teacher       `json:"teachers"`
-	Subjects     []*Subject       `json:"subjects"`
-	Rooms        []*Room          `json:"rooms"`
-	RoomGroups   []*RoomGroup     `json:"roomGroups"`
-	Classes      []*Class         `json:"classes"`
-	Groups       []*Group         `json:"groups"`
-	Courses      []*Course        `json:"courses"`
-	SuperCourses []*SuperCourse   `json:"superCourses"`
-	Lessons      []*Lesson        `json:"lessons"`
-	EpochPlans   []*EpochPlan     `json:"epochPlans"`
-	Constraints  []map[string]any `json:"constraints"`
+	Info         Info               `json:"w365TT"`
+	PrintTables  []*base.PrintTable `json:"printTables"`
+	Days         []*Day             `json:"days"`
+	Hours        []*Hour            `json:"hours"`
+	Teachers     []*Teacher         `json:"teachers"`
+	Subjects     []*Subject         `json:"subjects"`
+	Rooms        []*Room            `json:"rooms"`
+	RoomGroups   []*RoomGroup       `json:"roomGroups"`
+	Classes      []*Class           `json:"classes"`
+	Groups       []*Group           `json:"groups"`
+	Courses      []*Course          `json:"courses"`
+	SuperCourses []*SuperCourse     `json:"superCourses"`
+	Lessons      []*Lesson          `json:"lessons"`
+	EpochPlans   []*EpochPlan       `json:"epochPlans"`
+	Constraints  []map[string]any   `json:"constraints"`
 
 	// These fields do not belong in the JSON object.
 	RealRooms       map[Ref]*base.Room      `json:"-"`

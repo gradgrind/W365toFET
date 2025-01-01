@@ -32,15 +32,12 @@
 
 #let PAGE_HEIGHT = 210mm
 #let PAGE_WIDTH = 297mm
-#let PAGE_BORDER = (top:15mm, bottom: 15mm, left: 15mm, right: 15mm)
 #let TITLE_HEIGHT = 15mm
+#let FOOTER_HEIGHT = 15mm
+#let PAGE_BORDER = (top:10mm, bottom: 10mm, left: 15mm, right: 15mm)
 #let H_HEADER_HEIGHT = 15mm
 #let V_HEADER_WIDTH = 30mm
 
-#set page(height: PAGE_HEIGHT, width: PAGE_WIDTH,
-//  numbering: "1",
-  margin: PAGE_BORDER,
-)
 #let CELL_BORDER = 0.5pt
 #let BIG_SIZE = 18pt
 #let NORMAL_SIZE = 16pt
@@ -86,8 +83,13 @@
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+#set page(height: PAGE_HEIGHT, width: PAGE_WIDTH,
+//  numbering: "1",
+  margin: PAGE_BORDER,
+)
+
 #let PLAN_AREA_HEIGHT = (PAGE_HEIGHT - PAGE_BORDER.top
-    - PAGE_BORDER.bottom - TITLE_HEIGHT)
+    - PAGE_BORDER.bottom - TITLE_HEIGHT - FOOTER_HEIGHT)
 #let PLAN_AREA_WIDTH = (PAGE_WIDTH - PAGE_BORDER.left
     - PAGE_BORDER.right)
 
@@ -128,11 +130,14 @@
 #let tableType = xdata.TableType
 
 // Determine the field placements in the tiles
-#let fieldPlacements = typstMap.at("FieldPlacements", default: (:))
+#let fieldPlacements = typstMap.at("FieldPlacement", default: (:))
 #if fieldPlacements.len() == 0 {
     // fallback
     fieldPlacements = boxText.at(tableType, default: (:))
 }
+
+#let lastChange0 = typstMap.at("LastChange", default: "")
+#let legend0 = typstMap.at("Legend", default: (:))
 
 #let vfactor = if WITHBREAKS {
   // Here it is a factor with which to multiply the minutes
@@ -367,23 +372,44 @@
     bottom-edge: "descender",
     pad(left: 0mm, it))
 
-#let pheadings = typstMap.at("PageHeading", default: (:))
-#let phead = pheadings.at(tableType, default: "-")
-#if phead == "-" {
+#let phead = typstMap.at("PageHeading", default: "")
+#if phead == "" {
     phead = pageHeadings.at(tableType, default: "")
 }
-#let page = 0
+
+#let legendItems(ilist) = {
+    let items = ()
+    for (k, v) in ilist {
+        items.push(box(k + " = " + v))
+    }
+    items.join(", ")
+}
+
+#let subtitle = typstMap.at("Subtitle", default: "")
+
+#let npage = 0
 #for p in xdata.Pages {
-    if page != 0 {
+    if npage != 0 {
         pagebreak()
     }
-    page += 1
+    npage += 1
 
     let title = phead.replace("%N", p.Name).replace("%S", p.Short)
+    let lastChange = p.at("LastChange", default: "")
+    if lastChange == "" {
+        lastChange = lastChange0
+    }
+    let st = subtitle
+    if st == "" {
+        st = lastChange
+    } else if lastChange != "" {
+        st += " | " + lastChange
+    }
+
     block(height: TITLE_HEIGHT, above: 0mm, below: 0mm, inset: 2mm)[
-        #place(top)[= #title #h(1fr)#text(17pt)[#xdata.Info.Institution]]
-       // #place(left + horizon)[]
-        #place(bottom)[#typstMap.at("subtitle", default: "")]
+        #place(top)[= #title]
+        #place(top)[#h(1fr) #text(17pt, xdata.Info.Institution)]
+        #place(bottom)[#st]
     ]
 
     box([
@@ -392,5 +418,25 @@
             ttcell(..a)
         }
     ])
+
+    let legend = p.at("Legend", default: (:))
+    if legend.len() == 0 {
+        legend = legend0
+    }
+    if legend.len() != 0 {
+        let rmk = legend.at("Remark", default: "")
+        let sl = legend.at("Subjects", default: ())
+        let tl = legend.at("Teachers", default: ())
+        let rl = legend.at("Rooms", default: ())
+
+        block(height: FOOTER_HEIGHT, above: 0mm, below: 0mm, inset: 2mm)[
+            #place(top)[
+                #if rmk != "" [#rmk \ ]
+                #if sl.len() != 0 [*Fächer:* #legendItems(sl) \ ] 
+                #if tl.len() != 0 [*Lehrkräfte:* #legendItems(tl) \ ] 
+                #if rl.len() != 0 [*Räume:* #legendItems(rl) \ ] 
+            ]
+        ]
+    }
 }
 

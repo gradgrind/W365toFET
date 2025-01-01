@@ -9,7 +9,7 @@ Die Daten werden als JSON-Objekt ausgegeben, der Dateiname sollte mit "_w365.jso
 ```
 {
     "w365TT": {},
-    "printOptions": {},
+    "printTables": [],
     "days": [],
     "hours": [],
     "teachers": [],
@@ -34,7 +34,7 @@ Einige Element-Namen sind anders als die entsprechenden Waldorf-365-Elemente:
  - „GradePartiton“ [sic!] -> „Division“ (im Top-Level-Objekt nicht vorhanden, da kein Top-Level-Element)
  - „EpochPlanCourse“ -> „SuperCourse“
 
-Neu sind „W365TT“, „PrintOptions“, „RoomGroup“ und „Constraint“. Es gibt auch  „SubCourse“ – einen Epochenkurs –, das als Unterelement von "SuperCourse" auftaucht.
+Neu sind „W365TT“, „PrintTables“, „RoomGroup“ und „Constraint“. Es gibt auch  „SubCourse“ – einen Epochenkurs –, das als Unterelement von "SuperCourse" auftaucht.
 
 #### W365TT
 
@@ -51,9 +51,9 @@ In diesem Objekt könnten allgemeine Informationen oder Eigenschaften, die nirge
 
 "schoolName" ist z.B. für Ausdrucke nützlich. "firstAfternoonHour" und "middayBreak" sind für Constraints notwendig, die Nachmittagsstunden und Mittagspausen regeln.
 
-#### PrintOptions
+#### PrintTables
 
-Dieses Objekt enthält Parameter für die Ausdrucke (PDF-Ausgabe über Typst), für die Stundenplanung selbst ist es nicht relevant. Die Felder werden in einem anderen Dokument beschrieben: [Druckoptionen](druckoptionen.md#druckoptionen).
+Eine Liste PrintTable-Objekte. Jedes dieser Objekt enthält Parameter für den Ausdruck (PDF-Ausgabe über Typst) eines Stundenplans (verschiedene Darstellungen sind möglich). Für die Stundenplanung selbst ist diese Liste nicht relevant. Die Felder werden in einem anderen Dokument beschrieben: [Druckoptionen](druckoptionen.md#druckoptionen).
 
 #### Constraint
 
@@ -94,7 +94,7 @@ Ich habe in jedem Element ein „Type“-Eigenschaft, das den Typ des Elements a
 }
 ```
 
-"start" und "end" können auch Zeiten mit Sekunden (z.B. "07:35:00") sein, die Sekunden werden ignoriert. Diese Felder sind ggf. für Constraints notwendig, die Pausenzeiten oder Stundenlängen berücksichtigen, aber vor allem für die Ausdrucke (siehe unter PrintOptions die Felder "withTimes" und "withBreaks").
+"start" und "end" können auch Zeiten mit Sekunden (z.B. "07:35:00") sein, die Sekunden werden ignoriert. Diese Felder sind ggf. für Constraints notwendig, die Pausenzeiten oder Stundenlängen berücksichtigen, aber vor allem für die Ausdrucke (siehe unter PrintTables die Felder "WithTimes" und "WithBreaks").
 
 
 #### Teacher
@@ -309,7 +309,8 @@ Ein SubCourse-Element ist fast genau wie ein Course-Element, darf aber nicht als
 	"localRooms":   [
         "f28f3540-dd02-4c6d-a166-78bb359c1f26"
     ],
-    "background": "FFE080"
+    "background": "#FFE080",
+    "footnote": "Eine Anmerkung"
 }
 ```
 
@@ -324,4 +325,4 @@ Ein nicht platziertes Lesson-Element hätte:
     "LocalRooms":   []
 ```
 
-**TODO**: Hintergrundfarbe tatsächlich so als "RRGGBB" angeben? Wenn "background" keinen Wert hat, wird die Voreinstellung im Typst-Skript benutzt.
+"background" (Hintergrundfarbe) und "footnote" sind für die Ausdrucke relevant. Die Farbe wird in der Form "#RRGGBB" erwartet. Wenn keine angegeben ist, wird die Voreinstellung im Typst-Skript benutzt.

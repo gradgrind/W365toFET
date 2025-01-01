@@ -11,6 +11,17 @@ import (
 	"strings"
 )
 
+func DEFAULT_PRINT_TABLES() []*base.PrintTable {
+	return []*base.PrintTable{
+		{Type: "Teacher", TypstTemplate: "print_timetable"},
+		{Type: "Teacher", TypstTemplate: "print_overview"},
+		{Type: "Class", TypstTemplate: "print_timetable"},
+		{Type: "Class", TypstTemplate: "print_overview"},
+		{Type: "Room", TypstTemplate: "print_timetable"},
+		{Type: "Room", TypstTemplate: "print_overview"},
+	}
+}
+
 func main() {
 	// Define and read command-line flags
 
@@ -54,22 +65,17 @@ func main() {
 	datadir := filepath.Join(filepath.Dir(abspath), "typst_files")
 	stemfile := filepath.Base(stempath)
 
-	// Generate Typst data
-	typst_files := ttprint.GenTypstData(ttinfo, datadir, stemfile)
-
-	if !*nopdf {
-		// Generate PDF files
-		for _, tfile := range typst_files {
-			t, overview := strings.CutSuffix(tfile, "_overview")
-			if overview {
-				ttprint.MakePdf(
-					"print_overview.typ", datadir, t, tfile, *typstexec)
-			} else {
-				ttprint.MakePdf(
-					"print_timetable.typ", datadir, t, tfile, *typstexec)
-			}
-		}
+	// Commands:
+	printTables := ttinfo.Db.PrintTables
+	if len(printTables) == 0 {
+		printTables = DEFAULT_PRINT_TABLES()
 	}
 
+	// Generate Typst data and, if not suppressed, PDF output.
+	genpdf := *typstexec
+	if *nopdf {
+		genpdf = ""
+	}
+	ttprint.GenTimetables(ttinfo, datadir, stemfile, printTables, genpdf)
 	base.Message.Println("OK")
 }
