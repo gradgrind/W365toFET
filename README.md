@@ -26,7 +26,7 @@ Die ausführbaren Dateien können auch in einem anderen (schon existierenden!) O
 go build -o bin ./cmd/W365toFET
 ```
 
-## Aktueller Stand (22.12.2024)
+## Aktueller Stand (01.01.2025)
 
 Bis auf die „Constraint“-Elemente werden alle Elemente in `docs/stundenplanschnittstelle.md` in einigermaßen entsprechende FET-Strukturen übertragen.
 
@@ -74,4 +74,4 @@ Bei Erfolg wären die Ergebnisse dann im Ordner `path/to/typst_files/_pdf` zu fi
 
 ### Druckoptionen
 
-Welche Tabellen ausgegeben werden und einige Details deren Gestaltung können über die "printOptions"-Eigenschaft in der Eingabe-Datei zu W365toTypst gesetzt werden. Weitere Informationen dazu sind in der Dokumentation („druckoptionen.md“) zu finden.
+Welche Tabellen ausgegeben werden und einige Details deren Gestaltung können über die "printTables"-Eigenschaft in der Eingabe-Datei zu W365toTypst gesetzt werden. Weitere Informationen dazu sind in der Dokumentation („druckoptionen.md“) zu finden.
