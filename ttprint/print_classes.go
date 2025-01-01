@@ -6,40 +6,48 @@ import (
 	"slices"
 )
 
-func getClasses(ttinfo *ttbase.TtInfo) []ttPage {
+func getClasses(
+	ttinfo *ttbase.TtInfo,
+	pagemap map[base.Ref][]xPage,
+) []ttPage {
 	data := getClassData(ttinfo)
 	pages := []ttPage{}
-	for _, c := range ttinfo.Db.Classes {
-		if c.Tag == "" {
+	for _, e := range ttinfo.Db.Classes {
+		if e.Tag == "" {
 			continue
 		}
-		tiles, ok := data[c.Id]
+		tiles, ok := data[e.Id]
 		if !ok {
 			continue
 		}
-		pages = append(pages, ttPage{
-			Name:       c.Name,
-			Short:      c.Tag,
-			Activities: tiles,
-		})
+		page := ttPage{
+			"Name":       e.Name,
+			"Short":      e.Tag,
+			"Activities": tiles,
+		}
+		page.extendPage(pagemap[e.Id])
+		pages = append(pages, page)
 	}
 	return pages
 }
 
-func getOneClass(ttinfo *ttbase.TtInfo, e *base.Class) []ttPage {
+func getOneClass(
+	ttinfo *ttbase.TtInfo,
+	pagemap map[base.Ref][]xPage,
+	e *base.Class,
+) []ttPage {
 	data := getClassData(ttinfo)
 	tiles, ok := data[e.Id]
 	if !ok {
 		tiles = []Tile{} // Avoid none in JSON if table empty
 	}
-	pages := []ttPage{
-		{
-			Name:       e.Name,
-			Short:      e.Tag,
-			Activities: tiles,
-		},
+	page := ttPage{
+		"Name":       e.Name,
+		"Short":      e.Tag,
+		"Activities": tiles,
 	}
-	return pages
+	page.extendPage(pagemap[e.Id])
+	return []ttPage{page}
 }
 
 func getClassData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
@@ -155,6 +163,7 @@ func getClassData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 							Teachers:   tstrings,
 							Rooms:      rstrings,
 							Background: l.Background,
+							Footnote:   l.Footnote,
 						}
 						classTiles[cref] = append(classTiles[cref], tile)
 					}
@@ -197,6 +206,7 @@ func getClassData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 							Teachers:   tstrings,
 							Rooms:      rstrings,
 							Background: l.Background,
+							Footnote:   l.Footnote,
 						}
 						classTiles[cref] = append(classTiles[cref], tile)
 					}

@@ -23,6 +23,7 @@ type Tile struct {
 	Teachers   []string `json:"teachers,omitempty"`
 	Rooms      []string `json:"rooms,omitempty"`
 	Background string   `json:"background,omitempty"`
+	Footnote   string   `json:"footnote,omitempty"`
 }
 
 type Timetable struct {
@@ -44,46 +45,76 @@ type ttHour struct {
 	End   string
 }
 
-type ttPage struct {
-	Name       string
-	Short      string
-	Activities []Tile
+// ttPage basic fields:
+//
+//	Name       string
+//	Short      string
+//	Activities []Tile
+//
+// Others can be added from the Pages entries in the input PrintTable.
+type ttPage map[string]any
+
+type xPage struct {
+	key   string
+	value any
+}
+
+func (page ttPage) extendPage(x []xPage) {
+	for _, xp := range x {
+		page[xp.key] = xp.value
+	}
 }
 
 func GenTimetables(
 	ttinfo *ttbase.TtInfo,
 	datadir string,
 	stemfile string,
-	commands []base.PrintCommand,
+	commands []*base.PrintTable,
 	genpdf string,
 ) {
 	var f string
 	var tt Timetable
+	var typstData map[string]any
 	for _, cmd := range commands {
+		// Collect the "Pages" data from the PrintTable
+		pageData := map[base.Ref][]xPage{}
+		for _, pd := range cmd.Pages {
+			ref := base.Ref(pd["Id"].(string))
+			pdlist := make([]xPage, len(pd)-1)
+			i := 0
+			for k, v := range pd {
+				if k != "Id" {
+					pdlist[i] = xPage{k, v}
+				}
+				i += 1
+			}
+			pageData[ref] = pdlist
+		}
 		f = cmd.TypstJson
+		typstData = cmd.Typst
 		switch cmd.Type {
 		case "Class":
-			pages := getClasses(ttinfo)
-			tt = timetable(ttinfo.Db, pages, "Class")
+			pages := getClasses(ttinfo, pageData)
+			tt = timetable(ttinfo.Db, pages, typstData, "Class")
 			if f == "" {
 				f = stemfile + "_classes"
 			}
 		case "Teacher":
-			pages := getTeachers(ttinfo)
-			tt = timetable(ttinfo.Db, pages, "Class")
+			pages := getTeachers(ttinfo, pageData)
+			tt = timetable(ttinfo.Db, pages, typstData, "Teacher")
 			if f == "" {
-				f = stemfile + "_classes"
+				f = stemfile + "_teachers"
 			}
 		case "Room":
-			pages := getRooms(ttinfo)
-			tt = timetable(ttinfo.Db, pages, "Class")
+			pages := getRooms(ttinfo, pageData)
+			tt = timetable(ttinfo.Db, pages, typstData, "Room")
 			if f == "" {
-				f = stemfile + "_classes"
+				f = stemfile + "_rooms"
 			}
 		default:
 			// Table for individual element
 			var tag string
-			tt, tag = genTypstOneElement(ttinfo, cmd.TypstJson)
+			tt, tag = genTypstOneElement(ttinfo, pageData, cmd)
 			if f == "" {
 				f = stemfile + tag
 			}
@@ -105,30 +136,34 @@ func GenTimetables(
 	}
 }
 
-func genTypstOneElement(ttinfo *ttbase.TtInfo, id string,
+func genTypstOneElement(
+	ttinfo *ttbase.TtInfo,
+	pagemap map[base.Ref][]xPage,
+	cmd *base.PrintTable,
 ) (Timetable, string) {
 	var tt Timetable
-	ref := base.Ref(id)
+	ref := base.Ref(cmd.Type)
+	typstData := cmd.Typst
 	e := ttinfo.Db.Elements[ref]
 	c, ok := e.(*base.Class)
 	if ok {
 		// Make class JSON, but with only one class
-		pages := getOneClass(ttinfo, c)
-		tt = timetable(ttinfo.Db, pages, "Class")
+		pages := getOneClass(ttinfo, pagemap, c)
+		tt = timetable(ttinfo.Db, pages, typstData, "Class")
 		return tt, "class_" + c.Tag
 	}
 	t, ok := e.(*base.Teacher)
 	if ok {
 		// Make teacher JSON, but with only one teacher
-		pages := getOneTeacher(ttinfo, t)
-		tt = timetable(ttinfo.Db, pages, "Teacher")
+		pages := getOneTeacher(ttinfo, pagemap, t)
+		tt = timetable(ttinfo.Db, pages, typstData, "Teacher")
 		return tt, "teacher_" + t.Tag
 	}
 	r, ok := e.(*base.Room)
 	if ok {
 		// Make room JSON, but with only one room
-		pages := getOneRoom(ttinfo, r)
-		tt = timetable(ttinfo.Db, pages, "Room")
+		pages := getOneRoom(ttinfo, pagemap, r)
+		tt = timetable(ttinfo.Db, pages, typstData, "Room")
 		return tt, "room_" + r.Tag
 	}
 	base.Error.Fatalf("Can't print timetable for invalid element: %+v\n", e)
@@ -138,6 +173,7 @@ func genTypstOneElement(ttinfo *ttbase.TtInfo, id string,
 func timetable(
 	db *base.DbTopLevel,
 	pages []ttPage,
+	typstData map[string]any,
 	tabletype string, // "Class" or "Teacher" or "Room"
 ) Timetable {
 	dlist := []ttDay{}
@@ -164,7 +200,7 @@ func timetable(
 	return Timetable{
 		TableType: tabletype,
 		Info:      info,
-		Typst:     db.PrintOptions.Typst,
+		Typst:     typstData,
 		Pages:     pages,
 	}
 }

@@ -11,8 +11,8 @@ import (
 	"strings"
 )
 
-func DEFAULT_PRINT_TABLES() []base.PrintCommand {
-	return []base.PrintCommand{
+func DEFAULT_PRINT_TABLES() []*base.PrintTable {
+	return []*base.PrintTable{
 		{Type: "Teacher", TypstTemplate: "print_timetable"},
 		{Type: "Teacher", TypstTemplate: "print_overview"},
 		{Type: "Class", TypstTemplate: "print_timetable"},
@@ -66,7 +66,7 @@ func main() {
 	stemfile := filepath.Base(stempath)
 
 	// Commands:
-	printTables := ttinfo.Db.PrintOptions.PrintTables
+	printTables := ttinfo.Db.PrintTables
 	if len(printTables) == 0 {
 		printTables = DEFAULT_PRINT_TABLES()
 	}
