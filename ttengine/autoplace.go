@@ -90,9 +90,11 @@ func PlaceLessons3(
 		pmon.printScore("place2")
 	}
 	fmt.Printf("§Unplaced: %d\n", len(pmon.unplaced))
-	return true
+	return false
 }
 
+// TODO: Is there an optimal limit? Too small and it may get trapped too
+// easily. What happens if too big?
 const MAX_BREAKOUT_LEVEL = 5
 
 func (pmon *placementMonitor) breakout(level int) bool {
@@ -135,11 +137,20 @@ func (pmon *placementMonitor) breakout(level int) bool {
 		pmon.currentState = pmon.saveState()
 		pmon.bestState = pmon.currentState
 
-		for len(pmon.unplaced) != 0 {
-			if !pmon.place2() && !pmon.breakout(level+1) {
+		for {
+			if len(pmon.unplaced) == 0 {
+				//TODO
+
 				break
 			}
-			pmon.printScore(fmt.Sprintf("place2 (%d)", level))
+			if pmon.place2() {
+				pmon.printScore(fmt.Sprintf("place2 (%d)", level))
+				continue
+			}
+			if !pmon.breakout(level + 1) {
+				break
+			}
+			pmon.printScore(fmt.Sprintf("breakout (%d)", level))
 		}
 		// state = currentState = bestState, but probably not the same as
 		// before the loop ...
@@ -277,13 +288,20 @@ func (pmon *placementMonitor) step(temp Penalty) (Penalty, bool) {
 	var aix ttbase.ActivityIndex
 	if len(pmon.unplaced) == 0 {
 
-		//TODO
+		//TODO??
+		/* The problem with this – or something like it – is that it will
+		 * change bestState, in conflict with the specification ...
 
-		// Seek the activity with the highest penalty?
-		// Or, based on the penalties, choose an activity at random?
-		// Block activities which have only recently been placed?
-
-		// Unplace it ...
+		aix = pmon.choosePlacedActivity()
+		clear(pmon.pendingPenalties)
+		pmon.score += pmon.evaluate1(aix)
+		// Update penalty info
+		for r, p := range pmon.pendingPenalties {
+			pmon.resourcePenalties[r] = p
+		}
+		pmon.unplaced = append(pmon.unplaced, aix)
+		pmon.breakout(1)
+		*/
 
 		return 0, false
 
