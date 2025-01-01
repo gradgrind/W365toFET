@@ -11,6 +11,17 @@ import (
 	"strings"
 )
 
+func DEFAULT_PRINT_TABLES() []*base.PrintTable {
+	return []*base.PrintTable{
+		{Type: "Teacher", TypstTemplate: "print_timetable"},
+		{Type: "Teacher", TypstTemplate: "print_overview"},
+		{Type: "Class", TypstTemplate: "print_timetable"},
+		{Type: "Class", TypstTemplate: "print_overview"},
+		{Type: "Room", TypstTemplate: "print_timetable"},
+		{Type: "Room", TypstTemplate: "print_overview"},
+	}
+}
+
 type Tile struct {
 	Day        int      `json:"day"`
 	Hour       int      `json:"hour"`
@@ -75,6 +86,10 @@ func GenTimetables(
 	var f string
 	var tt Timetable
 	var typstData map[string]any
+	if len(commands) == 0 {
+		commands = DEFAULT_PRINT_TABLES()
+	}
+
 	for _, cmd := range commands {
 		// Collect the "Pages" data from the PrintTable
 		pageData := map[base.Ref][]xPage{}
@@ -130,7 +145,7 @@ func GenTimetables(
 					pdf = f
 				}
 			}
-			makePdf(tmpl+".typ", datadir, f, pdf+".pdf", genpdf)
+			makePdf(tmpl, datadir, f, pdf, genpdf)
 		}
 	}
 }
@@ -245,7 +260,7 @@ func makePdf(
 		"--font-path", filepath.Join(datadir, "_fonts"),
 		"--root", datadir,
 		"--input", "ifile="+filepath.Join("/_data", stemfile+".json"),
-		filepath.Join(datadir, "scripts", script),
+		filepath.Join(datadir, "scripts", script+".typ"),
 		outpath)
 	//fmt.Printf(" ::: %s\n", cmd.String())
 	output, err := cmd.CombinedOutput()

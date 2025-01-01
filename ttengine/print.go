@@ -3,7 +3,6 @@ package ttengine
 import (
 	"W365toFET/ttbase"
 	"W365toFET/ttprint"
-	"strings"
 )
 
 func PrintTT(ttinfo *ttbase.TtInfo, datadir string, name string) {
@@ -27,18 +26,5 @@ func PrintTT(ttinfo *ttbase.TtInfo, datadir string, name string) {
 	}
 
 	// Generate Typst data
-	typst_files := ttprint.GenTypstData(ttinfo, datadir, name)
-
-	// Generate PDF files
-	typst := "typst"
-	for _, tfile := range typst_files {
-		t, overview := strings.CutSuffix(tfile, "_overview")
-		if overview {
-			ttprint.MakePdf(
-				"print_overview.typ", datadir, t, tfile, typst)
-		} else {
-			ttprint.MakePdf(
-				"print_timetable.typ", datadir, t, tfile, typst)
-		}
-	}
+	ttprint.GenTimetables(ttinfo, datadir, name, nil, "typst")
 }

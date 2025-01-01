@@ -73,20 +73,7 @@ func doPrinting(ttinfo *ttbase.TtInfo, datadir string, stempath string) {
 
 	stemfile := filepath.Base(stempath)
 
-	typst_files := GenTypstData(ttinfo, datadir, stemfile)
-
-	// Generate PDF files
-	typst := "typst"
-	for _, tfile := range typst_files {
-		t, overview := strings.CutSuffix(tfile, "_overview")
-		if overview {
-			MakePdf(
-				"print_overview.typ", datadir, t, tfile, typst)
-		} else {
-			MakePdf(
-				"print_timetable.typ", datadir, t, tfile, typst)
-		}
-	}
+	GenTimetables(ttinfo, datadir, stemfile, nil, "typst")
 }
 
 func readActivityMap(mapfile string) map[int]base.Ref {

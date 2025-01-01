@@ -11,17 +11,6 @@ import (
 	"strings"
 )
 
-func DEFAULT_PRINT_TABLES() []*base.PrintTable {
-	return []*base.PrintTable{
-		{Type: "Teacher", TypstTemplate: "print_timetable"},
-		{Type: "Teacher", TypstTemplate: "print_overview"},
-		{Type: "Class", TypstTemplate: "print_timetable"},
-		{Type: "Class", TypstTemplate: "print_overview"},
-		{Type: "Room", TypstTemplate: "print_timetable"},
-		{Type: "Room", TypstTemplate: "print_overview"},
-	}
-}
-
 func main() {
 	// Define and read command-line flags
 
@@ -67,9 +56,6 @@ func main() {
 
 	// Commands:
 	printTables := ttinfo.Db.PrintTables
-	if len(printTables) == 0 {
-		printTables = DEFAULT_PRINT_TABLES()
-	}
 
 	// Generate Typst data and, if not suppressed, PDF output.
 	genpdf := *typstexec
