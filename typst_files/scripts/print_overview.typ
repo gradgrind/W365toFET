@@ -33,6 +33,7 @@
 #let V_HEADER_WIDTH_CLASS = 15mm // smaller for classes
 #let ROW_HEIGHT = 12mm
 #let ROW_HEIGHT_CLASS = 30mm // larger because of divisions
+#let DAY_SPACING = 2mm
 
 #let CELL_BORDER = 0.5pt
 #let BIG_SIZE = 24pt
@@ -77,6 +78,9 @@
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+#let emptyColour = rgb(EMPTY_COLOUR)
+#let headerColour = rgb(HEADER_COLOUR)
+
 #let PLAN_AREA_HEIGHT = (PAGE_HEIGHT - PAGE_BORDER.top
     - PAGE_BORDER.bottom - TITLE_HEIGHT)
 #let PLAN_AREA_WIDTH = (PAGE_WIDTH - PAGE_BORDER.left
@@ -107,16 +111,18 @@
 }
 
 // Determine the field placements in the tiles
-#let fieldPlacements = typstMap.at("FieldPlacements", default: (:))
+#let fieldPlacements = typstMap.at("FieldPlacement", default: (:))
 #if fieldPlacements.len() == 0 {
     // fallback
     fieldPlacements = boxText.at(tableType, default: (:))
 }
 
 // +++ Set up the table
+#let ndays = DAYS.len()
 #let nhours = HOURS.len()
-#let pcols = DAYS.len() * nhours
-#let colwidth = (PLAN_AREA_WIDTH - V_HEADER_WIDTH) / pcols
+#let pcols = ndays * nhours
+#let daySpacing = DAY_SPACING * (ndays - 1)
+#let colwidth = (PLAN_AREA_WIDTH - V_HEADER_WIDTH - daySpacing) / pcols
 
 #show table.cell: it => {
     if it.y == 0 {
@@ -220,16 +226,29 @@
 #let pheader = ([],)
 #let vlines = (V_HEADER_WIDTH,)
 #let x = V_HEADER_WIDTH
+#let tcolumns = (V_HEADER_WIDTH,)
+#let hcellfill = ()
+#let firstDay = true
 #for d in DAYS {
+    if firstDay {
+        firstDay = false
+    } else {
+        dheader.push(table.cell(rowspan: 2, ""))
+        //pheader.push([])
+        x += DAY_SPACING
+        vlines.push(x)
+        tcolumns.push(DAY_SPACING)
+        hcellfill.push(table.cell(fill: headerColour, ""))
+    }
     dheader.push(table.cell(colspan: nhours, d))
     for p in HOURS {
         pheader.push(p)
         x += colwidth
         vlines.push(x)
+        tcolumns.push(colwidth)
+        hcellfill.push([])
     }
 }
-#let tcolumns = (V_HEADER_WIDTH,) + (colwidth,)*pcols
-#let hcellfill = ([],) * pcols
 
 // Prepare vertical header and row sizes and boundaries
 #let nprows = int(TABLE_BODY_HEIGHT / ROW_HEIGHT)
@@ -259,6 +278,7 @@
 ) = {
     // Determine grid lines
     let ix = day * nhours + hour
+    ix += day
     let x0 = vlines.at(ix)
     let y0 = hlines.at(row)
     // Prepare texts
@@ -376,9 +396,9 @@
                 inset: 0pt,
                 fill: (x, y) =>
                     if y > 1 and x > 0 {
-                        rgb(EMPTY_COLOUR)
+                        emptyColour
                     } else {
-                        rgb(HEADER_COLOUR)
+                        headerColour
                     },
                 table.header(
                     ..dheader, ..pheader,
