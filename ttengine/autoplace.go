@@ -8,9 +8,9 @@ import (
 	"time"
 )
 
-// The initial temperature seems to have little effect on the result. Even 0
+// The initial threshold seems to have little effect on the result. Even 0
 // seems to produce only a minor deterioration?
-const TEMPERATURE0 = 1000
+const THRESHOLD0 = 1000
 const N0 = 1000
 const NSTEPS = 1000
 
@@ -86,14 +86,18 @@ func PlaceLessons(
 func (pmon *placementMonitor) Placer() bool {
 	pmon.bestState = pmon.saveState()
 
-	pmon.place1(TEMPERATURE0)
+	// Initial placement of unplaced lessons
+	pmon.basicPlacements(THRESHOLD0)
+	// state = pmon.bestState
 
-	//++pmon.printScore("place1")
+	//++pmon.printScore("basicPlacements")
 
 	//	return false
 
+	//TODO: Handle optimization when all activities are placed ...
 	for len(pmon.unplaced) != 0 {
-		if !pmon.place2() {
+		if !pmon.placeEventually() {
+			// state = pmon.bestState
 
 			if !pmon.breakout(1) {
 				break
@@ -117,7 +121,8 @@ func (pmon *placementMonitor) Placer() bool {
 			continue
 			*/
 		}
-		//++pmon.printScore("place2")
+		// state = pmon.bestState
+		//++pmon.printScore("placeEventually")
 	}
 	fmt.Printf("§Unplaced: %d\n", len(pmon.unplaced))
 	return true
@@ -173,8 +178,8 @@ func (pmon *placementMonitor) breakout(level int) bool {
 
 				break
 			}
-			if pmon.place2() {
-				//++pmon.printScore(fmt.Sprintf("place2 (%d)", level))
+			if pmon.placeEventually() {
+				//++pmon.printScore(fmt.Sprintf("placeEventually (%d)", level))
 				continue
 			}
 			if !pmon.breakout(level + 1) {
@@ -211,20 +216,20 @@ func (pmon *placementMonitor) breakout(level int) bool {
 	return false
 }
 
-func (pmon *placementMonitor) place1(satemp Penalty) bool {
+func (pmon *placementMonitor) basicPlacements(threshold Penalty) bool {
 	// Primary placement algorithm, based on "Simulated Annealing" (but see
 	// cooling factor below ...).
 	// Final state = bestState
 	// Return true if an improvement was made.
 	better := false
-	for satemp != 0 {
+	for threshold != 0 {
 		lcur := len(pmon.unplaced)
 		if lcur == 0 {
 			//TODO?
 			break
 		}
 
-		if !pmon.tryPlacing(satemp) {
+		if !pmon.placeTopUnplaced(threshold) {
 			// No step made, premature exit
 			//fmt.Printf("FAILED: %d\n", aix)
 
@@ -248,7 +253,7 @@ func (pmon *placementMonitor) place1(satemp Penalty) bool {
 		//fmt.Printf("PLACED: %d\n", aix)
 
 		//fmt.Printf("++ T=%d Unplaced: %d Penalty: %d\n",
-		//	satemp, len(pmon.unplaced), dp)
+		//	threshold, len(pmon.unplaced), dp)
 		lcur = len(pmon.unplaced)
 		lbest := len(pmon.bestState.unplaced)
 		if lcur < lbest || (lcur == lbest && pmon.score < pmon.bestState.score) {
@@ -259,17 +264,18 @@ func (pmon *placementMonitor) place1(satemp Penalty) bool {
 		// it's above 0.8 or so?
 		// In fact it might be best with no cooling at all, i.e. without
 		// the S.A. ...
-		//satemp *= 9980
-		//satemp /= 10000
+		//threshold *= 9980
+		//threshold /= 10000
 	}
 	pmon.restoreState(pmon.bestState)
 	return better
 }
 
-func (pmon *placementMonitor) place2() bool {
+func (pmon *placementMonitor) placeEventually() bool {
 	// Force a placement of the next activity if one of the possibilities
-	// leads to an improved score.
-	// If it fails (return false) the state will be unchanged.
+	// leads – after a call to "basicPlacements" – to an improved score.
+	// On failure return false.
+	// Regardless of success, on return: state = pmon.bestState.
 	ttinfo := pmon.ttinfo
 	aix := pmon.unplaced[len(pmon.unplaced)-1]
 	a := ttinfo.Activities[aix]
@@ -277,17 +283,15 @@ func (pmon *placementMonitor) place2() bool {
 	var dpen Penalty
 	i0 := rand.IntN(nposs)
 	i := i0
-	//TODO: Initial temperature = ?
-	var temp Penalty = 5
+	//TODO: Initial threshold = ?
+	var threshold Penalty = 5
 	for {
 		slot := a.PossibleSlots[i]
 		clashes := ttinfo.FindClashes(aix, slot)
 		for _, aixx := range clashes {
 			ttinfo.UnplaceActivity(aixx)
 		}
-		ttinfo.PlaceActivity(aix, slot)
-		pmon.added[aix] = pmon.count
-		pmon.count++
+		pmon.place(aix, slot)
 		clear(pmon.pendingPenalties)
 		dpen = pmon.evaluate1(aix)
 		for _, aixx := range clashes {
@@ -302,7 +306,8 @@ func (pmon *placementMonitor) place2() bool {
 		pmon.unplaced = pmon.unplaced[:len(pmon.unplaced)-1]
 		pmon.unplaced = append(pmon.unplaced, clashes...)
 
-		if pmon.place1(temp) {
+		// pmon.basicPlacements returns with state = pmon.bestState
+		if pmon.basicPlacements(threshold) {
 			return true
 		}
 
@@ -312,11 +317,15 @@ func (pmon *placementMonitor) place2() bool {
 		}
 		if i == i0 {
 			// No improved placement found
-			temp *= 2 // TODO??
-			//++fmt.Printf("???? %d\n", temp)
-			if temp > 9 {
+
+			break //??
+			// The following may offer no noticeable improvement. More than
+			// one repeat may slow the process down.
+
+			threshold *= 2 // TODO??
+			//++fmt.Printf("???? %d\n", threshold)
+			if threshold > 9 {
 				// A larger value could be counterproductive?
-				//if temp > TEMPERATURE0 {
 				break
 			}
 		}
@@ -324,7 +333,7 @@ func (pmon *placementMonitor) place2() bool {
 	return false
 }
 
-func (pmon *placementMonitor) tryPlacing(
+func (pmon *placementMonitor) placeTopUnplaced(
 	threshold Penalty,
 ) bool {
 	// Try to place the topmost unplaced activity.
@@ -427,7 +436,7 @@ func (pmon *placementMonitor) tryPlacing(
 			i = 0
 		}
 		if i == i0 {
-			// No further placements possible
+			// All slots have been tested.
 			return false
 		}
 	}
