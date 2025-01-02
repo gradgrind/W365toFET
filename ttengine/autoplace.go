@@ -4,6 +4,8 @@ import (
 	"W365toFET/ttbase"
 	"fmt"
 	"math/rand/v2"
+	"slices"
+	"time"
 )
 
 const TEMPERATURE0 = 1000
@@ -18,10 +20,13 @@ const PENALTY_UNPLACED_ACTIVITY Penalty = 1000
 
 func PlaceLessons3(
 	ttinfo *ttbase.TtInfo,
-	alist []ttbase.ActivityIndex,
+	//alist []ttbase.ActivityIndex,
 ) bool {
-	//slices.Reverse(alist) – no obvoius improvement
-	//resourceSlotActivityMap := makeResourceSlotActivityMap(ttinfo)
+	alist := CollectCourseLessons(ttinfo)
+
+	// Seems to improve speed considerably, especially with complex data:
+	slices.Reverse(alist)
+
 	var pmon *placementMonitor
 	{
 		var delta int64 = 7 // This might be a reasonable value?
@@ -53,12 +58,37 @@ func PlaceLessons3(
 	fmt.Printf("$ PENALTY %d: %d\n", len(alist),
 		pmon.score+PENALTY_UNPLACED_ACTIVITY*Penalty(len(alist)))
 
+	//TODO--
+	state0 := pmon.saveState()
+	NR := 1
+	tsum := 0.0
+	for i := 0; i < NR; i++ {
+		start := time.Now()
+
+		pmon.Placer()
+
+		// calculate the exe time
+		elapsed := time.Since(start)
+		fmt.Printf("#### ELAPSED: %s\n", elapsed)
+		tsum += elapsed.Seconds()
+
+		pmon.currentState = state0
+		pmon.resetState()
+	}
+	fmt.Printf("#+++ AVERAGE: %.2f seconds.\n", tsum/float64(NR))
+	return false
+	//--
+
+	return pmon.Placer()
+}
+
+func (pmon *placementMonitor) Placer() bool {
 	pmon.currentState = pmon.saveState()
 	pmon.bestState = pmon.currentState
 
 	pmon.place1(TEMPERATURE0)
 
-	pmon.printScore("place1")
+	//++pmon.printScore("place1")
 
 	//	return false
 
@@ -81,20 +111,21 @@ func PlaceLessons3(
 			copy(pmon.unplaced[1:], pmon.unplaced)
 			pmon.unplaced[0] = laix
 			copy(pmon.currentState.unplaced, pmon.unplaced)
-			pmon.printScore("Shuffle")
+			//++pmon.printScore("Shuffle")
 			//
 
 			continue
 			*/
 		}
-		pmon.printScore("place2")
+		//++pmon.printScore("place2")
 	}
 	fmt.Printf("§Unplaced: %d\n", len(pmon.unplaced))
 	return false
 }
 
 // TODO: Is there an optimal limit? Too small and it may get trapped too
-// easily. What happens if too big?
+// easily. Larger values may use a bit more memory and seem a bit slower.
+// Around 5 – 10 seems reasonable.
 const MAX_BREAKOUT_LEVEL = 5
 
 func (pmon *placementMonitor) breakout(level int) bool {
@@ -144,13 +175,13 @@ func (pmon *placementMonitor) breakout(level int) bool {
 				break
 			}
 			if pmon.place2() {
-				pmon.printScore(fmt.Sprintf("place2 (%d)", level))
+				//++pmon.printScore(fmt.Sprintf("place2 (%d)", level))
 				continue
 			}
 			if !pmon.breakout(level + 1) {
 				break
 			}
-			pmon.printScore(fmt.Sprintf("breakout (%d)", level))
+			//++pmon.printScore(fmt.Sprintf("breakout (%d)", level))
 		}
 		// state = currentState = bestState, but probably not the same as
 		// before the loop ...
@@ -159,7 +190,7 @@ func (pmon *placementMonitor) breakout(level int) bool {
 		lcur := len(pmon.unplaced)
 		lbest := len(best.unplaced)
 		if lcur < lbest || (lcur == lbest && pmon.score < best.score) {
-			pmon.printScore(fmt.Sprintf("return true (%d)", level))
+			//++pmon.printScore(fmt.Sprintf("return true (%d)", level))
 			return true
 		}
 		pmon.currentState = best
@@ -259,7 +290,7 @@ func (pmon *placementMonitor) place2() bool {
 		if i == i0 {
 			// No improved placement found
 			temp *= 2 // TODO??
-			fmt.Printf("???? %d\n", temp)
+			//++fmt.Printf("???? %d\n", temp)
 			if temp > 9 {
 				// A larger value could be counterproductive?
 				//if temp > TEMPERATURE0 {

@@ -47,10 +47,11 @@ func main() {
 		ttinfo := ttbase.MakeTtInfo(db)
 		ttinfo.PrepareCoreData()
 
-		alist := ttengine.CollectCourseLessons(ttinfo)
+		// Now in PlaceLessons:
+		//alist := ttengine.CollectCourseLessons(ttinfo)
 		//fmt.Printf("??? %+v\n", alist)
 
-		if !ttengine.PlaceLessons3(ttinfo, alist) {
+		if !ttengine.PlaceLessons3(ttinfo) { //, alist) {
 			return
 		}
 

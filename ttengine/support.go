@@ -358,9 +358,7 @@ func (pmon *placementMonitor) resetState() {
 		a.XRooms = ap.xrooms
 	}
 	pmon.unplaced = pmon.unplaced[:0]
-	for _, aix := range state.unplaced {
-		pmon.unplaced = append(pmon.unplaced, aix)
-	}
+	pmon.unplaced = append(pmon.unplaced, state.unplaced...)
 	pmon.added = make([]int64, len(state.added))
 	copy(pmon.added, state.added)
 	pmon.count = state.count
