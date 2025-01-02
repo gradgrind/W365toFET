@@ -16,7 +16,7 @@ func (pmon *placementMonitor) choosePlacedActivity() ttbase.ActivityIndex {
 	pvec[0] = -1
 	for aix := 1; aix < len(ttinfo.Activities); aix += 1 {
 		a := ttinfo.Activities[aix]
-		if a.Placement >= 0 {
+		if a.Placement >= 0 && !a.Fixed {
 			for _, r := range a.Resources {
 				total += pmon.resourcePenalties[r]
 			}

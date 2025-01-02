@@ -8,6 +8,12 @@ import (
 	"time"
 )
 
+// The approach used here might be described as "Escalating Radicality". It
+// is based on an algorithm something like Simulated Annealing, but it seems
+// that the cooling process may not be very helpful. When no further
+// improvements can be made, more radical steps are taken, allowing
+// increasing worsening of the penalty for a limited period.
+
 // The initial threshold seems to have little effect on the result. Even 0
 // seems to produce only a minor deterioration?
 const THRESHOLD0 = 1000
@@ -62,12 +68,12 @@ func PlaceLessons(
 
 	//TODO--
 	state0 := pmon.saveState()
-	NR := 50
+	NR := 1
 	tsum := 0.0
 	for i := 0; i < NR; i++ {
 		start := time.Now()
 
-		pmon.Placer()
+		pmon.placer()
 
 		// calculate the exe time
 		elapsed := time.Since(start)
@@ -80,10 +86,11 @@ func PlaceLessons(
 	return false
 	//--
 
-	return pmon.Placer()
+	return pmon.placer()
 }
 
-func (pmon *placementMonitor) Placer() bool {
+func (pmon *placementMonitor) placer() bool {
+	ttinfo := pmon.ttinfo
 	pmon.bestState = pmon.saveState()
 
 	// Initial placement of unplaced lessons
@@ -94,11 +101,57 @@ func (pmon *placementMonitor) Placer() bool {
 
 	//	return false
 
-	//TODO: Handle optimization when all activities are placed ...
-	for len(pmon.unplaced) != 0 {
-		if !pmon.placeEventually() {
+	for {
+		//TODO: Handle optimization when all activities are placed ...
+		//slot := -1
+	repeat:
+		if len(pmon.unplaced) == 0 {
+
+			//
+			best := pmon.bestState
+
+			//TODO???
+			for i := 0; i < 10; i++ {
+
+				aix := pmon.choosePlacedActivity()
+				//slot = ttinfo.Activities[aix].Placement
+				ttinfo.UnplaceActivity(aix)
+				// Update penalty info
+				clear(pmon.pendingPenalties)
+				pmon.score += pmon.evaluate1(aix)
+				for r, p := range pmon.pendingPenalties {
+					pmon.resourcePenalties[r] = p
+				}
+				pmon.unplaced = append(pmon.unplaced, aix)
+				pmon.bestState = pmon.saveState()
+				if !pmon.breakout(1) {
+					continue
+				}
+				// compare with "best"
+
+				// If better than "best" return true
+				lcur := len(pmon.unplaced)
+				lbest := len(best.unplaced)
+				if lcur < lbest || (lcur == lbest && pmon.score < best.score) {
+					pmon.printScore("MOVED")
+					goto repeat
+				}
+				//pmon.bestState = best
+				//pmon.restoreState(best)
+
+			}
+			fmt.Printf("MOVE FAILED: %+v\n", pmon.unplaced)
+			//
+
+			break
+		}
+		if !pmon.placeEventually(-1) {
+			// No improvement was found by "placeEventually".
 			// state = pmon.bestState
 
+			// Mechanism to escape to other solution areas:
+			// Accept a worsening step and follow its progress a while to see
+			// if a better solution area can be found.
 			if !pmon.breakout(1) {
 				break
 			}
@@ -134,6 +187,13 @@ func (pmon *placementMonitor) Placer() bool {
 const MAX_BREAKOUT_LEVEL = 5
 
 func (pmon *placementMonitor) breakout(level int) bool {
+	// Suspend the current search, saving its pmon.bestState.
+	// Allow an unconditional placement of the topmost unplaced activity.
+	// Then follow this line of development until a penalty is reached
+	// which is less than the suspended best. This function can be called
+	// recursively to allow more radical jumps in the search space. But the
+	// depth of recursion is limited.
+
 	if level > MAX_BREAKOUT_LEVEL {
 		return false
 	}
@@ -172,16 +232,57 @@ func (pmon *placementMonitor) breakout(level int) bool {
 		pmon.unplaced = append(pmon.unplaced, clashes...)
 		pmon.bestState = pmon.saveState()
 
+		//--fmt.Printf("==== %+v\n", pmon.unplaced)
+
 		for {
+		repeat1:
+			//TODO??
+			if pmon.score == 0 {
+				break
+			}
 			if len(pmon.unplaced) == 0 {
 				//TODO
+				//
+				best1 := pmon.bestState
+
+				//TODO???
+				for i := 0; i < 10; i++ {
+					aix := pmon.choosePlacedActivity()
+					//slot = ttinfo.Activities[aix].Placement
+					ttinfo.UnplaceActivity(aix)
+					// Update penalty info
+					clear(pmon.pendingPenalties)
+					pmon.score += pmon.evaluate1(aix)
+					for r, p := range pmon.pendingPenalties {
+						pmon.resourcePenalties[r] = p
+					}
+					pmon.unplaced = append(pmon.unplaced, aix)
+					pmon.bestState = pmon.saveState()
+					if !pmon.breakout(level + 1) {
+						continue
+					}
+					// compare with "best1"
+
+					// If better than "best1" continue with new
+					lcur := len(pmon.unplaced)
+					lbest := len(best1.unplaced)
+					if lcur < lbest || (lcur == lbest && pmon.score < best1.score) {
+						pmon.printScore("MOVED")
+						goto repeat1
+					}
+					//pmon.bestState = best1
+					//pmon.restoreState(best1)
+				}
 
 				break
 			}
-			if pmon.placeEventually() {
+
+			// First seek an improvement within this search frame.
+			if pmon.placeEventually(-1) {
 				//++pmon.printScore(fmt.Sprintf("placeEventually (%d)", level))
 				continue
 			}
+			// If not successful, recurse, thus taking a more radical step.
 			if !pmon.breakout(level + 1) {
 				break
 			}
@@ -210,8 +311,8 @@ func (pmon *placementMonitor) breakout(level int) bool {
 	}
 
 	//TODO-- superfluous?
-	pmon.bestState = best
-	pmon.restoreState(best)
+	//pmon.bestState = best
+	//pmon.restoreState(best)
 
 	return false
 }
@@ -271,7 +372,7 @@ func (pmon *placementMonitor) basicPlacements(threshold Penalty) bool {
 	return better
 }
 
-func (pmon *placementMonitor) placeEventually() bool {
+func (pmon *placementMonitor) placeEventually(notslot ttbase.SlotIndex) bool {
 	// Force a placement of the next activity if one of the possibilities
 	// leads – after a call to "basicPlacements" – to an improved score.
 	// On failure return false.
@@ -285,9 +386,13 @@ func (pmon *placementMonitor) placeEventually() bool {
 	i := i0
 	//TODO: Initial threshold = ?
 	var threshold Penalty = 5
+	var clashes []ttbase.ActivityIndex
 	for {
 		slot := a.PossibleSlots[i]
-		clashes := ttinfo.FindClashes(aix, slot)
+		if slot == notslot {
+			goto skipslot
+		}
+		clashes = ttinfo.FindClashes(aix, slot)
 		for _, aixx := range clashes {
 			ttinfo.UnplaceActivity(aixx)
 		}
@@ -311,6 +416,7 @@ func (pmon *placementMonitor) placeEventually() bool {
 			return true
 		}
 
+	skipslot:
 		i += 1
 		if i == nposs {
 			i = 0
