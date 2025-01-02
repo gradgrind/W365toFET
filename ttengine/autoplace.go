@@ -90,7 +90,6 @@ func PlaceLessons(
 }
 
 func (pmon *placementMonitor) placer() bool {
-	ttinfo := pmon.ttinfo
 	pmon.bestState = pmon.saveState()
 
 	// Initial placement of unplaced lessons
@@ -103,49 +102,19 @@ func (pmon *placementMonitor) placer() bool {
 
 	for {
 		//TODO: Handle optimization when all activities are placed ...
-		//slot := -1
-	repeat:
 		if len(pmon.unplaced) == 0 {
 
-			//
-			best := pmon.bestState
+			pmon.printScore("ALL PLACED (0)")
 
-			//TODO???
-			for i := 0; i < 10; i++ {
+			//TODO: exit criteria ...
 
-				aix := pmon.choosePlacedActivity()
-				//slot = ttinfo.Activities[aix].Placement
-				ttinfo.UnplaceActivity(aix)
-				// Update penalty info
-				clear(pmon.pendingPenalties)
-				pmon.score += pmon.evaluate1(aix)
-				for r, p := range pmon.pendingPenalties {
-					pmon.resourcePenalties[r] = p
-				}
-				pmon.unplaced = append(pmon.unplaced, aix)
-				pmon.bestState = pmon.saveState()
-				if !pmon.breakout(1) {
-					continue
-				}
-				// compare with "best"
-
-				// If better than "best" return true
-				lcur := len(pmon.unplaced)
-				lbest := len(best.unplaced)
-				if lcur < lbest || (lcur == lbest && pmon.score < best.score) {
-					pmon.printScore("MOVED")
-					goto repeat
-				}
-				//pmon.bestState = best
-				//pmon.restoreState(best)
-
+			if pmon.movePlace(1) {
+				continue
 			}
 			fmt.Printf("MOVE FAILED: %+v\n", pmon.unplaced)
-			//
-
 			break
 		}
-		if !pmon.placeEventually(-1) {
+		if !pmon.placeEventually() {
 			// No improvement was found by "placeEventually".
 			// state = pmon.bestState
 
@@ -179,142 +148,6 @@ func (pmon *placementMonitor) placer() bool {
 	}
 	fmt.Printf("§Unplaced: %d\n", len(pmon.unplaced))
 	return true
-}
-
-// TODO: Is there an optimal limit? Too small and it may get trapped too
-// easily. Larger values may use a bit more memory and seem a bit slower.
-// Around 5 – 10 seems reasonable.
-const MAX_BREAKOUT_LEVEL = 5
-
-func (pmon *placementMonitor) breakout(level int) bool {
-	// Suspend the current search, saving its pmon.bestState.
-	// Allow an unconditional placement of the topmost unplaced activity.
-	// Then follow this line of development until a penalty is reached
-	// which is less than the suspended best. This function can be called
-	// recursively to allow more radical jumps in the search space. But the
-	// depth of recursion is limited.
-
-	if level > MAX_BREAKOUT_LEVEL {
-		return false
-	}
-
-	// Remember current best state
-	best := pmon.bestState
-
-	ttinfo := pmon.ttinfo
-	aix := pmon.unplaced[len(pmon.unplaced)-1]
-	a := ttinfo.Activities[aix]
-	nposs := len(a.PossibleSlots)
-	var dpen Penalty
-	i0 := rand.IntN(nposs)
-	i := i0
-	for {
-		slot := a.PossibleSlots[i]
-		clashes := ttinfo.FindClashes(aix, slot)
-		for _, aixx := range clashes {
-			ttinfo.UnplaceActivity(aixx)
-		}
-		ttinfo.PlaceActivity(aix, slot)
-		pmon.added[aix] = pmon.count
-		pmon.count++
-		clear(pmon.pendingPenalties)
-		dpen = pmon.evaluate1(aix)
-		for _, aixx := range clashes {
-			dpen += pmon.evaluate1(aixx)
-		}
-		// Update penalty info
-		for r, p := range pmon.pendingPenalties {
-			pmon.resourcePenalties[r] = p
-		}
-		pmon.score += dpen
-		// Remove from "unplaced" list
-		pmon.unplaced = pmon.unplaced[:len(pmon.unplaced)-1]
-		pmon.unplaced = append(pmon.unplaced, clashes...)
-		pmon.bestState = pmon.saveState()
-
-		//--fmt.Printf("==== %+v\n", pmon.unplaced)
-
-		for {
-		repeat1:
-			//TODO??
-			if pmon.score == 0 {
-				break
-			}
-			if len(pmon.unplaced) == 0 {
-				//TODO
-				//
-				best1 := pmon.bestState
-
-				//TODO???
-				for i := 0; i < 10; i++ {
-					aix := pmon.choosePlacedActivity()
-					//slot = ttinfo.Activities[aix].Placement
-					ttinfo.UnplaceActivity(aix)
-					// Update penalty info
-					clear(pmon.pendingPenalties)
-					pmon.score += pmon.evaluate1(aix)
-					for r, p := range pmon.pendingPenalties {
-						pmon.resourcePenalties[r] = p
-					}
-					pmon.unplaced = append(pmon.unplaced, aix)
-					pmon.bestState = pmon.saveState()
-					if !pmon.breakout(level + 1) {
-						continue
-					}
-					// compare with "best1"
-
-					// If better than "best1" continue with new
-					lcur := len(pmon.unplaced)
-					lbest := len(best1.unplaced)
-					if lcur < lbest || (lcur == lbest && pmon.score < best1.score) {
-						pmon.printScore("MOVED")
-						goto repeat1
-					}
-					//pmon.bestState = best1
-					//pmon.restoreState(best1)
-				}
-
-				break
-			}
-
-			// First seek an improvement within this search frame.
-			if pmon.placeEventually(-1) {
-				//++pmon.printScore(fmt.Sprintf("placeEventually (%d)", level))
-				continue
-			}
-			// If not successful, recurse, thus taking a more radical step.
-			if !pmon.breakout(level + 1) {
-				break
-			}
-			//++pmon.printScore(fmt.Sprintf("breakout (%d)", level))
-		}
-		// state = currentState = bestState, but probably not the same as
-		// before the loop ...
-
-		// If better than "best" return true
-		lcur := len(pmon.unplaced)
-		lbest := len(best.unplaced)
-		if lcur < lbest || (lcur == lbest && pmon.score < best.score) {
-			//++pmon.printScore(fmt.Sprintf("return true (%d)", level))
-			return true
-		}
-		pmon.bestState = best
-		pmon.restoreState(best)
-
-		i += 1
-		if i == nposs {
-			i = 0
-		}
-		if i == i0 {
-			break
-		}
-	}
-
-	//TODO-- superfluous?
-	//pmon.bestState = best
-	//pmon.restoreState(best)
-
-	return false
 }
 
 func (pmon *placementMonitor) basicPlacements(threshold Penalty) bool {
@@ -372,7 +205,7 @@ func (pmon *placementMonitor) basicPlacements(threshold Penalty) bool {
 	return better
 }
 
-func (pmon *placementMonitor) placeEventually(notslot ttbase.SlotIndex) bool {
+func (pmon *placementMonitor) placeEventually() bool {
 	// Force a placement of the next activity if one of the possibilities
 	// leads – after a call to "basicPlacements" – to an improved score.
 	// On failure return false.
@@ -389,9 +222,6 @@ func (pmon *placementMonitor) placeEventually(notslot ttbase.SlotIndex) bool {
 	var clashes []ttbase.ActivityIndex
 	for {
 		slot := a.PossibleSlots[i]
-		if slot == notslot {
-			goto skipslot
-		}
 		clashes = ttinfo.FindClashes(aix, slot)
 		for _, aixx := range clashes {
 			ttinfo.UnplaceActivity(aixx)
@@ -416,7 +246,6 @@ func (pmon *placementMonitor) placeEventually(notslot ttbase.SlotIndex) bool {
 			return true
 		}
 
-	skipslot:
 		i += 1
 		if i == nposs {
 			i = 0
@@ -444,9 +273,10 @@ func (pmon *placementMonitor) placeTopUnplaced(
 ) bool {
 	// Try to place the topmost unplaced activity.
 	// Try all possible placements until one is found that reduces the
-	// penalty. However, a placement may also be accepted – with a certain
-	// probability, based on the penalty increase – if it increases the
-	// penalty. Start searching at a random slot, only testing those in the
+	// penalty. However, a placement which incurs an increased penalty may
+	// also be accepted – with a certain probability, based on the amount
+	// by which the penalty increases.
+	// Start searching at a random slot, only testing those in the
 	// activity's "PossibleSlots" list.
 
 	// If no placement is found, fail and leave state as on entry.
