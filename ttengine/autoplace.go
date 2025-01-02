@@ -8,6 +8,8 @@ import (
 	"time"
 )
 
+// The initial temperature seems to have little effect on the result. Even 0
+// seems to produce only a minor deterioration?
 const TEMPERATURE0 = 1000
 const N0 = 1000
 const NSTEPS = 1000
@@ -18,7 +20,7 @@ const N2 = N1 / N0
 
 const PENALTY_UNPLACED_ACTIVITY Penalty = 1000
 
-func PlaceLessons3(
+func PlaceLessons(
 	ttinfo *ttbase.TtInfo,
 	//alist []ttbase.ActivityIndex,
 ) bool {
@@ -60,7 +62,7 @@ func PlaceLessons3(
 
 	//TODO--
 	state0 := pmon.saveState()
-	NR := 1
+	NR := 50
 	tsum := 0.0
 	for i := 0; i < NR; i++ {
 		start := time.Now()
@@ -72,8 +74,7 @@ func PlaceLessons3(
 		fmt.Printf("#### ELAPSED: %s\n", elapsed)
 		tsum += elapsed.Seconds()
 
-		pmon.currentState = state0
-		pmon.resetState()
+		pmon.restoreState(state0)
 	}
 	fmt.Printf("#+++ AVERAGE: %.2f seconds.\n", tsum/float64(NR))
 	return false
@@ -83,8 +84,7 @@ func PlaceLessons3(
 }
 
 func (pmon *placementMonitor) Placer() bool {
-	pmon.currentState = pmon.saveState()
-	pmon.bestState = pmon.currentState
+	pmon.bestState = pmon.saveState()
 
 	pmon.place1(TEMPERATURE0)
 
@@ -120,7 +120,7 @@ func (pmon *placementMonitor) Placer() bool {
 		//++pmon.printScore("place2")
 	}
 	fmt.Printf("§Unplaced: %d\n", len(pmon.unplaced))
-	return false
+	return true
 }
 
 // TODO: Is there an optimal limit? Too small and it may get trapped too
@@ -165,8 +165,7 @@ func (pmon *placementMonitor) breakout(level int) bool {
 		// Remove from "unplaced" list
 		pmon.unplaced = pmon.unplaced[:len(pmon.unplaced)-1]
 		pmon.unplaced = append(pmon.unplaced, clashes...)
-		pmon.currentState = pmon.saveState()
-		pmon.bestState = pmon.currentState
+		pmon.bestState = pmon.saveState()
 
 		for {
 			if len(pmon.unplaced) == 0 {
@@ -193,9 +192,8 @@ func (pmon *placementMonitor) breakout(level int) bool {
 			//++pmon.printScore(fmt.Sprintf("return true (%d)", level))
 			return true
 		}
-		pmon.currentState = best
-		pmon.bestState = pmon.currentState
-		pmon.resetState()
+		pmon.bestState = best
+		pmon.restoreState(best)
 
 		i += 1
 		if i == nposs {
@@ -205,39 +203,66 @@ func (pmon *placementMonitor) breakout(level int) bool {
 			break
 		}
 	}
-	pmon.currentState = best
+
+	//TODO-- superfluous?
 	pmon.bestState = best
-	pmon.resetState()
+	pmon.restoreState(best)
+
 	return false
 }
 
 func (pmon *placementMonitor) place1(satemp Penalty) bool {
-	// Primary placement algorithm, based on "Simulated Annealing".
-	// Final state = currentState = bestState
+	// Primary placement algorithm, based on "Simulated Annealing" (but see
+	// cooling factor below ...).
+	// Final state = bestState
 	// Return true if an improvement was made.
 	better := false
 	for satemp != 0 {
-		_, ok := pmon.step(satemp)
-		if !ok {
-			// No step made, premature exit
+		lcur := len(pmon.unplaced)
+		if lcur == 0 {
+			//TODO?
 			break
 		}
 
+		if !pmon.tryPlacing(satemp) {
+			// No step made, premature exit
+			//fmt.Printf("FAILED: %d\n", aix)
+
+			//?
+			break
+
+			/* Something like this? It might well change bestState ...
+
+			aix = pmon.choosePlacedActivity()
+			clear(pmon.pendingPenalties)
+			pmon.score += pmon.evaluate1(aix)
+			// Update penalty info
+			for r, p := range pmon.pendingPenalties {
+				pmon.resourcePenalties[r] = p
+			}
+			pmon.unplaced = append(pmon.unplaced, aix)
+			pmon.breakout(1)
+			*/
+
+		}
+		//fmt.Printf("PLACED: %d\n", aix)
+
 		//fmt.Printf("++ T=%d Unplaced: %d Penalty: %d\n",
 		//	satemp, len(pmon.unplaced), dp)
-		lcur := len(pmon.unplaced)
+		lcur = len(pmon.unplaced)
 		lbest := len(pmon.bestState.unplaced)
 		if lcur < lbest || (lcur == lbest && pmon.score < pmon.bestState.score) {
-			pmon.bestState = pmon.currentState
+			pmon.bestState = pmon.saveState()
 			better = true
 		}
-		satemp *= 9980
-		satemp /= 10000
+		// The cooling factor seems not to have a great impact, as long as
+		// it's above 0.8 or so?
+		// In fact it might be best with no cooling at all, i.e. without
+		// the S.A. ...
+		//satemp *= 9980
+		//satemp /= 10000
 	}
-	if pmon.currentState != pmon.bestState {
-		pmon.currentState = pmon.bestState
-		pmon.resetState()
-	}
+	pmon.restoreState(pmon.bestState)
 	return better
 }
 
@@ -276,12 +301,10 @@ func (pmon *placementMonitor) place2() bool {
 		// Remove from "unplaced" list
 		pmon.unplaced = pmon.unplaced[:len(pmon.unplaced)-1]
 		pmon.unplaced = append(pmon.unplaced, clashes...)
-		pmon.currentState = pmon.saveState()
 
 		if pmon.place1(temp) {
 			return true
 		}
-		// state = currentState = bestState
 
 		i += 1
 		if i == nposs {
@@ -301,52 +324,42 @@ func (pmon *placementMonitor) place2() bool {
 	return false
 }
 
-func (pmon *placementMonitor) step(temp Penalty) (Penalty, bool) {
+func (pmon *placementMonitor) tryPlacing(
+	threshold Penalty,
+) bool {
+	// Try to place the topmost unplaced activity.
+	// Try all possible placements until one is found that reduces the
+	// penalty. However, a placement may also be accepted – with a certain
+	// probability, based on the penalty increase – if it increases the
+	// penalty. Start searching at a random slot, only testing those in the
+	// activity's "PossibleSlots" list.
 
-	//TODO:
-	// Try all possible placements of the next activity, accepting one
-	// if it reduces the penalty. (Start testing at random slot?)
-	// Accept a worsening with a certain probability (SA?)?.
-	// If all fail choose a weighted probability?
-
-	// Assumes entry state = currentState,
-	// Final state = (probably changed) currentState,
-	// bestState is not affected.
+	// If no placement is found, fail and leave state as on entry.
+	// pmon.bestState is not affected.
 
 	ttinfo := pmon.ttinfo
-	var clashes []ttbase.ActivityIndex
-
-	var aix ttbase.ActivityIndex
-	if len(pmon.unplaced) == 0 {
-
-		//TODO??
-		/* The problem with this – or something like it – is that it will
-		 * change bestState, in conflict with the specification ...
-
-		aix = pmon.choosePlacedActivity()
-		clear(pmon.pendingPenalties)
-		pmon.score += pmon.evaluate1(aix)
-		// Update penalty info
-		for r, p := range pmon.pendingPenalties {
-			pmon.resourcePenalties[r] = p
-		}
-		pmon.unplaced = append(pmon.unplaced, aix)
-		pmon.breakout(1)
-		*/
-
-		return 0, false
-
-	} else {
-		aix = pmon.unplaced[len(pmon.unplaced)-1]
+	lcur := len(pmon.unplaced)
+	if lcur == 0 {
+		panic("BUG: not expecting empty unplaced list")
 	}
+	// Pop activity from "unplaced" list
+	lcur--
+	aix := pmon.unplaced[lcur]
+	pmon.unplaced = pmon.unplaced[:lcur]
+
+	var state0 *ttState
+	var clashes []ttbase.ActivityIndex
 	a := ttinfo.Activities[aix]
+	if a.Placement >= 0 {
+		panic("BUG: expecting unplaced activity")
+	}
 	nposs := len(a.PossibleSlots)
 	i0 := rand.IntN(nposs)
-
 	// Start with non-colliding placements
 	i := i0
 	var dpen Penalty
 	for {
+		// Try one slot after the other.
 		slot := a.PossibleSlots[i]
 		if ttinfo.TestPlacement(aix, slot) {
 			// Place and reevaluate
@@ -367,16 +380,17 @@ func (pmon *placementMonitor) step(temp Penalty) (Penalty, bool) {
 		}
 	}
 	// As a non-colliding placement is not possible, try a colliding one.
+	state0 = pmon.saveState()
 	for {
 		var dpenx Penalty
 		slot := a.PossibleSlots[i]
 		clashes = ttinfo.FindClashes(aix, slot)
 		for _, aixx := range clashes {
 			if pmon.check(aixx) {
+				// Reject if too recently placed.
 				goto nextslot
 			}
 		}
-
 		for _, aixx := range clashes {
 			ttinfo.UnplaceActivity(aixx)
 		}
@@ -394,17 +408,18 @@ func (pmon *placementMonitor) step(temp Penalty) (Penalty, bool) {
 		if dpenx <= 0 {
 			goto accept // (not very likely!)
 		} else {
-
-			//TODO: Compare with exponential function, exp(-dpenx / temp)
-			dfac := dpenx / temp
+			dfac := dpenx / threshold
+			// The traditional exponential function seems no better,
+			// this function may be a little faster?
 			t := N1 / (dfac*dfac + N2)
+			//t := Penalty(math.Exp(float64(-dfac)) * float64(N0))
 			if t != 0 && Penalty(rand.IntN(N0)) < t {
 				goto accept
 			}
 		}
 
 		// Don't accept change, revert
-		pmon.resetState()
+		pmon.restoreState(state0)
 
 	nextslot:
 		i += 1
@@ -412,8 +427,8 @@ func (pmon *placementMonitor) step(temp Penalty) (Penalty, bool) {
 			i = 0
 		}
 		if i == i0 {
-			// No non-colliding placements possible
-			return 0, false
+			// No further placements possible
+			return false
 		}
 	}
 accept:
@@ -422,11 +437,8 @@ accept:
 		pmon.resourcePenalties[r] = p
 	}
 	pmon.score += dpen
-	// Remove from "unplaced" list
-	pmon.unplaced = pmon.unplaced[:len(pmon.unplaced)-1]
 	pmon.unplaced = append(pmon.unplaced, clashes...)
-	pmon.currentState = pmon.saveState()
-	return dpen, true
+	return true
 }
 
 func (pmon *placementMonitor) printScore(msg string) {

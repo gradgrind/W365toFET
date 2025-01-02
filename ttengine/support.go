@@ -11,6 +11,11 @@ import (
 type Penalty int64
 
 type placementMonitor struct {
+	// The following are used to prevent recently placed activities from
+	// being removed too soon. "count" is incremented with each placement.
+	// "added" stores the last placement times ("count" value) for each
+	// activity. "delta" specifies how man "count" steps are necessary
+	// before an activity may be removed.
 	count int64
 	delta int64
 	added []int64
@@ -25,8 +30,19 @@ type placementMonitor struct {
 	score                   Penalty // current total penalty
 	pendingPenalties        map[ttbase.ResourceIndex]Penalty
 	// Should pendingPenalties rather be a list (for speed)?
-	currentState *ttState
-	bestState    *ttState
+
+	//currentState *ttState
+	bestState *ttState
+}
+
+func (pm *placementMonitor) place(
+	aix ttbase.ActivityIndex,
+	slot ttbase.SlotIndex,
+) {
+	// Place the activity in the given slot, recording the placement count.
+	pm.ttinfo.PlaceActivity(aix, slot)
+	pm.added[aix] = pm.count
+	pm.count++
 }
 
 func (pm *placementMonitor) check(aix ttbase.ActivityIndex) bool {
@@ -339,6 +355,8 @@ func (pmon *placementMonitor) saveState() *ttState {
 	return state
 }
 
+// TODO: Deprecated, as pmon.currentState is deprecated ...
+/*
 func (pmon *placementMonitor) resetState() {
 	// Restore the pmon-state from currentState.
 	// This assumes the length of the activities list is fixed. If new
@@ -368,9 +386,10 @@ func (pmon *placementMonitor) resetState() {
 	copy(pmon.ttinfo.TtSlots, state.ttslots)
 	copy(pmon.resourcePenalties, state.resourcePenalties)
 }
+*/
 
-/*
-func (pmon *placementMonitor) restoreState(state ttState) {
+func (pmon *placementMonitor) restoreState(state *ttState) {
+	// Restore the pmon-state from the argument.
 	// This assumes the length of the activities list is fixed. If new
 	// activities are added, or some removed, appropriate changes would
 	// need to be made.
@@ -384,22 +403,19 @@ func (pmon *placementMonitor) restoreState(state ttState) {
 		ap := state.placements[aix]
 		a.Placement = ap.placement
 		//a.Fixed = ap.fixed
-		//a.Xrooms = ap.xrooms
+		a.XRooms = ap.xrooms
 	}
-	//pmon.added = make([]int64, len(state.added))
-	//copy(pmon.added, state.added)
-	//pmon.count = state.count
+	pmon.unplaced = pmon.unplaced[:0]
+	pmon.unplaced = append(pmon.unplaced, state.unplaced...)
+	pmon.added = make([]int64, len(state.added))
+	copy(pmon.added, state.added)
+	pmon.count = state.count
+	pmon.score = state.score
 
 	// Set the resource allocation and penalties
 	copy(pmon.ttinfo.TtSlots, state.ttslots)
-	var score Penalty = 0
-	for i, rp := range state.resourcePenalties {
-		pmon.resourcePenalties[i] = rp
-		score += rp
-	}
-	pmon.score = score
+	copy(pmon.resourcePenalties, state.resourcePenalties)
 }
-*/
 
 func (pmon *placementMonitor) initConstraintData() {
 	ttinfo := pmon.ttinfo
