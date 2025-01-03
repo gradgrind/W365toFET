@@ -1,10 +1,10 @@
 *INFO* fromjson.go:23: *+ Reading: /home/user/Development/github/W365toFET/testdata/Versuch_D_Margin_hour_constraint_w365.json
 *WARNING* courseinfo.go:127: Lesson in Course US-1,US-2,US-3,US-4,US-5,US-6,US-7,US-8 has wrong number of rooms allocated:
   -- [k1] (expected 8)
-*WARNING* courseinfo.go:127: Lesson in Course US-1,US-2,US-3,US-4,US-5,US-7,US-8 has wrong number of rooms allocated:
-  -- [k1] (expected 7)
 *WARNING* courseinfo.go:127: Lesson in Course OS-10,OS-11,OS-12FH,OS-12M,OS-13,OS-9 has wrong number of rooms allocated:
   -- [k10] (expected 9)
+*WARNING* courseinfo.go:127: Lesson in Course US-1,US-2,US-3,US-4,US-5,US-7,US-8 has wrong number of rooms allocated:
+  -- [k1] (expected 7)
 *WARNING* constraints.go:188: Course has too many lessons forDifferentDays constraint:
   -- <Course 12FH.G,12M.G,12FH.H,12M.H/Wa,Ha:MAL/SCHR>
 *INFO* general.go:240: Wrote: /home/user/Development/github/W365toFET/testdata/typst_files/_data/Versuch_D_Margin_hour_constraint_teachers.json

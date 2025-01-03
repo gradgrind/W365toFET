@@ -52,25 +52,25 @@
 // Field placement fallbacks
 #let boxText = (
     Class: (
-        c: "SUBJECT",
-        tl: "TEACHER",
-        tr: "GROUP",
-        //bl: "",
-        br: "ROOM",
+        C: "SUBJECT",
+        TL: "TEACHER",
+        TR: "GROUP",
+        //BL: "",
+        BR: "ROOM",
     ),
     Teacher: (
-        c: "GROUP",
-        tl: "SUBJECT",
-        tr: "TEACHER",
-        //bl: "",
-        br: "ROOM",
+        C: "GROUP",
+        TL: "SUBJECT",
+        TR: "TEACHER",
+        //BL: "",
+        BR: "ROOM",
     ),
     Room: (
-        c: "GROUP",
-        tl: "SUBJECT",
-        //tr: "",
-        //bl: "",
-        br: "TEACHER",
+        C: "GROUP",
+        TL: "SUBJECT",
+        //TR: "",
+        //BL: "",
+        BR: "TEACHER",
     ),
 )
 
@@ -303,11 +303,11 @@
         TEACHER: Teachers.join(","),
         ROOM: Rooms.join(","),
     )
-    let centre = texts.at(fieldPlacements.at("c", default: ""), default: "")
-    let tl = texts.at(fieldPlacements.at("tl", default: ""), default: "")
-    let tr = texts.at(fieldPlacements.at("tr", default: ""), default: "")
-    let bl = texts.at(fieldPlacements.at("bl", default: ""), default: "")
-    let br = texts.at(fieldPlacements.at("br", default: ""), default: "")
+    let centre = texts.at(fieldPlacements.at("C", default: ""), default: "")
+    let tl = texts.at(fieldPlacements.at("TL", default: ""), default: "")
+    let tr = texts.at(fieldPlacements.at("TR", default: ""), default: "")
+    let bl = texts.at(fieldPlacements.at("BL", default: ""), default: "")
+    let br = texts.at(fieldPlacements.at("BR", default: ""), default: "")
 
     let cellBorderColour = Background
     if Background == "" {

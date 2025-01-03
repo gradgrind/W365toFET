@@ -51,21 +51,21 @@
 // Field placement fallbacks
 #let boxText = (
     Class: (
-        m: "SUBJECT",
-        t: "TEACHER",
-        b: "GROUP",
-        //b: "ROOM",
+        M: "SUBJECT",
+        T: "TEACHER",
+        B: "GROUP",
+        //B: "ROOM",
     ),
     Teacher: (
-        m: "GROUP",
-        t: "SUBJECT",
-        b: "TEACHER",
-        //b: "ROOM",
+        M: "GROUP",
+        T: "SUBJECT",
+        B: "TEACHER",
+        //B: "ROOM",
     ),
     Room: (
-        m: "GROUP",
-        t: "SUBJECT",
-        b: "TEACHER",
+        M: "GROUP",
+        T: "SUBJECT",
+        B: "TEACHER",
     ),
 )
 
@@ -288,9 +288,9 @@
         TEACHER: Teachers.join(JOINSTR),
         ROOM: Rooms.join(JOINSTR),
     )
-    let ctext = texts.at(fieldPlacements.at("m", default: ""), default: "")
-    let ttext = texts.at(fieldPlacements.at("t", default: ""), default: "")
-    let btext = texts.at(fieldPlacements.at("b", default: ""), default: "")
+    let ctext = texts.at(fieldPlacements.at("M", default: ""), default: "")
+    let ttext = texts.at(fieldPlacements.at("T", default: ""), default: "")
+    let btext = texts.at(fieldPlacements.at("B", default: ""), default: "")
     let cellBorderColour = Background
     if Background == "" {
         Background = "#FFFFFF"
