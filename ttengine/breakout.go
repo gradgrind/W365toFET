@@ -24,7 +24,7 @@ func (pmon *placementMonitor) movePlace(level int) bool {
 
 	//TODO: Criteria for choice of further activities.
 
-	// If all attempty fail, return false with state = pmon.bestState as
+	// If all attempts fail, return false with state = pmon.bestState as
 	// on entry.
 
 	best := pmon.bestState
@@ -40,7 +40,7 @@ func (pmon *placementMonitor) movePlace(level int) bool {
 	pvec[0] = -1
 	for aix := 1; aix < len(ttinfo.Activities); aix += 1 {
 		a := ttinfo.Activities[aix]
-		if a.Placement >= 0 && !a.Fixed {
+		if a.Placement >= 0 && !a.Fixed && !pmon.check(aix) {
 			for _, r := range a.Resources {
 				total += pmon.resourcePenalties[r]
 			}
@@ -49,12 +49,15 @@ func (pmon *placementMonitor) movePlace(level int) bool {
 	}
 
 	NR := 100
+	aixmap := map[ttbase.ActivityIndex]bool{}
 	for i := 0; i < NR; i++ {
 		//TODO: exit criteria ...
 
 		// Choose an activity
-		aix0, _ := slices.BinarySearch(pvec, Penalty(rand.IntN(int(total)+1)))
-		aix := ttbase.ActivityIndex(aix0)
+		aix, _ := slices.BinarySearch(pvec, Penalty(rand.IntN(int(total)+1)))
+		if aixmap[aix] {
+			continue
+		}
 
 		// Displace the activity and "pretend" the new state is the best.
 		//slot = ttinfo.Activities[aix].Placement
@@ -65,6 +68,9 @@ func (pmon *placementMonitor) movePlace(level int) bool {
 		for r, p := range pmon.pendingPenalties {
 			pmon.resourcePenalties[r] = p
 		}
+		//pmon.axmoved[aix] = pmon.axcount
+		//pmon.axcount++
+		aixmap[aix] = true
 		pmon.unplaced = append(pmon.unplaced, aix)
 		pmon.bestState = pmon.saveState()
 

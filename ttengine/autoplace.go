@@ -37,11 +37,15 @@ func PlaceLessons(
 
 	var pmon *placementMonitor
 	{
-		var delta int64 = 7 // This might be a reasonable value?
+		var delta int64 = 7   // This might be a reasonable value?
+		var axdelta int64 = 7 // This might be a reasonable value?
 		pmon = &placementMonitor{
 			count:    delta,
 			delta:    delta,
 			added:    make([]int64, len(ttinfo.Activities)),
+			axcount:  axdelta,
+			axdelta:  axdelta,
+			axmoved:  make([]int64, len(ttinfo.Activities)),
 			ttinfo:   ttinfo,
 			unplaced: alist,
 			//preferEarlier:           preferEarlier,
@@ -70,7 +74,7 @@ func PlaceLessons(
 	state0 := pmon.saveState()
 	NR := 1
 	tsum := 0.0
-	for i := 0; i < NR; i++ {
+	for i := NR; i != 0; i-- {
 		start := time.Now()
 
 		pmon.placer()
@@ -80,7 +84,9 @@ func PlaceLessons(
 		fmt.Printf("#### ELAPSED: %s\n", elapsed)
 		tsum += elapsed.Seconds()
 
-		pmon.restoreState(state0)
+		if i != 1 {
+			pmon.restoreState(state0)
+		}
 	}
 	fmt.Printf("#+++ AVERAGE: %.2f seconds.\n", tsum/float64(NR))
 	return false
