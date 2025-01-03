@@ -23,18 +23,18 @@ func DEFAULT_PRINT_TABLES() []*base.PrintTable {
 }
 
 type Tile struct {
-	Day        int      `json:"day"`
-	Hour       int      `json:"hour"`
-	Duration   int      `json:"duration,omitempty"`
-	Fraction   int      `json:"fraction,omitempty"`
-	Offset     int      `json:"offset,omitempty"`
-	Total      int      `json:"total,omitempty"`
-	Subject    string   `json:"subject"`
-	Groups     []string `json:"groups,omitempty"`
-	Teachers   []string `json:"teachers,omitempty"`
-	Rooms      []string `json:"rooms,omitempty"`
-	Background string   `json:"background,omitempty"`
-	Footnote   string   `json:"footnote,omitempty"`
+	Day        int
+	Hour       int
+	Duration   int `json:",omitempty"`
+	Fraction   int `json:",omitempty"`
+	Offset     int `json:",omitempty"`
+	Total      int `json:",omitempty"`
+	Subject    string
+	Groups     []string `json:",omitempty"`
+	Teachers   []string `json:",omitempty"`
+	Rooms      []string `json:",omitempty"`
+	Background string   `json:",omitempty"`
+	Footnote   string   `json:",omitempty"`
 }
 
 type Timetable struct {

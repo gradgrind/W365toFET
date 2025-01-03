@@ -11,47 +11,47 @@ import (
 type Ref = base.Ref // Element reference
 
 type Info struct {
-	Institution        string `json:"institution"`
-	FirstAfternoonHour int    `json:"firstAfternoonHour"`
-	MiddayBreak        []int  `json:"middayBreak"`
-	Reference          string `json:"scenario"`
+	Institution        string
+	FirstAfternoonHour int
+	MiddayBreak        []int
+	Reference          string `json:"Scenario"`
 }
 
 type Day struct {
-	Id   Ref    `json:"id"`
-	Type string `json:"type"`
-	Name string `json:"name"`
-	Tag  string `json:"shortcut"`
+	Id   Ref
+	Type string
+	Name string
+	Tag  string `json:"Shortcut"`
 }
 
 type Hour struct {
-	Id    Ref    `json:"id"`
-	Type  string `json:"type"`
-	Name  string `json:"name"`
-	Tag   string `json:"shortcut"`
-	Start string `json:"start"`
-	End   string `json:"end"`
+	Id    Ref
+	Type  string
+	Name  string
+	Tag   string `json:"Shortcut"`
+	Start string
+	End   string
 }
 
 type TimeSlot struct {
-	Day  int `json:"day"`
-	Hour int `json:"hour"`
+	Day  int
+	Hour int
 }
 
 type Teacher struct {
-	Id               Ref        `json:"id"`
-	Type             string     `json:"type"`
-	Name             string     `json:"name"`
-	Tag              string     `json:"shortcut"`
-	Firstname        string     `json:"firstname"`
-	NotAvailable     []TimeSlot `json:"absences"`
-	MinLessonsPerDay int        `json:"minLessonsPerDay"`
-	MaxLessonsPerDay int        `json:"maxLessonsPerDay"`
-	MaxDays          int        `json:"maxDays"`
-	MaxGapsPerDay    int        `json:"maxGapsPerDay"`
-	MaxGapsPerWeek   int        `json:"maxGapsPerWeek"`
-	MaxAfternoons    int        `json:"maxAfternoons"`
-	LunchBreak       bool       `json:"lunchBreak"`
+	Id               Ref
+	Type             string
+	Name             string
+	Tag              string `json:"Shortcut"`
+	Firstname        string
+	NotAvailable     []TimeSlot `json:"Absences"`
+	MinLessonsPerDay int
+	MaxLessonsPerDay int
+	MaxDays          int
+	MaxGapsPerDay    int
+	MaxGapsPerWeek   int
+	MaxAfternoons    int
+	LunchBreak       bool
 }
 
 func (t *Teacher) UnmarshalJSON(data []byte) error {
@@ -68,52 +68,52 @@ func (t *Teacher) UnmarshalJSON(data []byte) error {
 }
 
 type Subject struct {
-	Id   Ref    `json:"id"`
-	Type string `json:"type"`
-	Name string `json:"name"`
-	Tag  string `json:"shortcut"`
+	Id   Ref
+	Type string
+	Name string
+	Tag  string `json:"Shortcut"`
 }
 
 type Room struct {
-	Id           Ref        `json:"id"`
-	Type         string     `json:"type"`
-	Name         string     `json:"name"`
-	Tag          string     `json:"shortcut"`
-	NotAvailable []TimeSlot `json:"absences"`
+	Id           Ref
+	Type         string
+	Name         string
+	Tag          string     `json:"Shortcut"`
+	NotAvailable []TimeSlot `json:"Absences"`
 }
 
 type RoomGroup struct {
-	Id    Ref    `json:"id"`
-	Type  string `json:"type"`
-	Name  string `json:"name"`
-	Tag   string `json:"shortcut"`
-	Rooms []Ref  `json:"rooms"`
+	Id    Ref
+	Type  string
+	Name  string
+	Tag   string `json:"Shortcut"`
+	Rooms []Ref
 }
 
 type RoomChoiceGroup struct {
-	Id    Ref    `json:"id"`
-	Type  string `json:"type"`
-	Name  string `json:"name"`
-	Tag   string `json:"shortcut"`
-	Rooms []Ref  `json:"rooms"`
+	Id    Ref
+	Type  string
+	Name  string
+	Tag   string `json:"Shortcut"`
+	Rooms []Ref
 }
 
 type Class struct {
-	Id               Ref        `json:"id"`
-	Type             string     `json:"type"`
-	Name             string     `json:"name"`
-	Tag              string     `json:"shortcut"`
-	Year             int        `json:"level"`
-	Letter           string     `json:"letter"`
-	NotAvailable     []TimeSlot `json:"absences"`
-	Divisions        []Division `json:"divisions"`
-	MinLessonsPerDay int        `json:"minLessonsPerDay"`
-	MaxLessonsPerDay int        `json:"maxLessonsPerDay"`
-	MaxGapsPerDay    int        `json:"maxGapsPerDay"`
-	MaxGapsPerWeek   int        `json:"maxGapsPerWeek"`
-	MaxAfternoons    int        `json:"maxAfternoons"`
-	LunchBreak       bool       `json:"lunchBreak"`
-	ForceFirstHour   bool       `json:"forceFirstHour"`
+	Id               Ref
+	Type             string
+	Name             string
+	Tag              string `json:"Shortcut"`
+	Year             int    `json:"Level"`
+	Letter           string
+	NotAvailable     []TimeSlot `json:"Absences"`
+	Divisions        []Division
+	MinLessonsPerDay int
+	MaxLessonsPerDay int
+	MaxGapsPerDay    int
+	MaxGapsPerWeek   int
+	MaxAfternoons    int
+	LunchBreak       bool
+	ForceFirstHour   bool
 }
 
 func (t *Class) UnmarshalJSON(data []byte) error {
@@ -129,80 +129,80 @@ func (t *Class) UnmarshalJSON(data []byte) error {
 }
 
 type Group struct {
-	Id   Ref    `json:"id"`
-	Type string `json:"type"`
-	Tag  string `json:"shortcut"`
+	Id   Ref
+	Type string
+	Tag  string `json:"Shortcut"`
 }
 
 type Division struct {
-	Id     Ref    `json:"id"`
-	Type   string `json:"type"`
-	Name   string `json:"name"`
-	Groups []Ref  `json:"groups"`
+	Id     Ref
+	Type   string
+	Name   string
+	Groups []Ref
 }
 
 type Course struct {
-	Id             Ref    `json:"id"`
-	Type           string `json:"type"`
-	Subjects       []Ref  `json:"subjects"`
-	Groups         []Ref  `json:"groups"`
-	Teachers       []Ref  `json:"teachers"`
-	PreferredRooms []Ref  `json:"preferredRooms"`
+	Id             Ref
+	Type           string
+	Subjects       []Ref
+	Groups         []Ref
+	Teachers       []Ref
+	PreferredRooms []Ref
 }
 
 type SuperCourse struct {
-	Id         Ref         `json:"id"`
-	Type       string      `json:"type"`
-	EpochPlan  Ref         `json:"epochPlan"`
-	SubCourses []SubCourse `json:"subCourses"`
+	Id         Ref
+	Type       string
+	EpochPlan  Ref
+	SubCourses []SubCourse
 }
 
 type SubCourse struct {
-	Id             Ref    `json:"id"`
-	Type           string `json:"type"`
-	Subjects       []Ref  `json:"subjects"`
-	Groups         []Ref  `json:"groups"`
-	Teachers       []Ref  `json:"teachers"`
-	PreferredRooms []Ref  `json:"preferredRooms"`
+	Id             Ref
+	Type           string
+	Subjects       []Ref
+	Groups         []Ref
+	Teachers       []Ref
+	PreferredRooms []Ref
 }
 
 type Lesson struct {
-	Id         Ref      `json:"id"`
-	Type       string   `json:"type"`
-	Course     Ref      `json:"course"` // Course or SuperCourse Elements
-	Duration   int      `json:"duration"`
-	Day        int      `json:"day"`
-	Hour       int      `json:"hour"`
-	Fixed      bool     `json:"fixed"`
-	Rooms      []Ref    `json:"localRooms"` // only Room Elements
-	Flags      []string `json:"flags"`
-	Background string   `json:"background"`
-	Footnote   string   `json:"footnote"`
+	Id         Ref
+	Type       string
+	Course     Ref // Course or SuperCourse Elements
+	Duration   int
+	Day        int
+	Hour       int
+	Fixed      bool
+	Rooms      []Ref `json:"LocalRooms"` // only Room Elements
+	Flags      []string
+	Background string
+	Footnote   string
 }
 
 type EpochPlan struct {
-	Id   Ref    `json:"id"`
-	Type string `json:"type"`
-	Tag  string `json:"shortcut"`
-	Name string `json:"name"`
+	Id   Ref
+	Type string
+	Tag  string `json:"Shortcut"`
+	Name string
 }
 
 type DbTopLevel struct {
-	Info         Info               `json:"w365TT"`
-	PrintTables  []*base.PrintTable `json:"printTables"`
-	Days         []*Day             `json:"days"`
-	Hours        []*Hour            `json:"hours"`
-	Teachers     []*Teacher         `json:"teachers"`
-	Subjects     []*Subject         `json:"subjects"`
-	Rooms        []*Room            `json:"rooms"`
-	RoomGroups   []*RoomGroup       `json:"roomGroups"`
-	Classes      []*Class           `json:"classes"`
-	Groups       []*Group           `json:"groups"`
-	Courses      []*Course          `json:"courses"`
-	SuperCourses []*SuperCourse     `json:"superCourses"`
-	Lessons      []*Lesson          `json:"lessons"`
-	EpochPlans   []*EpochPlan       `json:"epochPlans"`
-	Constraints  []map[string]any   `json:"constraints"`
+	Info         Info `json:"W365TT"`
+	PrintTables  []*base.PrintTable
+	Days         []*Day
+	Hours        []*Hour
+	Teachers     []*Teacher
+	Subjects     []*Subject
+	Rooms        []*Room
+	RoomGroups   []*RoomGroup
+	Classes      []*Class
+	Groups       []*Group
+	Courses      []*Course
+	SuperCourses []*SuperCourse
+	Lessons      []*Lesson
+	EpochPlans   []*EpochPlan
+	Constraints  []map[string]any
 
 	// These fields do not belong in the JSON object.
 	RealRooms       map[Ref]*base.Room      `json:"-"`

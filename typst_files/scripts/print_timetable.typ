@@ -284,24 +284,24 @@
 }
 
 #let ttcell(
-    day: 0,
-    hour: 0,
-    duration: 1,
-    offset: 0,
-    fraction: 1,
-    total: 1,
-    subject: "",
-    groups: (),
-    teachers: (),
-    rooms: (),
-    background: "",
+    Day: 0,
+    Hour: 0,
+    Duration: 1,
+    Offset: 0,
+    Fraction: 1,
+    Total: 1,
+    Subject: "",
+    Groups: (),
+    Teachers: (),
+    Rooms: (),
+    Background: "",
 ) = {
     // Prepare texts
     let texts = (
-        SUBJECT: subject,
-        GROUP: groups.join(","),
-        TEACHER: teachers.join(","),
-        ROOM: rooms.join(","),
+        SUBJECT: Subject,
+        GROUP: Groups.join(","),
+        TEACHER: Teachers.join(","),
+        ROOM: Rooms.join(","),
     )
     let centre = texts.at(fieldPlacements.at("c", default: ""), default: "")
     let tl = texts.at(fieldPlacements.at("tl", default: ""), default: "")
@@ -309,12 +309,12 @@
     let bl = texts.at(fieldPlacements.at("bl", default: ""), default: "")
     let br = texts.at(fieldPlacements.at("br", default: ""), default: "")
 
-    let cellBorderColour = background
-    if background == "" {
-        background = "#FFFFFF"
+    let cellBorderColour = Background
+    if Background == "" {
+        Background = "#FFFFFF"
         cellBorderColour = "#000000"
     }
-    let bg = rgb(background)
+    let bg = rgb(Background)
     // Get text colour
     //TODO: choose algorithm for text colour.
     // 1) This converts the background to grey-scale and uses a threshold:
@@ -325,13 +325,13 @@
     set text(textcolour)
 
     // Determine grid lines
-    let (y0, y1) = hlines.at(hour)
-    let x0 = vlines.at(day)
-    if duration > 1 {
-        y1 = hlines.at(hour + duration - 1).at(1)
+    let (y0, y1) = hlines.at(Hour)
+    let x0 = vlines.at(Day)
+    if Duration > 1 {
+        y1 = hlines.at(Hour + Duration - 1).at(1)
     }
-    let wfrac = cell_width * fraction / total
-    let xshift = cell_width * offset / total
+    let wfrac = cell_width * Fraction / Total
+    let xshift = cell_width * Offset / Total
     // Shrink excessively large components.
     let b = box(
         fill: bg,

@@ -264,39 +264,39 @@
 
 #let ttvcell(
     row,
-    day: 0,
-    hour: 0,
-    duration: 1,
-    offset: 0,
-    fraction: 1,
-    total: 1,
-    subject: "",
-    groups: (),
-    teachers: (),
-    rooms: (),
-    background: "",
+    Day: 0,
+    Hour: 0,
+    Duration: 1,
+    Offset: 0,
+    Fraction: 1,
+    Total: 1,
+    Subject: "",
+    Groups: (),
+    Teachers: (),
+    Rooms: (),
+    Background: "",
 ) = {
     // Determine grid lines
-    let ix = day * nhours + hour
-    ix += day
+    let ix = Day * nhours + Hour
+    ix += Day
     let x0 = vlines.at(ix)
     let y0 = hlines.at(row)
     // Prepare texts
     let texts = (
-        SUBJECT: subject,
-        GROUP: groups.join(JOINSTR),
-        TEACHER: teachers.join(JOINSTR),
-        ROOM: rooms.join(JOINSTR),
+        SUBJECT: Subject,
+        GROUP: Groups.join(JOINSTR),
+        TEACHER: Teachers.join(JOINSTR),
+        ROOM: Rooms.join(JOINSTR),
     )
     let ctext = texts.at(fieldPlacements.at("m", default: ""), default: "")
     let ttext = texts.at(fieldPlacements.at("t", default: ""), default: "")
     let btext = texts.at(fieldPlacements.at("b", default: ""), default: "")
-    let cellBorderColour = background
-    if background == "" {
-        background = "#FFFFFF"
+    let cellBorderColour = Background
+    if Background == "" {
+        Background = "#FFFFFF"
         cellBorderColour="#000000"
     }
-    let bg = rgb(background)
+    let bg = rgb(Background)
     // Get text colour
     //TODO: choose algorithm for text colour.
     // 1) This converts the background to grey-scale and uses a threshold:
@@ -307,9 +307,9 @@
     set text(textcolour)
 
     // Determine size and offset of tile
-    let w = colwidth * duration - cell_inset * 2
-    let hfrac = cell_height * fraction / total
-    let yshift = cell_height * offset / total
+    let w = colwidth * Duration - cell_inset * 2
+    let hfrac = cell_height * Fraction / Total
+    let yshift = cell_height * Offset / Total
     // Shrink excessively large components.
     let b = box(
         fill: bg,
