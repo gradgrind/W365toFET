@@ -6,7 +6,7 @@ Manche Eigenschaften der Ausdrucke werden in den Typst-Skripten festgelegt. Ande
 
 Viele der Optionen werden über die "Typst"-Eigenschaft direkt an das Typst-Skript übergeben. Die möglichen Felder hängen also vom eingesetzten Typst-Skript ab. Das Typst-Skript sollte idealerweise sinnvolle Voreinstellungen für so viele Felder wie möglich haben.
 
-Welche Pläne erstellt werden, wird durch die Objekte in der "printTables"-Liste festgelegt. Jedes Objekt beschreibt ein Stundenplandokument. Folgende Dokumenttypen sind vorgesehen:
+Welche Pläne erstellt werden, wird durch die Objekte in der "PrintTables"-Liste festgelegt. Jedes Objekt beschreibt ein Stundenplandokument. Folgende Dokumenttypen sind vorgesehen:
 
  - Gesamtplan Klassen (eine Klasse pro Seite)
  - Übersichtsplan Klassen
@@ -20,7 +20,7 @@ Ob ein Übersichtsplan oder ein Gesamtplan erzeugt wird, hängt vom verwendeten 
 Auch Einzelpläne können erstellt werden, indem die Element-ID des entsprechenden Objekts (Klasse, Lehrer oder Raum) als "Type" angegeben wird.
 
 ```
-  "printTables": [
+  "PrintTables": [
     {
       "Type": "Class", // oder "Teacher" oder "Room" oder Element-Id
       "TypstTemplate": "template1",
@@ -143,4 +143,4 @@ Die Daten werden an das Typst-Skript als JSON-Datei mit folgender Struktur über
 }
 ```
 
-Der Name der Institution sollte im W365TT-Objekt, Feld "institution", zur Verfügung stehen.
+Der Name der Institution sollte im W365TT-Objekt, Feld "Institution", zur Verfügung stehen.
