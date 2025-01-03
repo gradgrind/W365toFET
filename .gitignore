@@ -3,6 +3,7 @@
 
 _*
 .vscode
+*.log
 
 #
 # Binaries for programs and plugins
