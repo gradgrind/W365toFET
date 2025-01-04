@@ -77,7 +77,7 @@ func PlaceLessons(
 	for i := NR; i != 0; i-- {
 		start := time.Now()
 
-		pmon.placer()
+		pmon.basicLoop()
 
 		// calculate the exe time
 		elapsed := time.Since(start)
@@ -92,129 +92,17 @@ func PlaceLessons(
 	return false
 	//--
 
-	return pmon.placer()
-}
-
-func (pmon *placementMonitor) placer() bool {
-	pmon.bestState = pmon.saveState()
-
-	// Initial placement of unplaced lessons
-	pmon.basicPlacements(THRESHOLD0)
-	// state = pmon.bestState
-
-	//++pmon.printScore("basicPlacements")
-
-	//	return false
-
-	for {
-		//TODO: Handle optimization when all activities are placed ...
-		if len(pmon.unplaced) == 0 {
-
-			pmon.printScore("ALL PLACED (0)")
-
-			//TODO: exit criteria ...
-
-			if pmon.movePlace(1) {
-				continue
-			}
-			fmt.Printf("MOVE FAILED: %+v\n", pmon.unplaced)
-			break
-		}
-		if !pmon.placeEventually() {
-			// No improvement was found by "placeEventually".
-			// state = pmon.bestState
-
-			// Mechanism to escape to other solution areas:
-			// Accept a worsening step and follow its progress a while to see
-			// if a better solution area can be found.
-			if !pmon.breakout(1) {
-				break
-			}
-
-			/* Might be useful in some form?
-			//TODO: It looks like one retry can help a bit, but repeating it
-			// may be unproductive.
-			// Reorder unplaced activities
-			i -= 1
-			if i == 0 {
-				break
-			}
-			laix := pmon.unplaced[lpu-1]
-			copy(pmon.unplaced[1:], pmon.unplaced)
-			pmon.unplaced[0] = laix
-			copy(pmon.currentState.unplaced, pmon.unplaced)
-			//++pmon.printScore("Shuffle")
-			//
-
-			continue
-			*/
-		}
-		// state = pmon.bestState
-		//++pmon.printScore("placeEventually")
-	}
-	fmt.Printf("§Unplaced: %d\n", len(pmon.unplaced))
-	return true
-}
-
-func (pmon *placementMonitor) basicPlacements(threshold Penalty) bool {
-	// Primary placement algorithm, based on "Simulated Annealing" (but see
-	// cooling factor below ...).
-	// Final state = bestState
-	// Return true if an improvement was made.
-	better := false
-	for threshold != 0 {
-		lcur := len(pmon.unplaced)
-		if lcur == 0 {
-			//TODO?
-			break
-		}
-
-		if !pmon.placeTopUnplaced(threshold) {
-			// No step made, premature exit
-			//fmt.Printf("FAILED: %d\n", aix)
-
-			//?
-			break
-
-			/* Something like this? It might well change bestState ...
-
-			aix = pmon.choosePlacedActivity()
-			clear(pmon.pendingPenalties)
-			pmon.score += pmon.evaluate1(aix)
-			// Update penalty info
-			for r, p := range pmon.pendingPenalties {
-				pmon.resourcePenalties[r] = p
-			}
-			pmon.unplaced = append(pmon.unplaced, aix)
-			pmon.breakout(1)
-			*/
-
-		}
-		//fmt.Printf("PLACED: %d\n", aix)
-
-		//fmt.Printf("++ T=%d Unplaced: %d Penalty: %d\n",
-		//	threshold, len(pmon.unplaced), dp)
-		lcur = len(pmon.unplaced)
-		lbest := len(pmon.bestState.unplaced)
-		if lcur < lbest || (lcur == lbest && pmon.score < pmon.bestState.score) {
-			pmon.bestState = pmon.saveState()
-			better = true
-		}
-		// The cooling factor seems not to have a great impact, as long as
-		// it's above 0.8 or so?
-		// In fact it might be best with no cooling at all, i.e. without
-		// the S.A. ...
-		//threshold *= 9980
-		//threshold /= 10000
-	}
-	pmon.restoreState(pmon.bestState)
-	return better
+	pmon.basicLoop()
+	return false
 }
 
 func (pmon *placementMonitor) placeConditional() bool {
 	// Force a placement of the next activity if one of the possibilities
 	// leads – after a call to "placeNonColliding" – to an improved score.
-	// On failure, restore entry state and return false.
+	// Depending an a probability function a worsened state might be accepted.
+	// On failure (non-acceptance), restore entry state and return false.
+	// Note that pmon.bestState is not necessarily changed, even if true
+	// is returned.
 	ttinfo := pmon.ttinfo
 	aix := pmon.unplaced[len(pmon.unplaced)-1]
 	a := ttinfo.Activities[aix]
@@ -254,7 +142,22 @@ func (pmon *placementMonitor) placeConditional() bool {
 			if pmon.placeNonColliding(-1) {
 				return true
 			}
-			//TODO: Allow more flexible acceptance.
+			// Allow more flexible acceptance.
+			dpenx := dpen + PENALTY_UNPLACED_ACTIVITY*Penalty(
+				len(pmon.unplaced)-len(state0.unplaced))
+			// Decide whether to accept.
+			if dpenx <= 0 {
+				return true // (just in case ...)
+			} else {
+				dfac := dpenx / threshold
+				// The traditional exponential function seems no better,
+				// this function may be a little faster?
+				t := N1 / (dfac*dfac + N2)
+				//t := Penalty(math.Exp(float64(-dfac)) * float64(N0))
+				if t != 0 && Penalty(rand.IntN(N0)) < t {
+					return true
+				}
+			}
 
 		}
 		// Restore state.
@@ -264,18 +167,8 @@ func (pmon *placementMonitor) placeConditional() bool {
 			i = 0
 		}
 		if i == i0 {
-			// No improved placement found
-
-			break //??
-			// The following may offer no noticeable improvement. More than
-			// one repeat may slow the process down.
-
-			threshold *= 2 // TODO??
-			//++fmt.Printf("???? %d\n", threshold)
-			if threshold > 9 {
-				// A larger value could be counterproductive?
-				break
-			}
+			// All slots have been tested.
+			break
 		}
 	}
 	return false
@@ -287,6 +180,7 @@ func (pmon *placementMonitor) basicLoop() {
 	pmon.placeNonColliding(-1)
 
 	var blockslot ttbase.SlotIndex
+	var states []*ttState
 	for {
 	evaluate:
 		//TODO: exit criteria
@@ -299,12 +193,24 @@ func (pmon *placementMonitor) basicLoop() {
 				goto evaluate
 			}
 		}
-		//TODO: Get a bit more radical – allow activities to be replaced.
+		// Get a bit more radical – allow activities to be replaced.
 		// Perform just one forced placement, followed by placeNonColliding.
 		// An increased penalty may be accepted, depending on a probability
 		// function.
 		if pmon.placeConditional() {
 			continue
+		}
+		// Mechanism to escape to other solution areas:
+		// Accept a worsening step and follow its progress a while to see
+		// if a better solution area can be found.
+
+		//TODO???
+
+		states = append(states, pmon.saveState())
+		if !pmon.breakout(len(states)) {
+			ls := len(states) - 1
+			pmon.restoreState(states[ls])
+			states = states[:ls]
 		}
 	}
 }
