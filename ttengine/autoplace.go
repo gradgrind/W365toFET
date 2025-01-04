@@ -211,11 +211,10 @@ func (pmon *placementMonitor) basicPlacements(threshold Penalty) bool {
 	return better
 }
 
-func (pmon *placementMonitor) placeEventually() bool {
+func (pmon *placementMonitor) placeConditional() bool {
 	// Force a placement of the next activity if one of the possibilities
-	// leads – after a call to "basicPlacements" – to an improved score.
-	// On failure return false.
-	// Regardless of success, on return: state = pmon.bestState.
+	// leads – after a call to "placeNonColliding" – to an improved score.
+	// On failure, restore entry state and return false.
 	ttinfo := pmon.ttinfo
 	aix := pmon.unplaced[len(pmon.unplaced)-1]
 	a := ttinfo.Activities[aix]
@@ -223,35 +222,43 @@ func (pmon *placementMonitor) placeEventually() bool {
 	var dpen Penalty
 	i0 := rand.IntN(nposs)
 	i := i0
+	// Save entry state.
+	state0 := pmon.saveState()
+
 	//TODO: Initial threshold = ?
 	var threshold Penalty = 5
+
 	var clashes []ttbase.ActivityIndex
 	for {
 		slot := a.PossibleSlots[i]
 		clashes = ttinfo.FindClashes(aix, slot)
-		for _, aixx := range clashes {
-			ttinfo.UnplaceActivity(aixx)
-		}
-		pmon.place(aix, slot)
-		clear(pmon.pendingPenalties)
-		dpen = pmon.evaluate1(aix)
-		for _, aixx := range clashes {
-			dpen += pmon.evaluate1(aixx)
-		}
-		// Update penalty info
-		for r, p := range pmon.pendingPenalties {
-			pmon.resourcePenalties[r] = p
-		}
-		pmon.score += dpen
-		// Remove from "unplaced" list
-		pmon.unplaced = pmon.unplaced[:len(pmon.unplaced)-1]
-		pmon.unplaced = append(pmon.unplaced, clashes...)
+		if len(clashes) != 0 {
+			// Only accept slots where a replacement is necessary.
+			for _, aixx := range clashes {
+				ttinfo.UnplaceActivity(aixx)
+			}
+			dpen = pmon.place(aix, slot)
+			for _, aixx := range clashes {
+				dpen += pmon.evaluate1(aixx)
+			}
+			// Update penalty info
+			for r, p := range pmon.pendingPenalties {
+				pmon.resourcePenalties[r] = p
+			}
+			pmon.score += dpen
+			// Remove from "unplaced" list
+			pmon.unplaced = pmon.unplaced[:len(pmon.unplaced)-1]
+			// ... and add removed activities
+			pmon.unplaced = append(pmon.unplaced, clashes...)
 
-		// pmon.basicPlacements returns with state = pmon.bestState
-		if pmon.basicPlacements(threshold) {
-			return true
-		}
+			if pmon.placeNonColliding(-1) {
+				return true
+			}
+			//TODO: Allow more flexible acceptance.
 
+		}
+		// Restore state.
+		pmon.restoreState(state0)
 		i += 1
 		if i == nposs {
 			i = 0
@@ -274,122 +281,97 @@ func (pmon *placementMonitor) placeEventually() bool {
 	return false
 }
 
-func (pmon *placementMonitor) placeTopUnplaced(
-	threshold Penalty,
+func (pmon *placementMonitor) basicLoop() {
+
+	//TODO: This might need to be placed before the call to "basicLoop":
+	pmon.placeNonColliding(-1)
+
+	var blockslot ttbase.SlotIndex
+	for {
+	evaluate:
+		//TODO: exit criteria
+
+		blockslot = -1
+		for len(pmon.unplaced) == 0 {
+			blockslot = pmon.removeRandomActivity()
+			if pmon.placeNonColliding(blockslot) {
+				// score improved
+				goto evaluate
+			}
+		}
+		//TODO: Get a bit more radical – allow activities to be replaced.
+		// Perform just one forced placement, followed by placeNonColliding.
+		// An increased penalty may be accepted, depending on a probability
+		// function.
+		if pmon.placeConditional() {
+			continue
+		}
+	}
+}
+
+func (pmon *placementMonitor) placeNonColliding(
+	block ttbase.SlotIndex, // Don't use this slot (-1 => none blocked)
 ) bool {
-	// Try to place the topmost unplaced activity.
-	// Try all possible placements until one is found that reduces the
-	// penalty. However, a placement which incurs an increased penalty may
-	// also be accepted – with a certain probability, based on the amount
-	// by which the penalty increases.
-	// Start searching at a random slot, only testing those in the
-	// activity's "PossibleSlots" list.
-
-	// If no placement is found, fail and leave state as on entry.
-	// pmon.bestState is not affected.
-
+	// Try to place the topmost unplaced activity (repeatedly).
+	// Try all possible placements until one is found that doesn't require
+	// the removal of another activity. Start searching at a random slot,
+	// only testing those in the activity's "PossibleSlots" list.
+	// Repeat until no more activities can be placed.
+	// pmon.bestState is updated if – and only if – there is an improvement.
+	// Return true if pmon.bestState has been updated.
+	better := false
 	ttinfo := pmon.ttinfo
 	lcur := len(pmon.unplaced)
-	if lcur == 0 {
-		panic("BUG: not expecting empty unplaced list")
-	}
-	// Pop activity from "unplaced" list
-	lcur--
-	aix := pmon.unplaced[lcur]
-	pmon.unplaced = pmon.unplaced[:lcur]
+	for lcur != 0 {
+		// Read top activity from unplaced-stack
+		aix := pmon.unplaced[lcur-1]
+		a := ttinfo.Activities[aix]
+		if a.Placement >= 0 {
+			panic("BUG: expecting unplaced activity")
+		}
+		nposs := len(a.PossibleSlots)
+		i0 := rand.IntN(nposs)
+		// Seek a non-colliding placement
+		i := i0
+		var dpen Penalty
+		for {
+			if i != block {
+				// Try one slot after the other.
+				slot := a.PossibleSlots[i]
+				if ttinfo.TestPlacement(aix, slot) {
+					// Place and reevaluate
+					dpen = pmon.place(aix, slot)
 
-	var state0 *ttState
-	var clashes []ttbase.ActivityIndex
-	a := ttinfo.Activities[aix]
-	if a.Placement >= 0 {
-		panic("BUG: expecting unplaced activity")
-	}
-	nposs := len(a.PossibleSlots)
-	i0 := rand.IntN(nposs)
-	// Start with non-colliding placements
-	i := i0
-	var dpen Penalty
-	for {
-		// Try one slot after the other.
-		slot := a.PossibleSlots[i]
-		if ttinfo.TestPlacement(aix, slot) {
-			// Place and reevaluate
-			ttinfo.PlaceActivity(aix, slot)
-			pmon.added[aix] = pmon.count
-			pmon.count++
-			clear(pmon.pendingPenalties)
-			dpen = pmon.evaluate1(aix) //- PENALTY_UNPLACED_ACTIVITY
-			goto accept
-		}
-		i += 1
-		if i == nposs {
-			i = 0
-		}
-		if i == i0 {
-			// No non-colliding placements possible
-			break
-		}
-	}
-	// As a non-colliding placement is not possible, try a colliding one.
-	state0 = pmon.saveState()
-	for {
-		var dpenx Penalty
-		slot := a.PossibleSlots[i]
-		clashes = ttinfo.FindClashes(aix, slot)
-		for _, aixx := range clashes {
-			if pmon.check(aixx) {
-				// Reject if too recently placed.
-				goto nextslot
+					//TODO: Perhaps there should be some consideration of dpen?
+
+					break
+				}
+			}
+			i += 1
+			if i == nposs {
+				i = 0
+			}
+			if i == i0 {
+				// No non-colliding placement possible
+				return better
 			}
 		}
-		for _, aixx := range clashes {
-			ttinfo.UnplaceActivity(aixx)
+		// Remove activity from unplaced stack
+		lcur--
+		pmon.unplaced = pmon.unplaced[:lcur]
+		// Update penalty info
+		for r, p := range pmon.pendingPenalties {
+			pmon.resourcePenalties[r] = p
 		}
-		ttinfo.PlaceActivity(aix, slot)
-		pmon.added[aix] = pmon.count
-		pmon.count++
-		clear(pmon.pendingPenalties)
-		dpen = pmon.evaluate1(aix)
-		for _, aixx := range clashes {
-			dpen += pmon.evaluate1(aixx)
-		}
-		dpenx = dpen + PENALTY_UNPLACED_ACTIVITY*Penalty(len(clashes)-1)
-
-		// Decide whether to accept
-		if dpenx <= 0 {
-			goto accept // (not very likely!)
-		} else {
-			dfac := dpenx / threshold
-			// The traditional exponential function seems no better,
-			// this function may be a little faster?
-			t := N1 / (dfac*dfac + N2)
-			//t := Penalty(math.Exp(float64(-dfac)) * float64(N0))
-			if t != 0 && Penalty(rand.IntN(N0)) < t {
-				goto accept
-			}
-		}
-
-		// Don't accept change, revert
-		pmon.restoreState(state0)
-
-	nextslot:
-		i += 1
-		if i == nposs {
-			i = 0
-		}
-		if i == i0 {
-			// All slots have been tested.
-			return false
+		pmon.score += dpen
+		// Test whether the best score has been beaten.
+		lbest := len(pmon.bestState.unplaced)
+		if lcur < lbest || (lcur == lbest && pmon.score < pmon.bestState.score) {
+			pmon.bestState = pmon.saveState()
+			better = true
 		}
 	}
-accept:
-	// Update penalty info
-	for r, p := range pmon.pendingPenalties {
-		pmon.resourcePenalties[r] = p
-	}
-	pmon.score += dpen
-	pmon.unplaced = append(pmon.unplaced, clashes...)
-	return true
+	return better
 }
 
 func (pmon *placementMonitor) printScore(msg string) {

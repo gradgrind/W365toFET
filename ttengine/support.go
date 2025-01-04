@@ -43,11 +43,14 @@ type placementMonitor struct {
 func (pm *placementMonitor) place(
 	aix ttbase.ActivityIndex,
 	slot ttbase.SlotIndex,
-) {
+) Penalty {
 	// Place the activity in the given slot, recording the placement count.
+	// Return the change in score and set pm.pendingpenalties.
 	pm.ttinfo.PlaceActivity(aix, slot)
 	pm.added[aix] = pm.count
 	pm.count++
+	clear(pm.pendingPenalties)
+	return pm.evaluate1(aix)
 }
 
 func (pm *placementMonitor) check(aix ttbase.ActivityIndex) bool {
@@ -278,19 +281,23 @@ func makeResourceSlotActivityMap(ttinfo *ttbase.TtInfo,
 	return rpamap
 }
 
-func integrityCheck(ttinfo *ttbase.TtInfo) {
+// For testing!
+func (pmon *placementMonitor) fullIntegrityCheck() {
+	ttinfo := pmon.ttinfo
 	rmap := make([]bool, len(ttinfo.TtSlots))
-	for aix := 1; aix < len(ttinfo.Activities); aix++ {
+	nacts := len(ttinfo.Activities)
+	unplaced := map[ttbase.ActivityIndex]bool{}
+	for aix := 1; aix < nacts; aix++ {
 		a := ttinfo.Activities[aix]
 		p := a.Placement
 		if p < 0 {
-			continue
+			unplaced[aix] = true
 		}
 		for _, r := range a.Resources {
 			rix := r*ttinfo.SlotsPerWeek + p
 			for i := 0; i < a.Duration; i++ {
 				if ttinfo.TtSlots[rix+i] != aix {
-					base.Bug.Fatalf("$?$ Resource: %d Slot: %d --> %d\n"+
+					base.Bug.Fatalf("$!$ Resource: %d Slot: %d --> %d\n"+
 						"  -- Activity: %+v\n",
 						r, p, ttinfo.TtSlots[rix+i], a)
 				}
@@ -298,6 +305,18 @@ func integrityCheck(ttinfo *ttbase.TtInfo) {
 			}
 		}
 	}
+	// Check unplaced activities.
+	if len(unplaced) != len(pmon.unplaced) {
+		base.Bug.Fatalf("$!$ pmon.unplaced (%d) != actually unplaced (%d) \n",
+			len(pmon.unplaced), len(unplaced))
+	}
+	for _, aix := range pmon.unplaced {
+		if !unplaced[aix] {
+			base.Bug.Fatalf("$!$ Unplaced activity (%d) is actually placed:"+
+				" %d\n", aix)
+		}
+	}
+	// Check the unchecked resource allocations.
 	for rix, rp := range rmap {
 		if !rp {
 			aix := ttinfo.TtSlots[rix]
@@ -309,9 +328,15 @@ func integrityCheck(ttinfo *ttbase.TtInfo) {
 					ttinfo.Activities[aix],
 				)
 			}
-
 		}
 	}
+	// Check penalties: 1) Resource penalties
+	for rix := range rmap {
+		if pmon.resourcePenalties[rix] != pmon.resourcePenalty1(rix) {
+			base.Bug.Fatalf("$!$ Resource (%d) has wrong penalty\n", rix)
+		}
+	}
+	//TODO: further penalties
 }
 
 type activityPlacement struct {

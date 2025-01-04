@@ -128,9 +128,7 @@ func (pmon *placementMonitor) breakout0(level int) bool {
 		for _, aixx := range clashes {
 			ttinfo.UnplaceActivity(aixx)
 		}
-		pmon.place(aix, slot)
-		clear(pmon.pendingPenalties)
-		dpen = pmon.evaluate1(aix)
+		dpen = pmon.place(aix, slot)
 		for _, aixx := range clashes {
 			dpen += pmon.evaluate1(aixx)
 		}
@@ -228,9 +226,7 @@ func (pmon *placementMonitor) breakout(level int) bool {
 		for _, aixx := range clashes {
 			ttinfo.UnplaceActivity(aixx)
 		}
-		pmon.place(aix, slot)
-		clear(pmon.pendingPenalties)
-		dpen = pmon.evaluate1(aix)
+		dpen = pmon.place(aix, slot)
 		for _, aixx := range clashes {
 			dpen += pmon.evaluate1(aixx)
 		}
