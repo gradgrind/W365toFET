@@ -180,7 +180,7 @@ func (pmon *placementMonitor) basicLoop() {
 	pmon.placeNonColliding(-1)
 
 	var blockslot ttbase.SlotIndex
-	var states []*ttState
+	levels := []breakoutLevel{}
 	for {
 	evaluate:
 		//TODO: exit criteria
@@ -206,11 +206,24 @@ func (pmon *placementMonitor) basicLoop() {
 
 		//TODO???
 
-		states = append(states, pmon.saveState())
-		if !pmon.breakout(len(states)) {
-			ls := len(states) - 1
-			pmon.restoreState(states[ls])
-			states = states[:ls]
+		// If no improvement has been made, go to the next level, if there is
+		// one. If not, choose the next possibility from this level. Once
+		// these have all failed to bring an improvement, end this level.
+
+		// How to tell whether the state has improved? Remember best?
+
+		// There could be a series of possible changes. These could be tried
+		// one after the other. If no improvement has been made when all have
+		// been tried, end this level by going to the next one
+
+		if pmon.bestState != best {
+			// Clear the state stack.
+			levels = levels[:0]
+		}
+		pmon.radicalStep(&levels)
+		if len(levels) == 0 {
+			//TODO: Revert to bestState?
+			pmon.restoreState(pmon.bestState)
 		}
 	}
 }

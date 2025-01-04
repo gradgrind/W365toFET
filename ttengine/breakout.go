@@ -6,9 +6,22 @@ import (
 
 // TODO: Is there an optimal limit? Too small and it may get trapped too
 // easily. Larger values may use a bit more memory and seem a bit slower.
-// Around 5 – 10 seems reasonable.
-const MAX_BREAKOUT_LEVEL = 5
+// Around 5 – 10 seems reasonable (??? from old implementation)
+const MAX_BREAKOUT_LEVELS = 5
 
+type breakoutLevel struct {
+	state *ttState
+	//TODO: fields for "radicalStep"
+}
+
+func (pmon *placementMonitor) radicalStep(levels *[]breakoutLevel) {
+	if len(*levels) == MAX_BREAKOUT_LEVELS {
+		// Seek next possibility at this level?
+	}
+
+}
+
+// TODO--
 func (pmon *placementMonitor) breakout(level int) bool {
 	// Suspend the current search, saving its pmon.bestState.
 	// Allow an unconditional placement of the topmost unplaced activity.
