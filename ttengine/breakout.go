@@ -6,9 +6,10 @@ import (
 )
 
 // TODO: Is there an optimal limit? Too small and it may get trapped too
-// easily. Larger values may use a bit more memory and seem a bit slower.
-// Around 5 – 10 seems reasonable (??? from old implementation)
-const MAX_BREAKOUT_LEVELS = 5
+// easily? Larger values may use a bit more memory and seem slower.
+// Around 3 – 5? Actually it is not clear that a value of more than 1 helps
+// at all ...
+const MAX_BREAKOUT_LEVELS = 1
 
 type breakoutLevel struct {
 	state *ttState

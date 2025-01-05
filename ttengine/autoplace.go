@@ -3,7 +3,6 @@ package ttengine
 import (
 	"W365toFET/ttbase"
 	"fmt"
-	"math/rand/v2"
 	"slices"
 	"time"
 )
@@ -104,23 +103,46 @@ func (pmon *placementMonitor) basicLoop() {
 	var best *ttState
 	for {
 	evaluate:
+		//pmon.fullIntegrityCheck()
 		//TODO: exit criteria
 
 		blockslot = -1
-		for len(pmon.unplaced) == 0 {
+		//for len(pmon.unplaced) == 0 { // seems to get stuck ...
+		if len(pmon.unplaced) == 0 {
 			blockslot = pmon.removeRandomActivity()
 			if pmon.placeNonColliding(blockslot) {
 				// score improved
+				pmon.printScore("evaluate")
 				goto evaluate
+			}
+
+			//TODO: Alternative to for loop? But what about best updating?
+			if len(pmon.unplaced) == 0 {
+				pmon.removeRandomActivity()
 			}
 		}
 		// Get a bit more radical – allow activities to be replaced.
 		// Perform just one forced placement, followed by placeNonColliding.
 		// An increased penalty may be accepted, depending on a probability
 		// function.
+
+		//pmon.printScore("placeConditional")
+
 		if pmon.placeConditional() {
 			continue
 		}
+
+		//TODO: This doesn't seem to be a good place? 1) rarely "successful",
+		// 2) seems ineffective
+		// Test whether the best score has been beaten.
+		lcur := len(pmon.unplaced)
+		lbest := len(pmon.bestState.unplaced)
+		if lcur < lbest || (lcur == lbest && pmon.score < pmon.bestState.score) {
+			pmon.bestState = pmon.saveState()
+			pmon.printScore("Better")
+			//--panic("TODO--")
+		}
+
 		// Mechanism to escape to other solution areas:
 		// Accept a worsening step and follow its progress a while to see
 		// if a better solution area can be found.
@@ -129,171 +151,26 @@ func (pmon *placementMonitor) basicLoop() {
 		// one. If not, choose the next possibility from this level. Once
 		// these have all failed to bring an improvement, end this level.
 
+		//pmon.printStateScore("bestState", pmon.bestState)
+		//if best != nil {
+		//	pmon.printStateScore("best", best)
+		//}
+
 		if pmon.bestState != best {
 			pmon.printScore("Best")
 			best = pmon.bestState
 			// Clear the level stack.
 			levels = levels[:0]
+		} else {
+			//pmon.printScore("radicalStep")
 		}
 
 		if !pmon.radicalStep(&levels) {
 			//TODO: Revert to bestState?
-			pmon.printScore("Revert")
-			pmon.restoreState(pmon.bestState)
-			pmon.fullIntegrityCheck()
+			pmon.restoreState(best)
+			//pmon.printScore("Revert")
 		}
 	}
-}
-
-func (pmon *placementMonitor) placeNonColliding(
-	block ttbase.SlotIndex, // Don't use this slot (-1 => none blocked)
-) bool {
-	// Try to place the topmost unplaced activity (repeatedly).
-	// Try all possible placements until one is found that doesn't require
-	// the removal of another activity. Start searching at a random slot,
-	// only testing those in the activity's "PossibleSlots" list.
-	// Repeat until no more activities can be placed.
-	// pmon.bestState is updated if – and only if – there is an improvement.
-	// Return true if pmon.bestState has been updated.
-	better := false
-	ttinfo := pmon.ttinfo
-	lcur := len(pmon.unplaced)
-	for lcur != 0 {
-		// Read top activity from unplaced-stack
-		aix := pmon.unplaced[lcur-1]
-		a := ttinfo.Activities[aix]
-		if a.Placement >= 0 {
-			panic("BUG: expecting unplaced activity")
-		}
-		nposs := len(a.PossibleSlots)
-		i0 := rand.IntN(nposs)
-		// Seek a non-colliding placement
-		i := i0
-		var dpen Penalty
-		for {
-			if i != block {
-				// Try one slot after the other.
-				slot := a.PossibleSlots[i]
-				if ttinfo.TestPlacement(aix, slot) {
-					// Place and reevaluate
-					dpen = pmon.place(aix, slot)
-
-					//TODO: Perhaps there should be some consideration of dpen?
-
-					break
-				}
-			}
-			i += 1
-			if i == nposs {
-				i = 0
-			}
-			if i == i0 {
-				// No non-colliding placement possible
-				return better
-			}
-		}
-		// Remove activity from unplaced stack
-		lcur--
-		pmon.unplaced = pmon.unplaced[:lcur]
-		// Update penalty info
-		for r, p := range pmon.pendingPenalties {
-			pmon.resourcePenalties[r] = p
-		}
-		pmon.score += dpen
-		// Test whether the best score has been beaten.
-		lbest := len(pmon.bestState.unplaced)
-		if lcur < lbest || (lcur == lbest && pmon.score < pmon.bestState.score) {
-			pmon.bestState = pmon.saveState()
-			better = true
-		}
-	}
-	return better
-}
-
-func (pmon *placementMonitor) placeConditional() bool {
-	// Force a placement of the next activity if one of the possibilities
-	// leads – after a call to "placeNonColliding" – to an improved score.
-	// Depending an a probability function a worsened state might be accepted.
-	// On failure (non-acceptance), restore entry state and return false.
-	// Note that pmon.bestState is not necessarily changed, even if true
-	// is returned.
-	ttinfo := pmon.ttinfo
-	aix := pmon.unplaced[len(pmon.unplaced)-1]
-	a := ttinfo.Activities[aix]
-	nposs := len(a.PossibleSlots)
-	var dpen Penalty
-	var dpenx Penalty
-	i0 := rand.IntN(nposs)
-	i := i0
-	// Save entry state.
-	state0 := pmon.saveState()
-
-	//TODO: Initial threshold = ?
-	var threshold Penalty = 5
-
-	var clashes []ttbase.ActivityIndex
-	for {
-		slot := a.PossibleSlots[i]
-		clashes = ttinfo.FindClashes(aix, slot)
-		if len(clashes) == 0 {
-			// Only accept slots where a replacement is necessary.
-			goto nextslot
-		}
-		for _, aixx := range clashes {
-			if pmon.doNotRemove(aixx) {
-				goto nextslot
-			}
-		}
-		for _, aixx := range clashes {
-			ttinfo.UnplaceActivity(aixx)
-		}
-		dpen = pmon.place(aix, slot)
-		for _, aixx := range clashes {
-			dpen += pmon.evaluate1(aixx)
-		}
-		// Update penalty info
-		for r, p := range pmon.pendingPenalties {
-			pmon.resourcePenalties[r] = p
-		}
-		pmon.score += dpen
-		// Remove from "unplaced" list
-		pmon.unplaced = pmon.unplaced[:len(pmon.unplaced)-1]
-		// ... and add removed activities
-		pmon.unplaced = append(pmon.unplaced, clashes...)
-
-		if pmon.placeNonColliding(-1) {
-			return true
-		}
-		// Allow more flexible acceptance.
-		dpenx = dpen + PENALTY_UNPLACED_ACTIVITY*Penalty(
-			len(pmon.unplaced)-len(state0.unplaced))
-		// Decide whether to accept.
-		if dpenx <= 0 {
-			return true // (just in case ...)
-		} else {
-			dfac := dpenx / threshold
-			// The traditional exponential function seems no better,
-			// this function may be a little faster?
-			t := N1 / (dfac*dfac + N2)
-			//t := Penalty(math.Exp(float64(-dfac)) * float64(N0))
-			if t != 0 && Penalty(rand.IntN(N0)) < t {
-				return true
-			}
-		}
-
-		// Restore state.
-		pmon.restoreState(state0)
-	nextslot:
-		i += 1
-		if i == nposs {
-			i = 0
-		}
-		if i == i0 {
-			// All slots have been tested.
-			break
-		}
-	}
-	return false
 }
 
 func (pmon *placementMonitor) printScore(msg string) {
@@ -307,4 +184,9 @@ func (pmon *placementMonitor) printScore(msg string) {
 		fmt.Printf("§ ... error: %d != %d\n", p, pmon.score)
 		panic("!!!")
 	}
+}
+
+func (pmon *placementMonitor) printStateScore(msg string, state *ttState) {
+	fmt.Printf("§ StateScore: %s %d\n", msg,
+		state.score+Penalty(len(state.unplaced))*PENALTY_UNPLACED_ACTIVITY)
 }
