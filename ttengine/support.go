@@ -4,7 +4,6 @@ import (
 	"W365toFET/base"
 	"W365toFET/ttbase"
 	"cmp"
-	"math/rand/v2"
 	"slices"
 )
 
@@ -21,19 +20,16 @@ type placementMonitor struct {
 	added []int64
 	// The following are similar, but for moving an activity when all have
 	// been placed.
-	axcount int64
-	axdelta int64
-	axmoved []int64
+	//axcount int64
+	//axdelta int64
+	//axmoved []int64
 	//
-	ttinfo                  *ttbase.TtInfo
-	unplaced                []ttbase.ActivityIndex
-	preferEarlier           []int
-	preferLater             []int
-	resourceSlotActivityMap map[ttbase.ResourceIndex]map[int][]ttbase.ActivityIndex
-	constraintData          []any // resource index -> constraint data
-	resourcePenalties       []Penalty
-	score                   Penalty // current total penalty
-	pendingPenalties        map[ttbase.ResourceIndex]Penalty
+	ttinfo            *ttbase.TtInfo
+	unplaced          []ttbase.ActivityIndex
+	constraintData    []any // resource index -> constraint data
+	resourcePenalties []Penalty
+	score             Penalty // current total penalty
+	pendingPenalties  map[ttbase.ResourceIndex]Penalty
 	// Should pendingPenalties rather be a list (for speed)?
 
 	//currentState *ttState
@@ -53,8 +49,8 @@ func (pm *placementMonitor) place(
 	return pm.evaluate1(aix)
 }
 
-func (pm *placementMonitor) check(aix ttbase.ActivityIndex) bool {
-	// Return true if only fixed or "recently" placed.
+func (pm *placementMonitor) doNotRemove(aix ttbase.ActivityIndex) bool {
+	// Return true if activity is fixed or "recently" placed.
 	aixc := pm.added[aix]
 	return aixc < 0 || pm.count-aixc < pm.delta
 }
@@ -94,193 +90,6 @@ func CollectCourseLessons(ttinfo *ttbase.TtInfo) []ttbase.ActivityIndex {
 	return alist
 }
 
-func possibleSlots(
-	ttinfo *ttbase.TtInfo,
-	aix ttbase.ActivityIndex,
-) []int {
-	// Get possible slots for the given activity
-	a := ttinfo.Activities[aix]
-	poss := []int{}
-	for _, slot := range a.PossibleSlots {
-		day := slot / ttinfo.NHours
-		for _, addix := range a.DifferentDays {
-			add := ttinfo.Activities[addix]
-			if add.Placement >= 0 && add.Placement/ttinfo.NHours == day {
-				//TODO: Maybe it's OK if the course is different?
-				// Could try accepting these later, if there are
-				// otherwise no possible slots?
-				goto fail
-			}
-		}
-		poss = append(poss, slot)
-	fail:
-	}
-	return poss
-}
-
-func tryToPlace(ttinfo *ttbase.TtInfo, aix ttbase.ActivityIndex) bool {
-	a := ttinfo.Activities[aix]
-	n := len(a.PossibleSlots)
-	// Pick one at random
-	i0 := rand.IntN(n)
-	// Test all possible slots, starting at this index, until a free one
-	// is found.
-	i := i0
-	for {
-		if ttinfo.TestPlacement(aix, a.PossibleSlots[i]) {
-			ttinfo.PlaceActivity(aix, a.PossibleSlots[i])
-			return true
-		}
-		i++
-		if i == n {
-			i = 0
-		}
-		if i == i0 {
-			break
-		}
-	}
-	return false
-}
-
-func placeFree(
-	ttinfo *ttbase.TtInfo,
-	weights []int,
-	aix ttbase.ActivityIndex,
-) bool {
-	// Place the activity in one of the available slots. If no slot is
-	// available return false.
-	slots := freeSlots(ttinfo, aix)
-	if len(slots) == 0 {
-		return false
-	}
-	var slot int
-	if len(slots) == 1 {
-		slot = slots[0]
-	} else {
-		//slot = slots[rand.IntN(len(slots))]
-		slot = slots[chooseWeightedSlot(weights, slots)]
-	}
-	ttinfo.PlaceActivity(aix, slot)
-	return true
-}
-
-func freeSlots(ttinfo *ttbase.TtInfo, aix ttbase.ActivityIndex) []int {
-	// Get free slots for the given activity
-	a := ttinfo.Activities[aix]
-	var slots []int
-	for _, p := range a.PossibleSlots {
-		if ttinfo.TestPlacement(aix, p) {
-			slots = append(slots, p)
-		}
-	}
-	return slots
-}
-
-func buildEarlyHourWeights(ndays int, nhours int, earlytimes int) []int {
-	// Construct a list of weights favouring early hours, especially those
-	// within the minimum hours range. Each time slot within the week has
-	// an entry.
-	// The weights are such that slots within up to break point (e.g. beginning
-	// of lunch time, it could be earlier, though) are equally preferred. Later
-	// slots can get a much lower weight, for example (for one day):
-	//    10, 10, 10, 10, 5, 4, 3, 2, 1, 1
-
-	w0 := 10
-	w1 := 5
-	dweights := make([]int, nhours)
-	for h := 0; h < nhours; h++ {
-		if h < earlytimes {
-			dweights[h] = w0
-		} else {
-			dweights[h] = w1
-			if w1 > 1 {
-				w1--
-			}
-		}
-	}
-	wweights := []int{}
-	for d := 0; d < ndays; d++ {
-		wweights = append(wweights, dweights...)
-	}
-	return wweights
-}
-
-func buildLateHourWeights(ndays int, nhours int, latetimes int) []int {
-	// Construct a list of weights favouring later hours. Each time slot
-	// within the week has an entry.
-	// The weights are such that slots after a break point (e.g. beginning
-	// of lunch time) are equally preferred. Earlier slots can get a much
-	// lower weight, for example (for one day):
-	//    1, 2, 3, 4, 5, 10, 10, 10, 10, 10
-
-	w0 := 10
-	w1 := 5
-	dweights := make([]int, nhours)
-	for h := nhours - 1; h >= 0; h-- {
-		if h >= latetimes {
-			dweights[h] = w0
-		} else {
-			dweights[h] = w1
-			if w1 > 1 {
-				w1--
-			}
-		}
-	}
-	wweights := []int{}
-	for d := 0; d < ndays; d++ {
-		wweights = append(wweights, dweights...)
-	}
-	return wweights
-}
-
-func chooseWeightedSlot(weights []int, slots []int) int {
-	wlist := make([]int, len(slots))
-	w := -1
-	for i, slot := range slots {
-		w += weights[slot]
-		wlist[i] = w
-	}
-	n, _ := slices.BinarySearch(wlist, rand.IntN(w+1))
-	return n
-
-	//TODO--
-
-	/* test
-	wlist = []int{9, 19, 29, 34, 39, 41, 43, 44, 45}
-	collect := map[int]int{}
-	for i := 0; i < 100000000; i++ {
-		w := rand.IntN(45 + 1)
-		n, _ := slices.BinarySearch(weights, w)
-		collect[n]++
-		//fmt.Printf("===== %d: %d\n", w, n)
-	}
-
-	for i := 0; i < len(weights); i++ {
-		fmt.Printf(">>>>> %d: %d\n", i, collect[i])
-	}
-	*/
-
-}
-
-func makeResourceSlotActivityMap(ttinfo *ttbase.TtInfo,
-) map[ttbase.ResourceIndex]map[int][]ttbase.ActivityIndex {
-	rpamap := map[ttbase.ResourceIndex]map[int][]ttbase.ActivityIndex{}
-	for aix := 1; aix < len(ttinfo.Activities); aix++ {
-		a := ttinfo.Activities[aix]
-		for _, r := range a.Resources {
-			pamap, ok := rpamap[r]
-			if !ok {
-				pamap = map[int][]ttbase.ActivityIndex{}
-			}
-			for _, p := range a.PossibleSlots {
-				pamap[p] = append(pamap[p], aix)
-			}
-			rpamap[r] = pamap
-		}
-	}
-	return rpamap
-}
-
 // For testing!
 func (pmon *placementMonitor) fullIntegrityCheck() {
 	ttinfo := pmon.ttinfo
@@ -292,16 +101,17 @@ func (pmon *placementMonitor) fullIntegrityCheck() {
 		p := a.Placement
 		if p < 0 {
 			unplaced[aix] = true
-		}
-		for _, r := range a.Resources {
-			rix := r*ttinfo.SlotsPerWeek + p
-			for i := 0; i < a.Duration; i++ {
-				if ttinfo.TtSlots[rix+i] != aix {
-					base.Bug.Fatalf("$!$ Resource: %d Slot: %d --> %d\n"+
-						"  -- Activity: %+v\n",
-						r, p, ttinfo.TtSlots[rix+i], a)
+		} else {
+			for _, r := range a.Resources {
+				rix := r*ttinfo.SlotsPerWeek + p
+				for i := 0; i < a.Duration; i++ {
+					if ttinfo.TtSlots[rix+i] != aix {
+						base.Bug.Fatalf("$!$ Resource: %d Slot: %d --> %d\n"+
+							"  -- Activity: %+v\n",
+							r, p, ttinfo.TtSlots[rix+i], a)
+					}
+					rmap[rix+i] = true
 				}
-				rmap[rix+i] = true
 			}
 		}
 	}
@@ -312,8 +122,8 @@ func (pmon *placementMonitor) fullIntegrityCheck() {
 	}
 	for _, aix := range pmon.unplaced {
 		if !unplaced[aix] {
-			base.Bug.Fatalf("$!$ Unplaced activity (%d) is actually placed:"+
-				" %d\n", aix)
+			base.Bug.Fatalf("$!$ Unplaced activity (%d) is actually placed\n",
+				aix)
 		}
 	}
 	// Check the unchecked resource allocations.
@@ -331,8 +141,8 @@ func (pmon *placementMonitor) fullIntegrityCheck() {
 		}
 	}
 	// Check penalties: 1) Resource penalties
-	for rix := range rmap {
-		if pmon.resourcePenalties[rix] != pmon.resourcePenalty1(rix) {
+	for rix, rpen := range pmon.resourcePenalties {
+		if rpen != pmon.resourcePenalty1(rix) {
 			base.Bug.Fatalf("$!$ Resource (%d) has wrong penalty\n", rix)
 		}
 	}

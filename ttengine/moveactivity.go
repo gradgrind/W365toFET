@@ -21,7 +21,7 @@ func (pmon *placementMonitor) removeRandomActivity() ttbase.SlotIndex {
 	pvec[0] = -1
 	for aix := 1; aix < len(ttinfo.Activities); aix += 1 {
 		a := ttinfo.Activities[aix]
-		if a.Placement >= 0 && !a.Fixed && !pmon.check(aix) {
+		if a.Placement >= 0 && !a.Fixed && !pmon.doNotRemove(aix) {
 			for _, r := range a.Resources {
 				total += pmon.resourcePenalties[r]
 			}

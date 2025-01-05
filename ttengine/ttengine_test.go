@@ -98,9 +98,6 @@ func TestTtEngine(t *testing.T) {
 		ttinfo := ttbase.MakeTtInfo(db)
 		ttinfo.PrepareCoreData()
 
-		alist := CollectCourseLessons(ttinfo)
-		//fmt.Printf("??? %+v\n", alist)
-
-		PlaceLessons(ttinfo, alist)
+		PlaceLessons(ttinfo)
 	}
 }
