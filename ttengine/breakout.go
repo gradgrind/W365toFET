@@ -5,19 +5,19 @@ import (
 	"math/rand/v2"
 )
 
-// TODO: Is there an optimal limit? Too small and it may get trapped too
-// easily? Larger values may use a bit more memory and seem slower.
-// Around 3 – 5? Actually it is not clear that a value of more than 1 helps
-// at all ...
-const MAX_BREAKOUT_LEVELS = 1
-
-type breakoutLevel struct {
+type breakoutData struct {
 	state *ttState
 	i0    int // index of first slot to test
 	i     int // index of last slot tested (-1 if none)
 }
 
-func (pmon *placementMonitor) radicalStep(levels *[]*breakoutLevel) bool {
+func (pmon *placementMonitor) initBreakoutData() {
+	pmon.breakoutData = &breakoutData{
+		i0: -1,
+	}
+}
+
+func (pmon *placementMonitor) radicalStep() bool {
 	ttinfo := pmon.ttinfo
 	var i0 int
 	var i int
@@ -27,31 +27,26 @@ func (pmon *placementMonitor) radicalStep(levels *[]*breakoutLevel) bool {
 	var dpen Penalty
 	var slot ttbase.SlotIndex
 	var clashes []ttbase.ActivityIndex
-	var level *breakoutLevel
-	if len(*levels) < MAX_BREAKOUT_LEVELS {
-		// Go to next level.
-		level = &breakoutLevel{
-			state: pmon.saveState(),
-			i0:    -1,
-			i:     -1,
-		}
-		*levels = append(*levels, level)
+	bdata := pmon.breakoutData
+	if bdata.i0 < 0 {
+		// The mechanism needs (re)initializing.
+		bdata.state = pmon.saveState()
+		bdata.i = -1
 	} else {
-		// Restore state for this level.
-		level = (*levels)[len(*levels)-1]
+		// Restore breakout state?
+		pmon.restoreState(bdata.state)
 	}
 	for {
 		// Seek next possible placement.
-		pmon.restoreState(level.state)
 		aix = pmon.unplaced[len(pmon.unplaced)-1]
 		a = ttinfo.Activities[aix]
 		nposs = len(a.PossibleSlots)
-		i0 = level.i0
+		i0 = bdata.i0
 		if i0 < 0 {
 			i0 = rand.IntN(nposs)
-			level.i0 = i0
+			bdata.i0 = i0
 		}
-		i = level.i
+		i = bdata.i
 
 		// Place the activity, whatever the penalty.
 	nextslot:
@@ -65,14 +60,8 @@ func (pmon *placementMonitor) radicalStep(levels *[]*breakoutLevel) bool {
 			}
 			if i == i0 {
 				// All slots have been tested.
-
-				// Go up a level.
-				nlevel := len(*levels) - 1
-				*levels = (*levels)[:nlevel]
-				if nlevel == 0 {
-					return false
-				}
-				continue
+				bdata.i0 = -1
+				return false
 			}
 		}
 		slot = a.PossibleSlots[i]
@@ -91,7 +80,7 @@ func (pmon *placementMonitor) radicalStep(levels *[]*breakoutLevel) bool {
 		break
 	}
 	// Remember last used index
-	level.i = i
+	bdata.i = i
 	// Deplace conflicting activities
 	for _, aixx := range clashes {
 		ttinfo.UnplaceActivity(aixx)

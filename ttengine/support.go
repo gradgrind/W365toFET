@@ -18,11 +18,6 @@ type placementMonitor struct {
 	count int64
 	delta int64
 	added []int64
-	// The following are similar, but for moving an activity when all have
-	// been placed.
-	//axcount int64
-	//axdelta int64
-	//axmoved []int64
 	//
 	ttinfo            *ttbase.TtInfo
 	unplaced          []ttbase.ActivityIndex
@@ -32,8 +27,8 @@ type placementMonitor struct {
 	pendingPenalties  map[ttbase.ResourceIndex]Penalty
 	// Should pendingPenalties rather be a list (for speed)?
 
-	//currentState *ttState
-	bestState *ttState
+	bestState    *ttState
+	breakoutData *breakoutData
 }
 
 func (pm *placementMonitor) place(

@@ -95,16 +95,28 @@ func PlaceLessons(
 func (pmon *placementMonitor) basicLoop() {
 
 	//TODO: This might need to be placed before the call to "basicLoop":
+	pmon.initBreakoutData()
 	pmon.bestState = pmon.saveState()
 	pmon.placeNonColliding(-1)
 
+	//
+
 	var blockslot ttbase.SlotIndex
-	levels := []*breakoutLevel{}
-	var best *ttState
+	var bestscore Penalty
+	var bestunplaced int
 	for {
 	evaluate:
 		//pmon.fullIntegrityCheck()
 		//TODO: exit criteria
+
+		if bestscore != pmon.bestState.score ||
+			bestunplaced != len(pmon.bestState.unplaced) {
+			bestscore = pmon.bestState.score
+			bestunplaced = len(pmon.bestState.unplaced)
+
+			//TODO--
+			fmt.Printf("NEW SCORE: %d : %d\n", bestunplaced, bestscore)
+		}
 
 		blockslot = -1
 		//for len(pmon.unplaced) == 0 { // seems to get stuck ...
@@ -112,7 +124,7 @@ func (pmon *placementMonitor) basicLoop() {
 			blockslot = pmon.removeRandomActivity()
 			if pmon.placeNonColliding(blockslot) {
 				// score improved
-				pmon.printScore("evaluate")
+				//pmon.printScore("evaluate")
 				goto evaluate
 			}
 
@@ -151,23 +163,9 @@ func (pmon *placementMonitor) basicLoop() {
 		// one. If not, choose the next possibility from this level. Once
 		// these have all failed to bring an improvement, end this level.
 
-		//pmon.printStateScore("bestState", pmon.bestState)
-		//if best != nil {
-		//	pmon.printStateScore("best", best)
-		//}
-
-		if pmon.bestState != best {
-			pmon.printScore("Best")
-			best = pmon.bestState
-			// Clear the level stack.
-			levels = levels[:0]
-		} else {
-			//pmon.printScore("radicalStep")
-		}
-
-		if !pmon.radicalStep(&levels) {
+		if !pmon.radicalStep() {
 			//TODO: Revert to bestState?
-			pmon.restoreState(best)
+			pmon.restoreState(pmon.bestState)
 			//pmon.printScore("Revert")
 		}
 	}
