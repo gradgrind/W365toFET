@@ -45,9 +45,8 @@ func (pm *placementMonitor) place(
 }
 
 func (pm *placementMonitor) doNotRemove(aix ttbase.ActivityIndex) bool {
-	// Return true if activity is fixed or "recently" placed.
-	aixc := pm.added[aix]
-	return aixc < 0 || pm.count-aixc < pm.delta
+	// Return true if activity was placed "recently".
+	return pm.count-pm.added[aix] < pm.delta
 }
 
 func CollectCourseLessons(ttinfo *ttbase.TtInfo) []ttbase.ActivityIndex {

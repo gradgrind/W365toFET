@@ -37,14 +37,10 @@ func PlaceLessons(
 	var pmon *placementMonitor
 	{
 		var delta int64 = 7 // This might be a reasonable value?
-		//var axdelta int64 = 7 // This might be a reasonable value?
 		pmon = &placementMonitor{
-			count: delta,
-			delta: delta,
-			added: make([]int64, len(ttinfo.Activities)),
-			//axcount:  axdelta,
-			//axdelta:  axdelta,
-			//axmoved:  make([]int64, len(ttinfo.Activities)),
+			count:             delta,
+			delta:             delta,
+			added:             make([]int64, len(ttinfo.Activities)),
 			ttinfo:            ttinfo,
 			unplaced:          alist,
 			resourcePenalties: make([]Penalty, len(ttinfo.Resources)),
@@ -68,7 +64,7 @@ func PlaceLessons(
 
 	//TODO--
 	state0 := pmon.saveState()
-	NR := 1
+	NR := 5
 	tsum := 0.0
 	for i := NR; i != 0; i-- {
 		start := time.Now()
@@ -104,6 +100,7 @@ func (pmon *placementMonitor) basicLoop() {
 	var blockslot ttbase.SlotIndex
 	var bestscore Penalty
 	var bestunplaced int
+	var end0 Penalty = 0
 	for {
 	evaluate:
 		//pmon.fullIntegrityCheck()
@@ -116,6 +113,15 @@ func (pmon *placementMonitor) basicLoop() {
 
 			//TODO--
 			fmt.Printf("NEW SCORE: %d : %d\n", bestunplaced, bestscore)
+		}
+
+		if bestunplaced == 0 {
+			if end0 == 0 {
+				end0 = bestscore / 2
+			}
+			if bestscore <= end0 {
+				return
+			}
 		}
 
 		blockslot = -1
@@ -166,7 +172,9 @@ func (pmon *placementMonitor) basicLoop() {
 		if !pmon.radicalStep() {
 			//TODO: Revert to bestState?
 			pmon.restoreState(pmon.bestState)
-			//pmon.printScore("Revert")
+
+			pmon.removeRandomActivity() // doesn't help? Does on data x01!
+			// Indeed, there it is important.
 		}
 	}
 }
