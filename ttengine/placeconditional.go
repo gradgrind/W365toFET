@@ -72,6 +72,9 @@ func (pmon *placementMonitor) placeConditional() bool {
 			t := N1 / (dfac*dfac + N2)
 			//t := Penalty(math.Exp(float64(-dfac)) * float64(N0))
 			if t != 0 && Penalty(rand.IntN(N0)) < t {
+				//TODO: A different probability of acceptance (< t*N, with N
+				// <1 or >1) may be helpful under some circumstances.
+				// Perhaps it should be variable?
 				return true
 			}
 		}
