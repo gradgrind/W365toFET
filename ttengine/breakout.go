@@ -2,7 +2,9 @@ package ttengine
 
 import (
 	"W365toFET/ttbase"
+	"fmt"
 	"math/rand/v2"
+	"slices"
 )
 
 type breakoutData struct {
@@ -41,11 +43,46 @@ func (pmon *placementMonitor) radicalStep() bool {
 	aix = pmon.unplaced[len(pmon.unplaced)-1]
 	a = ttinfo.Activities[aix]
 	nposs = len(a.PossibleSlots)
+
+	//TODO: May want to weight the slots? No obvious difference ...
+
+	//--?
+	smap1 := []int{}
+	smap2 := []ttbase.SlotIndex{}
+	ptot := 0
+	for j := 0; j < nposs; j++ {
+		slot = a.PossibleSlots[j]
+		// Check "validity".
+		clashes = ttinfo.FindClashes(aix, slot)
+		l := len(clashes)
+		if l == 0 {
+			// Only accept slots where a replacement is necessary.
+			// This seems to be important.
+			goto nextslot
+		}
+		for _, aixx := range clashes {
+			if bdata.count-bdata.placecount[aixx] < RPDELTA {
+				goto nextslot
+			}
+		}
+		ptot += 100 / l
+		smap1 = append(smap1, ptot)
+		smap2 = append(smap2, slot)
+	nextslot:
+	}
+	if ptot == 0 {
+		bdata.count = 0
+		return false
+	}
+	fmt.Printf("??? %d\n", ptot)
+	j, _ := slices.BinarySearch(smap1, rand.IntN(ptot))
+	slot = smap2[j]
+	clashes = ttinfo.FindClashes(aix, slot)
+	//
+
+	/* ++?
 	i0 := rand.IntN(nposs)
 	i := i0
-
-	//TODO: May want to weight the slots?
-
 	for {
 		slot = a.PossibleSlots[i]
 		// Check "validity".
@@ -77,6 +114,8 @@ func (pmon *placementMonitor) radicalStep() bool {
 			}
 		}
 	}
+	*/
+
 	// Place the activity, whatever the penalty.
 
 	bdata.placecount[aix] = bdata.count
