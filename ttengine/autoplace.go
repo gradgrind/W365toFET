@@ -64,7 +64,7 @@ func PlaceLessons(
 
 	//TODO--
 	state0 := pmon.saveState()
-	NR := 100
+	NR := 10
 	tsum := 0.0
 	var tlist []float64
 	for i := NR; i != 0; i-- {
@@ -74,7 +74,7 @@ func PlaceLessons(
 
 		// calculate the exe time
 		elapsed := time.Since(start)
-		fmt.Printf("#### ELAPSED: %s\n", elapsed)
+		fmt.Printf("\n#### ELAPSED: %s\n\n", elapsed)
 		telapsed := elapsed.Seconds()
 		tsum += telapsed
 		tlist = append(tlist, telapsed)
@@ -111,6 +111,15 @@ func (pmon *placementMonitor) basicLoop() {
 	var bestscore Penalty
 	var bestunplaced int
 	var end0 Penalty = 0
+
+	//--
+	unplaced := 100000
+	radicalcount := 0
+	pccount := 0
+	var score Penalty = 0
+	//maxradicalcount := 0
+	//--
+
 	for {
 	evaluate:
 		//pmon.fullIntegrityCheck()
@@ -126,7 +135,7 @@ func (pmon *placementMonitor) basicLoop() {
 		}
 
 		if bestunplaced == 0 {
-			return
+			//return // to exit when all activities have been placed
 			if end0 == 0 {
 				end0 = bestscore / 2
 			}
@@ -158,6 +167,38 @@ func (pmon *placementMonitor) basicLoop() {
 		//pmon.printScore("placeConditional")
 
 		if pmon.placeConditional() {
+
+			//--
+			if len(pmon.bestState.unplaced) == 0 {
+				if score == pmon.bestState.score {
+					pccount++
+					if pccount%10 == 0 {
+						if pccount%1000 == 0 {
+							fmt.Printf(" +++++++++ pccount: %d\n", pccount)
+						}
+						//TODO: The following is just a bodge, but it seems
+						// to improve things a bit ... at least for a bit ...
+
+						// Perhaps I should retain the initial order and use
+						// this somehow?
+
+						pmon.restoreState(pmon.bestState)
+						nc := pccount % 10
+						for c := 0; c < nc; c++ {
+							pmon.removeRandomActivity()
+						}
+						if nc > 1 {
+							slices.Reverse(pmon.unplaced)
+						}
+					}
+				} else {
+					score = pmon.bestState.score
+					pccount = 0
+				}
+			}
+
+			//--
+
 			continue
 		}
 
@@ -171,6 +212,50 @@ func (pmon *placementMonitor) basicLoop() {
 			pmon.printScore("Better")
 			//--panic("TODO--")
 		}
+
+		//--
+		if len(pmon.unplaced) < unplaced {
+			//fmt.Printf("*** UNPLACED: %d N: %d\n", unplaced, radicalcount)
+			unplaced = len(pmon.unplaced)
+			radicalcount = 0
+		}
+		radicalcount++
+		if radicalcount%10 == 0 {
+			fmt.Printf("********************** RADICAL: %d N: %d\n",
+				unplaced, radicalcount)
+		}
+
+		/*
+			if radicalcount%20 == 0 {
+				pmon.removeRandomActivity()
+				if radicalcount%100 == 0 {
+					pmon.removeRandomActivity()
+					pmon.removeRandomActivity()
+					pmon.removeRandomActivity()
+					if radicalcount%1000 == 0 {
+						fmt.Printf("********************** RADICAL: %d N: %d\n",
+							unplaced, radicalcount)
+						if radicalcount > maxradicalcount {
+							maxradicalcount = radicalcount
+							fmt.Println("     +++ NEW MAXIMUM +++")
+							fmt.Printf(" -- SCORE: %d : %d\n",
+								len(pmon.bestState.unplaced), pmon.bestState.score)
+							fmt.Println("**********************")
+						}
+						pmon.restoreState(pmon.bestState)
+						pmon.removeRandomActivity()
+						pmon.removeRandomActivity()
+						pmon.removeRandomActivity()
+						pmon.removeRandomActivity()
+						pmon.removeRandomActivity()
+						pmon.removeRandomActivity()
+						goto evaluate
+					}
+				}
+			}
+			//--
+
+		*/
 
 		// Mechanism to escape to other solution areas:
 		// Accept a worsening step and follow its progress a while to see
