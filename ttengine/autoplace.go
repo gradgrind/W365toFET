@@ -64,8 +64,9 @@ func PlaceLessons(
 
 	//TODO--
 	state0 := pmon.saveState()
-	NR := 5
+	NR := 100
 	tsum := 0.0
+	var tlist []float64
 	for i := NR; i != 0; i-- {
 		start := time.Now()
 
@@ -74,13 +75,22 @@ func PlaceLessons(
 		// calculate the exe time
 		elapsed := time.Since(start)
 		fmt.Printf("#### ELAPSED: %s\n", elapsed)
-		tsum += elapsed.Seconds()
+		telapsed := elapsed.Seconds()
+		tsum += telapsed
+		tlist = append(tlist, telapsed)
 
 		if i != 1 {
 			pmon.restoreState(state0)
 		}
 	}
-	fmt.Printf("#+++ AVERAGE: %.2f seconds.\n", tsum/float64(NR))
+	tmean := tsum / float64(NR)
+	slices.Sort(tlist)
+	NR2 := NR / 2
+	tmedian := tlist[NR2]
+	if NR%2 == 0 {
+		tmedian = (tmedian + tlist[NR2+1]) / 2
+	}
+	fmt.Printf("#+++ MEAN: %.2f s, MEDIAN: %.2f s.\n", tmean, tmedian)
 	return false
 	//--
 
@@ -116,6 +126,7 @@ func (pmon *placementMonitor) basicLoop() {
 		}
 
 		if bestunplaced == 0 {
+			return
 			if end0 == 0 {
 				end0 = bestscore / 2
 			}

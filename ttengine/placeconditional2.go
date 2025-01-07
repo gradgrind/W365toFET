@@ -6,7 +6,7 @@ import (
 	"slices"
 )
 
-func (pmon *placementMonitor) placeConditional_0() bool {
+func (pmon *placementMonitor) placeConditional() bool {
 	// Force a placement of the next activity if one of the possibilities
 	// leads – after a call to "placeNonColliding" – to an improved score.
 	// Depending an a probability function a worsened state might be accepted.
@@ -20,8 +20,11 @@ func (pmon *placementMonitor) placeConditional_0() bool {
 	var dpen Penalty
 	var dpenx Penalty
 	//var dpen1 Penalty
-	i0 := rand.IntN(nposs)
-	i := i0
+	//i0 := rand.IntN(nposs) // In this version the random starting point
+	//i := i0				 // doesn't help.
+	i0 := 0
+	i := 0
+
 	// Save entry state.
 	state0 := pmon.saveState()
 	var state1 *ttState
@@ -63,15 +66,25 @@ func (pmon *placementMonitor) placeConditional_0() bool {
 		pmon.unplaced = append(pmon.unplaced, clashes...)
 
 		if pmon.placeNonColliding(-1) {
-			return true
+			// It's possible that a return here can increase the tendency to
+			// get stuck with unplaced activities.
+			// Perhaps only return when there are none?
+			//return true
+			//
+			if len(pmon.unplaced) == 0 {
+				//return true
+			}
 		}
 		// Allow more flexible acceptance.
 		dpenx = dpen + PENALTY_UNPLACED_ACTIVITY*Penalty(
 			len(pmon.unplaced)-len(state0.unplaced))
 		// Decide whether to accept.
-		if dpenx <= 0 {
-			return true // (just in case ...)
-		} else {
+		if dpenx < 0 { // <= or < ?
+			return true // It seems a bit better with this return, at least
+			// in the phase of reducing unplaced activities.
+			//dpenx = 0
+		}
+		{
 			dfac := dpenx / threshold
 			// The traditional exponential function seems no better,
 			// this function may be a little faster?
@@ -91,16 +104,6 @@ func (pmon *placementMonitor) placeConditional_0() bool {
 			alist = append(alist, pmon.saveState())
 			//
 		}
-
-		/*
-			if state1 == nil {
-				state1 = pmon.saveState()
-				dpen1 = dpenx
-			} else if dpenx < dpen1 {
-				state1 = pmon.saveState()
-				dpen1 = dpenx
-			}
-		*/
 
 		// Restore state.
 		pmon.restoreState(state0)
