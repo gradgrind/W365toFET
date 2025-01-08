@@ -35,11 +35,11 @@ Auch Einzelpläne können erstellt werden, indem die Element-ID des entsprechend
         "WithTimes": true,
         "WithBreaks": true,
         "FieldPlacement": {
-          "c": "SUBJECT",
-          "tl": "TEACHER",
-          "tr": "GROUP",
+          "c": "SUBJECT",   // oder "SUBJECT_NAME"
+          "tl": "TEACHER",  // oder "TEACHER_NAME"
+          "tr": "GROUP",    // oder "CLASS" oder "CLASS_GROUP"?
           "bl": "",
-          "br": "ROOM"
+          "br": "ROOM"      // oder "ROOM_NAME"
         },
         "LastChange": "12.04.2024 um 8:30 Uhr",
         "Legend": {
@@ -126,9 +126,17 @@ Die Daten werden an das Typst-Skript als JSON-Datei mit folgender Struktur über
           Hour:     4,
           Duration: 2,
           Subject:  "Ch",
-          Groups:   ["10"],
-          Teachers: ["AT"]
-          //Rooms:    [],
+          SubjectName: "Chemie",
+//??
+          //bisher: Groups: [] oder nicht vorhanden bzw. ["A", "11.A"]
+          //Groups:      [""],   // bzw. ["A"]  //???
+          Classes:     ["10"],
+          //ClassGroups: ["10"], // bzw. ["10.A"] //???
+//
+          Teachers:     ["AT"]
+          TeacherNames: ["Annegret Teichhuhn"]
+          //Rooms:        ["ch"],
+          //RoomNames:    ["Chemieraum"],
           //Fraction: 1,
           //Offset:   0,
           //Total:    1,
