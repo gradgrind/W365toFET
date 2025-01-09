@@ -80,6 +80,10 @@
 )
 
 // Row heading fallbacks
+// Folgende Zeichen werden ersetzt:
+// %S = Kürzel des Lehrer / Raums ...
+// %N = Nachname des Lehrers, Name der Klasse oder des Raums
+// %n = Vorname des Lehrers
 #let rowHeadings = (
     Class: "%S",
     Teacher: "%n %N",
@@ -492,13 +496,9 @@
             Hallo Welt!
             
             #if legendRemark != "" [*Hinweis:* #legendRemark \ ]
-    
             #if footnotesLegend.len() != 0 [*Anmerkungen:* #legendItems(footnotesLegend) \ ]
-
             #if subjectsLegend [*Fächer:* #legendItems(subjectList) \ ]
-    
             #if teachersLegend [*Lehrkräfte:* #legendItems(teacherList) \ ]
-    
             #if roomsLegend [*Räume:* #legendItems(roomList) ]
         ]
     
