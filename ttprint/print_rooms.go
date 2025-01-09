@@ -17,7 +17,6 @@ func getRooms(
 			continue
 		}
 		page := ttPage{
-			"Name":       e.Name,
 			"Short":      e.Tag,
 			"Activities": tiles,
 		}
@@ -38,7 +37,6 @@ func getOneRoom(
 		tiles = []Tile{} // Avoid none in JSON if table empty
 	}
 	page := ttPage{
-		"Name":       e.Name,
 		"Short":      e.Tag,
 		"Activities": tiles,
 	}
@@ -120,7 +118,7 @@ func getRoomData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 							glist = append(glist, g)
 						}
 					}
-					gstrings := ttinfo.SortList(glist)
+					gstrings := splitGroups(ttinfo.SortList(glist))
 					tstrings := ttinfo.SortList(tlist)
 					tile := Tile{
 						Day:      l.Day,
@@ -142,7 +140,7 @@ func getRoomData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 			// A normal Course
 			glist := []base.Ref{}
 			glist = append(glist, cinfo.Groups...)
-			gstrings := ttinfo.SortList(glist)
+			gstrings := splitGroups(ttinfo.SortList(glist))
 			tlist := []base.Ref{}
 			tlist = append(tlist, cinfo.Teachers...)
 			tstrings := ttinfo.SortList(tlist)

@@ -18,7 +18,6 @@ func getTeachers(
 			continue
 		}
 		page := ttPage{
-			"Name":       e.Name,
 			"Short":      e.Tag,
 			"Activities": tiles,
 		}
@@ -39,7 +38,6 @@ func getOneTeacher(
 		tiles = []Tile{} // Avoid none in JSON if table empty
 	}
 	page := ttPage{
-		"Name":       e.Firstname + " " + e.Name,
 		"Short":      e.Tag,
 		"Activities": tiles,
 	}
@@ -136,7 +134,7 @@ func getTeacherData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 						}
 						base.Bug.Fatalf("Not a room: %s\n", rref)
 					}
-					gstrings := ttinfo.SortList(glist)
+					gstrings := splitGroups(ttinfo.SortList(glist))
 					tstrings := ttinfo.SortList(tlist)
 					rstrings := ttinfo.SortList(rlist)
 					tile := Tile{
@@ -160,7 +158,7 @@ func getTeacherData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 			// A normal Course
 			glist := []base.Ref{}
 			glist = append(glist, cinfo.Groups...)
-			gstrings := ttinfo.SortList(glist)
+			gstrings := splitGroups(ttinfo.SortList(glist))
 
 			// The rooms are associated with the lessons
 			for _, lix := range cinfo.Lessons {

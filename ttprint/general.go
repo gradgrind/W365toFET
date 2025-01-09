@@ -30,11 +30,11 @@ type Tile struct {
 	Offset     int `json:",omitempty"`
 	Total      int `json:",omitempty"`
 	Subject    string
-	Groups     []string `json:",omitempty"`
-	Teachers   []string `json:",omitempty"`
-	Rooms      []string `json:",omitempty"`
-	Background string   `json:",omitempty"`
-	Footnote   string   `json:",omitempty"`
+	Groups     [][]string `json:",omitempty"`
+	Teachers   []string   `json:",omitempty"`
+	Rooms      []string   `json:",omitempty"`
+	Background string     `json:",omitempty"`
+	Footnote   string     `json:",omitempty"`
 }
 
 type Timetable struct {
@@ -58,7 +58,7 @@ type ttHour struct {
 
 // ttPage basic fields:
 //
-//	Name       string
+//	Name       []string // to allow ["FirstName", "LastName"]
 //	Short      string
 //	Activities []Tile
 //
@@ -135,6 +135,7 @@ func GenTimetables(
 			}
 		}
 		makeTypstJson(tt, datadir, f)
+
 		if genpdf != "" {
 			tmpl := cmd.TypstTemplate
 			pdf := cmd.Pdf
@@ -206,10 +207,42 @@ func timetable(
 			End:   h.End,
 		})
 	}
+	clist := [][]any{}
+	for _, e := range db.Classes {
+		clist = append(clist, []any{
+			e.Tag,
+			e.Name,
+		})
+	}
+	tlist := [][]any{}
+	for _, e := range db.Teachers {
+		tlist = append(tlist, []any{
+			e.Tag,
+			[]string{e.Firstname, e.Name},
+		})
+	}
+	rlist := [][]any{}
+	for _, e := range db.Rooms {
+		rlist = append(rlist, []any{
+			e.Tag,
+			e.Name,
+		})
+	}
+	slist := [][]any{}
+	for _, e := range db.Subjects {
+		slist = append(slist, []any{
+			e.Tag,
+			e.Name,
+		})
+	}
 	info := map[string]any{
-		"Institution": db.Info.Institution,
-		"Days":        dlist,
-		"Hours":       hlist,
+		"Institution":  db.Info.Institution,
+		"Days":         dlist,
+		"Hours":        hlist,
+		"ClassNames":   clist,
+		"TeacherNames": tlist,
+		"RoomNames":    rlist,
+		"SubjectNames": slist,
 	}
 	return Timetable{
 		TableType: tabletype,
@@ -269,4 +302,16 @@ func makePdf(
 		base.Error.Fatal(err)
 	}
 	base.Message.Printf("Timetable written to: %s\n", outpath)
+}
+
+func splitGroups(glist []string) [][]string {
+	gplist := [][]string{}
+	for _, g := range glist {
+		gs := strings.Split(g, ttbase.CLASS_GROUP_SEP)
+		if len(gs) == 1 {
+			gs = append(gs, "")
+		}
+		gplist = append(gplist, gs)
+	}
+	return gplist
 }

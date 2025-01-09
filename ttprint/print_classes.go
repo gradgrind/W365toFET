@@ -21,7 +21,6 @@ func getClasses(
 			continue
 		}
 		page := ttPage{
-			"Name":       e.Name,
 			"Short":      e.Tag,
 			"Activities": tiles,
 		}
@@ -42,7 +41,6 @@ func getOneClass(
 		tiles = []Tile{} // Avoid none in JSON if table empty
 	}
 	page := ttPage{
-		"Name":       e.Name,
 		"Short":      e.Tag,
 		"Activities": tiles,
 	}
@@ -150,7 +148,8 @@ func getClassData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 					rstrings := ttinfo.SortList(rlist)
 
 					for _, chip := range chips {
-						gstrings := append(chip.Groups, chip.ExtraGroups...)
+						gstrings := groupList(
+							ref2id[cref], chip.Groups, chip.ExtraGroups)
 						tile := Tile{
 							Day:        l.Day,
 							Hour:       l.Hour,
@@ -193,7 +192,8 @@ func getClassData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 					chips := ttinfo.SortClassGroups(cref, cinfo.Groups)
 
 					for _, chip := range chips {
-						gstrings := append(chip.Groups, chip.ExtraGroups...)
+						gstrings := groupList(
+							ref2id[cref], chip.Groups, chip.ExtraGroups)
 						tile := Tile{
 							Day:        l.Day,
 							Hour:       l.Hour,
@@ -215,4 +215,18 @@ func getClassData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 		}
 	}
 	return classTiles
+}
+
+func groupList(
+	ctag string,
+	baseGroups []string,
+	extraGroups []string,
+) [][]string {
+	// Make one group list from the two lists supplied. Each entry is
+	// [class, group or ""]
+	glist := [][]string{}
+	for _, g := range baseGroups {
+		glist = append(glist, []string{ctag, g})
+	}
+	return append(glist, splitGroups(extraGroups)...)
 }

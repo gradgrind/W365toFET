@@ -45,9 +45,10 @@ func (ttinfo *TtInfo) SortClassGroups(
 	class Ref,
 	groups []Ref,
 ) []FractionChip {
-	// Given a class and a list of groups, separate those groups from the
-	// given class.
-	// Also build corresponding "fractional chip" info.
+	// Given a class and a list of groups, separate the groups belonging to
+	// that class from the others.
+	// Also build corresponding "fractional chip" info. If the groups are not
+	// contiguous, multiple chips will be constructed.
 	db := ttinfo.Db
 	elements := db.Elements
 	mygroups := map[Ref]bool{}
@@ -69,6 +70,7 @@ func (ttinfo *TtInfo) SortClassGroups(
 	chips := []FractionChip{}
 
 	if mygroups[""] {
+		// Whole class -> no cell division
 		chips = append(chips, FractionChip{
 			Groups:      []string{},
 			ExtraGroups: xgroups,
@@ -77,6 +79,7 @@ func (ttinfo *TtInfo) SortClassGroups(
 			Total:       1,
 		})
 	} else {
+		// Build fractional cells from contiguous groups (within the division)
 		for _, div := range ttinfo.ClassDivisions[class] {
 			start := -1
 			var glist []string = nil

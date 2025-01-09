@@ -35,30 +35,31 @@ Auch Einzelpläne können erstellt werden, indem die Element-ID des entsprechend
         "WithTimes": true,
         "WithBreaks": true,
         "FieldPlacement": {
-          "c": "SUBJECT",   // oder "SUBJECT_NAME"
-          "tl": "TEACHER",  // oder "TEACHER_NAME"
-          "tr": "GROUP",    // oder "CLASS"
-          "bl": "",
-          "br": "ROOM"      // oder "ROOM_NAME"
+          "C": "SUBJECT",   // oder "SUBJECT_NAME"
+          "TL": "TEACHER",  // oder "TEACHER_NAME"
+          "TR": "GROUP",    // oder "CLASS"
+          "BL": "",
+          "BR": "ROOM"      // oder "ROOM_NAME"
         },
         "LastChange": "12.04.2024 um 8:30 Uhr",
         "Legend": {
           "Remark": "Eine Anmerkung",
-          "Subjects": [["EU", "Eurythmie"]],
-          "Teachers": [["HM", "Hans Müller"], ["MM", "Mara Musterfrau"]],
-          "Rooms": []
+          "Subjects": true,
+          "Teachers": true,
+          "Rooms": true
         },
       },
 
       "Pages": [
         {
           "Id": Element-Id,
+           // Abweichungen von den Eigenschaften in "Typst":
           "LastChange": "18.04.2024 um 18:30 Uhr",
           "Legend": {
             "Remark": "Meine Anmerkung",
-            "Subjects": [["EU", "Eurythmie"]],
-            "Teachers": [["HM", "Hans Müller"], ["MM", "Mara Musterfrau"]],
-            "Rooms": []
+            "Subjects": false,
+            "Teachers": false,
+            "Rooms": false
           }
         },
             ...
@@ -104,21 +105,38 @@ Die Daten werden an das Typst-Skript als JSON-Datei mit folgender Struktur über
         "End": "08:25"
       },
       ...
-    ]
-  },
+    ],
+    // These are actually mappings, but presented as lists to preserve order:
+    "ClassNames": [
+        ["1", "1. Klasse"]
+    ],
+    "TeacherNames": [
+        ["AT", ["Annegret", "Teichhuhn"]],
+        ["HM", ["Hans", "Müller"]],
+        ["MM", ["Mara", "Musterfrau"]]
+    ],
+    "RoomNames": [
+        ["ch", "Chemieraum"],
+        ["k1", "Raum der 1. Klasse"],
+        ["sp", "Sporthalle"]
+    ],
+    "SubjectNames": [
+        ["Ch", "Chemie"],
+        ["Hu", "Hauptunterricht"],
+        ["Sp", "Sport"]
+    ],
   "Typst": {
     ... // von PrintTable
   },
   "Pages": [
     {
-      "Name": "1. Klasse",
       "Short": "1",
       "LastChange": "18.04.2024 um 18:30 Uhr",
       "Legend": {
-        "Remark": "Meine Anmerkung",
-        "Subjects": [["EU", "Eurythmie"]],
-        "Teachers": [["HM", "Hans Müller"], ["MM", "Mara Musterfrau"]],
-        "Rooms": []
+          "Remark": "Eine Anmerkung",
+          "Subjects": true,
+          "Teachers": true,
+          "Rooms": true
       }
       "Activities": [
         {
@@ -126,18 +144,14 @@ Die Daten werden an das Typst-Skript als JSON-Datei mit folgender Struktur über
           Hour:     4,
           Duration: 2,
           Subject:  "Ch",
-          SubjectName: "Chemie",
-          //Groups: nicht vorhanden oder [] bzw. ["A", "11.A", "12"],
-          Classes:     ["10"],
+          Groups: [["10", ""], ["11", "A"]],
           Teachers:     ["AT"]
-          TeacherNames: ["Annegret Teichhuhn"] // oder [["Annegret", "Teichhuhn"]] ?
-          //Rooms:        ["ch"],
-          //RoomNames:    ["Chemieraum"],
+          Rooms:        ["ch"],
           //Fraction: 1,
           //Offset:   0,
           //Total:    1,
           //Background: "#FFFFFF",
-          //Footnote: "Meine andere Anmerkung"
+          //Footnote: "*1"
         },
         ...
       ]
