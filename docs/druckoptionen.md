@@ -106,24 +106,25 @@ Die Daten werden an das Typst-Skript als JSON-Datei mit folgender Struktur über
             },
             ...
         ],
-    "ClassNames": [
-        ["1", "1. Klasse"]
-    ],
-    "TeacherNames": [
-        ["AT", "Teichhuhn", "Annegret"],
-        ["HM", "Müller", "Hans"],
-        ["MM", "Musterfrau", "Mara"]
-    ],
-    "RoomNames": [
-        ["ch", "Chemieraum"],
-        ["k1", "Raum der 1. Klasse"],
-        ["sp", "Sporthalle"]
-    ],
-    "SubjectNames": [
-        ["Ch", "Chemie"],
-        ["Hu", "Hauptunterricht"],
-        ["Sp", "Sport"]
-    ],
+        "ClassNames": [
+            ["1", "1. Klasse"]
+        ],
+        "TeacherNames": [
+            ["AT", "Teichhuhn", "Annegret"],
+            ["HM", "Müller", "Hans"],
+            ["MM", "Musterfrau", "Mara"]
+        ],
+        "RoomNames": [
+            ["ch", "Chemieraum"],
+            ["k1", "Raum der 1. Klasse"],
+            ["sp", "Sporthalle"]
+        ],
+        "SubjectNames": [
+            ["Ch", "Chemie"],
+            ["Hu", "Hauptunterricht"],
+            ["Sp", "Sport"]
+        ]
+    },
     "Typst": {
         ... // von PrintTable
     },
