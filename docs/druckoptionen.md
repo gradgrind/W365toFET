@@ -20,50 +20,50 @@ Ob ein Übersichtsplan oder ein Gesamtplan erzeugt wird, hängt vom verwendeten 
 Auch Einzelpläne können erstellt werden, indem die Element-ID des entsprechenden Objekts (Klasse, Lehrer oder Raum) als "Type" angegeben wird.
 
 ```
-  "PrintTables": [
-    {
-      "Type": "Class", // oder "Teacher" oder "Room" oder Element-Id
-      "TypstTemplate": "template1",
-      "TypstJson": "timetable",
-      "Pdf": "timetable"
-
-      "Typst": {
-        "Title": "Stundenpläne der Klassen",
-        "Subtitle": "Entwurf Erstes Halbjahr",
-        "PageHeading": "Klasse: %S",
-
-        "WithTimes": true,
-        "WithBreaks": true,
-        "FieldPlacement": {
-          "C": "SUBJECT",   // oder "SUBJECT_NAME"
-          "TL": "TEACHER",  // oder "TEACHER_NAME"
-          "TR": "GROUP",    // oder "CLASS"
-          "BL": "",
-          "BR": "ROOM"      // oder "ROOM_NAME"
-        },
-        "LastChange": "12.04.2024 um 8:30 Uhr",
-        "Legend": {
-          "Remark": "Eine Anmerkung",
-          "Subjects": true,
-          "Teachers": true,
-          "Rooms": true
-        },
-      },
-
-      "Pages": [
+    "PrintTables": [
         {
-          "Id": Element-Id,
-           // Abweichungen von den Eigenschaften in "Typst":
-          "LastChange": "18.04.2024 um 18:30 Uhr",
-          "Legend": {
-            "Remark": "Meine Anmerkung",
-            "Subjects": false,
-            "Teachers": false,
-            "Rooms": false
-          }
+        "Type": "Class", // oder "Teacher" oder "Room" oder Element-Id
+        "TypstTemplate": "template1",
+        "TypstJson": "timetable",
+        "Pdf": "timetable"
+
+        "Typst": {
+            "Title": "Stundenpläne der Klassen",
+            "Subtitle": "Entwurf Erstes Halbjahr",
+            "PageHeading": "Klasse: %S",
+
+            "WithTimes": true,
+            "WithBreaks": true,
+            "FieldPlacement": {
+                "C": "SUBJECT",   // oder "SUBJECT_NAME"
+                "TL": "TEACHER",  // oder "TEACHER_NAME"
+                "TR": "GROUP",    // oder "CLASS"
+                "BL": "",
+                "BR": "ROOM"      // oder "ROOM_NAME"
+            },
+            "LastChange": "12.04.2024 um 8:30 Uhr",
+            "Legend": {
+                "Remark": "Eine Anmerkung",
+                "Subjects": true,
+                "Teachers": true,
+                "Rooms": true
+            },
         },
-            ...
-      ]
+
+         "Pages": [
+            {
+                "Id": Element-Id,
+                // Abweichungen von den Eigenschaften in "Typst":
+                "LastChange": "18.04.2024 um 18:30 Uhr",
+                "Legend": {
+                    "Remark": "Meine Anmerkung",
+                    "Subjects": false,
+                    "Teachers": false,
+                    "Rooms": false
+                }
+            },
+                ...
+        ]
     },
       ...
   ],
@@ -87,33 +87,32 @@ Die Daten werden an das Typst-Skript als JSON-Datei mit folgender Struktur über
 
 ```
 {
-  "TableType": "Class",
-  "Info": {
-    "Institution": "Musterschule Mulmingen",
-    "Days": [
-      {
-        "Name": "Montag",
-        "Short": "Mo"
-      },
-      ...
-    ],
-    "Hours": [
-      {
-        "Name": "1. Stunde",
-        "Short": "(1)",
-        "Start": "07:35",
-        "End": "08:25"
-      },
-      ...
-    ],
-    // These are actually mappings, but presented as lists to preserve order:
+    "TableType": "Class",
+    "Info": {
+        "Institution": "Musterschule Mulmingen",
+        "Days": [
+            {
+                "Name": "Montag",
+                "Short": "Mo"
+            },
+            ...
+        ],
+        "Hours": [
+            {
+                "Name": "1. Stunde",
+                "Short": "(1)",
+                "Start": "07:35",
+                "End": "08:25"
+            },
+            ...
+        ],
     "ClassNames": [
         ["1", "1. Klasse"]
     ],
     "TeacherNames": [
-        ["AT", ["Annegret", "Teichhuhn"]],
-        ["HM", ["Hans", "Müller"]],
-        ["MM", ["Mara", "Musterfrau"]]
+        ["AT", "Teichhuhn", "Annegret"],
+        ["HM", "Müller", "Hans"],
+        ["MM", "Musterfrau", "Mara"]
     ],
     "RoomNames": [
         ["ch", "Chemieraum"],
@@ -125,39 +124,39 @@ Die Daten werden an das Typst-Skript als JSON-Datei mit folgender Struktur über
         ["Hu", "Hauptunterricht"],
         ["Sp", "Sport"]
     ],
-  "Typst": {
-    ... // von PrintTable
-  },
-  "Pages": [
-    {
-      "Short": "1",
-      "LastChange": "18.04.2024 um 18:30 Uhr",
-      "Legend": {
-          "Remark": "Eine Anmerkung",
-          "Subjects": true,
-          "Teachers": true,
-          "Rooms": true
-      }
-      "Activities": [
+    "Typst": {
+        ... // von PrintTable
+    },
+    "Pages": [
         {
-          Day:      0,
-          Hour:     4,
-          Duration: 2,
-          Subject:  "Ch",
-          Groups: [["10", ""], ["11", "A"]],
-          Teachers:     ["AT"]
-          Rooms:        ["ch"],
-          //Fraction: 1,
-          //Offset:   0,
-          //Total:    1,
-          //Background: "#FFFFFF",
-          //Footnote: "*1"
+            "Short": "1",
+            "LastChange": "18.04.2024 um 18:30 Uhr",
+            "Legend": {
+                "Remark":   "Eine Anmerkung",
+                "Subjects": true,
+                "Teachers": true,
+                "Rooms":    true
+            }
+            "Activities": [
+                {
+                    Day:        0,
+                    Hour:       4,
+                    Duration:   2,
+                    Subject:    "Ch",
+                    Groups:     [["10", ""], ["11", "A"]],
+                    Teachers:   ["AT"]
+                    Rooms:      ["ch"],
+                    //Fraction:   1,
+                    //Offset:     0,
+                    //Total:      1,
+                    //Background: "#FFFFFF",
+                    //Footnote:   "*1"
+                },
+                ...
+            ]
         },
         ...
-      ]
-    },
-    ...
-  ]
+    ]
 }
 ```
 

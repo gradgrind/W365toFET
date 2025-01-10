@@ -58,7 +58,6 @@ type ttHour struct {
 
 // ttPage basic fields:
 //
-//	Name       []string // to allow ["FirstName", "LastName"]
 //	Short      string
 //	Activities []Tile
 //
@@ -207,30 +206,31 @@ func timetable(
 			End:   h.End,
 		})
 	}
-	clist := [][]any{}
+	clist := [][]string{}
 	for _, e := range db.Classes {
-		clist = append(clist, []any{
+		clist = append(clist, []string{
 			e.Tag,
 			e.Name,
 		})
 	}
-	tlist := [][]any{}
+	tlist := [][]string{}
 	for _, e := range db.Teachers {
-		tlist = append(tlist, []any{
+		tlist = append(tlist, []string{
 			e.Tag,
-			[]string{e.Firstname, e.Name},
+			e.Name,
+			e.Firstname,
 		})
 	}
-	rlist := [][]any{}
+	rlist := [][]string{}
 	for _, e := range db.Rooms {
-		rlist = append(rlist, []any{
+		rlist = append(rlist, []string{
 			e.Tag,
 			e.Name,
 		})
 	}
-	slist := [][]any{}
+	slist := [][]string{}
 	for _, e := range db.Subjects {
-		slist = append(slist, []any{
+		slist = append(slist, []string{
 			e.Tag,
 			e.Name,
 		})

@@ -81,13 +81,13 @@
 
 // Row heading fallbacks
 // Folgende Zeichen werden ersetzt:
-// %S = Kürzel des Lehrer / Raums ...
-// %N = Nachname des Lehrers, Name der Klasse oder des Raums
-// %n = Vorname des Lehrers
+// %0 = Kürzel des Lehrer / Raums ...
+// %1 = Nachname des Lehrers, Name der Klasse oder des Raums
+// %2 = Vorname des Lehrers
 #let rowHeadings = (
-    Class: "%S",
-    Teacher: "%n %N",
-    Room: "%N",
+    Class: "%0",
+    Teacher: "%2 %1",
+    Room: "%1",
 )
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -122,17 +122,40 @@
 #let roomList = xdata.Info.RoomNames
 #let subjectList = xdata.Info.SubjectNames
 
-#let classMap = classList.to-dict()
-#let teacherMap = teacherList.to-dict()
-#let roomMap = roomList.to-dict()
-#let subjectMap = subjectList.to-dict()
+#let listListToMap(listList) = {
+    let map = (:)
+    for list in listList {
+        map.insert(list.at(0), list)
+    }
+    map
+}
+
+#let legendItems(ilist) = {
+    let items = ()
+    for item in ilist {
+        if item.len() == 3 {
+            // Assume teacher
+            items.push(box(item.at(0)+" = "+item.at(2)+" "+item.at(1)))
+        } else {
+            items.push(box(item.at(0)+" = "+item.at(1)))
+        }
+    }
+    items.join(", ")
+}
+
+#let nameMap = (
+    "Class": listListToMap(classList),
+    "Teacher": listListToMap(teacherList),
+    "Room": listListToMap(roomList),
+//    "Subject": listListToMap(subjectList),
+)
 
 // Type of table ("Class", "Teacher" or "Room")
 #let tableType = xdata.TableType
 // Row headings
 #let rhead = typstMap.at("RowHeading", default: "")
 #if rhead == "" {
-    rhead = rowHeadings.at(tableType, default: "")
+    rhead = rowHeadings.at(tableType)
 }
 // Determine the field placements in the tiles
 #let fieldPlacements = typstMap.at("FieldPlacement", default: (:))
@@ -213,15 +236,9 @@
 // Get the vertical headers.
 #let vheaders = ()
 #for page in xdata.Pages {
-    let rh = rhead.replace("%S", page.Short)
-    if tableType == "Teacher" {
-        let n = teacherMap.at(page.Short, default: ("?", "?"))
-        rh = rh.replace("%n", n.at(0)).replace("%N", n.at(1))
-    } else if tableType == "Class" {
-        rh = rh.replace("%N", classMap.at(page.Short, default: "?"))
-    } else if tableType == "Room" {
-        rh = rh.replace("%N", roomMap.at(page.Short, default: "?"))
-    }
+    let nameList = nameMap.at(tableType).at(page.Short)
+    let rh = rhead.replace(regex("%([0-2])"),
+        m => nameList.at(int(m.captures.first())))
     vheaders.push(rh)
 }
 
@@ -414,18 +431,6 @@
             #pagenum / #pagetotal
         ]
     ]
-
-    let legendItems(ilist) = {
-        let items = ()
-        for (k, v) in ilist {
-            if type(v) == str {
-                items.push(box(k + " = " + v))
-            } else {
-                items.push(box(k + " = " + v.join(" ")))
-            }
-        }
-        items.join(", ")
-    }
 
     while irow < nrows {
 
