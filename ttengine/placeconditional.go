@@ -62,9 +62,9 @@ func (pmon *placementMonitor) placeConditional_0() bool {
 		// ... and add removed activities
 		pmon.unplaced = append(pmon.unplaced, clashes...)
 
-		if pmon.placeNonColliding(-1) {
-			return true
-		}
+		//if pmon.placeNonColliding(-1) {
+		//	return true
+		//}
 		// Allow more flexible acceptance.
 		dpenx = dpen + PENALTY_UNPLACED_ACTIVITY*Penalty(
 			len(pmon.unplaced)-len(state0.unplaced))

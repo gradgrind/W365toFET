@@ -65,16 +65,16 @@ func (pmon *placementMonitor) placeConditional() bool {
 		// ... and add removed activities
 		pmon.unplaced = append(pmon.unplaced, clashes...)
 
-		if pmon.placeNonColliding(-1) {
-			// It's possible that a return here can increase the tendency to
-			// get stuck with unplaced activities.
-			// Perhaps only return when there are none?
-			//return true
-			//
-			if len(pmon.unplaced) == 0 {
-				//return true
-			}
-		}
+		//if pmon.placeNonColliding(-1) {
+		// It's possible that a return here can increase the tendency to
+		// get stuck with unplaced activities.
+		// Perhaps only return when there are none?
+		//return true
+		//
+		//	if len(pmon.unplaced) == 0 {
+		//		//return true
+		//	}
+		//}
 		// Allow more flexible acceptance.
 		dpenx = dpen + PENALTY_UNPLACED_ACTIVITY*Penalty(
 			len(pmon.unplaced)-len(state0.unplaced))

@@ -2,7 +2,6 @@ package ttengine
 
 import (
 	"W365toFET/ttbase"
-	"cmp"
 	"fmt"
 	"slices"
 	"time"
@@ -46,6 +45,12 @@ func PlaceLessons(
 	{
 		var delta int64 = 7 // This might be a reasonable value?
 		pmon = &placementMonitor{
+			stateStack:    make([]*ttState, len(alist)),
+			unplacedIndex: 0,
+			notFixed:      alist,
+
+			//--? Which are still needed?
+
 			count:                 delta,
 			delta:                 delta,
 			added:                 make([]int64, len(ttinfo.Activities)),
@@ -67,14 +72,14 @@ func PlaceLessons(
 		//fmt.Printf("$ PENALTY %d: %d\n", r, p)
 	}
 
-	// Add penalty for unplaced lessons
-	fmt.Printf("$ PENALTY %d: %d\n", len(alist),
-		pmon.score+PENALTY_UNPLACED_ACTIVITY*Penalty(len(alist)))
+	//TODO--
+	fmt.Printf("$ UNPLACED: %d ... PENALTY: %d\n", len(alist), pmon.score)
 
 	//TODO--
 	state0 := pmon.saveState()
 	NR := 1
 	tsum := 0.0
+	tmax := 0.0
 	var tlist []float64
 	for i := NR; i != 0; i-- {
 		start := time.Now()
@@ -85,6 +90,9 @@ func PlaceLessons(
 		elapsed := time.Since(start)
 		fmt.Printf("\n#### ELAPSED: %s\n\n", elapsed)
 		telapsed := elapsed.Seconds()
+		if telapsed > tmax {
+			tmax = telapsed
+		}
 		tsum += telapsed
 		tlist = append(tlist, telapsed)
 
@@ -99,7 +107,8 @@ func PlaceLessons(
 	if NR%2 == 0 {
 		tmedian = (tmedian + tlist[NR2+1]) / 2
 	}
-	fmt.Printf("#+++ MEAN: %.2f s, MEDIAN: %.2f s.\n", tmean, tmedian)
+	fmt.Printf("#+++ MEAN: %.2f s, MEDIAN: %.2f s, MAX: %.2f s.\n",
+		tmean, tmedian, tmax)
 	return false
 	//--
 
@@ -110,39 +119,34 @@ func PlaceLessons(
 func (pmon *placementMonitor) basicLoop() {
 
 	//TODO: This might need to be placed before the call to "basicLoop":
-	pmon.initBreakoutData()
-	pmon.bestState = pmon.saveState()
-	pmon.placeNonColliding(-1)
+	pmon.initBreakoutData()           //??
+	pmon.bestState = pmon.saveState() //??
+	//pmon.placeNonColliding(-1) //??
 
 	//
 
-	var blockslot ttbase.SlotIndex
+	//TODO--
+	//var blockslot ttbase.SlotIndex
 	var bestscore Penalty
-	var bestunplaced int
-	var end0 Penalty = 0
-
-	//--
-	unplaced := 100000
-	radicalcount := 0
-	pccount := 0
-	var score Penalty = 0
-	//maxradicalcount := 0
+	var bestUnplacedIndex int
+	//var end0 Penalty = 0
 	//--
 
 	for {
-	evaluate:
 		//pmon.fullIntegrityCheck()
 		//TODO: exit criteria
 
 		if bestscore != pmon.bestState.score ||
-			bestunplaced != len(pmon.bestState.unplaced) {
+			bestUnplacedIndex != pmon.bestState.unplacedIndex {
 			bestscore = pmon.bestState.score
-			bestunplaced = len(pmon.bestState.unplaced)
+			bestUnplacedIndex = pmon.bestState.unplacedIndex
 
 			//TODO--
-			fmt.Printf("NEW SCORE: %d : %d\n", bestunplaced, bestscore)
+			fmt.Printf("NEW SCORE:: %d / %d : %d\n",
+				bestUnplacedIndex, len(pmon.notFixed), bestscore)
 		}
 
+		/* ???
 		if bestunplaced == 0 {
 			//return // to exit when all activities have been placed
 			if end0 == 0 {
@@ -152,145 +156,28 @@ func (pmon *placementMonitor) basicLoop() {
 				return
 			}
 		}
-
-		blockslot = -1
-		//for len(pmon.unplaced) == 0 { // seems to get stuck ...
-		if len(pmon.unplaced) == 0 {
-			blockslot = pmon.removeRandomActivity()
-			if pmon.placeNonColliding(blockslot) {
-				// score improved
-				//pmon.printScore("evaluate")
-				goto evaluate
-			}
-
-			//TODO: Alternative to for loop? But what about best updating?
-			if len(pmon.unplaced) == 0 {
-				pmon.removeRandomActivity()
-			}
-		}
-		// Get a bit more radical – allow activities to be replaced.
-		// Perform just one forced placement, followed by placeNonColliding.
-		// An increased penalty may be accepted, depending on a probability
-		// function.
-
-		//pmon.printScore("placeConditional")
-
-		if pmon.placeConditional() {
-
-			//--
-			if len(pmon.bestState.unplaced) == 0 {
-				if score == pmon.bestState.score {
-					pccount++
-					if pccount%10 == 0 {
-						if pccount%1000 == 0 {
-							//fmt.Printf(" +++++++++ pccount: %d\n", pccount)
-						}
-						//TODO: The following is just a bodge, but it seems
-						// to improve things a bit ... at least for a bit ...
-
-						// Perhaps I should retain the initial order and use
-						// this somehow?
-
-						pmon.restoreState(pmon.bestState)
-
-						//TODO: This is very "random"!
-						// Would reorganizing the freed activities according to the number-of-slots
-						// criterion help? Why doesn't the "simple" version get past placeConditional()?
-						nc := pccount % 10
-						for c := 0; c < nc; c++ {
-							pmon.removeRandomActivity()
-						}
-						if nc > 1 {
-							//slices.Reverse(pmon.unplaced)
-							slices.SortFunc(pmon.unplaced,
-								func(a, b ttbase.ActivityIndex) int {
-									return cmp.Compare(
-										pmon.activityPlacementList[a],
-										pmon.activityPlacementList[b])
-								})
-						}
-					}
-				} else {
-					score = pmon.bestState.score
-					pccount = 0
-				}
-			}
-
-			//--
-
-			continue
-		}
-
-		//TODO: This doesn't seem to be a good place? 1) rarely "successful",
-		// 2) seems ineffective
-		// Test whether the best score has been beaten.
-		lcur := len(pmon.unplaced)
-		lbest := len(pmon.bestState.unplaced)
-		if lcur < lbest || (lcur == lbest && pmon.score < pmon.bestState.score) {
-			pmon.bestState = pmon.saveState()
-			pmon.printScore("Better")
-			//--panic("TODO--")
-		}
-
-		//--
-		if len(pmon.unplaced) < unplaced {
-			//fmt.Printf("*** UNPLACED: %d N: %d\n", unplaced, radicalcount)
-			unplaced = len(pmon.unplaced)
-			radicalcount = 0
-		}
-		radicalcount++
-		if radicalcount%10 == 0 {
-			fmt.Printf("********************** RADICAL: %d N: %d\n",
-				unplaced, radicalcount)
-		}
-
-		/*
-			if radicalcount%20 == 0 {
-				pmon.removeRandomActivity()
-				if radicalcount%100 == 0 {
-					pmon.removeRandomActivity()
-					pmon.removeRandomActivity()
-					pmon.removeRandomActivity()
-					if radicalcount%1000 == 0 {
-						fmt.Printf("********************** RADICAL: %d N: %d\n",
-							unplaced, radicalcount)
-						if radicalcount > maxradicalcount {
-							maxradicalcount = radicalcount
-							fmt.Println("     +++ NEW MAXIMUM +++")
-							fmt.Printf(" -- SCORE: %d : %d\n",
-								len(pmon.bestState.unplaced), pmon.bestState.score)
-							fmt.Println("**********************")
-						}
-						pmon.restoreState(pmon.bestState)
-						pmon.removeRandomActivity()
-						pmon.removeRandomActivity()
-						pmon.removeRandomActivity()
-						pmon.removeRandomActivity()
-						pmon.removeRandomActivity()
-						pmon.removeRandomActivity()
-						goto evaluate
-					}
-				}
-			}
-			//--
-
 		*/
 
-		// Mechanism to escape to other solution areas:
-		// Accept a worsening step and follow its progress a while to see
-		// if a better solution area can be found.
-
-		// If no improvement has been made, go to the next level, if there is
-		// one. If not, choose the next possibility from this level. Once
-		// these have all failed to bring an improvement, end this level.
-
-		if !pmon.radicalStep() {
-			//TODO: Revert to bestState?
-			pmon.restoreState(pmon.bestState)
-
-			pmon.removeRandomActivity() // doesn't help? Does on data x01!
-			// Indeed, there it is important.
+		if pmon.unplacedIndex == len(pmon.notFixed) {
+			pmon.unplacedIndex--
 		}
+
+		//TODO--
+		time.Sleep(500 * time.Millisecond)
+		//--
+
+		if pmon.placeNonColliding() {
+			pmon.unplacedIndex++
+			fmt.Printf(" -- Step: %d\n", pmon.unplacedIndex)
+			continue
+		}
+		// No further possibilities with this activity
+		pmon.unplacedIndex--
+		fmt.Printf(" -- Revert: %d\n", pmon.unplacedIndex)
+		if pmon.unplacedIndex < 0 {
+			break
+		}
+
 	}
 }
 

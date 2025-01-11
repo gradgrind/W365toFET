@@ -10,6 +10,10 @@ import (
 type Penalty int64
 
 type placementMonitor struct {
+	stateStack    []*ttState
+	unplacedIndex int // ? == len(stateStack)
+	notFixed      []ttbase.ActivityIndex
+
 	// The following are used to prevent recently placed activities from
 	// being removed too soon. "count" is incremented with each placement.
 	// "added" stores the last placement times ("count" value) for each
@@ -158,6 +162,9 @@ type ttState struct {
 	score             Penalty
 	ttslots           []ttbase.ActivityIndex
 	resourcePenalties []Penalty
+
+	slots         []slotPenalties
+	unplacedIndex int
 }
 
 func (pmon *placementMonitor) saveState() *ttState {
