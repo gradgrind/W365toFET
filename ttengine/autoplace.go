@@ -3,6 +3,7 @@ package ttengine
 import (
 	"W365toFET/ttbase"
 	"fmt"
+	"math/rand/v2"
 	"slices"
 	"time"
 )
@@ -192,6 +193,24 @@ func (pmon *placementMonitor) basicLoop() {
 			break
 		}
 
+	}
+}
+
+func (pmon *placementMonitor) placeNextActivity() {
+	aslots := pmon.nextActivity()
+	nslots := len(aslots.slots)
+	if nslots != 0 {
+		// Choose one of the slots
+		slot := aslots.slots[rand.IntN(nslots)]
+		dpen := pmon.place(aslots.aix, slot)
+		// Update penalty info
+		for r, p := range pmon.pendingPenalties {
+			pmon.resourcePenalties[r] = p
+		}
+		pmon.score += dpen
+	} else {
+		//TODO: Might want to try the possible slots and choose (probably?)
+		// one of the better ones?
 	}
 }
 

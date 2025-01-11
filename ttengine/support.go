@@ -4,6 +4,7 @@ import (
 	"W365toFET/base"
 	"W365toFET/ttbase"
 	"cmp"
+	"math/rand/v2"
 	"slices"
 )
 
@@ -87,6 +88,44 @@ func CollectCourseLessons(ttinfo *ttbase.TtInfo) []ttbase.ActivityIndex {
 		//fmt.Printf("??? %+v\n", wl)
 	}
 	return alist
+}
+
+// Order the unplaced activities
+type activitySlots struct {
+	aix   ttbase.ActivityIndex
+	slots []ttbase.SlotIndex
+}
+
+func (pmon *placementMonitor) nextActivity() activitySlots {
+	ttinfo := pmon.ttinfo
+	alist := []activitySlots{}         // with available slots
+	alist0 := []ttbase.ActivityIndex{} // no available slot
+	for _, aix := range pmon.unplaced {
+		// Find possible slots
+		a := ttinfo.Activities[aix]
+		slots := []ttbase.SlotIndex{}
+		for _, slot := range a.PossibleSlots {
+			if ttinfo.TestPlacement(aix, slot) {
+				slots = append(slots, slot)
+			}
+		}
+		if len(slots) == 0 {
+			alist0 = append(alist0, aix)
+		} else {
+			alist = append(alist, activitySlots{aix, slots})
+		}
+	}
+	if len(alist0) != 0 {
+		return activitySlots{aix: alist0[rand.IntN(len(alist0))]}
+	}
+	plist := make([]int, len(alist))
+	ptotal := 0
+	for i, aslots := range alist {
+		ptotal += 1000 / len(aslots.slots)
+		plist[i] = ptotal
+	}
+	i, _ := slices.BinarySearch(plist, rand.IntN(ptotal))
+	return alist[i]
 }
 
 // For testing!
