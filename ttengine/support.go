@@ -19,12 +19,13 @@ type placementMonitor struct {
 	delta int64
 	added []int64
 	//
-	ttinfo            *ttbase.TtInfo
-	unplaced          []ttbase.ActivityIndex
-	constraintData    []any // resource index -> constraint data
-	resourcePenalties []Penalty
-	score             Penalty // current total penalty
-	pendingPenalties  map[ttbase.ResourceIndex]Penalty
+	ttinfo                *ttbase.TtInfo
+	activityPlacementList []int
+	unplaced              []ttbase.ActivityIndex
+	constraintData        []any // resource index -> constraint data
+	resourcePenalties     []Penalty
+	score                 Penalty // current total penalty
+	pendingPenalties      map[ttbase.ResourceIndex]Penalty
 	// Should pendingPenalties rather be a list (for speed)?
 
 	bestState    *ttState

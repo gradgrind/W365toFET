@@ -2,6 +2,7 @@ package ttengine
 
 import (
 	"W365toFET/ttbase"
+	"cmp"
 	"fmt"
 	"slices"
 	"time"
@@ -34,18 +35,26 @@ func PlaceLessons(
 	// Seems to improve speed considerably, especially with complex data:
 	slices.Reverse(alist)
 
+	// Build a map associating each non-fixed activity with its position
+	// in the initial list.
+	posmap := make([]int, len(ttinfo.Activities))
+	for i, aix := range alist {
+		posmap[aix] = i
+	}
+
 	var pmon *placementMonitor
 	{
 		var delta int64 = 7 // This might be a reasonable value?
 		pmon = &placementMonitor{
-			count:             delta,
-			delta:             delta,
-			added:             make([]int64, len(ttinfo.Activities)),
-			ttinfo:            ttinfo,
-			unplaced:          alist,
-			resourcePenalties: make([]Penalty, len(ttinfo.Resources)),
-			score:             0,
-			pendingPenalties:  map[ttbase.ResourceIndex]Penalty{},
+			count:                 delta,
+			delta:                 delta,
+			added:                 make([]int64, len(ttinfo.Activities)),
+			ttinfo:                ttinfo,
+			activityPlacementList: posmap,
+			unplaced:              alist,
+			resourcePenalties:     make([]Penalty, len(ttinfo.Resources)),
+			score:                 0,
+			pendingPenalties:      map[ttbase.ResourceIndex]Penalty{},
 		}
 	}
 	pmon.initConstraintData()
@@ -64,7 +73,7 @@ func PlaceLessons(
 
 	//TODO--
 	state0 := pmon.saveState()
-	NR := 10
+	NR := 1
 	tsum := 0.0
 	var tlist []float64
 	for i := NR; i != 0; i-- {
@@ -137,7 +146,7 @@ func (pmon *placementMonitor) basicLoop() {
 		if bestunplaced == 0 {
 			//return // to exit when all activities have been placed
 			if end0 == 0 {
-				end0 = bestscore / 2
+				end0 = bestscore / 10
 			}
 			if bestscore <= end0 {
 				return
@@ -174,7 +183,7 @@ func (pmon *placementMonitor) basicLoop() {
 					pccount++
 					if pccount%10 == 0 {
 						if pccount%1000 == 0 {
-							fmt.Printf(" +++++++++ pccount: %d\n", pccount)
+							//fmt.Printf(" +++++++++ pccount: %d\n", pccount)
 						}
 						//TODO: The following is just a bodge, but it seems
 						// to improve things a bit ... at least for a bit ...
@@ -183,12 +192,22 @@ func (pmon *placementMonitor) basicLoop() {
 						// this somehow?
 
 						pmon.restoreState(pmon.bestState)
+
+						//TODO: This is very "random"!
+						// Would reorganizing the freed activities according to the number-of-slots
+						// criterion help? Why doesn't the "simple" version get past placeConditional()?
 						nc := pccount % 10
 						for c := 0; c < nc; c++ {
 							pmon.removeRandomActivity()
 						}
 						if nc > 1 {
-							slices.Reverse(pmon.unplaced)
+							//slices.Reverse(pmon.unplaced)
+							slices.SortFunc(pmon.unplaced,
+								func(a, b ttbase.ActivityIndex) int {
+									return cmp.Compare(
+										pmon.activityPlacementList[a],
+										pmon.activityPlacementList[b])
+								})
 						}
 					}
 				} else {
