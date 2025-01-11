@@ -132,6 +132,9 @@ func (pmon *placementMonitor) basicLoop() {
 	//var end0 Penalty = 0
 	//--
 
+	revertx := 1000
+	sleeping := false
+
 	for {
 		//pmon.fullIntegrityCheck()
 		//TODO: exit criteria
@@ -140,6 +143,9 @@ func (pmon *placementMonitor) basicLoop() {
 			bestUnplacedIndex != pmon.bestState.unplacedIndex {
 			bestscore = pmon.bestState.score
 			bestUnplacedIndex = pmon.bestState.unplacedIndex
+
+			//TODO--
+			revertx = 1000
 
 			//TODO--
 			fmt.Printf("NEW SCORE:: %d / %d : %d\n",
@@ -163,17 +169,25 @@ func (pmon *placementMonitor) basicLoop() {
 		}
 
 		//TODO--
-		time.Sleep(500 * time.Millisecond)
+		if sleeping {
+			time.Sleep(100 * time.Millisecond)
+		}
 		//--
 
 		if pmon.placeNonColliding() {
 			pmon.unplacedIndex++
-			fmt.Printf(" -- Step: %d\n", pmon.unplacedIndex)
+			//fmt.Printf(" -- Step: %d\n", pmon.unplacedIndex)
 			continue
 		}
 		// No further possibilities with this activity
 		pmon.unplacedIndex--
-		fmt.Printf(" -- Revert: %d\n", pmon.unplacedIndex)
+		//TODO--
+		if pmon.unplacedIndex < revertx {
+			revertx = pmon.unplacedIndex
+			//sleeping = true
+			fmt.Printf(" -- Revert: %d\n", revertx)
+		}
+
 		if pmon.unplacedIndex < 0 {
 			break
 		}
