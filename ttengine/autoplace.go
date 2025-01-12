@@ -52,11 +52,6 @@ func PlaceLessons(
 		// needed.
 
 		pmon = &placementMonitor{
-			//TODO-- currently not used
-			stateStack:    make([]*ttState, len(alist)),
-			unplacedIndex: 0,
-			notFixed:      alist,
-
 			//--? Which are still needed?
 
 			count:                 delta,
@@ -126,9 +121,13 @@ func PlaceLessons(
 
 func (pmon *placementMonitor) basicLoop() {
 
+	level := 0
+	pmon.levelCount = []int{0}
+
 	//TODO: This might need to be placed before the call to "basicLoop":
 	pmon.initBreakoutData()           //??
 	pmon.bestState = pmon.saveState() //??
+	pmon.stateStack = append(pmon.stateStack, pmon.bestState)
 	//pmon.placeNonColliding(-1) //??
 
 	//
@@ -136,7 +135,7 @@ func (pmon *placementMonitor) basicLoop() {
 	sleeping := false
 
 	for {
-		//pmon.fullIntegrityCheck()
+		pmon.fullIntegrityCheck()
 		//TODO: exit criteria
 
 		//TODO--
@@ -151,7 +150,7 @@ func (pmon *placementMonitor) basicLoop() {
 			break
 		}
 
-		pmon.placeNextActivity()
+		wb := pmon.placeNextActivity()
 
 		//TODO: Check for improvement
 		// Test whether the best score has been beaten.
@@ -160,10 +159,28 @@ func (pmon *placementMonitor) basicLoop() {
 		lcur := len(pmon.unplaced)
 		if lcur < lbest || (lcur == lbest && pmon.score < pmon.bestState.score) {
 			pmon.bestState = pmon.saveState()
-			pmon.bestState.unplaced = pmon.unplaced
 			//TODO--
 			fmt.Printf("NEW SCORE:: %d : %d\n",
 				len(pmon.unplaced), pmon.score)
+
+			//TODO: This might need bounding ...
+			pmon.stateStack = append(pmon.stateStack, pmon.bestState)
+
+			level = 0 // ??
+
+		} else if wb {
+			// Revert to a previous "level"?
+			//if rand.IntN(100) > 90 {
+			if level < 20 {
+
+				lstack := len(pmon.stateStack)
+				if level != lstack {
+					level++
+				}
+				fmt.Printf("*** RESTORE *** %d / %d\n", level, lstack)
+
+				pmon.restoreState(pmon.stateStack[lstack-level])
+			}
 		}
 
 	}
@@ -176,11 +193,12 @@ type slotChoice struct {
 	slist  []ttbase.SlotIndex
 }
 
-func (pmon *placementMonitor) placeNextActivity() {
+func (pmon *placementMonitor) placeNextActivity() bool {
 	aslots := pmon.nextActivity()
 	aix := aslots.aix
 	nslots := len(aslots.slots)
 	var slot ttbase.SlotIndex
+	wb := false
 	if nslots != 0 {
 		// Choose one of the slots
 		slot = aslots.slots[rand.IntN(nslots)]
@@ -237,6 +255,7 @@ func (pmon *placementMonitor) placeNextActivity() {
 
 		if nbslots.ptotal == 0 {
 			nbslots = wbslots
+			wb = true
 		}
 		i, _ := slices.BinarySearch(
 			nbslots.plist, rand.IntN(nbslots.ptotal))
@@ -262,6 +281,7 @@ func (pmon *placementMonitor) placeNextActivity() {
 		func(aix1 ttbase.ActivityIndex) bool {
 			return aix1 == aix
 		})
+	return wb
 }
 
 func (pmon *placementMonitor) placeNextActivity_0() {
