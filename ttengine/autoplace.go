@@ -121,13 +121,12 @@ func PlaceLessons(
 
 func (pmon *placementMonitor) basicLoop() {
 
-	level := 0
-	pmon.levelCount = []int{0}
-
 	//TODO: This might need to be placed before the call to "basicLoop":
-	pmon.initBreakoutData()           //??
-	pmon.bestState = pmon.saveState() //??
-	pmon.stateStack = append(pmon.stateStack, pmon.bestState)
+	pmon.initBreakoutData() //??
+
+	state0 := pmon.saveState()
+	pmon.bestState = state0 //??
+	pmon.stateStack = append(pmon.stateStack, state0)
 	//pmon.placeNonColliding(-1) //??
 
 	//
@@ -146,40 +145,53 @@ func (pmon *placementMonitor) basicLoop() {
 
 		if len(pmon.unplaced) == 0 {
 			//TODO ...
+			pmon.removeRandomActivity()
 
-			break
+			//break
 		}
 
 		wb := pmon.placeNextActivity()
 
 		//TODO: Check for improvement
 		// Test whether the best score has been beaten.
-
-		lbest := len(pmon.bestState.unplaced)
+		lbest0 := len(state0.unplaced)
 		lcur := len(pmon.unplaced)
-		if lcur < lbest || (lcur == lbest && pmon.score < pmon.bestState.score) {
-			pmon.bestState = pmon.saveState()
-			//TODO--
-			fmt.Printf("NEW SCORE:: %d : %d\n",
-				len(pmon.unplaced), pmon.score)
+		if lcur < lbest0 || (lcur == lbest0 && pmon.score < state0.score) {
+			lbest := len(pmon.bestState.unplaced)
+			bestscore := pmon.bestState.score
+
+			state0.lives = 0 // ??
 
 			//TODO: This might need bounding ...
-			pmon.stateStack = append(pmon.stateStack, pmon.bestState)
+			state0 = pmon.saveState()
+			pmon.stateStack = append(pmon.stateStack, state0)
 
-			level = 0 // ??
+			if lcur < lbest || (lcur == lbest && pmon.score < bestscore) {
+				pmon.bestState = state0
+				//TODO--
+				fmt.Printf("NEW SCORE:: %d : %d\n", lcur, pmon.score)
+			}
 
 		} else if wb {
-			// Revert to a previous "level"?
-			//if rand.IntN(100) > 90 {
-			if level < 20 {
+			// Revert to a previous state?
 
-				lstack := len(pmon.stateStack)
-				if level != lstack {
-					level++
+			//if rand.IntN(100) > 50 {
+			if state0.lives < 10 {
+				// restore state?
+				if rand.IntN(100) > 50 {
+					pmon.restoreState(state0)
 				}
-				fmt.Printf("*** RESTORE *** %d / %d\n", level, lstack)
-
-				pmon.restoreState(pmon.stateStack[lstack-level])
+				state0.lives++
+			} else {
+				lstack := len(pmon.stateStack)
+				lstack--
+				if lstack == 0 {
+					panic("State stack empty")
+				}
+				state0 = pmon.stateStack[lstack-1]
+				pmon.restoreState(state0)
+				pmon.stateStack = pmon.stateStack[:lstack]
+				//fmt.Printf("*** RESTORE *** %d / %d\n", lstack, state0.lives)
 			}
 		}
 

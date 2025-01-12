@@ -11,7 +11,6 @@ import (
 type Penalty int64
 
 type placementMonitor struct {
-	levelCount []int
 	stateStack []*ttState
 
 	xcount        int64
@@ -129,7 +128,7 @@ func (pmon *placementMonitor) nextActivity() activitySlots {
 
 	//TODO--? This seems not much, if at all, slower. It might even be slightly
 	// more effective for x01?
-	return alist[rand.IntN(len(alist))]
+	//return alist[rand.IntN(len(alist))]
 
 	plist := make([]int, len(alist))
 	ptotal := 0
@@ -215,8 +214,7 @@ type ttState struct {
 	ttslots           []ttbase.ActivityIndex
 	resourcePenalties []Penalty
 
-	slots         []slotPenalties
-	unplacedIndex int
+	lives int
 }
 
 func (pmon *placementMonitor) saveState() *ttState {

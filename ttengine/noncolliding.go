@@ -1,11 +1,6 @@
 package ttengine
 
-import (
-	"W365toFET/ttbase"
-	"math/rand/v2"
-	"slices"
-)
-
+/*
 type resourcePenalty struct {
 	resourceIndex ttbase.ResourceIndex
 	penalty       Penalty
@@ -200,3 +195,4 @@ func (pmon *placementMonitor) placeNonColliding_1() bool {
 	}
 	return true
 }
+*/
