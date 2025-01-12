@@ -11,6 +11,8 @@ import (
 type Penalty int64
 
 type placementMonitor struct {
+	xcount int64
+
 	stateStack    []*ttState
 	unplacedIndex int // ? == len(stateStack)
 	notFixed      []ttbase.ActivityIndex
@@ -118,6 +120,11 @@ func (pmon *placementMonitor) nextActivity() activitySlots {
 	if len(alist0) != 0 {
 		return activitySlots{aix: alist0[rand.IntN(len(alist0))]}
 	}
+
+	//TODO--? This seems not much, if at all, slower. It might even be slightly
+	// more effective for x01?
+	return alist[rand.IntN(len(alist))]
+
 	plist := make([]int, len(alist))
 	ptotal := 0
 	for i, aslots := range alist {
