@@ -498,8 +498,6 @@
         let roomsLegend = legend.at("Rooms", default: false)
 
         text(10pt)[
-            Hallo Welt!
-            
             #if legendRemark != "" [*Hinweis:* #legendRemark \ ]
             #if footnotesLegend.len() != 0 [*Anmerkungen:* #legendItems(footnotesLegend) \ ]
             #if subjectsLegend [*Fächer:* #legendItems(subjectList) \ ]
