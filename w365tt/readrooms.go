@@ -133,6 +133,7 @@ func (db *DbTopLevel) makeRoomChoiceGroup(
 		}
 		// Add new Element
 		r := newdb.NewRoomChoiceGroup("")
+		id = r.Id
 		r.Tag = tag
 		r.Name = name
 		r.Rooms = reflist

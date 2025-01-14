@@ -14,7 +14,7 @@ type Activity struct {
 	Index     ActivityIndex
 	Duration  int
 	Resources []ResourceIndex
-	XRooms        []ResourceIndex // for room choices
+	XRooms    []ResourceIndex // for room choices
 	// ExtendedGroups is a list of atomic group indexes for those groups
 	// in the activity's class(es) which are NOT involved in the activity.
 	ExtendedGroups []ResourceIndex
