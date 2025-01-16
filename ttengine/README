@@ -1,0 +1,5 @@
+ttengine3 was a – not very successful – simplification.
+
+So far ttengine2.2 seems to be the best. It (mostly) gets all activities placed pretty quickly, but still occasionally gets stuck – the breakout strategy might need a bit of work ...
+
+ttengine3.1 is a further attempt, this time I would like to try basically keeping the allocation order, and – when activities must be displaced – to try to replace them before progressing further. One possible advantage of such an approach is that I have a structure where backtracking should be fairly straightforward.

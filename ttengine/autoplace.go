@@ -32,8 +32,8 @@ func PlaceLessons(
 ) bool {
 	alist := CollectCourseLessons(ttinfo)
 
-	// Seems to improve speed considerably, especially with complex data:
-	//slices.Reverse(alist) // ... not with the current algorithm
+	// Might improve speed considerably, especially with complex data:
+	slices.Reverse(alist)
 
 	//TODO-- currently not used
 	// Build a map associating each non-fixed activity with its position
@@ -129,21 +129,13 @@ func (pmon *placementMonitor) basicLoop() {
 	pmon.stateStack = append(pmon.stateStack, state0)
 	//pmon.placeNonColliding(-1) //??
 
-	//
-
-	sleeping := false
-
 	for {
-		pmon.fullIntegrityCheck()
+		//pmon.fullIntegrityCheck()
 		//TODO: exit criteria
 
-		//TODO--
-		if sleeping {
-			time.Sleep(100 * time.Millisecond)
-		}
-		//--
-
 		if len(pmon.unplaced) == 0 {
+			return
+
 			//TODO ...
 			pmon.removeRandomActivity()
 
@@ -173,6 +165,7 @@ func (pmon *placementMonitor) basicLoop() {
 			}
 
 		} else if wb {
+			continue
 			// Revert to a previous state?
 
 			//if rand.IntN(100) > 50 {
@@ -206,93 +199,104 @@ type slotChoice struct {
 }
 
 func (pmon *placementMonitor) placeNextActivity() bool {
-	aslots := pmon.nextActivity()
-	aix := aslots.aix
-	nslots := len(aslots.slots)
-	var slot ttbase.SlotIndex
-	wb := false
-	if nslots != 0 {
-		// Choose one of the slots
-		slot = aslots.slots[rand.IntN(nslots)]
-		dpen := pmon.place(aix, slot)
-		// Update penalty info
-		for r, p := range pmon.pendingPenalties {
-			pmon.resourcePenalties[r] = p
+	ttinfo := pmon.ttinfo
+	uix := len(pmon.unplaced) - 1
+	aix := pmon.unplaced[uix]
+
+	// Find possible slots
+	a := ttinfo.Activities[aix]
+	slots := []ttbase.SlotIndex{}
+	for _, slot := range a.PossibleSlots {
+		if ttinfo.TestPlacement(aix, slot) {
+			slots = append(slots, slot)
 		}
-		pmon.score += dpen
-	} else {
-		// Try the possible slots and choose (probably) one of the better
-		// ones.
-
-		ttinfo := pmon.ttinfo
-		a := ttinfo.Activities[aix]
-		var clashes []ttbase.ActivityIndex
-
-		// Distinguish between slots which would cause removal of temporarily
-		// blocked activities and those which wouldn't (preferred).
-		// No blocked activity removal:
-		nbslots := slotChoice{}
-		// With blocked activity removal:
-		wbslots := slotChoice{}
-
-		var slot ttbase.SlotIndex
-		for _, slot = range a.PossibleSlots {
-			clashes = ttinfo.FindClashes(aix, slot)
-			if len(clashes) == 0 {
-				// There should be no slots without clashes.
-				panic("Unexpectedly: no clashes")
-			}
-
-			for _, aixx := range clashes {
-				if pmon.doNotRemove(aixx) {
-
-					if nbslots.ptotal == 0 {
-						wbslots.ptotal += 1000 / len(clashes)
-						wbslots.plist = append(wbslots.plist, wbslots.ptotal)
-						wbslots.clist = append(wbslots.clist, clashes)
-						wbslots.slist = append(wbslots.slist, slot)
-					}
-
-					goto nextslot
-				}
-			}
-
-			nbslots.ptotal += 1000 / len(clashes)
-			nbslots.plist = append(nbslots.plist, nbslots.ptotal)
-			nbslots.clist = append(nbslots.clist, clashes)
-			nbslots.slist = append(nbslots.slist, slot)
-
-		nextslot:
-		}
-
-		if nbslots.ptotal == 0 {
-			nbslots = wbslots
-			wb = true
-		}
-		i, _ := slices.BinarySearch(
-			nbslots.plist, rand.IntN(nbslots.ptotal))
-		slot = nbslots.slist[i]
-		clashes = nbslots.clist[i]
-
-		for _, aixx := range clashes {
-			ttinfo.UnplaceActivity(aixx)
-		}
-		pmon.unplaced = append(pmon.unplaced, clashes...)
-		dpen := pmon.place(aix, slot)
-		for _, aixx := range clashes {
-			dpen += pmon.evaluate1(aixx)
-		}
-		// Update penalty info
-		for r, p := range pmon.pendingPenalties {
-			pmon.resourcePenalties[r] = p
-		}
-		pmon.score += dpen
 	}
-	// Remove from "unplaced" list
-	pmon.unplaced = slices.DeleteFunc(pmon.unplaced,
-		func(aix1 ttbase.ActivityIndex) bool {
-			return aix1 == aix
-		})
+	nslots := len(slots)
+	if nslots != 0 {
+		slot := slots[rand.IntN(nslots)]
+		dpen := pmon.place(aix, slot)
+		// Update penalty info
+		for r, p := range pmon.pendingPenalties {
+			pmon.resourcePenalties[r] = p
+		}
+		pmon.score += dpen
+		// Remove from "unplaced" list
+		pmon.unplaced = pmon.unplaced[:uix]
+		return true
+	}
+
+	//
+	// Try the possible slots and choose (probably) one of the better
+	// ones.
+
+	//TODO: This probably shouldn't return until the number of unplaced
+	// activities is down to uix – or it is established that that isn't
+	// likely to be reached.
+
+	var clashes []ttbase.ActivityIndex
+	wb := false
+	// Distinguish between slots which would cause removal of temporarily
+	// blocked activities and those which wouldn't (preferred).
+	// No blocked activity removal:
+	nbslots := slotChoice{}
+	// With blocked activity removal:
+	wbslots := slotChoice{}
+
+	var slot ttbase.SlotIndex
+	for _, slot = range a.PossibleSlots {
+		clashes = ttinfo.FindClashes(aix, slot)
+		if len(clashes) == 0 {
+			// There should be no slots without clashes.
+			panic("Unexpectedly: no clashes")
+		}
+
+		for _, aixx := range clashes {
+			if pmon.doNotRemove(aixx) {
+
+				if nbslots.ptotal == 0 {
+					wbslots.ptotal += 1000 / len(clashes)
+					wbslots.plist = append(wbslots.plist, wbslots.ptotal)
+					wbslots.clist = append(wbslots.clist, clashes)
+					wbslots.slist = append(wbslots.slist, slot)
+				}
+
+				goto nextslot
+			}
+		}
+
+		nbslots.ptotal += 1000 / len(clashes)
+		nbslots.plist = append(nbslots.plist, nbslots.ptotal)
+		nbslots.clist = append(nbslots.clist, clashes)
+		nbslots.slist = append(nbslots.slist, slot)
+
+	nextslot:
+	}
+
+	if nbslots.ptotal == 0 {
+		nbslots = wbslots
+		wb = true
+	}
+	i, _ := slices.BinarySearch(
+		nbslots.plist, rand.IntN(nbslots.ptotal))
+	slot = nbslots.slist[i]
+	clashes = nbslots.clist[i]
+
+	for _, aixx := range clashes {
+		ttinfo.UnplaceActivity(aixx)
+	}
+	// Update "unplaced" list
+	pmon.unplaced = pmon.unplaced[:uix]
+	pmon.unplaced = append(pmon.unplaced, clashes...)
+	dpen := pmon.place(aix, slot)
+	for _, aixx := range clashes {
+		dpen += pmon.evaluate1(aixx)
+	}
+	// Update penalty info
+	for r, p := range pmon.pendingPenalties {
+		pmon.resourcePenalties[r] = p
+	}
+	pmon.score += dpen
+
 	return wb
 }
 
