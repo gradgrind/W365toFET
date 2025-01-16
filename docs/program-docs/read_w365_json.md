@@ -62,3 +62,8 @@ In the input from Waldorf 365 the `SuperCourse` items have no "Subject" field, b
 ### Rooms
 
 In the "base" structures, the courses have a "Room" field, whereas the courses (and sub-courses) in the data from Waldorf 365 have a "PreferredRooms" field. "PreferredRooms" can be a single `RoomGroup` or a list of `Room`s. If there is a list of Rooms (more than one room), this is converted to a `RoomChoiceGroup` (in method `makeRoomChoiceGroup`), so that in the end there should be a single item, a `Room`, `RoomChoiceGroup` or `RoomGroup`. The "Room" field of the "base" course references one of these. Repeated use of the same room list will result in only one `RoomChoiceGroup` being generated, which is then shared.
+
+
+## Constraints
+
+**TODO:** The structures containing the constraint information are still to be further developed and finalized.
