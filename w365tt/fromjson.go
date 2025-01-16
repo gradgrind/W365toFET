@@ -66,6 +66,7 @@ func (db *DbTopLevel) readHours(newdb *base.DbTopLevel) {
 		n := newdb.NewHour(e.Id)
 		n.Tag = tag
 		n.Name = e.Name
+		// If the input times have seconds, strip these off.
 		ts := strings.Split(e.Start, ":")
 		if len(ts) == 3 {
 			n.Start = ts[0] + ":" + ts[1]
