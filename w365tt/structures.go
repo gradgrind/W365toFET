@@ -90,14 +90,6 @@ type RoomGroup struct {
 	Rooms []Ref
 }
 
-type RoomChoiceGroup struct {
-	Id    Ref
-	Type  string
-	Name  string
-	Tag   string `json:"Shortcut"`
-	Rooms []Ref
-}
-
 type Class struct {
 	Id               Ref
 	Type             string

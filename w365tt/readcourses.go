@@ -32,6 +32,7 @@ func (db *DbTopLevel) makeNewSubject(
 	s := newdb.NewSubject("")
 	s.Tag = tag
 	s.Name = name
+	db.SubjectTags[tag] = s.Id
 	return s.Id
 }
 
@@ -145,7 +146,6 @@ func (db *DbTopLevel) getCourseSubject(
 		} else {
 			// Need a new Subject.
 			subject = db.makeNewSubject(newdb, sktag, "Compound Subject")
-			db.SubjectTags[sktag] = subject
 		}
 	} else {
 		base.Error.Fatalf("Course/SubCourse has no subject: %s\n", courseId)
