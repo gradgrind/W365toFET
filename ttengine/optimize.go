@@ -15,7 +15,9 @@ func (pmon *placementMonitor) optimize() {
 	p_activities := make([]int, n_activities)
 	p_activities[0] = -1
 
-	for pmon.score != 0 {
+	score_0 := pmon.score
+
+	for pmon.score > score_0/5 {
 		p_total := -1
 		for aix := 1; aix < n_activities; aix++ {
 			p := pmon.getActivityPenalty(aix)
@@ -28,8 +30,15 @@ func (pmon *placementMonitor) optimize() {
 
 		aix, _ := slices.BinarySearch(p_activities, rand.IntN(p_total))
 
-		pmon.move(aix)
-		fmt.Printf("? PENALTY: %d\n", pmon.score)
+		if pmon.move(aix) {
+			fmt.Printf("?? PENALTY: %d  (%d)\n", pmon.score, pmon.scoreCount)
+			pmon.scoreCount = 0
+		} else {
+			pmon.scoreCount++
+			if pmon.scoreCount%10 == 0 {
+				fmt.Printf("?? ++++ %d\n", pmon.scoreCount)
+			}
+		}
 	}
 
 	/* Check distribution
@@ -50,7 +59,7 @@ func (pmon *placementMonitor) optimize() {
 	*/
 }
 
-func (pmon *placementMonitor) move(aix ttbase.ActivityIndex) {
+func (pmon *placementMonitor) move(aix ttbase.ActivityIndex) bool {
 	ttinfo := pmon.ttinfo
 	a := ttinfo.Activities[aix]
 	slot0 := a.Placement
@@ -84,8 +93,16 @@ func (pmon *placementMonitor) move(aix ttbase.ActivityIndex) {
 		//fmt.Printf("$ MOVED PENALTY %d@%d: %d\n", aix, slot, pmon.score)
 		if pmon.score < score0 {
 			//TODO: Accept the first improvement? ... or seek the best?
-			score0 = pmon.score
-			best = pmon.saveState()
+			{
+				a.Fixed = false
+				return true
+			}
+			// There may not be much of a difference, in fact the simple one
+			// (above) might even be a bit faster!
+			{
+				score0 = pmon.score
+				best = pmon.saveState()
+			}
 		}
 	next:
 		pmon.restoreState(state0)
@@ -93,5 +110,7 @@ func (pmon *placementMonitor) move(aix ttbase.ActivityIndex) {
 	}
 	if best != nil {
 		pmon.restoreState(best)
+		return true
 	}
+	return false
 }

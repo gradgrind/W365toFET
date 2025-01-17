@@ -10,13 +10,14 @@ import (
 type Penalty int64
 
 type placementMonitor struct {
-	stateStack            []*ttState
-	ttinfo                *ttbase.TtInfo
-	activityPlacementList []int
-	unplaced              []ttbase.ActivityIndex
-	constraintData        []any // resource index -> constraint data
-	resourcePenalties     []Penalty
-	score                 Penalty // current total penalty
+	maxdepth          int
+	scoreCount        int
+	stateStack        []*ttState
+	ttinfo            *ttbase.TtInfo
+	unplaced          []ttbase.ActivityIndex
+	constraintData    []any // resource index -> constraint data
+	resourcePenalties []Penalty
+	score             Penalty // current total penalty
 }
 
 func CollectCourseLessons(ttinfo *ttbase.TtInfo) []ttbase.ActivityIndex {

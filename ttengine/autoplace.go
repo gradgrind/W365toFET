@@ -20,6 +20,7 @@ func PlaceLessons(
 	var pmon *placementMonitor
 	{
 		pmon = &placementMonitor{
+			maxdepth:          2,
 			ttinfo:            ttinfo,
 			unplaced:          alist,
 			resourcePenalties: make([]Penalty, len(ttinfo.Resources)),
@@ -36,19 +37,24 @@ func PlaceLessons(
 
 	//TODO--
 	state0 := pmon.saveState()
-	NR := 1
+	NR := 10
 	tsum := 0.0
 	tmax := 0.0
 	var tlist []float64
 	for i := NR; i != 0; i-- {
+		pmon.maxdepth = 2
+	repeat:
 		start := time.Now()
 
 		pmon.stateStack = []*ttState{}
 		if !pmon.basicLoop(0, 0) {
+			pmon.maxdepth++
 			fmt.Printf("$$$$$$$$$$$$$$$$$$ %d\n", len(pmon.unplaced))
-			i++
-			continue
+			goto repeat
 		}
+
+		pmon.setResourcePenalties()
+		pmon.optimize()
 
 		// calculate the exe time
 		elapsed := time.Since(start)
@@ -59,8 +65,6 @@ func PlaceLessons(
 		}
 		tsum += telapsed
 		tlist = append(tlist, telapsed)
-
-		pmon.setResourcePenalties()
 
 		//TODO--
 		fmt.Printf("$ NEW PENALTY: %d\n", pmon.score)
@@ -79,9 +83,10 @@ func PlaceLessons(
 	fmt.Printf("#+++ MEAN: %.2f s, MEDIAN: %.2f s, MAX: %.2f s.\n",
 		tmean, tmedian, tmax)
 
-	pmon.optimize()
+	//pmon.optimize()
 
 	return false
+	//return true
 	//--
 
 	pmon.stateStack = []*ttState{}
@@ -113,7 +118,7 @@ func (pmon *placementMonitor) basicLoop(startlevel int, depth int) bool {
 			continue
 		}
 
-		if depth < 8 {
+		if depth < pmon.maxdepth {
 
 			//TODO: Maybe use a dynamic maximum depth?
 			// A lower level seems to run faster, but may not place all
@@ -231,7 +236,11 @@ try_again:
 	//TODO ...
 
 	if !pmon.basicLoop(uix, depth+1) {
-		if count < 2 {
+		if count < 10 {
+			// It looks like there should be some repetition allowed, but very
+			// low levels can be compensated by increasing depth limit. < 0
+			// is not so good, but even < 1 may work. Maybe around < 10 is
+			// optimal?
 			count++
 			pmon.restoreState(state)
 			//fmt.Printf("     ))) count: %d // %d\n", count, len(pmon.stateStack))
