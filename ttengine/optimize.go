@@ -2,6 +2,7 @@ package ttengine
 
 import (
 	"W365toFET/ttbase"
+	"cmp"
 	"fmt"
 	"math/rand/v2"
 	"slices"
@@ -17,6 +18,17 @@ func (pmon *placementMonitor) optimize() {
 
 	score_0 := pmon.score
 
+	type ap struct {
+		aix     int
+		penalty Penalty
+	}
+	aplist := []ap{}
+
+	//TODO: It's not obvious that this buffer has any benefits ...
+	const ABUFFERLEN = 100
+	abuffer := make([]int, ABUFFERLEN)
+	abindex := 0
+
 	for pmon.score > score_0/5 {
 		p_total := -1
 		for aix := 1; aix < n_activities; aix++ {
@@ -24,20 +36,49 @@ func (pmon *placementMonitor) optimize() {
 			if p > 0 {
 				//fmt.Printf("? PENALTY: %d - %d\n", aix, p)
 				p_total += int(p)
+
+				aplist = append(aplist, ap{aix, p})
 			}
 			p_activities[aix] = p_total
 		}
 
+		slices.SortFunc(aplist, func(a, b ap) int {
+			return cmp.Compare(b.penalty, a.penalty)
+		})
+		//fmt.Printf("§§§ %+v\n", aplist)
+		i := 0
+	loop:
+		//TODO: The random selection seems significantly better than the
+		// ordered selection.
+		//aix := aplist[i].aix
 		aix, _ := slices.BinarySearch(p_activities, rand.IntN(p_total))
+
+		if slices.Contains(abuffer, aix) {
+			//goto loop
+		}
+		abuffer[abindex] = aix
+		abindex++
+		if abindex == ABUFFERLEN {
+			abindex = 0
+		}
 
 		if pmon.move(aix) {
 			fmt.Printf("?? PENALTY: %d  (%d)\n", pmon.score, pmon.scoreCount)
 			pmon.scoreCount = 0
+			aplist = aplist[:0]
+			continue
 		} else {
+			i++
 			pmon.scoreCount++
 			if pmon.scoreCount%10 == 0 {
-				fmt.Printf("?? ++++ %d\n", pmon.scoreCount)
+				fmt.Printf("?? ++++ %d / %d (%d)\n", pmon.scoreCount, i, len(aplist))
 			}
+			if i == len(aplist) {
+				//TODO
+				fmt.Println("?? oops ... ")
+				i = 0
+			}
+			goto loop
 		}
 	}
 
