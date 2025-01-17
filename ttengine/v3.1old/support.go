@@ -39,20 +39,6 @@ type placementMonitor struct {
 	breakoutData *breakoutData
 }
 
-type breakoutData struct {
-	count      int64
-	placecount []int64
-	instance   int
-}
-
-func (pmon *placementMonitor) initBreakoutData() {
-	pmon.breakoutData = &breakoutData{
-		count:      0,
-		placecount: make([]int64, len(pmon.ttinfo.Activities)),
-		instance:   0,
-	}
-}
-
 func (pm *placementMonitor) place(
 	aix ttbase.ActivityIndex,
 	slot ttbase.SlotIndex,
@@ -260,6 +246,39 @@ func (pmon *placementMonitor) saveState() *ttState {
 	copy(state.resourcePenalties, pmon.resourcePenalties)
 	return state
 }
+
+// TODO: Deprecated, as pmon.currentState is deprecated ...
+/*
+func (pmon *placementMonitor) resetState() {
+	// Restore the pmon-state from currentState.
+	// This assumes the length of the activities list is fixed. If new
+	// activities are added, or some removed, appropriate changes would
+	// need to be made.
+	state := pmon.currentState
+	alist := pmon.ttinfo.Activities
+	// Integrity check
+	if len(alist) != len(state.placements) {
+		base.Bug.Fatalln("State resetting: number of activities changed")
+	}
+	for aix := 1; aix < len(alist); aix++ {
+		a := alist[aix]
+		ap := state.placements[aix]
+		a.Placement = ap.placement
+		//a.Fixed = ap.fixed
+		a.XRooms = ap.xrooms
+	}
+	pmon.unplaced = pmon.unplaced[:0]
+	pmon.unplaced = append(pmon.unplaced, state.unplaced...)
+	pmon.added = make([]int64, len(state.added))
+	copy(pmon.added, state.added)
+	pmon.count = state.count
+	pmon.score = state.score
+
+	// Set the resource allocation and penalties
+	copy(pmon.ttinfo.TtSlots, state.ttslots)
+	copy(pmon.resourcePenalties, state.resourcePenalties)
+}
+*/
 
 func (pmon *placementMonitor) restoreState(state *ttState) {
 	// Restore the pmon-state from the argument.
