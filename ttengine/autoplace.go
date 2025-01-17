@@ -88,14 +88,12 @@ func PlaceLessons(
 
 func (pmon *placementMonitor) basicLoop(startlevel int, depth int) bool {
 	stacklevel0 := len(pmon.stateStack)
-	var stacklevel int
 	for {
 		state0 := pmon.saveState()
 		//pmon.bestState = state0 //??
 		pmon.stateStack = append(pmon.stateStack, state0)
 		//pmon.placeNonColliding(-1) //??
-	back_up:
-		//??
+
 		level := len(pmon.unplaced)
 		if level == startlevel {
 			//TODO: exit criteria
@@ -128,20 +126,6 @@ func (pmon *placementMonitor) basicLoop(startlevel int, depth int) bool {
 		pmon.restoreState(pmon.stateStack[stacklevel0])
 		pmon.stateStack = pmon.stateStack[:stacklevel0]
 		return false
-
-		// Return to an earlier state?
-		l := stacklevel
-
-		//l := len(pmon.stateStack) - 1
-		fmt.Printf("--- %d - %d @ %d\n", len(pmon.unplaced), l, depth)
-		if l == stacklevel0 {
-			// Failed?
-			return false
-		}
-		state0 = pmon.stateStack[l-1]
-		pmon.restoreState(state0)
-		pmon.stateStack = pmon.stateStack[:l]
-		goto back_up
 	}
 }
 
