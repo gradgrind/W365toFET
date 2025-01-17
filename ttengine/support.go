@@ -4,71 +4,19 @@ import (
 	"W365toFET/base"
 	"W365toFET/ttbase"
 	"cmp"
-	"math/rand/v2"
 	"slices"
 )
 
 type Penalty int64
 
 type placementMonitor struct {
-	stateStack []*ttState
-
-	xcount        int64
-	unplacedIndex int // ? == len(stateStack)
-	notFixed      []ttbase.ActivityIndex
-
-	// The following are used to prevent recently placed activities from
-	// being removed too soon. "count" is incremented with each placement.
-	// "added" stores the last placement times ("count" value) for each
-	// activity. "delta" specifies how man "count" steps are necessary
-	// before an activity may be removed.
-	count int64
-	delta int64
-	added []int64
-	//
+	stateStack            []*ttState
 	ttinfo                *ttbase.TtInfo
 	activityPlacementList []int
 	unplaced              []ttbase.ActivityIndex
 	constraintData        []any // resource index -> constraint data
 	resourcePenalties     []Penalty
 	score                 Penalty // current total penalty
-	pendingPenalties      map[ttbase.ResourceIndex]Penalty
-	// Should pendingPenalties rather be a list (for speed)?
-
-	bestState    *ttState
-	breakoutData *breakoutData
-}
-
-type breakoutData struct {
-	count      int64
-	placecount []int64
-	instance   int
-}
-
-func (pmon *placementMonitor) initBreakoutData() {
-	pmon.breakoutData = &breakoutData{
-		count:      0,
-		placecount: make([]int64, len(pmon.ttinfo.Activities)),
-		instance:   0,
-	}
-}
-
-func (pm *placementMonitor) place(
-	aix ttbase.ActivityIndex,
-	slot ttbase.SlotIndex,
-) Penalty {
-	// Place the activity in the given slot, recording the placement count.
-	// Return the change in score and set pm.pendingpenalties.
-	pm.ttinfo.PlaceActivity(aix, slot)
-	pm.added[aix] = pm.count
-	pm.count++
-	clear(pm.pendingPenalties)
-	return pm.evaluate1(aix)
-}
-
-func (pm *placementMonitor) doNotRemove(aix ttbase.ActivityIndex) bool {
-	// Return true if activity was placed "recently".
-	return pm.count-pm.added[aix] < pm.delta
 }
 
 func CollectCourseLessons(ttinfo *ttbase.TtInfo) []ttbase.ActivityIndex {
@@ -104,54 +52,6 @@ func CollectCourseLessons(ttinfo *ttbase.TtInfo) []ttbase.ActivityIndex {
 		//fmt.Printf("??? %+v\n", wl)
 	}
 	return alist
-}
-
-// Order the unplaced activities
-type activitySlots struct {
-	aix   ttbase.ActivityIndex
-	slots []ttbase.SlotIndex
-}
-
-func (pmon *placementMonitor) nextActivity() activitySlots {
-	ttinfo := pmon.ttinfo
-	alist := []activitySlots{}         // with available slots
-	alist0 := []ttbase.ActivityIndex{} // no available slot
-	for _, aix := range pmon.unplaced {
-		// Find possible slots
-		a := ttinfo.Activities[aix]
-		slots := []ttbase.SlotIndex{}
-		for _, slot := range a.PossibleSlots {
-			if ttinfo.TestPlacement(aix, slot) {
-				slots = append(slots, slot)
-			}
-		}
-		if len(slots) == 0 {
-			alist0 = append(alist0, aix)
-		} else {
-			alist = append(alist, activitySlots{aix, slots})
-		}
-	}
-	if len(alist0) != 0 {
-		// Select and return one of the activities which must displace other
-		// activities.
-		return activitySlots{aix: alist0[rand.IntN(len(alist0))]}
-	}
-
-	// Select and return one of the activities which need not displace other
-	// activities.
-
-	//TODO--? This seems not much, if at all, slower. It might even be slightly
-	// more effective for x01?
-	//return alist[rand.IntN(len(alist))]
-
-	plist := make([]int, len(alist))
-	ptotal := 0
-	for i, aslots := range alist {
-		ptotal += 1000 / len(aslots.slots)
-		plist[i] = ptotal
-	}
-	i, _ := slices.BinarySearch(plist, rand.IntN(ptotal))
-	return alist[i]
 }
 
 // For testing!
@@ -239,7 +139,6 @@ func (pmon *placementMonitor) saveState() *ttState {
 	state := &ttState{
 		placements:        make([]activityPlacement, len(alist)),
 		unplaced:          make([]ttbase.ActivityIndex, len(pmon.unplaced)),
-		added:             make([]int64, len(pmon.added)),
 		ttslots:           make([]ttbase.ActivityIndex, len(ttinfo.TtSlots)),
 		resourcePenalties: make([]Penalty, len(pmon.resourcePenalties)),
 	}
@@ -253,8 +152,6 @@ func (pmon *placementMonitor) saveState() *ttState {
 		state.placements[aix] = ap
 	}
 	copy(state.unplaced, pmon.unplaced)
-	copy(state.added, pmon.added)
-	state.count = pmon.count
 	state.score = pmon.score
 	copy(state.ttslots, ttinfo.TtSlots)
 	copy(state.resourcePenalties, pmon.resourcePenalties)
@@ -280,9 +177,6 @@ func (pmon *placementMonitor) restoreState(state *ttState) {
 	}
 	pmon.unplaced = pmon.unplaced[:0]
 	pmon.unplaced = append(pmon.unplaced, state.unplaced...)
-	pmon.added = make([]int64, len(state.added))
-	copy(pmon.added, state.added)
-	pmon.count = state.count
 	pmon.score = state.score
 
 	// Set the resource allocation and penalties

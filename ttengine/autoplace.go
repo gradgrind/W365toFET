@@ -19,17 +19,11 @@ func PlaceLessons(
 
 	var pmon *placementMonitor
 	{
-		var delta int64 = 0 // This feature seems best deactivated!
-
 		pmon = &placementMonitor{
-			count:             delta,
-			delta:             delta,
-			added:             make([]int64, len(ttinfo.Activities)),
 			ttinfo:            ttinfo,
 			unplaced:          alist,
 			resourcePenalties: make([]Penalty, len(ttinfo.Resources)),
 			score:             0,
-			pendingPenalties:  map[ttbase.ResourceIndex]Penalty{},
 		}
 	}
 	pmon.initConstraintData()
@@ -54,7 +48,6 @@ func PlaceLessons(
 	for i := NR; i != 0; i-- {
 		start := time.Now()
 
-		pmon.initBreakoutData() //??
 		pmon.stateStack = []*ttState{}
 		if !pmon.basicLoop(0, 0) {
 			fmt.Printf("$$$$$$$$$$$$$$$$$$ %d\n", len(pmon.unplaced))
@@ -88,7 +81,6 @@ func PlaceLessons(
 	return false
 	//--
 
-	pmon.initBreakoutData() //??
 	pmon.stateStack = []*ttState{}
 	pmon.basicLoop(0, 0)
 	return false
@@ -175,12 +167,7 @@ func (pmon *placementMonitor) placeNextActivity() bool {
 	for {
 		slot := pslots[i]
 		if ttinfo.TestPlacement(aix, slot) {
-			dpen := pmon.place(aix, slot)
-			// Update penalty info
-			for r, p := range pmon.pendingPenalties {
-				pmon.resourcePenalties[r] = p
-			}
-			pmon.score += dpen
+			ttinfo.PlaceActivity(aix, slot)
 			// Remove from "unplaced" list
 			pmon.unplaced = pmon.unplaced[:uix]
 			return true
@@ -213,13 +200,7 @@ func (pmon *placementMonitor) forceNextActivity(depth int) bool {
 	// likely to be reached.
 
 	var clashes []ttbase.ActivityIndex
-	//wb := false
-	// Distinguish between slots which would cause removal of temporarily
-	// blocked activities and those which wouldn't (preferred).
-	// No blocked activity removal:
 	nbslots := slotChoice{}
-	// With blocked activity removal:
-	wbslots := slotChoice{}
 
 	var slot ttbase.SlotIndex
 	for _, slot = range a.PossibleSlots {
@@ -229,30 +210,11 @@ func (pmon *placementMonitor) forceNextActivity(depth int) bool {
 			panic("Unexpectedly: no clashes")
 		}
 
-		for _, aixx := range clashes {
-			if pmon.doNotRemove(aixx) {
-
-				if nbslots.ptotal == 0 {
-					wbslots.ptotal += 1000 / len(clashes)
-					wbslots.plist = append(wbslots.plist, wbslots.ptotal)
-					wbslots.clist = append(wbslots.clist, clashes)
-					wbslots.slist = append(wbslots.slist, slot)
-				}
-
-				goto nextslot
-			}
-		}
-
 		nbslots.ptotal += 1000 / len(clashes)
 		nbslots.plist = append(nbslots.plist, nbslots.ptotal)
 		nbslots.clist = append(nbslots.clist, clashes)
 		nbslots.slist = append(nbslots.slist, slot)
 
-	nextslot:
-	}
-	if nbslots.ptotal == 0 {
-		nbslots = wbslots
-		//wb = true
 	}
 	count := 0
 	//??
@@ -269,15 +231,7 @@ try_again:
 	// Update "unplaced" list
 	pmon.unplaced = pmon.unplaced[:uix]
 	pmon.unplaced = append(pmon.unplaced, clashes...)
-	dpen := pmon.place(aix, slot)
-	for _, aixx := range clashes {
-		dpen += pmon.evaluate1(aixx)
-	}
-	// Update penalty info
-	for r, p := range pmon.pendingPenalties {
-		pmon.resourcePenalties[r] = p
-	}
-	pmon.score += dpen
+	ttinfo.PlaceActivity(aix, slot)
 
 	//TODO ...
 
