@@ -4,6 +4,18 @@ import (
 	"W365toFET/ttbase"
 )
 
+func (pmon *placementMonitor) setResourcePenalties() {
+	n_resources := len(pmon.ttinfo.Resources)
+	var score Penalty = 0
+	for r := 0; r < n_resources; r++ {
+		p := pmon.resourcePenalty1(r)
+		pmon.resourcePenalties[r] = p
+		score += p
+		//fmt.Printf("$ PENALTY %d: %d\n", r, p)
+	}
+	pmon.score = score
+}
+
 func (pmon *placementMonitor) resourcePenalty1(
 	r ttbase.ResourceIndex,
 ) Penalty {
@@ -18,61 +30,56 @@ func (pmon *placementMonitor) resourcePenalty1(
 	return 0
 }
 
-/*
-	func (pmon *placementMonitor) evaluate1(aix ttbase.ActivityIndex) Penalty {
-		// A full evaluation could be quite expensive. In may cases only a
-		// small number of things will have changed. The question is, which
-		// ones?
+func (pmon *placementMonitor) getActivityPenalty(
+	aix ttbase.ActivityIndex,
+) Penalty {
 
-		// Would a resource-based score be workable? If so, I could just
-		// reevaluate the affected resources, based on the changed activities.
+	ttinfo := pmon.ttinfo
+	a := ttinfo.Activities[aix]
 
-		ttinfo := pmon.ttinfo
-		a := ttinfo.Activities[aix]
-		var penalty Penalty = 0
-		for _, r := range a.Resources {
-
-			// Add to pendingPenalties if not already there.
-			if _, ok := pmon.pendingPenalties[r]; !ok {
-				rp := pmon.resourcePenalty1(r)
-				pmon.pendingPenalties[r] = rp
-				penalty += rp - pmon.resourcePenalties[r]
-			}
-		}
-
-		// Count student gaps
-		// + MaxGapsPerDay (int)
-		// + MaxGapsPerWeek (int)
-
-		// Student lunch breaks
-		// + LunchBreak (bool)
-
-		// Student afternoons, etc.
-		// + MaxAfternoons (int)
-		// + MaxLessonsPerDay (int)
-		// - MinLessonsPerDay (int) ... probably not at stage 1
-		// + ForceFirstHour (bool)
-
-		// Count teacher gaps?
-		// - MaxGapsPerDay (int)
-		// - MaxGapsPerWeek (int)
-
-		// Teacher lunch breaks?
-		// - LunchBreak (bool)
-
-		// Teacher afternoons, etc.?
-		// - MaxDays (int)
-		// - MaxAfternoons (int)
-		// - MaxLessonsPerDay (int)
-		// - MinLessonsPerDay (int) ... probably not at stage 1
-
-		// Activities DaysBetween?
-
-		// Activities LastLesson?
-
-		return penalty
+	//TODO: Is this the desired behaviour?
+	if a.Fixed {
+		return -1
 	}
-*/
+
+	var penalty Penalty = 0
+	for _, r := range a.Resources {
+		penalty += pmon.resourcePenalties[r]
+	}
+
+	// Count student gaps
+	// + MaxGapsPerDay (int)
+	// + MaxGapsPerWeek (int)
+
+	// Student lunch breaks
+	// + LunchBreak (bool)
+
+	// Student afternoons, etc.
+	// + MaxAfternoons (int)
+	// + MaxLessonsPerDay (int)
+	// - MinLessonsPerDay (int) ... probably not at stage 1
+	// + ForceFirstHour (bool)
+
+	// Count teacher gaps?
+	// - MaxGapsPerDay (int)
+	// - MaxGapsPerWeek (int)
+
+	// Teacher lunch breaks?
+	// - LunchBreak (bool)
+
+	// Teacher afternoons, etc.?
+	// - MaxDays (int)
+	// - MaxAfternoons (int)
+	// - MaxLessonsPerDay (int)
+	// - MinLessonsPerDay (int) ... probably not at stage 1
+
+	// Activities DaysBetween?
+
+	// Activities LastLesson?
+
+	return penalty
+}
+
 type AGConstraintData struct {
 	lunchbreak     bool
 	maxdaylessons  int

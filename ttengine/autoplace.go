@@ -29,19 +29,14 @@ func PlaceLessons(
 	pmon.initConstraintData()
 
 	// Calculate initial stage 1 penalties
-	for r := 0; r < len(ttinfo.Resources); r++ {
-		p := pmon.resourcePenalty1(r)
-		pmon.resourcePenalties[r] = p
-		pmon.score += p
-		//fmt.Printf("$ PENALTY %d: %d\n", r, p)
-	}
+	pmon.setResourcePenalties()
 
 	//TODO--
 	fmt.Printf("$ UNPLACED: %d ... PENALTY: %d\n", len(alist), pmon.score)
 
 	//TODO--
 	state0 := pmon.saveState()
-	NR := 10
+	NR := 1
 	tsum := 0.0
 	tmax := 0.0
 	var tlist []float64
@@ -65,6 +60,11 @@ func PlaceLessons(
 		tsum += telapsed
 		tlist = append(tlist, telapsed)
 
+		pmon.setResourcePenalties()
+
+		//TODO--
+		fmt.Printf("$ NEW PENALTY: %d\n", pmon.score)
+
 		if i != 1 {
 			pmon.restoreState(state0)
 		}
@@ -78,6 +78,9 @@ func PlaceLessons(
 	}
 	fmt.Printf("#+++ MEAN: %.2f s, MEDIAN: %.2f s, MAX: %.2f s.\n",
 		tmean, tmedian, tmax)
+
+	pmon.optimize()
+
 	return false
 	//--
 
@@ -194,11 +197,19 @@ func (pmon *placementMonitor) forceNextActivity(depth int) bool {
 			panic("Unexpectedly: no clashes")
 		}
 
+		// Filter out if one of the activities is fixed
+		for _, aixc := range clashes {
+			if ttinfo.Activities[aixc].Fixed {
+				goto skip
+			}
+		}
+
 		nbslots.ptotal += 1000 / len(clashes)
 		nbslots.plist = append(nbslots.plist, nbslots.ptotal)
 		nbslots.clist = append(nbslots.clist, clashes)
 		nbslots.slist = append(nbslots.slist, slot)
 
+	skip:
 	}
 	count := 0
 	//??
