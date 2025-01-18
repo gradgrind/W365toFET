@@ -10,6 +10,7 @@ Die Daten werden als JSON-Objekt ausgegeben, der Dateiname sollte mit "_w365.jso
 {
     "W365TT": {},
     "PrintTables": [],
+    "FetData": {},
     "Days": [],
     "Hours": [],
     "Teachers": [],
@@ -34,7 +35,7 @@ Einige Element-Namen sind anders als die entsprechenden Waldorf-365-Elemente:
  - „GradePartiton“ [sic!] -> „Division“ (im Top-Level-Objekt nicht vorhanden, da kein Top-Level-Element)
  - „EpochPlanCourse“ -> „SuperCourse“
 
-Neu sind „W365TT“, „PrintTables“, „RoomGroup“ und „Constraint“. Es gibt auch  „SubCourse“ – einen Epochenkurs –, das als Unterelement von "SuperCourse" auftaucht.
+Neu sind „W365TT“, „PrintTables“, „FetData“, „RoomGroup“ und „Constraint“. Es gibt auch  „SubCourse“ – einen Epochenkurs –, das als Unterelement von "SuperCourse" auftaucht.
 
 #### W365TT
 
@@ -54,6 +55,16 @@ In diesem Objekt könnten allgemeine Informationen oder Eigenschaften, die nirge
 #### PrintTables
 
 Eine Liste PrintTable-Objekte. Jedes dieser Objekt enthält Parameter für den Ausdruck (PDF-Ausgabe über Typst) eines Stundenplans (verschiedene Darstellungen sind möglich). Für die Stundenplanung selbst ist diese Liste nicht relevant. Die Felder werden in einem anderen Dokument beschrieben: [Druckoptionen](druckoptionen.md#druckoptionen).
+
+#### FetData
+
+Ein optionales Objekt, das die Erstellung der FET-Datei konfigurieren kann.
+Die möglichen Eigenschaften sind:
+
+```
+    "FetFile": string (name of FET file, without ".fet" ending)
+    "MapFile": string (name of Id-map file, without ".map" ending)
+```
 
 #### Constraint
 

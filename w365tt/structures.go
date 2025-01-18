@@ -2,11 +2,11 @@ package w365tt
 
 import (
 	"W365toFET/base"
+	"W365toFET/ttprint"
 	"encoding/json"
 )
 
 // The structures used for the "database", adapted to read from W365
-//TODO: Currently dealing only with the elements needed for the timetable
 
 type Ref = base.Ref // Element reference
 
@@ -181,7 +181,8 @@ type EpochPlan struct {
 
 type DbTopLevel struct {
 	Info         Info `json:"W365TT"`
-	PrintTables  []*base.PrintTable
+	PrintTables  []*ttprint.PrintTable
+	FetData      map[string]string
 	Days         []*Day
 	Hours        []*Hour
 	Teachers     []*Teacher

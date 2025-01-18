@@ -55,7 +55,7 @@ func main() {
 	stemfile := filepath.Base(stempath)
 
 	// Commands:
-	printTables := ttinfo.Db.PrintTables
+	printTables := ttinfo.Db.ModuleData["PrintTables"].([]*ttprint.PrintTable)
 
 	// Generate Typst data and, if not suppressed, PDF output.
 	genpdf := *typstexec

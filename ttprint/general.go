@@ -1,3 +1,28 @@
+// Package ttprint supports the generation of PDF timetables using Typst.
+//
+// The data is preprocessed according to the Type field of the [PrintTable]
+// object and passed to a Typst script in a JSON file. Multiple Typst scripts
+// can be used and customized to determine the types of tables and their
+// formatting. The formatting information is kept out of this package as
+// far as possible, being supplied in the [PrintTable] fields "Typst" and
+// "Pages", together with the chosen Typst script.
+//
+// The entry point to this package is the function [GenTimetables].
+// The Typst scripts used and the files generated during the process are at
+// fixed locations within the directory supplied as parameter datadir:
+//
+//   - scripts: directory containing the Typst scripts (ending ".typ")
+//
+//   - _data: directory containing the generated JSON files which are passed
+//     to the Typst script (ending ".json")
+//
+//   - _pdf: directory containing the PDF output files (ending ".pdf")
+//
+// It is possible to specify, in the [PrintTable] object, the names of the
+// files to be used (not their directory locations), but there are also
+// default names based on the name supplied as parameter stemfile, which is
+// supplied by the front-end and probably related to the name given to the
+// set of school data used as source.
 package ttprint
 
 import (
@@ -11,8 +36,26 @@ import (
 	"strings"
 )
 
-func DEFAULT_PRINT_TABLES() []*base.PrintTable {
-	return []*base.PrintTable{
+// A PrintTable provides configuration data for producing a PDF document
+// containing a particular type of timetable.
+// A list of PrintTable instances is kept in the main database's ModuleData
+// field, as { ... "PrintTables": [ {PrintTable}, ... ], ... }.
+type PrintTable struct {
+	// Type can currently be "Teacher", "Class" or "Room"
+	Type          string
+	TypstTemplate string // filename of Typst script to be run
+	TypstJson     string // filename of the Typst input JSON to be produced
+	Pdf           string // filename of the resulting PDF file
+	// Typst is data to be passed directly to the Typst input JSON file
+	Typst map[string]any
+	// Pages is a list of special configuration options for the individual
+	// "pages" (elements: teacher, class or room). The element Id is used
+	// to include the data in the JSON passed to the Typst script.
+	Pages []map[string]any
+}
+
+func DEFAULT_PRINT_TABLES() []*PrintTable {
+	return []*PrintTable{
 		{Type: "Teacher", TypstTemplate: "print_timetable"},
 		{Type: "Teacher", TypstTemplate: "print_overview"},
 		{Type: "Class", TypstTemplate: "print_timetable"},
@@ -77,9 +120,9 @@ func (page ttPage) extendPage(x []xPage) {
 
 func GenTimetables(
 	ttinfo *ttbase.TtInfo,
-	datadir string,
-	stemfile string,
-	commands []*base.PrintTable,
+	datadir string, // working directory
+	stemfile string, // name
+	commands []*PrintTable,
 	genpdf string,
 ) {
 	var f string
@@ -153,7 +196,7 @@ func GenTimetables(
 func genTypstOneElement(
 	ttinfo *ttbase.TtInfo,
 	pagemap map[base.Ref][]xPage,
-	cmd *base.PrintTable,
+	cmd *PrintTable,
 ) (Timetable, string) {
 	var tt Timetable
 	ref := base.Ref(cmd.Type)

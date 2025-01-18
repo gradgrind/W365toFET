@@ -3,6 +3,10 @@
     "FirstAfternoonHour" : 6,
     "MiddayBreak" : [ 5, 6 ]
   },
+  "FetData" : {
+    "FetFile" : "Versuch_D",
+    "MapFile" : "Versuch_D"
+  },
   "Classes" : [ {
     "Id" : "22216d17-04a4-488e-a585-ecb69021e20f",
     "Type" : "Class",

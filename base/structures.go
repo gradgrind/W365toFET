@@ -2,7 +2,7 @@
 // together with some supporting functions and methods.
 //
 // Initially designed around the data connected with timetabling, it is
-// readily extendable. The root element is the DbTopLevel struct and this
+// readily extendable. The root element is the [DbTopLevel] struct, which
 // is sometimes referred to as the "database".
 // No particular method of persistent storage is specified, the data
 // structures can be assembled from and saved to any format for which a
@@ -19,8 +19,8 @@ type Ref string // Element Id
 // periods), which are usually not 60 minutes in length. Each day has the
 // same number of lessons.
 type TimeSlot struct {
-	Day  int
-	Hour int
+	Day  int // index to [DbTopLevel.Days]
+	Hour int // index to [DbTopLevel.Hours]
 }
 
 // A Division specifies a particular splitting of a school "class" (the
@@ -109,13 +109,13 @@ type Room struct {
 	NotAvailable []TimeSlot
 }
 
-// IsReal reports whether r is an actual Room, rather than a RoomGroup or
-// RoomChoiceGroup.
+// IsReal reports whether r is an actual [Room], rather than a [RoomGroup] or
+// [RoomChoiceGroup].
 func (r *Room) IsReal() bool {
 	return true
 }
 
-// A RoomGroup is a collection of Room items, all of which are "required".
+// A RoomGroup is a collection of [Room] items, all of which are "required".
 type RoomGroup struct {
 	Id    Ref
 	Name  string
@@ -127,7 +127,8 @@ func (r *RoomGroup) IsReal() bool {
 	return false
 }
 
-// A RoomChoiceGroup is a collection of Room items, one of which is "required".
+// A RoomChoiceGroup is a collection of [Room] items, one of which is
+// "required".
 type RoomChoiceGroup struct {
 	Id    Ref
 	Name  string
@@ -142,8 +143,8 @@ func (r *RoomChoiceGroup) IsReal() bool {
 // A Class represents a collection of students and will generally correspond
 // to a school class (not lesson). It includes various constraint
 // information relevant for the timetable.
-// See type Group (representing a subgroup of a class) for the student groups
-// which can be specified as a resourse for an activity.
+// See type [Group] (representing a subgroup of a class) for the student
+// groups which can be specified as a resourse for an activity.
 // A class often has a name which consists of a number and a letter or two.
 // The number (Year field) represents the class's "year" (A.E. "grade"), the
 // Letter field the text part (it can be more than one letter). The Tag field
@@ -175,13 +176,13 @@ type Group struct {
 }
 
 // A Course specifies a collection of resources needed for a set of
-// activities (Lessons). The Subject field is a sort of label.
+// activities ([Lesson] elements). The [Subject] field is a sort of label.
 type Course struct {
 	Id       Ref
 	Subject  Ref
 	Groups   []Ref
 	Teachers []Ref
-	Room     Ref // Room, RoomGroup or RoomChoiceGroup Element
+	Room     Ref // [Room], [RoomGroup] or [RoomChoiceGroup] element
 	// These fields do not belong in the JSON object:
 	Lessons []Ref `json:"-"`
 }
@@ -194,6 +195,9 @@ func (c *Course) AddLesson(lref Ref) {
 	c.Lessons = append(c.Lessons, lref)
 }
 
+// A SuperCourse specifies a collection of [SubCourse] elements which are
+// associated with a set of activities ([Lesson] elements). The [Subject]
+// field is a sort of label.
 type SuperCourse struct {
 	Id      Ref
 	Subject Ref
@@ -211,28 +215,29 @@ func (c *SuperCourse) AddLesson(lref Ref) {
 }
 
 // A SubCourse has no Lessons of its own, but shares those of its parent
-// SuperCourses. A SubCourse may blong to more than one SuperCourse.
-// Otherwise it is much like a Course, bundling the necessary resources.
+// [SuperCourse] elements. A SubCourse may blong to more than one
+// [SuperCourse]. Otherwise it is much like a [Course], bundling the
+// necessary resources.
 type SubCourse struct {
 	Id           Ref
 	SuperCourses []Ref
 	Subject      Ref
 	Groups       []Ref
 	Teachers     []Ref
-	Room         Ref // Room, RoomGroup or RoomChoiceGroup Element
+	Room         Ref //  [Room], [RoomGroup] or [RoomChoiceGroup] element
 }
 
-// A GeneralRoom covers Room, RoomGroup and RoomChoiceGroup.
+// A GeneralRoom covers  [Room], [RoomGroup] and [RoomChoiceGroup].
 type GeneralRoom interface {
 	IsReal() bool
 }
 
 // A Lesson is an activity which needs placing in the timetable.
-// Its resources are determined by the course (Course or SuperCourse) to
+// Its resources are determined by the course ([Course] or [SuperCourse]) to
 // which it belongs.
 type Lesson struct {
 	Id       Ref
-	Course   Ref   // Course or SuperCourse Elements
+	Course   Ref   // [Course] or [SuperCourse] elements
 	Duration int   // number of "hours" covered
 	Day      int   // 0-based index, -1 for "unplaced"
 	Hour     int   // 0-based index
@@ -245,7 +250,7 @@ type Lesson struct {
 }
 
 // LessonCourse is a type of course which can have lessons, i.e. a
-// Course or a SuperCourse.
+// [Course] or a [SuperCourse].
 type LessonCourse interface {
 	IsSuperCourse() bool // whether this is a SuperCourse
 	// AddLesson is used to add a lesson to the course. When the data is
@@ -262,29 +267,12 @@ type Constraint interface {
 	CType() string
 }
 
-// A PrintTable provides configuration data for producing a PDF document
-// containing a particular type of timetable.
-// TODO: Actually it doesn't belong here at all, being part of the
-// "ttprint" package. Perhaps DbTopLevel should have a new field:
-//
-//	ModuleData: map[string]any
-//
-// One of the entries could then be:
-//
-//	PrintTables: []*PrintTable
-type PrintTable struct {
-	Type          string
-	TypstTemplate string
-	TypstJson     string
-	Pdf           string
-	Typst         map[string]any
-	Pages         []map[string]any
-}
-
 // There is just one DbTopLevel. It is the root of the database.
+// In general, the list fields should be ordered, where this is relevant.
 type DbTopLevel struct {
-	Info             Info
-	PrintTables      []*PrintTable
+	Info Info
+	// ModuleData is for data supplied and managed by other packages
+	ModuleData       map[string]any
 	Days             []*Day
 	Hours            []*Hour
 	Teachers         []*Teacher

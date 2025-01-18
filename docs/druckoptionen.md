@@ -50,7 +50,7 @@ Auch Einzelpläne können erstellt werden, indem die Element-ID des entsprechend
             },
         },
 
-         "Pages": [
+        "Pages": [
             {
                 "Id": Element-Id,
                 // Abweichungen von den Eigenschaften in "Typst":
