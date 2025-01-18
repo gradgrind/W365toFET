@@ -63,7 +63,8 @@ func (pmon *placementMonitor) optimize() {
 		}
 
 		if pmon.move(aix) {
-			fmt.Printf("?? PENALTY: %d  (%d)\n", pmon.score, pmon.scoreCount)
+			fmt.Printf("?? PENALTY: %d  [%d] (%d)\n",
+				pmon.score, pmon.scoreCount, len(pmon.stateStack))
 			pmon.scoreCount = 0
 			aplist = aplist[:0]
 			continue

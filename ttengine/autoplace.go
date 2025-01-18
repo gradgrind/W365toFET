@@ -54,6 +54,9 @@ func PlaceLessons(
 		}
 
 		pmon.setResourcePenalties()
+
+		fmt.Printf("==> start optimizing: %d (%d)\n",
+			len(pmon.unplaced), len(pmon.stateStack))
 		pmon.optimize()
 
 		// calculate the exe time
@@ -95,6 +98,9 @@ func PlaceLessons(
 }
 
 func (pmon *placementMonitor) basicLoop(startlevel int, depth int) bool {
+	//TODO--
+	//n0 := len(pmon.unplaced)
+
 	stacklevel0 := len(pmon.stateStack)
 	for {
 		state0 := pmon.saveState()
@@ -115,8 +121,15 @@ func (pmon *placementMonitor) basicLoop(startlevel int, depth int) bool {
 
 		if pmon.placeNextActivity() {
 			//fmt.Printf("** UNPLACED_1: %d @ %d\n", len(pmon.unplaced), depth)
+
+			//fmt.Printf("==> placed: %d (%d) @ %d\n",
+			//	n0-len(pmon.unplaced), len(pmon.stateStack), depth)
+			//time.Sleep(100 * time.Millisecond)
 			continue
 		}
+
+		//fmt.Printf("==> unplaced: %d (%d) @ %d\n",
+		//	n0-len(pmon.unplaced), len(pmon.stateStack), depth)
 
 		if depth < pmon.maxdepth {
 
@@ -125,12 +138,23 @@ func (pmon *placementMonitor) basicLoop(startlevel int, depth int) bool {
 			// activities. It depends on the data. What about incrementing
 			// the limit on each fail? Up to a certain limit, then ...?
 
-			//stacklevel = len(pmon.stateStack)
+			stacklevel := len(pmon.stateStack)
 			if pmon.forceNextActivity(depth) {
 				//fmt.Printf("** UNPLACED_2: %d @ %d\n", len(pmon.unplaced), depth)
+
+				pmon.stateStack = pmon.stateStack[:stacklevel]
+
+				//fmt.Printf("==> placed (forced): %d (%d) @ %d\n",
+				//	n0-len(pmon.unplaced), len(pmon.stateStack), depth)
+				//time.Sleep(100 * time.Millisecond)
 				continue
 			}
 		}
+
+		//fmt.Printf("==> not placed: %d (%d) @ %d\n",
+		//	n0-len(pmon.unplaced), len(pmon.stateStack), depth)
+		//time.Sleep(100 * time.Millisecond)
+
 		pmon.restoreState(pmon.stateStack[stacklevel0])
 		pmon.stateStack = pmon.stateStack[:stacklevel0]
 		return false
