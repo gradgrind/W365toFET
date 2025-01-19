@@ -20,6 +20,7 @@ func PlaceLessons(
 	var pmon *placementMonitor
 	{
 		pmon = &placementMonitor{
+			usedSlots:         make([][]ttbase.SlotIndex, len(ttinfo.Activities)),
 			maxdepth:          2,
 			ttinfo:            ttinfo,
 			unplaced:          alist,
@@ -46,6 +47,7 @@ func PlaceLessons(
 	repeat:
 		start := time.Now()
 
+		pmon.usedSlots = make([][]ttbase.SlotIndex, len(ttinfo.Activities))
 		pmon.stateStack = []*ttState{}
 		if !pmon.basicLoop(0, 0) {
 			pmon.maxdepth++
@@ -119,8 +121,11 @@ func (pmon *placementMonitor) basicLoop(startlevel int, depth int) bool {
 
 		//pmon.fullIntegrityCheck()
 
-		if pmon.placeNextActivity() {
-			//fmt.Printf("** UNPLACED_1: %d @ %d\n", len(pmon.unplaced), depth)
+		aix, slot := pmon.placeNextActivity()
+		if aix != 0 {
+			if depth == 0 {
+				pmon.usedSlots[aix] = append(pmon.usedSlots[aix], slot)
+			}
 
 			//fmt.Printf("==> placed: %d (%d) @ %d\n",
 			//	n0-len(pmon.unplaced), len(pmon.stateStack), depth)
@@ -139,8 +144,11 @@ func (pmon *placementMonitor) basicLoop(startlevel int, depth int) bool {
 			// the limit on each fail? Up to a certain limit, then ...?
 
 			stacklevel := len(pmon.stateStack)
-			if pmon.forceNextActivity(depth) {
-				//fmt.Printf("** UNPLACED_2: %d @ %d\n", len(pmon.unplaced), depth)
+			aix, slot := pmon.forceNextActivity(depth)
+			if aix != 0 {
+				if depth == 0 {
+					pmon.usedSlots[aix] = append(pmon.usedSlots[aix], slot)
+				}
 
 				pmon.stateStack = pmon.stateStack[:stacklevel]
 
@@ -168,10 +176,14 @@ type slotChoice struct {
 	slist  []ttbase.SlotIndex
 }
 
-func (pmon *placementMonitor) placeNextActivity() bool {
+func (pmon *placementMonitor) placeNextActivity() (
+	ttbase.ActivityIndex, ttbase.SlotIndex,
+) {
 	ttinfo := pmon.ttinfo
 	uix := len(pmon.unplaced) - 1
 	aix := pmon.unplaced[uix]
+
+	usedSlots := pmon.usedSlots[aix]
 
 	// Find possible slots
 	a := ttinfo.Activities[aix]
@@ -182,11 +194,13 @@ func (pmon *placementMonitor) placeNextActivity() bool {
 	i := i0
 	for {
 		slot := pslots[i]
-		if ttinfo.TestPlacement(aix, slot) {
-			ttinfo.PlaceActivity(aix, slot)
-			// Remove from "unplaced" list
-			pmon.unplaced = pmon.unplaced[:uix]
-			return true
+		if !slices.Contains(usedSlots, slot) {
+			if ttinfo.TestPlacement(aix, slot) {
+				ttinfo.PlaceActivity(aix, slot)
+				// Remove from "unplaced" list
+				pmon.unplaced = pmon.unplaced[:uix]
+				return aix, slot
+			}
 		}
 		i++
 		if i == nslots {
@@ -196,10 +210,12 @@ func (pmon *placementMonitor) placeNextActivity() bool {
 			break
 		}
 	}
-	return false
+	return 0, 0
 }
 
-func (pmon *placementMonitor) forceNextActivity(depth int) bool {
+func (pmon *placementMonitor) forceNextActivity(depth int) (
+	ttbase.ActivityIndex, ttbase.SlotIndex,
+) {
 	//fmt.Printf("??? %d @ %d\n", len(pmon.unplaced), depth)
 	//time.Sleep(100 * time.Millisecond)
 
@@ -211,6 +227,8 @@ func (pmon *placementMonitor) forceNextActivity(depth int) bool {
 	aix := pmon.unplaced[uix]
 	a := ttinfo.Activities[aix]
 
+	usedSlots := pmon.usedSlots[aix]
+
 	//TODO: This probably shouldn't return until the number of unplaced
 	// activities is down to uix – or it is established that that isn't
 	// likely to be reached.
@@ -220,6 +238,9 @@ func (pmon *placementMonitor) forceNextActivity(depth int) bool {
 
 	var slot ttbase.SlotIndex
 	for _, slot = range a.PossibleSlots {
+		if slices.Contains(usedSlots, slot) {
+			continue
+		}
 		clashes = ttinfo.FindClashes(aix, slot)
 		if len(clashes) == 0 {
 			// There should be no slots without clashes.
@@ -240,6 +261,13 @@ func (pmon *placementMonitor) forceNextActivity(depth int) bool {
 
 	skip:
 	}
+
+	if len(nbslots.plist) == 0 {
+		fmt.Printf("HELP! %d: %+v\n", aix, usedSlots)
+		pmon.usedSlots[aix] = pmon.usedSlots[aix][:0]
+		return 0, 0
+	}
+
 	count := 0
 	//??
 	state := pmon.stateStack[len(pmon.stateStack)-1]
@@ -270,7 +298,7 @@ try_again:
 			//fmt.Printf("     ))) count: %d // %d\n", count, len(pmon.stateStack))
 			goto try_again
 		}
-		return false
+		return 0, 0
 	}
-	return true
+	return aix, slot
 }

@@ -10,6 +10,7 @@ import (
 type Penalty int64
 
 type placementMonitor struct {
+	usedSlots         [][]ttbase.SlotIndex
 	maxdepth          int
 	scoreCount        int
 	stateStack        []*ttState
