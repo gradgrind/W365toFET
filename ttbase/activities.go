@@ -45,12 +45,15 @@ type Activity struct {
 	Lesson     *base.Lesson
 }
 
+// addActivityInfo completes the initialization of the Activities. This
+// includes the placement in the timetable structures of all the lessons
+// (fixed and non-fixed) which have a placement specified. In this way
+// various errors can be checked for.
 func (ttinfo *TtInfo) addActivityInfo(
 	t2tt map[Ref]ResourceIndex,
 	r2tt map[Ref]ResourceIndex,
 	g2tt map[Ref][]ResourceIndex,
 ) {
-	// Complete the initialization of the Activities.
 	warned := []*CourseInfo{} // used to warn only once per course
 	// Collect non-fixed activities which need placing
 	toplace := []ActivityIndex{}
@@ -87,7 +90,7 @@ func (ttinfo *TtInfo) addActivityInfo(
 		}
 	}
 
-	// Lessons start at index 1!
+	// Lessons (Activities) start at index 1!
 	for aix := 1; aix < len(ttinfo.Activities); aix++ {
 		ttl := ttinfo.Activities[aix]
 		cinfo := ttl.CourseInfo

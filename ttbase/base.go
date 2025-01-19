@@ -81,6 +81,8 @@ type TtInfo struct {
 	WITHOUT_ROOM_PLACEMENTS bool // ignore initial room placements
 }
 
+// MakeTtInfo makes a new TtInfo object and initializes some of its
+// properties.
 func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	ndays := len(db.Days)
 	nhours := len(db.Hours)
@@ -93,7 +95,7 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	}
 
 	// Build Ref -> Tag mapping for subjects, teachers, rooms, classes
-	// and groups.
+	// and groups. Set up the mapping for subjects, rooms and teachers.
 	ref2Tag := map[Ref]string{}
 	ttinfo.Ref2Tag = ref2Tag
 	for _, r := range db.Subjects {
@@ -110,15 +112,16 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	// fields will not yet be properly set.
 	gatherCourseInfo(ttinfo) // must be before call to filterDivisions
 
-	// Get filtered divisions (only those with lessons)
+	// Get filtered class divisions (only those with lessons)
 	filterDivisions(ttinfo)
 
-	// Handle the classes and groups (used for lessons)
+	// Handle the classes and groups (those used for lessons)
 	for cref, divs := range ttinfo.ClassDivisions {
 		c := db.Elements[cref].(*base.Class)
 		ctag := c.Tag
-		ref2Tag[c.Id] = ctag
-		ref2Tag[c.ClassGroup] = ctag
+		ref2Tag[c.Id] = ctag         // reference -> tag for Class item
+		ref2Tag[c.ClassGroup] = ctag // reference -> tag for class-Group item
+		// Add map entries for the other Group items
 		for _, d := range divs {
 			for _, gref := range d {
 				gtag := db.Elements[gref].(*base.Group).Tag
@@ -127,7 +130,8 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 		}
 	}
 
-	//fmt.Printf("Ref2Tag: %v\n", ttinfo.Ref2Tag)
+	// Prepare ordered list for the teachers, groups and rooms (used
+	// for printing tag lists)
 	ttinfo.orderResources()
 
 	// Get "atomic" groups
@@ -136,22 +140,24 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	return ttinfo
 }
 
+// PrepareCoreData sets up an array of pointers to all resources:
+// (atomic) student groups, teachers and (real) rooms, in that order.
+// Also an array of pointers to all the Activities is set up, keeping the
+// first entry free (0 should be an invalid activity index).
+// Also an array of time-slot-weeks is set up. Each resource has a block of
+// time-slots representing a timetable week, arranged as an array in
+// [TtInfo.TimeSlots], the resource order being the same as in the
+// [TtInfo.Resource] array. Each time-slot contains the index of the
+// activity (in [TtInfo.Activities]) claiming that resource in the
+// time-slot in question. The value may also be 0 (resource free) or -1
+// (resource blocked – "not available").
 func (ttinfo *TtInfo) PrepareCoreData() {
 	db := ttinfo.Db
-
-	// Allocate a vector for pointers to all Resources: teachers, (atomic)
-	// student groups and (real) rooms.
-	// Allocate a vector for pointers to all Activities, keeping the first
-	// entry free (0 should be an invalid ActivityIndex).
-	// Allocate a vector for a week of time slots for each Resource. Each
-	// cell represents a timetable slot for a single resource. If it is
-	// occupied – by an ActivityIndex – that indicates which Activity is
-	// using the Resource at this time. A value of -1 indicates that the
-	// time slot is blocked for this Resource.
 
 	lt := len(db.Teachers)
 	lr := len(db.Rooms)
 
+	// Get the atomic groups
 	ags := []*AtomicGroup{}
 	g2ags := map[Ref][]ResourceIndex{}
 	for _, cl := range db.Classes {
@@ -175,13 +181,11 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 
 	lg := len(ags)
 
-	// If using a single vector for all slots:
+	// Size the resources array and the time-slot-array:
 	ttinfo.Resources = make([]any, lt+lr+lg)
 	ttinfo.TtSlots = make([]ActivityIndex, (lt+lr+lg)*ttinfo.SlotsPerWeek)
 
-	// The slice cells are initialized to 0 or nil, according to slice type.
-
-	// Copy the AtomicGroups to the beginning of the Resources slice.
+	// Copy the AtomicGroup pointers to the beginning of the resources array.
 	i := 0
 	for _, ag := range ags {
 		if ag.Index != i {
@@ -207,7 +211,7 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 		i++
 	}
 
-	// Add the pseudo activities due to the NotAvailable lists
+	// Add the pseudo-activities arising from the NotAvailable lists
 	ttinfo.addBlockers(t2tt, r2tt)
 
 	// Get preliminary constraint info – needed for the call to addActivity
@@ -218,6 +222,8 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 
 }
 
+// orderResources generates an ordering index for each of the resources,
+// saving the result at [TtInfo.ResourceOrder].
 func (ttinfo *TtInfo) orderResources() {
 	// Needed for sorting teachers, groups and rooms
 	db := ttinfo.Db
@@ -244,6 +250,8 @@ func (ttinfo *TtInfo) orderResources() {
 	ttinfo.ResourceOrder = olist
 }
 
+// SortList sorts a list of resource references according to the order
+// in [TtInfo.ResourceOrder]. It returns a list of tags (short names).
 func (ttinfo *TtInfo) SortList(list []Ref) []string {
 	ordering := ttinfo.ResourceOrder
 	ref2tag := ttinfo.Ref2Tag
