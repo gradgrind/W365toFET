@@ -1,8 +1,9 @@
-package ttbase
+package ttbase_test
 
 import (
 	"W365toFET/base"
 	"W365toFET/readxml"
+	"W365toFET/ttbase"
 	"fmt"
 	"slices"
 	"testing"
@@ -41,7 +42,7 @@ func TestTtBase(t *testing.T) {
 			continue
 		}
 
-		ttinfo := MakeTtInfo(cdata.Db())
+		ttinfo := ttbase.MakeTtInfo(cdata.Db())
 		ttinfo.PrepareCoreData()
 		ttinfo.PrintAtomicGroups()
 
