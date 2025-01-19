@@ -22,38 +22,55 @@ type VirtualRoom struct {
 	RoomChoices [][]Ref // list of ("real") Room lists
 }
 
+// A TtInfo contains the core structures for the timetable
 type TtInfo struct {
-
-	// Core structures maintaining timetable state
-
-	NDays        int
-	NHours       int
-	SlotsPerWeek int
-	PMStart      int
-	LunchTimes   []int
-	Activities   []*Activity // first entry (index 0) free!
-	Resources    []any       // pointers to Resources
-	TtSlots      []ActivityIndex
+	NDays        int // number of days in the school week
+	NHours       int // number of timetable-hours in the school day
+	SlotsPerWeek int // NDays * NHours
+	PMStart      int // index (0-based) of first afternoon hour
+	// LunchTimes is a contiguous, ordered list of hours (0-based indexes)
+	// in which a lunch break can be taken
+	LunchTimes []int
+	// Activities provides indexed access to all the [Activity] items, via
+	// pointers. The first item should be free, as index 0 is used to
+	// indicate "no activity".
+	Activities []*Activity
+	// Resources provides indexed access to all resources (teachers,
+	// atomic student groups, rooms), via pointers. Type any is used
+	// rather than an interface because the resources are partly from
+	// another package.
+	Resources []any // pointers to resource elements
+	// TtSlots contains a full week of time-slots for each resource,
+	// with the same indexing as Resources
+	TtSlots []ActivityIndex
 
 	// "Convenience" data
 
-	Db      *base.DbTopLevel
-	Ref2Tag map[Ref]string // Ref -> Tag mapping for subjects, teachers,
+	// Db is a reference to the underlying school data
+	Db *base.DbTopLevel
+	// Ref2Tag is a mapping, Ref -> Tag, for subjects, teachers,
 	// rooms, classes and groups
+	Ref2Tag map[Ref]string
 
-	// Set up by "orderResources",
-	// used by "SortList" for ordering resource lists
+	// ResourceOrder is a map set up by [orderResources] and used by
+	// [SortList] for ordering resource lists
 	ResourceOrder map[Ref]int
 
-	// Set up by "gatherCourseInfo"
+	// LessonCourses is an array of pointers to the [CourseInfo] items
+	// and is set up by [gatherCourseInfo]
 	LessonCourses []*CourseInfo
-	CourseInfo    map[Ref]*CourseInfo // Key can be Course or SuperCourse
+	// CourseInfo maps the [base.Course] or [base.SuperCourse] references
+	// to their [CourseInfo] items
+	CourseInfo map[Ref]*CourseInfo
 
-	// Set by "filterDivisions"
-	ClassDivisions map[Ref][][]Ref // Class -> list of list of Groups
+	// ClassDivision maps a [base.Class] reference to a list of lists of
+	// [base.Group] elements. It is set by [filterDivisions]
+	ClassDivisions map[Ref][][]Ref
 
-	// Set by "makeAtomicGroups"
-	AtomicGroups  map[Ref][]*AtomicGroup // Group -> list of AtomicGroups
+	// AtomicGroups maps a [base.Group] reference to a list of pointers
+	// to the group's [AtomicGroup] items. It is set by [makeAtomicGroups]
+	AtomicGroups map[Ref][]*AtomicGroup
+	// NAtomicGroups ist the total number of [AtomicGroup] items.
 	NAtomicGroups int
 
 	Constraints map[string][]any
