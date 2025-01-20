@@ -52,8 +52,8 @@ type Activity struct {
 func (ttinfo *TtInfo) addActivityInfo(
 	t2tt map[Ref]ResourceIndex,
 	r2tt map[Ref]ResourceIndex,
-	g2tt map[Ref][]ResourceIndex,
 ) {
+	g2tt := ttinfo.AtomicGroupIndexes
 	warned := []*CourseInfo{} // used to warn only once per course
 	// Collect non-fixed activities which need placing
 	toplace := []ActivityIndex{}

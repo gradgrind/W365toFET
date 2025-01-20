@@ -74,6 +74,9 @@ type TtInfo struct {
 	// AtomicGroups maps a [base.Group] reference to a list of pointers
 	// to the group's [AtomicGroup] items. It is set by [makeAtomicGroups]
 	AtomicGroups map[Ref][]*AtomicGroup
+	// AtomicGroupIndexes maps a [base.Group] reference to a list of
+	// resource indexes
+	AtomicGroupIndexes map[Ref][]ResourceIndex
 	// NAtomicGroups ist the total number of [AtomicGroup] items.
 	NAtomicGroups int
 
@@ -141,14 +144,15 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	// for printing tag lists)
 	ttinfo.orderResources()
 
-	// Get "atomic" groups
+	// Get "atomic" groups. The resources list (ttinfo.Resources) is begun
+	// with the atomic groups.
 	ttinfo.makeAtomicGroups()
 
 	return ttinfo
 }
 
-// PrepareCoreData sets up an array of pointers to all resources:
-// (atomic) student groups, teachers and (real) rooms, in that order.
+// PrepareCoreData adds teachers and (real) rooms to the resources list
+// (ttinfo.Resources).
 // Also an array of pointers to all the Activities is set up, keeping the
 // first entry free (0 should be an invalid activity index).
 // Also an array of time-slot-weeks is set up. Each resource has a block of
@@ -164,58 +168,24 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 	lt := len(db.Teachers)
 	lr := len(db.Rooms)
 
-	// Get the atomic groups
-	ags := []*AtomicGroup{}
-	g2ags := map[Ref][]ResourceIndex{}
-	for _, cl := range db.Classes {
-		for _, ag := range ttinfo.AtomicGroups[cl.ClassGroup] {
-			ags = append(ags, ag)
-			// Add to the Group -> index list map
-			g2ags[cl.ClassGroup] = append(g2ags[cl.ClassGroup], ag.Index)
-			for _, gref := range ag.Groups {
-				g2ags[gref] = append(g2ags[gref], ag.Index)
-			}
-		}
-	}
+	resix := ttinfo.NAtomicGroups
+	// Size the time-slot-array:
+	ttinfo.TtSlots = make([]ActivityIndex, (lt+lr+resix)*ttinfo.SlotsPerWeek)
 
-	// Sort the AtomicGroups
-	slices.SortFunc(ags, func(a, b *AtomicGroup) int {
-		if a.Index < b.Index {
-			return -1
-		}
-		return 1
-	})
-
-	lg := len(ags)
-
-	// Size the resources array and the time-slot-array:
-	ttinfo.Resources = make([]any, lt+lr+lg)
-	ttinfo.TtSlots = make([]ActivityIndex, (lt+lr+lg)*ttinfo.SlotsPerWeek)
-
-	// Copy the AtomicGroup pointers to the beginning of the resources array.
-	i := 0
-	for _, ag := range ags {
-		if ag.Index != i {
-			base.Bug.Fatalf("Atomic group index != resource index:\n"+
-				"  -- %d: %+v\n", i, ag)
-		}
-		ttinfo.Resources[i] = ag
-		//fmt.Printf(" :: %+v\n", ag)
-		i++
-	}
-	ttinfo.NAtomicGroups = i
+	// The AtomicGroup pointers are already at the beginning of the resources
+	// list. Add the teachers and rooms
 
 	t2tt := map[Ref]ResourceIndex{}
 	for _, t := range db.Teachers {
-		t2tt[t.Id] = i
-		ttinfo.Resources[i] = t
-		i++
+		t2tt[t.Id] = resix
+		ttinfo.Resources = append(ttinfo.Resources, t)
+		resix++
 	}
 	r2tt := map[Ref]ResourceIndex{}
 	for _, r := range db.Rooms {
-		r2tt[r.Id] = i
-		ttinfo.Resources[i] = r
-		i++
+		r2tt[r.Id] = resix
+		ttinfo.Resources = append(ttinfo.Resources, r)
+		resix++
 	}
 
 	// Add the pseudo-activities arising from the NotAvailable lists
@@ -225,8 +195,7 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 	ttinfo.processConstraints()
 
 	// Add the remaining Activity information
-	ttinfo.addActivityInfo(t2tt, r2tt, g2ags)
-
+	ttinfo.addActivityInfo(t2tt, r2tt)
 }
 
 // orderResources generates an ordering index for each of the resources,
