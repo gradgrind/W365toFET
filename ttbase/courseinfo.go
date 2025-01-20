@@ -175,7 +175,7 @@ func (ttinfo *TtInfo) checkAllocatedRooms(cinfo *CourseInfo) {
 }
 
 func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
-	// Collect Courses with Lessons.
+	// Collect Courses with lessons/activities.
 	roomData := map[Ref][]Ref{} // course -> []room (any sort of "room")
 	db := ttinfo.Db
 
@@ -241,7 +241,7 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 	ttinfo.LessonCourses = cinfo_list
 
 	for i, cinfo := range cinfo_list {
-		// Add lessons to CourseInfo
+		// Add activities to CourseInfo
 		llist := clessons[i]
 		for _, lref := range llist {
 			l := db.Elements[lref].(*base.Lesson)
@@ -252,7 +252,7 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 			ttlix := len(ttinfo.Activities)
 			p := -1
 			if l.Day >= 0 {
-				p = l.Day*ttinfo.NHours + l.Hour
+				p = l.Day*ttinfo.DayLength + l.Hour
 			}
 			ttl := &Activity{
 				Index:      ttlix,

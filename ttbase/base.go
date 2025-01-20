@@ -24,8 +24,12 @@ type VirtualRoom struct {
 
 // A TtInfo contains the core structures for the timetable
 type TtInfo struct {
-	NDays        int // number of days in the school week
-	NHours       int // number of timetable-hours in the school day
+	NDays  int // number of days in the school week
+	NHours int // number of timetable-hours in the school day
+	// DayLength is longer than NHours – "dummy" time-slots are added at the
+	// end of each day to ease handling of constraints which relate to days.
+	// It should be (at least) 2 * NHours - 1.
+	DayLength    int
 	SlotsPerWeek int // NDays * NHours
 	PMStart      int // index (0-based) of first afternoon hour
 	// LunchTimes is a contiguous, ordered list of hours (0-based indexes)
@@ -73,7 +77,8 @@ type TtInfo struct {
 	// NAtomicGroups ist the total number of [AtomicGroup] items.
 	NAtomicGroups int
 
-	Constraints map[string][]any
+	Constraints       map[string][]any
+	DayGapConstraints *DayGapConstraints
 
 	MinDaysBetweenLessons []MinDaysBetweenLessons
 	ParallelLessons       []ParallelLessons
@@ -86,12 +91,14 @@ type TtInfo struct {
 func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	ndays := len(db.Days)
 	nhours := len(db.Hours)
+	daylength := nhours*2 - 1
 	ttinfo := &TtInfo{
 		Db: db,
 		//
 		NDays:        ndays,
 		NHours:       nhours,
-		SlotsPerWeek: ndays * nhours,
+		DayLength:    daylength,
+		SlotsPerWeek: ndays * daylength,
 	}
 
 	// Build Ref -> Tag mapping for subjects, teachers, rooms, classes

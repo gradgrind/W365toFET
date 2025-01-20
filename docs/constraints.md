@@ -21,7 +21,7 @@ The lessons of a course should have at least the given number of days between th
 
  - Weight (integer)
  - Courses (list of Course or SuperCourse references): The constraint will apply to each of the listed courses.
- - DaysBetween (integer)
+ - DayGap (integer)
  - ConsecutiveIfSameDay (boolean): If the lessons do end up on the same day, they should be consecutive.
 
 If DaysBetween is 1, this constraint will override AutomaticDifferentDays for the listed courses. Otherwise it is a distinct constraint.
@@ -33,7 +33,7 @@ This constraint applies between the individual lessons of the two courses, not b
  - Weight (integer)
  - Course1 (Course or SuperCourse reference)
  - Course2 (Course or SuperCourse reference)
- - DaysBetween (integer)
+ - DayGap (integer)
  - ConsecutiveIfSameDay (boolean): If the lessons do end up on the same day, they should be consecutive.
 
 ### LessonsEndDay

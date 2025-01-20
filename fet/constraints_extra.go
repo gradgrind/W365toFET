@@ -212,7 +212,7 @@ func getExtraConstraints(fetinfo *fetInfo) {
 						Consecutive_If_Same_Day: cn.ConsecutiveIfSameDay,
 						Number_of_Activities:    2,
 						Activity_Id:             []int{l1, l2},
-						MinDays:                 cn.DaysBetween,
+						MinDays:                 cn.DayGap,
 						Active:                  true,
 					})
 				}

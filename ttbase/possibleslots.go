@@ -15,10 +15,11 @@ func (ttinfo *TtInfo) makePossibleSlots() {
 			continue
 		}
 		plist := []int{}
-		length := a.Duration
+		hlimit := ttinfo.NHours - a.Duration
 		for d := 0; d < ttinfo.NDays; d++ {
-			for h := 0; h <= ttinfo.NHours-length; h++ {
-				p := d*ttinfo.NHours + h
+			dayslot0 := d * ttinfo.DayLength
+			for h := 0; h <= hlimit; h++ {
+				p := dayslot0 + h
 				if ttinfo.TestPlacement(aix, p) {
 					plist = append(plist, p)
 				}

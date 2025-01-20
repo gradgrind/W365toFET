@@ -29,7 +29,7 @@ type Activity struct {
 	// Fixed specifies whether the activity must remain in its current slot
 	Fixed bool
 	// Placement specifies the time-slot in which this activity has been
-	// placed (day * nhours + hour), or -1 if unplaced
+	// placed (day * daylength + hour), or -1 if unplaced
 	Placement SlotIndex
 	// PossibleSlots is a list of non-blocked time-slots for this activity
 	PossibleSlots []SlotIndex
@@ -283,7 +283,7 @@ func (ttinfo *TtInfo) addActivityInfo(
 
 			if a.Fixed {
 				// Check for end-of-day problems when duration > 1
-				h := p % ttinfo.NHours
+				h := p % ttinfo.DayLength
 				if h+a.Duration > ttinfo.NHours {
 					base.Error.Fatalf(
 						"Placement for Fixed Activity %d @ %d invalid:\n"+
@@ -377,11 +377,11 @@ func (ttinfo *TtInfo) FindClashes(aix ActivityIndex, slot int) []ActivityIndex {
 	// the activity duration is 2.
 	clashes := []ActivityIndex{}
 	a := ttinfo.Activities[aix]
-	day := slot / ttinfo.NHours
+	day := slot / ttinfo.DayLength
 	//--fmt.Printf("????0 aix: %d slot %d\n", aix, slot)
 	for _, addix := range a.DifferentDays {
 		add := ttinfo.Activities[addix]
-		if add.Placement >= 0 && add.Placement/ttinfo.NHours == day {
+		if add.Placement >= 0 && add.Placement/ttinfo.DayLength == day {
 			clashes = append(clashes, addix)
 			//--fmt.Printf("????1 %d\n", addix)
 		}
@@ -401,7 +401,7 @@ func (ttinfo *TtInfo) FindClashes(aix ActivityIndex, slot int) []ActivityIndex {
 		a := ttinfo.Activities[aixp]
 		for _, addix := range a.DifferentDays {
 			add := ttinfo.Activities[addix]
-			if add.Placement >= 0 && add.Placement/ttinfo.NHours == day {
+			if add.Placement >= 0 && add.Placement/ttinfo.DayLength == day {
 				clashes = append(clashes, addix)
 				//--fmt.Printf("????3 %d\n", addix)
 			}
@@ -479,10 +479,10 @@ func (ttinfo *TtInfo) TestPlacement(aix ActivityIndex, slot int) bool {
 	// so that it will not, for example, be the last slot of a day if
 	// the activity duration is 2.
 	a := ttinfo.Activities[aix]
-	day := slot / ttinfo.NHours
+	day := slot / ttinfo.DayLength
 	for _, addix := range a.DifferentDays {
 		add := ttinfo.Activities[addix]
-		if add.Placement >= 0 && add.Placement/ttinfo.NHours == day {
+		if add.Placement >= 0 && add.Placement/ttinfo.DayLength == day {
 			return false
 		}
 	}
@@ -498,7 +498,7 @@ func (ttinfo *TtInfo) TestPlacement(aix ActivityIndex, slot int) bool {
 		a := ttinfo.Activities[aixp]
 		for _, addix := range a.DifferentDays {
 			add := ttinfo.Activities[addix]
-			if add.Placement >= 0 && add.Placement/ttinfo.NHours == day {
+			if add.Placement >= 0 && add.Placement/ttinfo.DayLength == day {
 				return false
 			}
 		}

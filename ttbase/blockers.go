@@ -42,7 +42,7 @@ func (ttinfo *TtInfo) blockResource(
 	timeslots []base.TimeSlot,
 ) {
 	for _, ts := range timeslots {
-		p := ts.Day*ttinfo.NHours + ts.Hour
+		p := ts.Day*ttinfo.DayLength + ts.Hour
 		ttinfo.TtSlots[rix*ttinfo.SlotsPerWeek+p] = BLOCKED_ACTIVITY
 	}
 }

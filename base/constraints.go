@@ -67,16 +67,17 @@ func (db *DbTopLevel) NewAutomaticDifferentDays() *AutomaticDifferentDays {
 	return c
 }
 
-// ++ DaysBetween
-// This constraint applies between the lessons of the individual courses.
-// It does not connect the courses. If DaysBetween = 1, this constraint
+// A DaysBetween constrains the lessons of the listed courses to be placed
+// on different days, the DayGap property specifying the minimum distance in
+// days (adjacent days ==> DayGap = 1).
+// This constraint applies between the lessons of the individual courses,
+// it does not connect the courses. If DaysGap = 1, this constraint
 // overrides the global AutomaticDifferentDays constraint for these courses.
-
 type DaysBetween struct {
 	Constraint           string
 	Weight               int
 	Courses              []Ref // Courses or SuperCourses
-	DaysBetween          int
+	DayGap               int
 	ConsecutiveIfSameDay bool
 }
 
@@ -101,7 +102,7 @@ type DaysBetweenJoin struct {
 	Weight               int
 	Course1              Ref // Course or SuperCourse
 	Course2              Ref // Course or SuperCourse
-	DaysBetween          int
+	DayGap               int
 	ConsecutiveIfSameDay bool
 }
 
