@@ -4,10 +4,11 @@ import (
 	"W365toFET/base"
 )
 
+// filterDivisions prepares filtered versions of the class Divisions
+// containing only those Divisions which have Groups used in Lessons.
+// The result is saved to ttinfo.ClassDivisions using maps, so there is
+// no ordering.
 func filterDivisions(ttinfo *TtInfo) {
-	// Prepare filtered versions of the class Divisions containing only
-	// those Divisions which have Groups used in Lessons.
-
 	// Collect groups used in Lessons. Get them from the
 	// ttinfo.courseInfo.groups map, which only includes courses with lessons.
 	usedgroups := map[Ref]bool{}
@@ -41,14 +42,15 @@ type FractionChip struct {
 	Total       int
 }
 
+// SortClassGroups, given a class and a list of groups (possibly containing
+// groups from other classes), separates the groups belonging to that class
+// from the others.
+// It then builds corresponding "fractional chip" info. If the groups from
+// the given class are not contiguous, multiple chips will be constructed.
 func (ttinfo *TtInfo) SortClassGroups(
 	class Ref,
 	groups []Ref,
 ) []FractionChip {
-	// Given a class and a list of groups, separate the groups belonging to
-	// that class from the others.
-	// Also build corresponding "fractional chip" info. If the groups are not
-	// contiguous, multiple chips will be constructed.
 	db := ttinfo.Db
 	elements := db.Elements
 	mygroups := map[Ref]bool{}

@@ -40,7 +40,7 @@ func (ttinfo *TtInfo) View(cinfo *CourseInfo) string {
 
 func gatherCourseInfo(ttinfo *TtInfo) {
 	// Gather the Groups, Teachers and "rooms" for the Courses and
-	// SuperCourses with lessons (only).
+	// SuperCourses – only those with lessons.
 	// Gather the Lessons for these Courses and SuperCourses.
 	// Also, the SuperCourses (with lessons) get a list of their
 	// SubCourses.

@@ -7,17 +7,25 @@ import (
 )
 
 type AtomicGroup struct {
-	Index  ResourceIndex
-	Class  Ref
+	// Index is the index of this item within the [TtInfo.Resources] array.
+	Index ResourceIndex
+	// Class is the reference (Id) of the [base.Class]
+	Class Ref
+	// Groups lists the references (Id) of the constituent [base.Group]
+	// elements
 	Groups []Ref
-	Tag    string // A constructed tag to represent the atomic group
+	// Tag is a constructed tag to represent the atomic group
+	Tag string
 }
 
+// makeAtomicGroups constructs "atomic" groups for the school classes
+// [base.Class] elements. An atomic group is an ordered list of single
+// groups, one from each division.
 func (ttinfo *TtInfo) makeAtomicGroups() {
-	// An atomic group is an ordered list of single groups, one from each
-	// division.
 	db := ttinfo.Db
 	ttinfo.AtomicGroups = map[Ref][]*AtomicGroup{}
+	// The atomic groups are indexed according to the position they will
+	// take in the [TtInfo.Resources] array
 	atomicGroupIndex := 0
 
 	// Go through the classes inspecting their Divisions.
@@ -29,7 +37,7 @@ func (ttinfo *TtInfo) makeAtomicGroups() {
 		}
 
 		if len(divs) == 0 {
-			// Make an atomic group for the class
+			// No divisions, make an atomic group for the class
 			cag := &AtomicGroup{
 				Index: atomicGroupIndex,
 				Class: cl.Id,
@@ -41,30 +49,38 @@ func (ttinfo *TtInfo) makeAtomicGroups() {
 		}
 
 		// The atomic groups will be built as a list of lists of Refs.
+		// The length of the Ref-lists is equal to the number of divisions.
+		// The number of Ref-lists is the product of all the division lengths.
 		agrefs := [][]Ref{{}}
 		for _, dglist := range divs {
-			// Add another division – increases underlying list lengths.
-			agrefsx := [][]Ref{}
+			// Add another division, creating a new list of Ref-lists by
+			// appending each group of the new division to the old list in
+			// turn.
+			agrefsx := [][]Ref{} // new list of Ref-lists
 			for _, ag := range agrefs {
-				// Extend each of the old list items by appending each
-				// group of the new division in turn – multiplies the
-				// total number of atomic groups.
+				// Each of the old Ref-lists is extended
 				for _, g := range dglist {
+					// Copy the old Ref-list to a new one, adding the new group
 					gx := make([]Ref, len(ag)+1)
 					copy(gx, append(ag, g))
+					// Add to the new list of Rref-lists
 					agrefsx = append(agrefsx, gx)
 				}
 			}
+			// Replace the old list of Ref-lists by the new one
 			agrefs = agrefsx
 		}
 		//fmt.Printf("  §§§ Divisions in %s: %+v\n", cl.Tag, divs)
 		//fmt.Printf("     --> %+v\n", agrefs)
 
-		// Make AtomicGroups
+		// Make [AtomicGroup] elements
 		aglist := []*AtomicGroup{}
 		for _, ag := range agrefs {
+			// Combine the short string representations of the groups
 			glist := []string{}
 			for _, gref := range ag {
+				// Don't use ttinfo.Ref2Tag here because that would provide
+				// the full group name (with class prefix)
 				gtag := db.Elements[gref].(*base.Group).Tag
 				glist = append(glist, gtag)
 			}
@@ -79,7 +95,8 @@ func (ttinfo *TtInfo) makeAtomicGroups() {
 			aglist = append(aglist, ago)
 		}
 
-		// Map the individual groups to their atomic groups.
+		// Map the individual groups to their atomic groups. This algorithm
+		// is described in the program documentation (atomicgroups.md).
 		g2ags := map[Ref][]*AtomicGroup{}
 		count := 1
 		divIndex := len(divs)
@@ -98,11 +115,16 @@ func (ttinfo *TtInfo) makeAtomicGroups() {
 			count *= len(divGroups)
 		}
 
+		// Set up the mapping ttinfo.AtomicGroups, first for the
+		// whole-class group, then for the division groups
 		ttinfo.AtomicGroups[cl.ClassGroup] = aglist
 		for g, agl := range g2ags {
 			ttinfo.AtomicGroups[g] = agl
 		}
 	}
+
+	// For testing: print out the atomic groups for each class
+	//ttinfo.PrintAtomicGroups()
 }
 
 // For testing
