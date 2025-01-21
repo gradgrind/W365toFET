@@ -18,7 +18,7 @@ Die Lessons des Kurses sollten am Ende des Schülertags liegen.
 
 ## BeforeAfterHour
 
-Die Lessons der Kurse sollten vor ("after": false) bzw. nach ("after": true)der angegebenen Stunde – ausschließlich dieser Stunde – liegen.
+Die Lessons der Kurse sollten vor ("After": false) bzw. nach ("After": true)der angegebenen Stunde – ausschließlich dieser Stunde – liegen.
 
 ```
 {
@@ -34,9 +34,9 @@ Die Lessons der Kurse sollten vor ("after": false) bzw. nach ("after": true)der 
 
 ## AutomaticDifferentDays
 
-Die Lessons eines Kurses sollen an unterschiedlichen Tagen stattfinden. Mit „"consecutiveIfSameDay": true“ sollten sie – falls sie doch am selben Tag sind – direkt nacheinander sein.
+Die Lessons eines Kurses sollen an unterschiedlichen Tagen stattfinden. Mit „"ConsecutiveIfSameDay": true“ sollten sie – falls sie doch am selben Tag sind – direkt nacheinander sein.
 
-Dieser Constraint wird im Prinzip auf alle Kurse (mit zwei oder mehr Lessons) angewendet. Wenn dieser Constraint nicht vorhanden ist, wird er mit "weight": 100 angewendet.
+Dieser Constraint wird im Prinzip auf alle Kurse (mit zwei oder mehr Lessons) angewendet. Wenn dieser Constraint nicht vorhanden ist, wird er mit "Weight": 100 angewendet.
 
 Einzelne Kurse können durch DaysBetween-Constraints anders geregelt werden.
 
@@ -50,7 +50,7 @@ Einzelne Kurse können durch DaysBetween-Constraints anders geregelt werden.
 
 ## DaysBetween
 
-Dieser Constraint ist wie AutomaticDifferentDays, erlaubt aber andere Tagesabstände als 1 und wird auf einzelne Kurse angewendet. Mit „"daysBetween": 1“ wird der globale Constraint AutomaticDifferentDays für diese Kurse ausgesetzt.
+Dieser Constraint ist wie AutomaticDifferentDays, erlaubt aber andere Tagesabstände als 1 und wird auf einzelne Kurse angewendet. Mit „"DaysBetween": 1“ wird der globale Constraint AutomaticDifferentDays für diese Kurse ausgesetzt.
 
 ```
 {
@@ -59,7 +59,7 @@ Dieser Constraint ist wie AutomaticDifferentDays, erlaubt aber andere Tagesabst�
 	"Courses":              [
         "2edfe663-c62b-4d05-ace2-0bedb0f4b672"
     ],
-	"DayGap":               2.
+	"DaysBetween":          2.
 	"ConsecutiveIfSameDay": true
 }
 ```
@@ -74,7 +74,7 @@ Anders als DaysBetween wird dieser Constraint zwischen den einzelnen Stunden zwe
 	"Weight":               100,
 	"Course1":              "2edfe663-c62b-4d05-ace2-0bedb0f4b672",
 	"Course2":              "5fda67de-bbb3-48a2-a098-d957796b7743",
-	"DayGap":               1,
+	"DaysBetween":          1,
 	"ConsecutiveIfSameDay": false
 }
 ```
