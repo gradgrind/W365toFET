@@ -80,6 +80,9 @@ type TtInfo struct {
 	Constraints       map[string][]any
 	DayGapConstraints *DayGapConstraints
 
+	//TODO
+	ParallelCourses map[Ref][]Ref
+
 	MinDaysBetweenLessons []MinDaysBetweenLessons
 	ParallelLessons       []ParallelLessons
 

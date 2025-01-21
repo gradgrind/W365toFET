@@ -19,4 +19,45 @@ type TtLesson struct {
 // hard-different-day constraints into account.
 func (ttinfo *TtInfo) PrepareActivityGroups() {
 
+	/*
+		for i, cinfo := range ttinfo.LessonCourses {
+
+			// Seek hard-parallel courses
+			for _, hpc := range ttinfo.ParallelCourses[cinfo.Id] {
+
+			}
+
+
+
+
+			// Add activities to CourseInfo
+			llist := clessons[i]
+			for _, lref := range llist {
+				l := db.Elements[lref].(*base.Lesson)
+				if slices.Contains(l.Flags, "SubstitutionService") {
+					cinfo.Groups = nil
+				}
+				// Index of new Activity:
+				ttlix := len(ttinfo.Activities)
+				p := -1
+				if l.Day >= 0 {
+					p = l.Day*ttinfo.DayLength + l.Hour
+				}
+				ttl := &Activity{
+					Index:      ttlix,
+					Placement:  p,
+					Duration:   l.Duration,
+					Fixed:      l.Fixed,
+					Lesson:     l,
+					CourseInfo: cinfo,
+				}
+				ttinfo.Activities = append(ttinfo.Activities, ttl)
+				cinfo.Lessons = append(cinfo.Lessons, ttlix)
+			}
+
+			// Add to CourseInfo map
+			ttinfo.CourseInfo[cinfo.Id] = cinfo
+		}
+		//return roomData
+	*/
 }
