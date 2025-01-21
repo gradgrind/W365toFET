@@ -151,6 +151,7 @@ func (dgdata *DayGapConstraints) addCrossConstraintDaysBetween(
 // The courses must have the same number of lessons and the durations of the
 // corresponding lessons must also be the same.
 func (ttinfo *TtInfo) addParallelCoursesConstraint(c *base.ParallelCourses) {
+	ttinfo.ParallelCourses = map[Ref][]*base.ParallelCourses{}
 	// Check lesson lengths
 	footprint := []int{} // lesson sizes
 	ll := 0              // number of lessons in each course
@@ -184,6 +185,10 @@ func (ttinfo *TtInfo) addParallelCoursesConstraint(c *base.ParallelCourses) {
 			}
 			llists[j] = append(llists[j], lix)
 		}
+
+		// Link to the constraint from each of the courses concerned
+		ttinfo.ParallelCourses[cref] = append(
+			ttinfo.ParallelCourses[cref], c)
 	}
 	// llists is now a list of lists of parallel TtLesson indexes.
 	ttinfo.ParallelLessons = append(ttinfo.ParallelLessons,

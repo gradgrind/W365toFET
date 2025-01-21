@@ -1,5 +1,10 @@
 package ttbase
 
+import (
+	"W365toFET/base"
+	"fmt"
+)
+
 // An ActivityGroup manages placement of the lessons of a course and
 // any hard-parallel courses.
 type ActivityGroup struct {
@@ -19,17 +24,24 @@ type TtLesson struct {
 // hard-different-day constraints into account.
 func (ttinfo *TtInfo) PrepareActivityGroups() {
 
-	/*
-		for i, cinfo := range ttinfo.LessonCourses {
+	for _, cinfo := range ttinfo.LessonCourses {
 
-			// Seek hard-parallel courses
-			for _, hpc := range ttinfo.ParallelCourses[cinfo.Id] {
+		// Seek hard-parallel courses
+		for _, hpc := range ttinfo.ParallelCourses[cinfo.Id] {
+			//TODO
+
+			fmt.Printf("??? %+v\n", hpc)
+
+			if hpc.Weight == base.MAXWEIGHT {
+				//TODO: These courses are hard-parallel, join them into
+				// a single activity group.
 
 			}
+		}
 
+	}
 
-
-
+	/*
 			// Add activities to CourseInfo
 			llist := clessons[i]
 			for _, lref := range llist {
