@@ -141,6 +141,9 @@ func (ttinfo *TtInfo) addActivityInfo(
 			}
 		}
 
+		//TODO--
+		//fmt.Printf("COURSE: %s\n", ttinfo.View(cinfo))
+
 		crooms := cinfo.Room.Rooms
 		for _, rref := range crooms {
 			// Only take the compulsory rooms here

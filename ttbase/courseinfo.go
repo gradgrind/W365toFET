@@ -30,11 +30,27 @@ func (ttinfo *TtInfo) View(cinfo *CourseInfo) string {
 		}
 		glist = append(glist, gx)
 	}
+	rlist0 := []string{}
+	for _, rref := range cinfo.Room.Rooms {
+		rlist0 = append(rlist0, ttinfo.Ref2Tag[rref])
+	}
+	r0 := strings.Join(rlist0, ",")
+	rlist1 := []string{}
+	for _, rlist := range cinfo.Room.RoomChoices {
+		rlist1a := []string{}
+		for _, rref := range rlist {
+			rlist1a = append(rlist1a, ttinfo.Ref2Tag[rref])
+		}
+		rlist1 = append(rlist1, strings.Join(rlist1a, "|"))
+	}
+	r1 := strings.Join(rlist1, " + ")
 
-	return fmt.Sprintf("<Course %s/%s:%s>",
+	return fmt.Sprintf("<Course %s/%s:%s [%s & %s]/>",
 		strings.Join(glist, ","),
 		strings.Join(tlist, ","),
 		ttinfo.Ref2Tag[cinfo.Subject],
+		r0,
+		r1,
 	)
 }
 
