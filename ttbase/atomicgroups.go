@@ -21,14 +21,12 @@ type AtomicGroup struct {
 // makeAtomicGroups constructs "atomic" groups for the school classes
 // [base.Class] elements. An atomic group is an ordered list of single
 // groups, one from each division.
-// The mappings [TtInfo.AtomicGroups] and [TtInfo.AtomicGroupIndexes] are
-// set up. Also the initialization of the list [TtInfo.Resources] is
-// begun – with the atomic groups (teachers and rooms com later).
+// The mapping [TtInfo.AtomicGroupIndexes] is set up.
+// Also the initialization of the list [TtInfo.Resources] is begun – with
+// the atomic groups (teachers and rooms come later).
 func (ttinfo *TtInfo) makeAtomicGroups() {
 	db := ttinfo.Db
-	// Build a mapping, group reference -> list of AtomicGroup pointers
-	ttinfo.AtomicGroups = map[Ref][]*AtomicGroup{}
-	// Also build a mapping, group reference -> list of resource indexes
+	// Build a mapping, group reference -> list of resource indexes
 	ttinfo.AtomicGroupIndexes = map[Ref][]ResourceIndex{}
 	// The atomic groups are indexed according to the position they will
 	// take in the [TtInfo.Resources] array.
@@ -50,7 +48,6 @@ func (ttinfo *TtInfo) makeAtomicGroups() {
 				Class: cl.Id,
 				Tag:   cl.Tag + ATOMIC_GROUP_SEP1,
 			}
-			ttinfo.AtomicGroups[cl.ClassGroup] = []*AtomicGroup{cag}
 			ttinfo.AtomicGroupIndexes[cl.ClassGroup] =
 				[]ResourceIndex{len(agplist)}
 			agplist = append(agplist, cag) // resource list
@@ -124,17 +121,14 @@ func (ttinfo *TtInfo) makeAtomicGroups() {
 			count *= len(divGroups)
 		}
 
-		// Set up the mappings ttinfo.AtomicGroups and
-		// ttinfo.AtomicGroupIndexes , first for the whole-class group,
-		// then for the division groups
-		ttinfo.AtomicGroups[cl.ClassGroup] = aglist
+		// Set up the mapping ttinfo.AtomicGroupIndexes , first for the
+		// whole-class group, then for the division groups
 		agixs := make([]ResourceIndex, len(aglist))
 		for i, ag := range aglist {
 			agixs[i] = ag.Index
 		}
 		ttinfo.AtomicGroupIndexes[cl.ClassGroup] = agixs
 		for g, agl := range g2ags {
-			ttinfo.AtomicGroups[g] = agl
 			agixs := make([]ResourceIndex, len(agl))
 			for i, ag := range agl {
 				agixs[i] = ag.Index
@@ -152,22 +146,23 @@ func (ttinfo *TtInfo) makeAtomicGroups() {
 
 // For testing
 func (ttinfo *TtInfo) PrintAtomicGroups() {
+	reslist := ttinfo.Resources
 	for _, cl := range ttinfo.Db.Classes {
 		agls := []string{}
-		for _, ag := range ttinfo.AtomicGroups[cl.ClassGroup] {
-			agls = append(agls, ag.Tag)
+		for _, agix := range ttinfo.AtomicGroupIndexes[cl.ClassGroup] {
+			agls = append(agls, reslist[agix].(*AtomicGroup).Tag)
 		}
 		fmt.Printf("  ++ %s: %+v\n", ttinfo.Ref2Tag[cl.ClassGroup], agls)
-		fmt.Printf("    .. %s: %+v\n", ttinfo.Ref2Tag[cl.ClassGroup],
+		fmt.Printf("    (.. %s: %+v)\n", ttinfo.Ref2Tag[cl.ClassGroup],
 			ttinfo.AtomicGroupIndexes[cl.ClassGroup])
 		for _, div := range ttinfo.ClassDivisions[cl.Id] {
 			for _, g := range div {
 				agls := []string{}
-				for _, ag := range ttinfo.AtomicGroups[g] {
-					agls = append(agls, ag.Tag)
+				for _, agix := range ttinfo.AtomicGroupIndexes[g] {
+					agls = append(agls, reslist[agix].(*AtomicGroup).Tag)
 				}
 				fmt.Printf("    -- %s: %+v\n", ttinfo.Ref2Tag[g], agls)
-				fmt.Printf("    .. %s: %+v\n", ttinfo.Ref2Tag[g],
+				fmt.Printf("    (.. %s: %+v)\n", ttinfo.Ref2Tag[g],
 					ttinfo.AtomicGroupIndexes[g])
 			}
 		}

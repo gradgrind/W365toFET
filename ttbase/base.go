@@ -71,11 +71,8 @@ type TtInfo struct {
 	// [base.Group] elements. It is set by [filterDivisions]
 	ClassDivisions map[Ref][][]Ref
 
-	// AtomicGroups maps a [base.Group] reference to a list of pointers
-	// to the group's [AtomicGroup] items. It is set by [makeAtomicGroups]
-	AtomicGroups map[Ref][]*AtomicGroup
 	// AtomicGroupIndexes maps a [base.Group] reference to a list of
-	// resource indexes
+	// resource indexes (for the AtomicGroup elements)
 	AtomicGroupIndexes map[Ref][]ResourceIndex
 	// NAtomicGroups ist the total number of [AtomicGroup] items.
 	NAtomicGroups int
@@ -191,7 +188,7 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 	// Add the pseudo-activities arising from the NotAvailable lists
 	ttinfo.addBlockers(t2tt, r2tt)
 
-	// Get preliminary constraint info – needed for the call to addActivity
+	// Get preliminary constraint info – needed by addActivityInfo
 	ttinfo.processConstraints()
 
 	// Add the remaining Activity information

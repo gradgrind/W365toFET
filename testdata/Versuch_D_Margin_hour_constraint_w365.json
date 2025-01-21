@@ -608,7 +608,7 @@
     "Divisions" : [ {
       "Id" : "64dd02d3-3c91-4f33-9a61-bd1fe0b38f84",
       "Type" : "Division",
-      "Groups" : [ "a1ead9a0-5465-4de0-a19a-752254d33104", "077deecc-e273-4d97-a521-14ef2e1985cf" ],
+      "Groups" : [ "077deecc-e273-4d97-a521-14ef2e1985cf", "a1ead9a0-5465-4de0-a19a-752254d33104" ],
       "Name" : "A und B Gruppe"
     }, {
       "Id" : "a7c719d7-17a7-4b46-a4ef-eac2a4f20d09",
@@ -672,7 +672,7 @@
     "Divisions" : [ {
       "Id" : "5facb541-f283-49f1-8651-c19b39ed0d61",
       "Type" : "Division",
-      "Groups" : [ "53c957a1-7d0e-4e38-b602-016592c46390", "5e291bf3-aef1-4937-96fd-4f775a79fe09" ],
+      "Groups" : [ "5e291bf3-aef1-4937-96fd-4f775a79fe09", "53c957a1-7d0e-4e38-b602-016592c46390" ],
       "Name" : "A und B Gruppe"
     }, {
       "Id" : "1da3dd23-d298-4ffd-bf31-1a066630e67f",

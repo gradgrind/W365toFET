@@ -30,9 +30,8 @@ func (ttinfo *TtInfo) addBlockers(
 		}
 		// Need to block all atomic groups. Their indexes are also their
 		// Resource indexes.
-		ags := ttinfo.AtomicGroups[cl.ClassGroup]
-		for _, ag := range ags {
-			ttinfo.blockResource(ag.Index, na)
+		for _, agix := range ttinfo.AtomicGroupIndexes[cl.ClassGroup] {
+			ttinfo.blockResource(agix, na)
 		}
 	}
 }

@@ -2,6 +2,7 @@ package fet
 
 import (
 	"W365toFET/base"
+	"W365toFET/ttbase"
 	"encoding/xml"
 	"strconv"
 	"strings"
@@ -78,10 +79,10 @@ func getClasses(fetinfo *fetInfo) {
 			for _, gref := range div {
 				g := ttinfo.Ref2Tag[gref]
 				subgroups := []fetSubgroup{}
-				ags := ttinfo.AtomicGroups[gref]
-				for _, ag := range ags {
+				for _, agix := range ttinfo.AtomicGroupIndexes[gref] {
+					tag := ttinfo.Resources[agix].(*ttbase.AtomicGroup).Tag
 					subgroups = append(subgroups,
-						fetSubgroup{Name: ag.Tag},
+						fetSubgroup{Name: tag},
 					)
 				}
 				groups = append(groups, fetGroup{

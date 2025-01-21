@@ -47,8 +47,8 @@ type Activity struct {
 
 // addActivityInfo completes the initialization of the Activities. This
 // includes the placement in the timetable structures of all the lessons
-// (fixed and non-fixed) which have a placement specified. In this way
-// various errors can be checked for.
+// (fixed, and also non-fixed with a placement). In this way various errors
+// can be checked for.
 func (ttinfo *TtInfo) addActivityInfo(
 	t2tt map[Ref]ResourceIndex,
 	r2tt map[Ref]ResourceIndex,
