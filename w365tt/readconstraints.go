@@ -48,13 +48,13 @@ func (db *DbTopLevel) readConstraints(newdb *base.DbTopLevel) {
 		case "DAYS_BETWEEN":
 			c := newdb.NewDaysBetween()
 			c.Weight = a2i(e["Weight"])
-			c.DaysBetween = a2i(e["DaysBetween"])
+			c.DayGap = a2i(e["DaysBetween"])
 			c.Courses = a2rr(e["Courses"])
 			c.ConsecutiveIfSameDay = e["ConsecutiveIfSameDay"].(bool)
 		case "DAYS_BETWEEN_JOIN":
 			c := newdb.NewDaysBetweenJoin()
 			c.Weight = a2i(e["Weight"])
-			c.DaysBetween = a2i(e["DaysBetween"])
+			c.DayGap = a2i(e["DaysBetween"])
 			c.Course1 = a2r(e["Course1"])
 			c.Course2 = a2r(e["Course2"])
 			c.ConsecutiveIfSameDay = e["ConsecutiveIfSameDay"].(bool)
