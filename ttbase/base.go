@@ -95,40 +95,18 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	}
 
 	// Build Ref -> Tag mapping for subjects, teachers, rooms, classes
-	// and groups. Set up the mapping for subjects, rooms and teachers.
+	// and groups. Set up this mapping for subjects, rooms and teachers.
 	ref2Tag := map[Ref]string{}
 	ttinfo.Ref2Tag = ref2Tag
-	checktags := map[string]Ref{}
 	for _, r := range db.Subjects {
-		ref0, ok := checktags[r.Tag]
-		if ok {
-			base.Error.Fatalf("Subject tag (%s) not unique: %s and %s\n",
-				r.Tag, ref0, r.Id)
-		}
 		ref2Tag[r.Id] = r.Tag
-		checktags[r.Tag] = r.Id
 	}
-	clear(checktags)
 	for _, r := range db.Rooms {
-		ref0, ok := checktags[r.Tag]
-		if ok {
-			base.Error.Fatalf("Room tag (%s) not unique: %s and %s\n",
-				r.Tag, ref0, r.Id)
-		}
 		ref2Tag[r.Id] = r.Tag
-		checktags[r.Tag] = r.Id
 	}
-	clear(checktags)
 	for _, r := range db.Teachers {
-		ref0, ok := checktags[r.Tag]
-		if ok {
-			base.Error.Fatalf("Teacher tag (%s) not unique: %s and %s\n",
-				r.Tag, ref0, r.Id)
-		}
 		ref2Tag[r.Id] = r.Tag
-		checktags[r.Tag] = r.Id
 	}
-	clear(checktags)
 
 	// Get the course info and generate the Activities list – though some
 	// fields will not yet be properly set.
