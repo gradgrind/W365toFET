@@ -9,7 +9,7 @@ import (
 
 func NewDb() *DbTopLevel {
 	db := &DbTopLevel{}
-	db.Elements = map[Ref]any{}
+	db.Elements = map[Ref]Elem{}
 	return db
 }
 
@@ -22,7 +22,7 @@ func (db *DbTopLevel) newId() Ref {
 	return Ref(u2.String())
 }
 
-func (db *DbTopLevel) addElement(ref Ref, element any) Ref {
+func (db *DbTopLevel) addElement(ref Ref, element Elem) Ref {
 	if ref == "" {
 		ref = db.newId()
 	}

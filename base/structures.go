@@ -304,5 +304,5 @@ type DbTopLevel struct {
 	Constraints      []Constraint   `json:",omitempty"`
 
 	// These fields do not belong in the JSON object:
-	Elements map[Ref]any `json:"-"`
+	Elements map[Ref]Elem `json:"-"`
 }
