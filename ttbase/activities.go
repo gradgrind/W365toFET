@@ -25,6 +25,7 @@ type Activity struct {
 	XRooms []ResourceIndex
 	// ExtendedGroups is a list of atomic group indexes for those groups
 	// in the activity's class(es) which are NOT involved in the activity.
+	//TODO: Do I really need this? It might rather confuse things
 	ExtendedGroups []ResourceIndex
 	// Fixed specifies whether the activity must remain in its current slot
 	Fixed bool
@@ -49,12 +50,8 @@ type Activity struct {
 // includes the placement in the timetable structures of all the lessons
 // (fixed, and also non-fixed with a placement). In this way various errors
 // can be checked for.
-func (ttinfo *TtInfo) addActivityInfo(
-	t2tt map[Ref]ResourceIndex,
-	r2tt map[Ref]ResourceIndex,
-) {
-	g2tt := ttinfo.AtomicGroupIndexes
-	warned := []*CourseInfo{} // used to warn only once per course
+func (ttinfo *TtInfo) addActivityInfo() {
+	//g2tt := ttinfo.AtomicGroupIndexes
 	// Collect non-fixed activities which need placing
 	toplace := []ActivityIndex{}
 	//--fmt.Printf("=== %+v\n\n", ttinfo.MinDaysBetweenLessons)
@@ -90,67 +87,62 @@ func (ttinfo *TtInfo) addActivityInfo(
 		}
 	}
 
+	/////////+
+	ttinfo.collectCourseResources()
+
+	//TODO: Consider the order of courses (should be same as in source)
+	// and Lessons/Activities (should always be the same). Perhaps I would
+	// need a course list to ensure this.
+
+	// Complete the Activity items for each course
+	r2tt := ttinfo.RoomIndexes
+	for cref, cinfo := range ttinfo.CourseInfo {
+		// Get the room-choices. Check against room choices in course.
+		// Keep it simple, even though this will miss some errors.
+		rchoices := map[base.Ref]bool{}
+		for _, rlist := range cinfo.Room.RoomChoices {
+			for _, rref := range rlist {
+				rchoices[rref] = true
+			}
+		}
+
+		crooms := cinfo.Room.Rooms
+
+		nrooms := len(crooms) + len(cinfo.Room.RoomChoices)
+
+		for _, aix := range cinfo.Lessons {
+			a := ttinfo.Activities[aix]
+			a.XRooms = make([]ResourceIndex, 0, nrooms)
+			for _, rref := range a.Lesson.Rooms {
+				if slices.Contains(crooms, rref) {
+					continue
+				}
+				if rchoices[rref] {
+					a.XRooms = append(a.XRooms, r2tt[rref])
+				} else {
+					base.Error.Printf("Room (%s) used for lesson of"+
+						" course %s:\n  Room not specified for course.\n",
+						ttinfo.Ref2Tag[rref], ttinfo.View(cinfo))
+				}
+			}
+			if len(a.XRooms) > nrooms {
+				base.Warning.Printf("Lesson in course %s uses more rooms"+
+					" than specified for course.\n", ttinfo.View(cinfo))
+			}
+		}
+	}
+
+	/////////-
+
+	//--? Replace by above course loop
+
 	// Lessons (Activities) start at index 1!
 	for aix := 1; aix < len(ttinfo.Activities); aix++ {
 		ttl := ttinfo.Activities[aix]
 		cinfo := ttl.CourseInfo
-		resources := []ResourceIndex{}
 
-		for _, tref := range cinfo.Teachers {
-			resources = append(resources, t2tt[tref])
-		}
-
-		// Get class(es) ... and atomic groups
-		// This is for finding the "extended groups" – in the activity's
-		// class(es) but not involved in the activity. This list may help
-		// finding activities which can be placed parallel.
-		cagmap := map[base.Ref][]ResourceIndex{}
-		for _, gref := range cinfo.Groups {
-			cagmap[ttinfo.Db.Elements[gref].(*base.Group).Class] = nil
-		}
-		aagmap := map[ResourceIndex]bool{}
-		for cref := range cagmap {
-			c := ttinfo.Db.Elements[cref].(*base.Class)
-			aglist := g2tt[c.ClassGroup]
-			//fmt.Printf("???????? %s: %+v\n", c.Tag, aglist)
-			for _, agix := range aglist {
-				aagmap[agix] = true
-			}
-		}
-		// Handle groups
-		for _, gref := range cinfo.Groups {
-			for _, agix := range g2tt[gref] {
-				// Check for repetitions
-				if slices.Contains(resources, agix) {
-					if !slices.Contains(warned, cinfo) {
-						base.Warning.Printf(
-							"Lesson with repeated atomic group"+
-								" in Course: %s\n", ttinfo.View(cinfo))
-						warned = append(warned, cinfo)
-					}
-				} else {
-					resources = append(resources, agix)
-					aagmap[agix] = false
-				}
-			}
-		}
-		extendedGroups := []ResourceIndex{}
-		for agix, ok := range aagmap {
-			if ok {
-				extendedGroups = append(extendedGroups, agix)
-			}
-		}
-
-		//TODO--
-		//fmt.Printf("COURSE: %s\n", ttinfo.View(cinfo))
-
-		crooms := cinfo.Room.Rooms
-		for _, rref := range crooms {
-			// Only take the compulsory rooms here
-			resources = append(resources, r2tt[rref])
-		}
 		a := ttinfo.Activities[aix]
-		a.Resources = resources
+		a.Resources = cinfo.Resources // Careful, this is not a full copy!
 		// Now add room-choices. Check against room choices in course.
 		// Keep it simple, even though this will miss some errors.
 		rchoices := map[base.Ref]bool{}
@@ -159,8 +151,12 @@ func (ttinfo *TtInfo) addActivityInfo(
 				rchoices[rref] = true
 			}
 		}
+
+		crooms := cinfo.Room.Rooms
+
 		nrooms := len(crooms) + len(cinfo.Room.RoomChoices)
 		a.XRooms = make([]ResourceIndex, 0, nrooms)
+		r2tt := ttinfo.RoomIndexes
 		for _, rref := range ttl.Lesson.Rooms {
 			if slices.Contains(crooms, rref) {
 				continue
@@ -192,7 +188,8 @@ func (ttinfo *TtInfo) addActivityInfo(
 			plist = slices.Compact(plist)
 		}
 
-		a.ExtendedGroups = extendedGroups
+		//TODO? a.ExtendedGroups = extendedGroups
+
 		//PossibleSlots: added later (see "makePossibleSlots"),
 		//DifferentDays: ddlist, // only if not fixed, see below
 		a.Parallel = plist
@@ -370,6 +367,73 @@ func (ttinfo *TtInfo) addActivityInfo(
 				copy(a.XRooms, rnew)
 			}
 		}
+	}
+}
+
+// collectCourseResources collects resources for each course
+func (ttinfo *TtInfo) collectCourseResources() {
+	g2tt := ttinfo.AtomicGroupIndexes
+	t2tt := ttinfo.TeacherIndexes
+	r2tt := ttinfo.RoomIndexes
+	for _, cinfo := range ttinfo.CourseInfo {
+		resources := []ResourceIndex{}
+
+		for _, tref := range cinfo.Teachers {
+			resources = append(resources, t2tt[tref])
+		}
+
+		//TODO: Is this really useful?
+		// Get class(es) ... and atomic groups
+		// This is for finding the "extended groups" – in the activity's
+		// class(es) but not involved in the activity. This list may help
+		// finding activities which can be placed parallel.
+		cagmap := map[base.Ref][]ResourceIndex{}
+		for _, gref := range cinfo.Groups {
+			cagmap[ttinfo.Db.Elements[gref].(*base.Group).Class] = nil
+		}
+		aagmap := map[ResourceIndex]bool{}
+		for cref := range cagmap {
+			c := ttinfo.Db.Elements[cref].(*base.Class)
+			aglist := g2tt[c.ClassGroup]
+			//fmt.Printf("???????? %s: %+v\n", c.Tag, aglist)
+			for _, agix := range aglist {
+				aagmap[agix] = true
+			}
+		}
+		//--?
+
+		// Handle groups
+		for _, gref := range cinfo.Groups {
+			for _, agix := range g2tt[gref] {
+				// Check for repetitions
+				if slices.Contains(resources, agix) {
+					base.Warning.Printf(
+						"Lesson with repeated atomic group"+
+							" in Course: %s\n", ttinfo.View(cinfo))
+				} else {
+					resources = append(resources, agix)
+					aagmap[agix] = false
+				}
+			}
+		}
+
+		//TODO: What, if anything, to do with this?
+		extendedGroups := []ResourceIndex{}
+		for agix, ok := range aagmap {
+			if ok {
+				extendedGroups = append(extendedGroups, agix)
+			}
+		}
+
+		//TODO--
+		//fmt.Printf("COURSE: %s\n", ttinfo.View(cinfo))
+
+		crooms := cinfo.Room.Rooms
+		for _, rref := range crooms {
+			// Only take the compulsory rooms here
+			resources = append(resources, r2tt[rref])
+		}
+		cinfo.Resources = resources
 	}
 }
 

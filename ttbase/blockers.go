@@ -6,10 +6,9 @@ import (
 
 const BLOCKED_ACTIVITY = -1
 
-func (ttinfo *TtInfo) addBlockers(
-	t2tt map[Ref]ResourceIndex,
-	r2tt map[Ref]ResourceIndex,
-) {
+func (ttinfo *TtInfo) addBlockers() {
+	t2tt := ttinfo.TeacherIndexes
+	r2tt := ttinfo.RoomIndexes
 	db := ttinfo.Db
 	for _, t := range db.Teachers {
 		rix, ok := t2tt[t.Id]

@@ -9,12 +9,13 @@ import (
 )
 
 type CourseInfo struct {
-	Id       Ref
-	Subject  Ref
-	Groups   []Ref
-	Teachers []Ref
-	Room     VirtualRoom
-	Lessons  []ActivityIndex
+	Id        Ref
+	Subject   Ref
+	Groups    []Ref
+	Teachers  []Ref
+	Room      VirtualRoom
+	Resources []ResourceIndex
+	Lessons   []ActivityIndex
 }
 
 // Make a shortish string view of a CourseInfo – can be useful in tests

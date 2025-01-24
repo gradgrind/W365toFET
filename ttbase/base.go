@@ -74,6 +74,12 @@ type TtInfo struct {
 	// AtomicGroupIndexes maps a [base.Group] reference to a list of
 	// resource indexes (for the AtomicGroup elements)
 	AtomicGroupIndexes map[Ref][]ResourceIndex
+	// TeacherIndexes maps a [base.Teacher] reference to a list of
+	// resource indexes (for the Teacher elements)
+	TeacherIndexes map[Ref]ResourceIndex
+	// RoomIndexes maps a [base.Roomr] reference to a list of
+	// resource indexes (for the Room elements)
+	RoomIndexes map[Ref]ResourceIndex
 	// NAtomicGroups ist the total number of [AtomicGroup] items.
 	NAtomicGroups int
 
@@ -173,27 +179,27 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 	// The AtomicGroup pointers are already at the beginning of the resources
 	// list. Add the teachers and rooms
 
-	t2tt := map[Ref]ResourceIndex{}
+	ttinfo.TeacherIndexes = map[Ref]ResourceIndex{}
 	for _, t := range db.Teachers {
-		t2tt[t.Id] = resix
+		ttinfo.TeacherIndexes[t.Id] = resix
 		ttinfo.Resources = append(ttinfo.Resources, t)
 		resix++
 	}
-	r2tt := map[Ref]ResourceIndex{}
+	ttinfo.RoomIndexes = map[Ref]ResourceIndex{}
 	for _, r := range db.Rooms {
-		r2tt[r.Id] = resix
+		ttinfo.RoomIndexes[r.Id] = resix
 		ttinfo.Resources = append(ttinfo.Resources, r)
 		resix++
 	}
 
 	// Add the pseudo-activities arising from the NotAvailable lists
-	ttinfo.addBlockers(t2tt, r2tt)
+	ttinfo.addBlockers()
 
 	// Get preliminary constraint info – needed by addActivityInfo
 	ttinfo.processConstraints()
 
 	// Add the remaining Activity information
-	ttinfo.addActivityInfo(t2tt, r2tt)
+	ttinfo.addActivityInfo()
 }
 
 // orderResources generates an ordering index for each of the resources,
