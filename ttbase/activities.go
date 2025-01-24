@@ -96,83 +96,67 @@ func (ttinfo *TtInfo) addActivityInfo() {
 
 	// Complete the Activity items for each course
 	r2tt := ttinfo.RoomIndexes
-	for cref, cinfo := range ttinfo.CourseInfo {
+
+	for _, cinfo := range ttinfo.CourseInfo {
 		// Get the room-choices. Check against room choices in course.
-		// Keep it simple, even though this will miss some errors.
-		rchoices := map[base.Ref]bool{}
-		for _, rlist := range cinfo.Room.RoomChoices {
-			for _, rref := range rlist {
-				rchoices[rref] = true
-			}
-		}
 
-		crooms := cinfo.Room.Rooms
+		//TODO: This needs testing with data that provides choice allocations.
 
-		nrooms := len(crooms) + len(cinfo.Room.RoomChoices)
-
+		crooms := cinfo.Room.Rooms       // "necessary" rooms
+		xrooms := cinfo.Room.RoomChoices // list of room choices
+		//fmt.Printf("++ COURSE: %s\n", ttinfo.View(cinfo))
 		for _, aix := range cinfo.Lessons {
 			a := ttinfo.Activities[aix]
-			a.XRooms = make([]ResourceIndex, 0, nrooms)
+			// Check each actually allocated room
+			rlist := []Ref{}
 			for _, rref := range a.Lesson.Rooms {
 				if slices.Contains(crooms, rref) {
+					// Ignore "necessary" rooms
 					continue
 				}
-				if rchoices[rref] {
-					a.XRooms = append(a.XRooms, r2tt[rref])
-				} else {
-					base.Error.Printf("Room (%s) used for lesson of"+
-						" course %s:\n  Room not specified for course.\n",
-						ttinfo.Ref2Tag[rref], ttinfo.View(cinfo))
+				rlist = append(rlist, rref)
+			}
+			var xr []Ref
+			if len(rlist) != 0 {
+				// Try to match rooms in rlist to the choice list, xrooms
+				xr = rclfunc(xrooms, rlist)
+				if xr == nil {
+					base.Error.Printf("Rooms (%s) used for lesson of"+
+						" course %s:\n  rooms don't match.\n",
+						ttinfo.pResources(rlist), ttinfo.View(cinfo))
 				}
 			}
-			if len(a.XRooms) > nrooms {
-				base.Warning.Printf("Lesson in course %s uses more rooms"+
-					" than specified for course.\n", ttinfo.View(cinfo))
+			a.XRooms = make([]ResourceIndex, len(xrooms))
+			var ri ResourceIndex
+			for i := 0; i < len(xrooms); i++ {
+				ri = -1
+				if i < len(xr) {
+					r := xr[i]
+					if r != "" {
+						ri = r2tt[r]
+					}
+				}
+				a.XRooms[i] = ri
 			}
+			//fmt.Printf("  -- %+v\n", a.XRooms)
 		}
+
+		//
+
 	}
 
 	/////////-
 
-	//--? Replace by above course loop
+	//TODO: How much of the following is still needed, in this or another
+	// form. It should probably be in the above course loop
+
+	//TODO: Different days should now include all days-between and be
+	// specified on the activity groups as their possible slots (with weight)
 
 	// Lessons (Activities) start at index 1!
 	for aix := 1; aix < len(ttinfo.Activities); aix++ {
-		ttl := ttinfo.Activities[aix]
-		cinfo := ttl.CourseInfo
 
 		a := ttinfo.Activities[aix]
-		a.Resources = cinfo.Resources // Careful, this is not a full copy!
-		// Now add room-choices. Check against room choices in course.
-		// Keep it simple, even though this will miss some errors.
-		rchoices := map[base.Ref]bool{}
-		for _, rlist := range cinfo.Room.RoomChoices {
-			for _, rref := range rlist {
-				rchoices[rref] = true
-			}
-		}
-
-		crooms := cinfo.Room.Rooms
-
-		nrooms := len(crooms) + len(cinfo.Room.RoomChoices)
-		a.XRooms = make([]ResourceIndex, 0, nrooms)
-		r2tt := ttinfo.RoomIndexes
-		for _, rref := range ttl.Lesson.Rooms {
-			if slices.Contains(crooms, rref) {
-				continue
-			}
-			if rchoices[rref] {
-				a.XRooms = append(a.XRooms, r2tt[rref])
-			} else {
-				base.Error.Printf("Room (%s) used for lesson of"+
-					" course %s:\n  Room not specified for course.\n",
-					ttinfo.Ref2Tag[rref], ttinfo.View(cinfo))
-			}
-		}
-		if len(a.XRooms) > nrooms {
-			base.Warning.Printf("Lesson in course %s uses more rooms"+
-				" than specified for course.\n", ttinfo.View(cinfo))
-		}
 
 		// Sort and compactify different-days activities
 		ddlist, ok := diffdays[aix]
@@ -351,6 +335,9 @@ func (ttinfo *TtInfo) addActivityInfo() {
 			var rnew []ResourceIndex
 			p := a.Placement
 			for _, rix := range a.XRooms {
+				if rix < 0 {
+					continue
+				}
 				slot := rix*ttinfo.SlotsPerWeek + p
 				if ttinfo.TtSlots[slot] == 0 {
 					ttinfo.TtSlots[slot] = aix
@@ -368,6 +355,38 @@ func (ttinfo *TtInfo) addActivityInfo() {
 			}
 		}
 	}
+}
+
+// rclfunc uses recursion to match the rooms to the room-choice list,
+// using "" where a choice has no room allocated
+func rclfunc(rclist [][]Ref, rlist []Ref) []Ref {
+	if len(rclist) == 0 {
+		if len(rlist) == 0 {
+			return []Ref{}
+		} else {
+			return nil
+		}
+	}
+	rc := rclist[0]
+	rlx := make([]Ref, len(rlist)-1)
+	for i, r := range rlist {
+		if slices.Contains(rc, r) {
+			// Remove the room from the list
+			rlx = rlx[:i]
+			copy(rlx, rlist)
+			rlx = append(rlx, rlist[i+1:]...)
+			rl := rclfunc(rclist[1:], rlx)
+			if rl != nil {
+				return append([]Ref{r}, rl...)
+			}
+		}
+	}
+	// Assume there was no room supplied for this choice
+	rl := rclfunc(rclist, rlx)
+	if rl != nil {
+		return append([]Ref{""}, rl...)
+	}
+	return nil
 }
 
 // collectCourseResources collects resources for each course

@@ -3,6 +3,7 @@ package ttbase
 import (
 	"W365toFET/base"
 	"slices"
+	"strings"
 )
 
 type Ref = base.Ref
@@ -91,6 +92,14 @@ type TtInfo struct {
 	ParallelLessons       []ParallelLessons
 
 	WITHOUT_ROOM_PLACEMENTS bool // ignore initial room placements
+}
+
+func (ttinfo *TtInfo) pResources(rlist []Ref) string {
+	slist := make([]string, len(rlist))
+	for i, r := range rlist {
+		slist[i] = ttinfo.Ref2Tag[r]
+	}
+	return strings.Join(slist, ",")
 }
 
 // MakeTtInfo makes a new TtInfo object and initializes some of its
