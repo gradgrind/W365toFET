@@ -137,6 +137,10 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 	for _, cinfo := range ttinfo.LessonCourses {
 		// Set "preferred" rooms.
 		rooms := fetinfo.getFetRooms(cinfo.Room)
+
+		//--fmt.Printf("COURSE: %s\n", ttinfo.View(cinfo))
+		//--fmt.Printf("   --> %+v\n", rooms)
+
 		// Add the constraints.
 		scl := &fetinfo.fetdata.Space_Constraints_List
 		tcl := &fetinfo.fetdata.Time_Constraints_List

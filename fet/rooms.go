@@ -100,6 +100,26 @@ func getRooms(fetinfo *fetInfo) {
 
 func (fetinfo *fetInfo) getFetRooms(room ttbase.VirtualRoom) []string {
 	// The fet virtual rooms are cached at fetinfo.fetVirtualRooms.
+	var result []string
+
+	/*--
+	rlist0 := []string{}
+	for _, rref := range room.Rooms {
+		rlist0 = append(rlist0, fetinfo.ttinfo.Ref2Tag[rref])
+	}
+	r0 := strings.Join(rlist0, ",")
+	rlist1 := []string{}
+	for _, rlist := range room.RoomChoices {
+		rlist1a := []string{}
+		for _, rref := range rlist {
+			rlist1a = append(rlist1a, fetinfo.ttinfo.Ref2Tag[rref])
+		}
+		rlist1 = append(rlist1, strings.Join(rlist1a, "|"))
+	}
+	r1 := strings.Join(rlist1, "+")
+	fmt.Printf("getFetRooms [%s & %s]\n", r0, r1)
+	*/
+
 	// First convert the Ref values to Element Tags for FET.
 	rtags := []string{}
 	ref2fet := fetinfo.ttinfo.Ref2Tag
@@ -116,50 +136,54 @@ func (fetinfo *fetInfo) getFetRooms(room ttbase.VirtualRoom) []string {
 	}
 
 	if len(rctags) == 0 && len(rtags) < 2 {
-		return rtags
-	}
-	if len(rctags) == 1 && len(rtags) == 0 {
-		return rctags[0]
-	}
-
-	// Otherwise a virtual room is necessary.
-	srctags := []string{}
-	for _, rcl := range rctags {
-		srctags = append(srctags, strings.Join(rcl, ","))
-	}
-	key := strings.Join(rtags, ",") + "+" + strings.Join(srctags, "|")
-	vr, ok := fetinfo.fetVirtualRooms[key]
-	if !ok {
-		// Make virtual room, using rooms list from above.
-		rrslist := []realRoomSet{}
-		for _, rt := range rtags {
-			rrslist = append(rrslist, realRoomSet{
-				Number_of_Real_Rooms: 1,
-				Real_Room:            []string{rt},
-			})
+		result = rtags
+		//return rtags
+	} else if len(rctags) == 1 && len(rtags) == 0 {
+		result = rctags[0]
+		//return rctags[0]
+	} else {
+		// Otherwise a virtual room is necessary.
+		srctags := []string{}
+		for _, rcl := range rctags {
+			srctags = append(srctags, strings.Join(rcl, ","))
 		}
-		// Add choice lists from above.
-		for _, rtl := range rctags {
-			rrslist = append(rrslist, realRoomSet{
-				Number_of_Real_Rooms: len(rtl),
-				Real_Room:            rtl,
-			})
+		key := strings.Join(rtags, ",") + "+" + strings.Join(srctags, "|")
+		vr, ok := fetinfo.fetVirtualRooms[key]
+		if !ok {
+			// Make virtual room, using rooms list from above.
+			rrslist := []realRoomSet{}
+			for _, rt := range rtags {
+				rrslist = append(rrslist, realRoomSet{
+					Number_of_Real_Rooms: 1,
+					Real_Room:            []string{rt},
+				})
+			}
+			// Add choice lists from above.
+			for _, rtl := range rctags {
+				rrslist = append(rrslist, realRoomSet{
+					Number_of_Real_Rooms: len(rtl),
+					Real_Room:            rtl,
+				})
+			}
+			vr = fmt.Sprintf(
+				"%s%03d", VIRTUAL_ROOM_PREFIX, len(fetinfo.fetVirtualRooms)+1)
+			vroom := fetRoom{
+				Name:                         vr,
+				Capacity:                     30000,
+				Virtual:                      true,
+				Number_of_Sets_of_Real_Rooms: len(rrslist),
+				Set_of_Real_Rooms:            rrslist,
+			}
+			// Add the virtual room to the fet file
+			fetinfo.fetdata.Rooms_List.Room = append(
+				fetinfo.fetdata.Rooms_List.Room, vroom)
+			// Remember key/value
+			fetinfo.fetVirtualRooms[key] = vr
+			fetinfo.fetVirtualRoomN[vr] = len(rrslist)
 		}
-		vr = fmt.Sprintf(
-			"%s%03d", VIRTUAL_ROOM_PREFIX, len(fetinfo.fetVirtualRooms)+1)
-		vroom := fetRoom{
-			Name:                         vr,
-			Capacity:                     30000,
-			Virtual:                      true,
-			Number_of_Sets_of_Real_Rooms: len(rrslist),
-			Set_of_Real_Rooms:            rrslist,
-		}
-		// Add the virtual room to the fet file
-		fetinfo.fetdata.Rooms_List.Room = append(
-			fetinfo.fetdata.Rooms_List.Room, vroom)
-		// Remember key/value
-		fetinfo.fetVirtualRooms[key] = vr
-		fetinfo.fetVirtualRoomN[vr] = len(rrslist)
+		result = []string{vr}
+		//return []string{vr}
 	}
-	return []string{vr}
+	//--fmt.Printf("   --> %+v\n", result)
+	return result
 }

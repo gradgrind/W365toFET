@@ -54,18 +54,40 @@ type Info struct {
 	Reference string
 }
 
+type Element struct {
+	Id Ref
+	// Not all Element objects use the Tag field
+	Tag string // abbreviation/acronmym
+}
+
+type Elem interface {
+	getId() Ref
+	getTag() string
+	setTag(string)
+}
+
+func (e *Element) getId() Ref {
+	return e.Id
+}
+
+func (e *Element) getTag() string {
+	return e.Tag
+}
+
+func (e *Element) setTag(tag string) {
+	e.Tag = tag
+}
+
 // A Day represents a day of the timetable's week
 type Day struct {
-	Id   Ref
+	Element
 	Name string
-	Tag  string // abbreviation
 }
 
 // An Hour represents a lesson period ("hour") of a timetable's day
 type Hour struct {
-	Id    Ref
+	Element
 	Name  string
-	Tag   string // abbreviation
 	Start string // start time, format hour:mins, e.g. "13:45"
 	End   string // end time, format hour:mins, e.g. "14:30"
 }
@@ -74,9 +96,8 @@ type Hour struct {
 // information relevant for the timetable.
 // It can be specified as a recourse for an activity.
 type Teacher struct {
-	Id        Ref
+	Element
 	Name      string
-	Tag       string // abbreviation/acronym
 	Firstname string
 	// NotAvailable is an ordered list of time-slots in which the teacher
 	// is to be regarded as not available for the timetable.
@@ -94,16 +115,14 @@ type Teacher struct {
 // it can also be used for any other activities which are timetabled (say,
 // conferences).
 type Subject struct {
-	Id   Ref
+	Element
 	Name string
-	Tag  string // abbreviation/acronym
 }
 
 // A Room is a resource which can be specified for an activity.
 type Room struct {
-	Id   Ref
+	Element
 	Name string
-	Tag  string // abbreviation/acronym
 	// NotAvailable is an ordered list of time-slots in which the room is to
 	// be regarded as not available for the timetable.
 	NotAvailable []TimeSlot
@@ -117,9 +136,8 @@ func (r *Room) IsReal() bool {
 
 // A RoomGroup is a collection of [Room] items, all of which are "required".
 type RoomGroup struct {
-	Id    Ref
+	Element
 	Name  string
-	Tag   string // abbreviation/acronym
 	Rooms []Ref
 }
 
@@ -130,9 +148,8 @@ func (r *RoomGroup) IsReal() bool {
 // A RoomChoiceGroup is a collection of [Room] items, one of which is
 // "required".
 type RoomChoiceGroup struct {
-	Id    Ref
+	Element
 	Name  string
-	Tag   string // abbreviation/acronym
 	Rooms []Ref
 }
 
@@ -151,9 +168,8 @@ func (r *RoomChoiceGroup) IsReal() bool {
 // is the combination, e.g. "11A". The Name field can be used for a longer
 // description of the class.
 type Class struct {
-	Id               Ref
+	Element
 	Name             string
-	Tag              string
 	Year             int
 	Letter           string
 	NotAvailable     []TimeSlot
@@ -169,8 +185,7 @@ type Class struct {
 }
 
 type Group struct {
-	Id  Ref
-	Tag string
+	Element
 	// These fields do not belong in the JSON object:
 	Class Ref `json:"-"`
 }
@@ -178,7 +193,7 @@ type Group struct {
 // A Course specifies a collection of resources needed for a set of
 // activities ([Lesson] elements). The [Subject] field is a sort of label.
 type Course struct {
-	Id       Ref
+	Element
 	Subject  Ref
 	Groups   []Ref
 	Teachers []Ref
@@ -199,7 +214,7 @@ func (c *Course) AddLesson(lref Ref) {
 // associated with a set of activities ([Lesson] elements). The [Subject]
 // field is a sort of label.
 type SuperCourse struct {
-	Id      Ref
+	Element
 	Subject Ref
 	// These fields do not belong in the JSON object:
 	SubCourses []Ref `json:"-"`
@@ -219,7 +234,7 @@ func (c *SuperCourse) AddLesson(lref Ref) {
 // [SuperCourse]. Otherwise it is much like a [Course], bundling the
 // necessary resources.
 type SubCourse struct {
-	Id           Ref
+	Element
 	SuperCourses []Ref
 	Subject      Ref
 	Groups       []Ref
@@ -236,7 +251,7 @@ type GeneralRoom interface {
 // Its resources are determined by the course ([Course] or [SuperCourse]) to
 // which it belongs.
 type Lesson struct {
-	Id       Ref
+	Element
 	Course   Ref   // [Course] or [SuperCourse] elements
 	Duration int   // number of "hours" covered
 	Day      int   // 0-based index, -1 for "unplaced"
@@ -289,5 +304,5 @@ type DbTopLevel struct {
 	Constraints      []Constraint   `json:",omitempty"`
 
 	// These fields do not belong in the JSON object:
-	Elements map[Ref]any `json:"-"`
+	Elements map[Ref]Elem `json:"-"`
 }

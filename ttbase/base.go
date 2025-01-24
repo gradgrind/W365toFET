@@ -103,7 +103,7 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	}
 
 	// Build Ref -> Tag mapping for subjects, teachers, rooms, classes
-	// and groups. Set up the mapping for subjects, rooms and teachers.
+	// and groups. Set up this mapping for subjects, rooms and teachers.
 	ref2Tag := map[Ref]string{}
 	ttinfo.Ref2Tag = ref2Tag
 	for _, r := range db.Subjects {

@@ -2,13 +2,14 @@ package base
 
 import (
 	"slices"
+	"strconv"
 
 	"github.com/gofrs/uuid/v5"
 )
 
 func NewDb() *DbTopLevel {
 	db := &DbTopLevel{}
-	db.Elements = map[Ref]any{}
+	db.Elements = map[Ref]Elem{}
 	return db
 }
 
@@ -21,7 +22,7 @@ func (db *DbTopLevel) newId() Ref {
 	return Ref(u2.String())
 }
 
-func (db *DbTopLevel) addElement(ref Ref, element any) Ref {
+func (db *DbTopLevel) addElement(ref Ref, element Elem) Ref {
 	if ref == "" {
 		ref = db.newId()
 	}
@@ -168,6 +169,40 @@ func (db *DbTopLevel) PrepareDb() {
 			// This is a loader failure, it should not be possible.
 			Bug.Fatalf("Group not in Class: %s\n", g.Id)
 		}
+	}
+
+	// Check that element tags are unique
+	newtags("Subject", db.Subjects)
+	newtags("Room", db.Rooms)
+	newtags("Teacher", db.Teachers)
+}
+
+func newtags[T Elem](etype string, elist []T) {
+	checktags := map[string]bool{}
+	errortags := []Elem{}
+	for _, e0 := range elist {
+		tag := e0.getTag()
+		if checktags[tag] {
+			errortags = append(errortags, e0)
+		} else {
+			checktags[tag] = true
+		}
+	}
+	for _, e := range errortags {
+		tag0 := e.getTag()
+		i := 1
+		var tag string
+		for {
+			tag = tag0 + strconv.Itoa(i)
+			_, nok := checktags[tag]
+			if !nok {
+				break
+			}
+		}
+		checktags[tag] = true
+		e.setTag(tag)
+		Error.Printf("%s tag <%s> not unique: Element %s changed to <%s>\n",
+			etype, tag0, e.getId(), tag)
 	}
 }
 
