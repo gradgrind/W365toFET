@@ -70,9 +70,6 @@ func (ttinfo *TtInfo) processConstraints() {
 			}
 		}
 		{
-			//TODO: This must happen BEFORE the result is used to add stuff
-			// to the Activities!
-
 			cn, ok := c.(*base.ParallelCourses)
 			if ok {
 				ttinfo.addParallelCoursesConstraint(cn)

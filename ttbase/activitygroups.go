@@ -28,8 +28,17 @@ type TtLesson struct {
 func (ttinfo *TtInfo) PrepareActivityGroups() []*ActivityGroup {
 	aglist := []*ActivityGroup{}
 	parallels := map[Ref]bool{} // handled parallel courses
+	daygapmap := ttinfo.DayGapConstraints.CourseConstraints
+	defaultDaysBetween := &base.DaysBetween{
+		// The other fields are not needed here
+		Weight: ttinfo.DayGapConstraints.DefaultDifferentDaysWeight,
+		ConsecutiveIfSameDay: ttinfo.DayGapConstraints.
+			DefaultDifferentDaysConsecutiveIfSameDay,
+		DayGap: 1,
+	}
 	for _, cinfo := range ttinfo.LessonCourses {
-		if _, nok := parallels[cinfo.Id]; nok {
+		cref := cinfo.Id
+		if _, nok := parallels[cref]; nok {
 			// This course has already been handled
 			continue
 		}
@@ -98,41 +107,66 @@ func (ttinfo *TtInfo) PrepareActivityGroups() []*ActivityGroup {
 				goto repeat
 			}
 		}
+
+		// "DAYS_BETWEEN" constraints:
+		// 1) Collect days-between according to gaps, reporting and ignoring
+		//    conflicts.
+		// 2) If there is no constraint for gap = 1, and no other hard
+		//    constraint, use the default.
+		//TODO:
+		// 3) Collect cross-days-between on the same principle, but with the
+		//    extra complication of there being two courses involved.
+
+		dbcmap := map[int]*base.DaysBetween{}
+		harddbc := 0
+		// Include hard-parallel courses
+		pcourses := append([]Ref{cref}, ttinfo.HardParallelCourses[cref]...)
+		for _, pcref := range pcourses {
+			for _, dbc := range daygapmap[pcref] {
+				gap := dbc.DayGap
+				if dbc.Weight == base.MAXWEIGHT {
+					// A hard constraint
+					if harddbc == 0 {
+						harddbc = gap
+					} else {
+						base.Error.Printf("Multiple hard DAYS_BETWEEN"+
+							" constraints for a course (possibly with"+
+							" parallel courses):\n -- %s\n",
+							ttinfo.View(cinfo))
+						continue
+					}
+				}
+				if _, nok := dbcmap[gap]; nok {
+					base.Error.Printf("Multiple DAYS_BETWEEN constraints"+
+						" with gap %d for a course (possibly with parallel"+
+						" courses):\n  -- %s\n",
+						gap, ttinfo.View(cinfo))
+					continue
+				}
+				dbcmap[gap] = dbc
+			}
+		}
+		dbclist := []*base.DaysBetween{}
+		ng1dbc := harddbc == 0 // whether a constraint with gap = 1 is needed
+		for gap, dbc := range dbcmap {
+			if gap < harddbc {
+				base.Error.Printf("DAYS_BETWEEN constraint with gap smaller"+
+					" than hard gap, course:\n -- %s\n",
+					ttinfo.View(cinfo))
+				continue
+			}
+			if gap == 1 {
+				ng1dbc = false
+			}
+			dbclist = append(dbclist, dbc)
+		}
+		if ng1dbc {
+			dbclist = append(dbclist, defaultDaysBetween)
+		}
+
 	}
 
-	//TODO: days-between constraints, ttinfo.DayGapConstraints
-
-	/*
-			// Add activities to CourseInfo
-			llist := clessons[i]
-			for _, lref := range llist {
-				l := db.Elements[lref].(*base.Lesson)
-				if slices.Contains(l.Flags, "SubstitutionService") {
-					cinfo.Groups = nil
-				}
-				// Index of new Activity:
-				ttlix := len(ttinfo.Activities)
-				p := -1
-				if l.Day >= 0 {
-					p = l.Day*ttinfo.DayLength + l.Hour
-				}
-				ttl := &Activity{
-					Index:      ttlix,
-					Placement:  p,
-					Duration:   l.Duration,
-					Fixed:      l.Fixed,
-					Lesson:     l,
-					CourseInfo: cinfo,
-				}
-				ttinfo.Activities = append(ttinfo.Activities, ttl)
-				cinfo.Lessons = append(cinfo.Lessons, ttlix)
-			}
-
-			// Add to CourseInfo map
-			ttinfo.CourseInfo[cinfo.Id] = cinfo
-		}
-		//return roomData
-	*/
+	//TODO: Add the TtLessons
 
 	return aglist
 }
