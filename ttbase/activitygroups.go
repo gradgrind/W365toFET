@@ -58,10 +58,10 @@ func (ttinfo *TtInfo) PrepareActivityGroups() []*ActivityGroup {
 			ag.Resources = append(ag.Resources, pcinfo.Resources...)
 
 			// Get Activities
+			update := false // flag whether the loop needs repeating
 			for i, aix := range pcinfo.Lessons {
 				a := ttinfo.Activities[aix]
 				a0 := alist[i]
-				update := false
 				if a.Fixed {
 					if !a0.Fixed {
 						a0.Fixed = true
@@ -91,14 +91,16 @@ func (ttinfo *TtInfo) PrepareActivityGroups() []*ActivityGroup {
 						a.Placement = a0.Placement
 					}
 				}
-				if update {
-					goto repeat
-				}
 			}
-
+			if update {
+				// The activities of the first course have been changed,
+				// the processing of parallel courses should be repeated
+				goto repeat
+			}
 		}
-
 	}
+
+	//TODO: days-between constraints, ttinfo.DayGapConstraints
 
 	/*
 			// Add activities to CourseInfo

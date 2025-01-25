@@ -94,7 +94,7 @@ type TtInfo struct {
 	SoftParallelCourses map[Ref][]*base.ParallelCourses
 
 	MinDaysBetweenLessons []MinDaysBetweenLessons
-	ParallelLessons       []ParallelLessons
+	//TODO--ParallelLessons       []ParallelLessons
 
 	WITHOUT_ROOM_PLACEMENTS bool // ignore initial room placements
 }

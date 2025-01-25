@@ -93,12 +93,6 @@ func (ttinfo *TtInfo) addActivityInfo() {
 	/////////+
 	ttinfo.collectCourseResources()
 
-	ttinfo.PrepareActivityGroups()
-
-	//TODO: Consider the order of courses (should be same as in source)
-	// and Lessons/Activities (should always be the same). Perhaps I would
-	// need a course list to ensure this.
-
 	// Complete the Activity items for each course
 	r2tt := ttinfo.RoomIndexes
 	for _, cinfo := range ttinfo.LessonCourses {
@@ -148,6 +142,8 @@ func (ttinfo *TtInfo) addActivityInfo() {
 		//
 
 	}
+
+	ttinfo.PrepareActivityGroups()
 
 	/////////-
 

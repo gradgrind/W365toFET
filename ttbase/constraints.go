@@ -11,13 +11,14 @@ import (
 type DayGapConstraints struct {
 	DefaultDifferentDaysWeight               int
 	DefaultDifferentDaysConsecutiveIfSameDay bool
-	// Constraints maps the course references ([base.Course] and
+	// CourseConstraints maps the course references ([base.Course] and
 	// [base.SuperCourse]) to a list of [base.DaysBetween] constraints
 	// which affect them.
 	CourseConstraints map[Ref][]*base.DaysBetween
-
-	//TODO
-	CrossCourseConstraints []MinDaysBetweenLessons // ???
+	// CrossCourseConstraints maps the course references ([base.Course] and
+	// [base.SuperCourse]) to a list of [base.DaysBetweenJoin] constraints
+	// which affect them.
+	CrossCourseConstraints map[Ref][]*base.DaysBetweenJoin
 }
 
 // TODO?
@@ -29,11 +30,12 @@ type MinDaysBetweenLessons struct {
 	MinDays              int
 }
 
-// TODO?
+/* TODO?
 type ParallelLessons struct {
 	Weight       int
 	LessonGroups [][]ActivityIndex
 }
+*/
 
 func (ttinfo *TtInfo) processConstraints() {
 	// Some constraints can be "preprocessed" into more convenient structures.
@@ -63,7 +65,7 @@ func (ttinfo *TtInfo) processConstraints() {
 		{
 			cn, ok := c.(*base.DaysBetweenJoin)
 			if ok {
-				dayGapConstraints.addCrossConstraintDaysBetween(ttinfo, cn)
+				dayGapConstraints.addCrossConstraintDaysBetween(cn)
 				continue
 			}
 		}
@@ -105,7 +107,7 @@ func (dgdata *DayGapConstraints) constraintAutomaticDifferentDays(
 }
 
 // addConstraintDaysBetween handles "DAYS_BETWEEN" constraints, adding them
-// to the list for the course concerned.
+// to the list for each of the courses concerned.
 func (dgdata *DayGapConstraints) addConstraintDaysBetween(
 	c *base.DaysBetween,
 ) {
@@ -115,15 +117,18 @@ func (dgdata *DayGapConstraints) addConstraintDaysBetween(
 	}
 }
 
-//TODO: This probably shouldn't jump immediately to lesson handling as the
-// lesson handling is now different, handled by the activity groups ...
-
 // addCrossConstraintDaysBetween handles "DAYS_BETWEEN_JOIN" constraints,
-// adding them to ??TODO?? the list for the course concerned.
+// adding them to the list for the courses concerned.
 func (dgdata *DayGapConstraints) addCrossConstraintDaysBetween(
-	ttinfo *TtInfo,
+	//	ttinfo *TtInfo,
 	c *base.DaysBetweenJoin,
 ) {
+	dgdata.CrossCourseConstraints[c.Course1] = append(
+		dgdata.CrossCourseConstraints[c.Course1], c)
+	dgdata.CrossCourseConstraints[c.Course2] = append(
+		dgdata.CrossCourseConstraints[c.Course2], c)
+
+	/*TODO--
 	c1 := ttinfo.CourseInfo[c.Course1]
 	c2 := ttinfo.CourseInfo[c.Course2]
 	for _, l1ref := range c1.Lessons {
@@ -143,9 +148,8 @@ func (dgdata *DayGapConstraints) addCrossConstraintDaysBetween(
 			)
 		}
 	}
+	*/
 }
-
-//TODO: This probably needs adjusting for the new activity group processing
 
 // addParallelCoursesConstraint constrains the lessons of the given courses
 // to start at the same time (constraint "PARALLEL_COURSES").
