@@ -2,6 +2,7 @@ package ttbase
 
 import (
 	"W365toFET/base"
+	"slices"
 	"strings"
 )
 
@@ -151,16 +152,19 @@ func (dgdata *DayGapConstraints) addCrossConstraintDaysBetween(
 // The courses must have the same number of lessons and the durations of the
 // corresponding lessons must also be the same.
 func (ttinfo *TtInfo) addParallelCoursesConstraint(c *base.ParallelCourses) {
-	ttinfo.ParallelCourses = map[Ref][]*base.ParallelCourses{}
+	ttinfo.HardParallelCourses = map[Ref][]Ref{}
+	ttinfo.SoftParallelCourses = map[Ref][]*base.ParallelCourses{}
+
+	pclists := map[Ref][]Ref{} // for checking for duplicate constraints
 	// Check lesson lengths
 	footprint := []int{} // lesson sizes
 	ll := 0              // number of lessons in each course
-	var llists [][]int   // collect the parallel lessons
+	//var llists [][]int   // collect the parallel lessons
 	for i, cref := range c.Courses {
 		cinfo := ttinfo.CourseInfo[cref]
 		if i == 0 {
 			ll = len(cinfo.Lessons)
-			llists = make([][]int, ll)
+			//llists = make([][]int, ll)
 		} else if len(cinfo.Lessons) != ll {
 			clist := []string{}
 			for _, cr := range c.Courses {
@@ -183,17 +187,49 @@ func (ttinfo *TtInfo) addParallelCoursesConstraint(c *base.ParallelCourses) {
 					" mismatch: %s\n",
 					strings.Join(clist, ","))
 			}
-			llists[j] = append(llists[j], lix)
+			//llists[j] = append(llists[j], lix)
 		}
 
-		// Link to the constraint from each of the courses concerned
-		ttinfo.ParallelCourses[cref] = append(
-			ttinfo.ParallelCourses[cref], c)
+		// Check for duplicate constraints
+		pc, ok := pclists[cref]
+		if ok {
+			for _, cr := range c.Courses {
+				if cr == cref {
+					continue
+				}
+				if slices.Contains(pc, cr) {
+					base.Error.Fatalf("Courses subject to more than one"+
+						" parallel constraint:\n  -- %s\n  -- %s\n",
+						ttinfo.View(cinfo),
+						ttinfo.View(ttinfo.CourseInfo[cr]))
+				}
+				pclists[cref] = append(pclists[cref], cr)
+			}
+		}
+
+		// Treat weight = MAXWEIGHT as a special case
+		if c.Weight == base.MAXWEIGHT {
+			// For hard constraints, link each course to its parallel courses
+			for _, cr := range c.Courses {
+				if cr == cref {
+					continue
+				}
+				ttinfo.HardParallelCourses[cref] = append(
+					ttinfo.HardParallelCourses[cref], cr)
+			}
+		} else {
+			// For soft constraints, link to the constraint from each of the
+			// courses concerned
+			ttinfo.SoftParallelCourses[cref] = append(
+				ttinfo.SoftParallelCourses[cref], c)
+		}
 	}
-	// llists is now a list of lists of parallel TtLesson indexes.
-	ttinfo.ParallelLessons = append(ttinfo.ParallelLessons,
-		ParallelLessons{
-			Weight:       c.Weight,
-			LessonGroups: llists,
-		})
+	/*
+		// llists is now a list of lists of parallel TtLesson indexes.
+		ttinfo.ParallelLessons = append(ttinfo.ParallelLessons,
+			ParallelLessons{
+				Weight:       c.Weight,
+				LessonGroups: llists,
+			})
+	*/
 }

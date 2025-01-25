@@ -86,7 +86,12 @@ type TtInfo struct {
 
 	Constraints       map[string][]any
 	DayGapConstraints *DayGapConstraints
-	ParallelCourses   map[Ref][]*base.ParallelCourses
+	// HardParallelCourses gives a list of parallel courses for each course,
+	// set in method [addParallelCoursesConstraint]
+	HardParallelCourses map[Ref][]Ref
+	// SoftParallelCourses maps each course to a list of its soft
+	// parallel constraints, set in method [addParallelCoursesConstraint]
+	SoftParallelCourses map[Ref][]*base.ParallelCourses
 
 	MinDaysBetweenLessons []MinDaysBetweenLessons
 	ParallelLessons       []ParallelLessons
@@ -94,6 +99,8 @@ type TtInfo struct {
 	WITHOUT_ROOM_PLACEMENTS bool // ignore initial room placements
 }
 
+// pResources returns a string representation of a list of "resources",
+// using their Tag fields.
 func (ttinfo *TtInfo) pResources(rlist []Ref) string {
 	slist := make([]string, len(rlist))
 	for i, r := range rlist {

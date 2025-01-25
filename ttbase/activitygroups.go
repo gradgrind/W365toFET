@@ -1,9 +1,6 @@
 package ttbase
 
-import (
-	"W365toFET/base"
-	"fmt"
-)
+import "W365toFET/base"
 
 // An ActivityGroup manages placement of the lessons of a course and
 // any hard-parallel courses.
@@ -24,37 +21,81 @@ type TtLesson struct {
 // [Activity] items, taking their duration, courses, hard-parallel and
 // hard-different-day constraints into account.
 // TODO: Perhaps also soft days-between, etc.?
-// The room choices should perhaps be handled like SuperCourses?
 // Should I link to the Activities?
 // To be able to handle unplacement I would need XRooms. Would accessing
 // these via the Activities be too inefficient? Probably the inner loops
 // should be handled in TtLesson as far as possible.
-func (ttinfo *TtInfo) PrepareActivityGroups() {
+func (ttinfo *TtInfo) PrepareActivityGroups() []*ActivityGroup {
+	aglist := []*ActivityGroup{}
 	parallels := map[Ref]bool{} // handled parallel courses
 	for _, cinfo := range ttinfo.LessonCourses {
+		if _, nok := parallels[cinfo.Id]; nok {
+			// This course has already been handled
+			continue
+		}
 		ag := &ActivityGroup{}
+		aglist = append(aglist, ag)
+		alist := []*Activity{}
+		for _, aix := range cinfo.Lessons {
+			alist = append(alist, ttinfo.Activities[aix])
+		}
 		// Seek hard-parallel courses
-		for _, hpc := range ttinfo.ParallelCourses[cinfo.Id] {
+	repeat:
+		ag.Resources = append([]ResourceIndex{}, cinfo.Resources...)
+
+		for _, hpc := range ttinfo.HardParallelCourses[cinfo.Id] {
 			//TODO: One (or more!) of the activities may have a placement.
-			// This should be taken for the TtLesson
+			// This should be taken for the TtLesson – and checked for
+			// conflicts
 
-			fmt.Printf("??? %+v\n", hpc)
+			//TODO: I suppose fixed activities should be excluded from the
+			// possible placement lists?
 
-			if hpc.Weight == base.MAXWEIGHT {
-				//TODO: These courses are hard-parallel, join them into
-				// a single activity group.
-				for _, c := range hpc.Courses {
-					parallels[c] = true
+			parallels[hpc] = true
 
-					// Add resources from the parallel course
-					cinfo1 := ttinfo.CourseInfo[c]
-					// ... via one of the Activities
-					l0 := cinfo1.Lessons[0]
-					a := ttinfo.Activities[l0]
-					ag.Resources = append(ag.Resources, a.Resources...)
+			// Add resources from the parallel course
+			pcinfo := ttinfo.CourseInfo[hpc]
+			ag.Resources = append(ag.Resources, pcinfo.Resources...)
+
+			// Get Activities
+			for i, aix := range pcinfo.Lessons {
+				a := ttinfo.Activities[aix]
+				a0 := alist[i]
+				update := false
+				if a.Fixed {
+					if !a0.Fixed {
+						a0.Fixed = true
+						update = true
+					}
+				} else {
+					if a0.Fixed {
+						a.Fixed = true
+					}
 				}
-
+				if a.Placement < 0 {
+					if a0.Placement >= 0 {
+						a.Placement = a0.Placement
+					}
+				} else if a0.Placement < 0 {
+					a0.Placement = a.Placement
+					update = true
+				} else if a.Placement != a0.Placement {
+					base.Error.Printf("Parallel Activities with"+
+						"different placements in courses\n"+
+						" -- %s\n -- %s\n",
+						ttinfo.View(cinfo), ttinfo.View(pcinfo))
+					if update {
+						// a0 was previously unfixed, a fixed
+						a0.Placement = a.Placement
+					} else {
+						a.Placement = a0.Placement
+					}
+				}
+				if update {
+					goto repeat
+				}
 			}
+
 		}
 
 	}
@@ -90,4 +131,6 @@ func (ttinfo *TtInfo) PrepareActivityGroups() {
 		}
 		//return roomData
 	*/
+
+	return aglist
 }

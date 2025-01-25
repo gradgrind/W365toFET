@@ -63,9 +63,6 @@ func gatherCourseInfo(ttinfo *TtInfo) {
 	// Also, the SuperCourses (with lessons) get a list of their
 	// SubCourses.
 	db := ttinfo.Db
-	//--ttinfo.SuperSubs = map[Ref][]Ref{}
-	ttinfo.CourseInfo = map[Ref]*CourseInfo{}
-	ttinfo.Activities = make([]*Activity, 1) // 1-based indexing, 0 is invalid
 
 	// Collect Courses with Lessons.
 	roomData := collectCourses(ttinfo)
@@ -318,7 +315,9 @@ func (ttinfo *TtInfo) checkAllocatedRooms(cinfo *CourseInfo) {
 
 func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 	// Collect Courses with lessons/activities.
-	roomData := map[Ref][]Ref{} // course -> []room (any sort of "room")
+	ttinfo.CourseInfo = map[Ref]*CourseInfo{}
+	ttinfo.Activities = make([]*Activity, 1) // 1-based indexing, 0 is invalid
+	roomData := map[Ref][]Ref{}              // course -> []room (any sort of "room")
 	db := ttinfo.Db
 
 	// Create the CourseInfos and Activities.
