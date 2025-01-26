@@ -2,40 +2,54 @@ package ttbase
 
 import "W365toFET/base"
 
+type LessonUnitIndex = int
+
 // An ActivityGroup manages placement of the lessons of a course and
 // any hard-parallel courses.
 type ActivityGroup struct {
 	Resources          []ResourceIndex
-	LessonUnits        []*TtLesson //TODO: or []LessonUnitIndex?
+	LessonUnits        []LessonUnitIndex
 	PossiblePlacements [][]SlotIndex
 }
 
 type TtLesson struct {
-	Resources *[]ResourceIndex // points to ActivityGroup Resources?
+	Resources []ResourceIndex // same as ActivityGroup Resources
 	// ... if not dynamic, it could just be a "copy"
 	Placement SlotIndex
 	Fixed     bool
 }
 
+type TtPlacement struct {
+	TtLessons []*TtLesson
+}
+
 // PrepareActivityGroups creates the [ActivityGroup] items from the
 // [Activity] items, taking their duration, courses, hard-parallel and
-// hard-different-day constraints into account.
-// TODO: Perhaps also soft days-between, etc.?
-// Should I link to the Activities?
-// To be able to handle unplacement I would need XRooms. Would accessing
+// different-day/days-between constraints into account.
+
+// TODO: Should I link to the Activities? Maybe the Activities should link
+// to their TtLessons, possibly via the ActivityGroups?
+
+// TODO: To be able to handle unplacement I would need XRooms. Would accessing
 // these via the Activities be too inefficient? Probably the inner loops
-// should be handled in TtLesson as far as possible.
+// should be handled in TtLesson as far as possible. On the other hand,
+// unplacing would take place far less frequently than testing.
+
 func (ttinfo *TtInfo) PrepareActivityGroups() []*ActivityGroup {
 	aglist := []*ActivityGroup{}
 	parallels := map[Ref]bool{} // handled parallel courses
-	daygapmap := ttinfo.DayGapConstraints.CourseConstraints
-	defaultDaysBetween := &base.DaysBetween{
-		// The other fields are not needed here
-		Weight: ttinfo.DayGapConstraints.DefaultDifferentDaysWeight,
-		ConsecutiveIfSameDay: ttinfo.DayGapConstraints.
-			DefaultDifferentDaysConsecutiveIfSameDay,
-		DayGap: 1,
+	dgc := ttinfo.DayGapConstraints
+	daygapmap := dgc.CourseConstraints
+	defaultDaysBetween := DaysBetweenLessons{
+		Weight:               dgc.DefaultDifferentDaysWeight,
+		ConsecutiveIfSameDay: dgc.DefaultDifferentDaysConsecutiveIfSameDay,
+		DayGap:               1,
 	}
+	ttplaces := &TtPlacement{
+		// The first entry of TtLessons is invalid
+		TtLessons: []*TtLesson{nil},
+	}
+	ttinfo.Placements = ttplaces
 	for _, cinfo := range ttinfo.LessonCourses {
 		cref := cinfo.Id
 		if _, nok := parallels[cref]; nok {
@@ -117,14 +131,14 @@ func (ttinfo *TtInfo) PrepareActivityGroups() []*ActivityGroup {
 		// 3) Collect cross-days-between on the same principle, but with the
 		//    extra complication of there being two courses involved.
 
-		dbcmap := map[int]*base.DaysBetween{}
+		dblmap := map[int]DaysBetweenLessons{}
 		harddbc := 0
 		// Include hard-parallel courses
 		pcourses := append([]Ref{cref}, ttinfo.HardParallelCourses[cref]...)
 		for _, pcref := range pcourses {
-			for _, dbc := range daygapmap[pcref] {
-				gap := dbc.DayGap
-				if dbc.Weight == base.MAXWEIGHT {
+			for _, dbl := range daygapmap[pcref] {
+				gap := dbl.DayGap
+				if dbl.Weight == base.MAXWEIGHT {
 					// A hard constraint
 					if harddbc == 0 {
 						harddbc = gap
@@ -136,19 +150,20 @@ func (ttinfo *TtInfo) PrepareActivityGroups() []*ActivityGroup {
 						continue
 					}
 				}
-				if _, nok := dbcmap[gap]; nok {
+				if _, nok := dblmap[gap]; nok {
 					base.Error.Printf("Multiple DAYS_BETWEEN constraints"+
 						" with gap %d for a course (possibly with parallel"+
 						" courses):\n  -- %s\n",
 						gap, ttinfo.View(cinfo))
 					continue
 				}
-				dbcmap[gap] = dbc
+				dblmap[gap] = dbl
 			}
 		}
-		dbclist := []*base.DaysBetween{}
+		// Check for ineffective constraints and whether the default is needed
+		dbllist := []DaysBetweenLessons{}
 		ng1dbc := harddbc == 0 // whether a constraint with gap = 1 is needed
-		for gap, dbc := range dbcmap {
+		for gap, dbl := range dblmap {
 			if gap < harddbc {
 				base.Error.Printf("DAYS_BETWEEN constraint with gap smaller"+
 					" than hard gap, course:\n -- %s\n",
@@ -158,15 +173,30 @@ func (ttinfo *TtInfo) PrepareActivityGroups() []*ActivityGroup {
 			if gap == 1 {
 				ng1dbc = false
 			}
-			dbclist = append(dbclist, dbc)
+			dbllist = append(dbllist, dbl)
 		}
 		if ng1dbc {
-			dbclist = append(dbclist, defaultDaysBetween)
+			dbllist = append(dbllist, defaultDaysBetween)
 		}
 
-	}
+		// Add the TtLessons
+		//TODO: Do I need a TtLesson list? Probably ...
+		// ... maybe in package ttplacement
+		//TODO: Add links ...
+		for _, a := range alist {
+			ttl := &TtLesson{
+				Resources: ag.Resources,
+				Placement: a.Placement,
+				Fixed:     a.Fixed,
+			}
+			i := len(ttplaces.TtLessons)
+			ttplaces.TtLessons = append(ttplaces.TtLessons, ttl)
+			ag.LessonUnits = append(ag.LessonUnits, i)
+		}
 
-	//TODO: Add the TtLessons
+		//TODO: Generate the possible placements lists?
+
+	}
 
 	return aglist
 }

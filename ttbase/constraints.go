@@ -14,11 +14,11 @@ type DayGapConstraints struct {
 	// CourseConstraints maps the course references ([base.Course] and
 	// [base.SuperCourse]) to a list of [base.DaysBetween] constraints
 	// which affect them.
-	CourseConstraints map[Ref][]*base.DaysBetween
+	CourseConstraints map[Ref][]DaysBetweenLessons
 	// CrossCourseConstraints maps the course references ([base.Course] and
 	// [base.SuperCourse]) to a list of [base.DaysBetweenJoin] constraints
 	// which affect them.
-	CrossCourseConstraints map[Ref][]*base.DaysBetweenJoin
+	CrossCourseConstraints map[Ref][]CrossDaysBetweenLessons
 }
 
 // TODO?
@@ -103,49 +103,60 @@ func (dgdata *DayGapConstraints) constraintAutomaticDifferentDays(
 	}
 }
 
-// addConstraintDaysBetween handles "DAYS_BETWEEN" constraints, adding them
-// to the list for each of the courses concerned.
+// A DaysBetweenLessons describes a "DAYS_BETWEEN" constraint. It is
+// attached to a course.
+type DaysBetweenLessons struct {
+	Weight               int
+	DayGap               int
+	ConsecutiveIfSameDay bool
+}
+
+// addConstraintDaysBetween handles "DAYS_BETWEEN" constraints, adding them,
+// as [DaysBetweenLessons] items, to the list for each of the courses
+// concerned.
 func (dgdata *DayGapConstraints) addConstraintDaysBetween(
 	c *base.DaysBetween,
 ) {
 	for _, cref := range c.Courses {
 		dgdata.CourseConstraints[cref] = append(
-			dgdata.CourseConstraints[cref], c)
+			dgdata.CourseConstraints[cref], DaysBetweenLessons{
+				Weight:               c.Weight,
+				ConsecutiveIfSameDay: c.ConsecutiveIfSameDay,
+				DayGap:               c.DayGap,
+			})
 	}
 }
 
+// A CrossDaysBetweenLessons describes a "DAYS_BETWEEN_JOIN" constraint.
+// It is attached to a course.
+type CrossDaysBetweenLessons struct {
+	Weight               int
+	DayGap               int
+	ConsecutiveIfSameDay bool
+	CrossCourse          Ref
+}
+
 // addCrossConstraintDaysBetween handles "DAYS_BETWEEN_JOIN" constraints,
-// adding them to the list for the courses concerned.
+// adding them, as [CrossDaysBetweenLessons] items, to the list for each
+// of the courses concerned.
 func (dgdata *DayGapConstraints) addCrossConstraintDaysBetween(
 	//	ttinfo *TtInfo,
 	c *base.DaysBetweenJoin,
 ) {
 	dgdata.CrossCourseConstraints[c.Course1] = append(
-		dgdata.CrossCourseConstraints[c.Course1], c)
+		dgdata.CrossCourseConstraints[c.Course1], CrossDaysBetweenLessons{
+			Weight:               c.Weight,
+			ConsecutiveIfSameDay: c.ConsecutiveIfSameDay,
+			DayGap:               c.DayGap,
+			CrossCourse:          c.Course2,
+		})
 	dgdata.CrossCourseConstraints[c.Course2] = append(
-		dgdata.CrossCourseConstraints[c.Course2], c)
-
-	/*TODO--
-	c1 := ttinfo.CourseInfo[c.Course1]
-	c2 := ttinfo.CourseInfo[c.Course2]
-	for _, l1ref := range c1.Lessons {
-		l1fixed := ttinfo.Activities[l1ref].Fixed
-		for _, l2ref := range c2.Lessons {
-			if l1fixed && ttinfo.Activities[l2ref].Fixed {
-				// both fixed => no constraint
-				continue
-			}
-			dgdata.CrossCourseConstraints = append(
-				dgdata.CrossCourseConstraints, MinDaysBetweenLessons{
-					Weight:               c.Weight,
-					ConsecutiveIfSameDay: c.ConsecutiveIfSameDay,
-					Lessons:              []int{l1ref, l2ref},
-					MinDays:              c.DayGap,
-				},
-			)
-		}
-	}
-	*/
+		dgdata.CrossCourseConstraints[c.Course2], CrossDaysBetweenLessons{
+			Weight:               c.Weight,
+			ConsecutiveIfSameDay: c.ConsecutiveIfSameDay,
+			DayGap:               c.DayGap,
+			CrossCourse:          c.Course1,
+		})
 }
 
 // addParallelCoursesConstraint constrains the lessons of the given courses

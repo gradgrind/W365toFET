@@ -45,6 +45,8 @@ type TtInfo struct {
 	// rather than an interface because the resources are partly from
 	// another package.
 	Resources []any // pointers to resource elements
+	// Placements is used for lesson (in the form of TtLesson items) placement
+	Placements *TtPlacement
 	// TtSlots contains a full week of time-slots for each resource,
 	// with the same indexing as Resources
 	TtSlots []ActivityIndex
