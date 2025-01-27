@@ -30,12 +30,11 @@ type MinDaysBetweenLessons struct {
 	MinDays              int
 }
 
-/* TODO?
+// TODO--?
 type ParallelLessons struct {
 	Weight       int
 	LessonGroups [][]ActivityIndex
 }
-*/
 
 func (ttinfo *TtInfo) processConstraints() {
 	// Some constraints can be "preprocessed" into more convenient structures.
