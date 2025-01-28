@@ -134,7 +134,28 @@ func getActivities(fetinfo *fetInfo) []idMap {
 func addPlacementConstraints(fetinfo *fetInfo) {
 	ttinfo := fetinfo.ttinfo
 	ref2fet := ttinfo.Ref2Tag
+
+	//TODO: Use the ActivityGroup list as primary loop?
+
+	// Remember which ActivityGroup items have already been handled
+	agixdone := map[ttbase.ActivityGroupIndex]bool{}
 	for _, cinfo := range ttinfo.LessonCourses {
+		// Get ActivityGroup. If multiple courses, remember ag and
+		// make parallel constraints and days-between constraints
+		agix := ttinfo.Placements.CourseActivityGroup[cinfo.Id]
+		if !agixdone[agix] {
+			agixdone[agix] = true
+			ag := ttinfo.Placements.ActivityGroups[agix]
+			if len(ag.Courses) > 1 {
+				// Add hard-parallel constraints
+				fetinfo.addSameStartingTime(ag.Courses, "100")
+			}
+
+			// Add days-between constraints. Here I need the TtLessons.
+			fetinfo.addDaysBetween(ag)
+
+		}
+
 		// Set "preferred" rooms.
 		rooms := fetinfo.getFetRooms(cinfo.Room)
 

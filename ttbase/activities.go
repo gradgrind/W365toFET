@@ -54,43 +54,6 @@ func (ttinfo *TtInfo) addActivityInfo() {
 	// Collect non-fixed activities which need placing
 	toplace := []ActivityIndex{}
 
-	//TODO??
-	//--fmt.Printf("=== %+v\n\n", ttinfo.MinDaysBetweenLessons)
-	// Collect the hard-different-days lessons (gap = 1) for each lesson.
-	diffdays := map[ActivityIndex][]ActivityIndex{}
-	for _, dbc := range ttinfo.MinDaysBetweenLessons {
-		if dbc.Weight == base.MAXWEIGHT && dbc.MinDays == 1 {
-			alist := dbc.Lessons
-			for _, aix := range alist {
-				for _, aix2 := range alist {
-					if aix2 != aix {
-						diffdays[aix] = append(diffdays[aix], aix2)
-					}
-				}
-			}
-		}
-	}
-
-	/*TODO--
-	// Collect the hard-parallel lessons for each lesson.
-	parallels := map[ActivityIndex][]ActivityIndex{}
-	for _, pl := range ttinfo.ParallelLessons {
-		if pl.Weight == base.MAXWEIGHT {
-			// Hard constraint – prepare for Activities
-			for _, alist := range pl.LessonGroups {
-				for _, aix := range alist {
-					for _, aix2 := range alist {
-						if aix2 != aix {
-							parallels[aix] = append(parallels[aix], aix2)
-						}
-					}
-				}
-			}
-		}
-	}
-	*/
-
-	/////////+
 	ttinfo.collectCourseResources()
 
 	// Complete the Activity items for each course
@@ -147,110 +110,8 @@ func (ttinfo *TtInfo) addActivityInfo() {
 
 	/////////-
 
-	//TODO: How much of the following is still needed, in this or another
-	// form. It should probably be in the above course loop
+	//TODO: How much of the following is still needed, and in what form?
 
-	//TODO: Different days should now include all days-between and be
-	// specified on the activity groups as their possible slots (with weight)
-
-	// Lessons (Activities) start at index 1!
-	for aix := 1; aix < len(ttinfo.Activities); aix++ {
-
-		a := ttinfo.Activities[aix]
-
-		// Sort and compactify different-days activities
-		ddlist, ok := diffdays[aix]
-		if ok && len(ddlist) > 1 {
-			slices.Sort(ddlist)
-			ddlist = slices.Compact(ddlist)
-		}
-
-		/*TODO-- Sort and compactify parallel activities
-		plist, ok := parallels[aix]
-		if ok && len(plist) > 1 {
-			slices.Sort(plist)
-			plist = slices.Compact(plist)
-		}
-		a.Parallel = plist
-		*/
-
-		//TODO? a.ExtendedGroups = extendedGroups
-
-		//PossibleSlots: added later (see "makePossibleSlots"),
-		//DifferentDays: ddlist, // only if not fixed, see below
-		if !a.Fixed {
-			a.DifferentDays = ddlist
-		}
-		//--fmt.Printf("  ((%d)) %+v\n", aix, a.DifferentDays)
-		// The placement has not yet been tested, so it may still need to be
-		// revoked!
-	}
-
-	// Check parallel lessons for compatibility, etc.
-	for aix := 1; aix < len(ttinfo.Activities); aix++ {
-		a := ttinfo.Activities[aix]
-		if len(a.Parallel) != 0 {
-			continue
-		}
-		p := a.Placement
-		if a.Fixed {
-			if p < 0 {
-				base.Bug.Fatalf("Fixed activity with no time slot: %d\n", aix)
-			}
-			for _, paix := range a.Parallel {
-				pa := ttinfo.Activities[paix]
-				pp := pa.Placement
-				if pa.Fixed {
-					base.Warning.Printf("Parallel fixed lessons:\n"+
-						"  -- %d: %s\n  -- %d: %s\n",
-						aix,
-						ttinfo.View(ttinfo.Activities[aix].CourseInfo),
-						paix,
-						ttinfo.View(ttinfo.Activities[paix].CourseInfo),
-					)
-					if pp != p {
-						base.Error.Fatalln("Parallel fixed lessons have" +
-							" different times")
-					}
-				} else {
-					if pp != p {
-						if pp >= 0 {
-							base.Warning.Printf("Parallel lessons with"+
-								" different times:\n  -- %d: %s\n  -- %d: %s\n",
-								aix,
-								ttinfo.View(ttinfo.Activities[aix].CourseInfo),
-								paix,
-								ttinfo.View(ttinfo.Activities[paix].CourseInfo),
-							)
-						}
-						pa.Placement = p
-						pa.Fixed = true
-					}
-				}
-			}
-		} else {
-			if p < 0 {
-				continue
-			}
-			for _, paix := range a.Parallel {
-				pa := ttinfo.Activities[paix]
-				pp := pa.Placement
-				if pp >= 0 && pp != p {
-					// Warn and set ALL to -1
-					base.Warning.Printf("Parallel lessons with different"+
-						" times (placements revoked):\n  -- %d: %s\n",
-						aix,
-						ttinfo.View(ttinfo.Activities[aix].CourseInfo))
-					a.Placement = -1
-					for _, paix := range a.Parallel {
-						pa := ttinfo.Activities[paix]
-						pa.Placement = -1
-					}
-					break
-				}
-			}
-		}
-	}
 	// To avoid multiple placement of parallels, mark Activities which have
 	// been placed.
 	placed := make([]bool, len(ttinfo.Activities))

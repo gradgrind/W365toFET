@@ -153,3 +153,13 @@ type maxLateStarts struct {
 	Students                      string
 	Active                        bool
 }
+
+// A sameStartingTime constrains the listed activities to start at the
+// same time.
+type sameStartingTime struct {
+	XMLName              xml.Name `xml:"ConstraintActivitiesSameStartingTime"`
+	Weight_Percentage    string
+	Number_of_Activities int
+	Activity_Id          []int
+	Active               bool
+}

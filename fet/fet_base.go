@@ -11,6 +11,7 @@ import (
 )
 
 type Ref = base.Ref
+type ActivityIndex = ttbase.ActivityIndex
 
 const CLASS_GROUP_SEP = "."
 const ATOMIC_GROUP_SEP1 = "#"
@@ -190,7 +191,7 @@ func MakeFetFile(ttinfo *ttbase.TtInfo) (string, string) {
 
 	addTeacherConstraints(&fetinfo)
 	addClassConstraints(&fetinfo)
-	getExtraConstraints(&fetinfo)
+	fetinfo.getExtraConstraints()
 
 	// Convert lessonIdMap to string
 	idmlines := []string{}

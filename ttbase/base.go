@@ -1,3 +1,6 @@
+// Package ttbase extracts data from the base db (DbTopLevel) and processes
+// or reorganized it to be generally useful for timetable handling.
+// It provides functions/methods for using this data.
 package ttbase
 
 import (
@@ -93,12 +96,9 @@ type TtInfo struct {
 	HardParallelCourses map[Ref][]Ref
 	// SoftParallelCourses maps each course to a list of its soft
 	// parallel constraints, set in method [addParallelCoursesConstraint]
-	SoftParallelCourses map[Ref][]*base.ParallelCourses
+	SoftParallelCourses []*base.ParallelCourses
 
-	MinDaysBetweenLessons []MinDaysBetweenLessons
-	//TODO--?
-	ParallelLessons []ParallelLessons
-
+	//TODO
 	WITHOUT_ROOM_PLACEMENTS bool // ignore initial room placements
 }
 

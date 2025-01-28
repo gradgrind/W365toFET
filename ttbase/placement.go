@@ -6,6 +6,8 @@ import (
 	"slices"
 )
 
+//TODO: These need modifying to work with ActiviyGroup and TtLesson items
+
 // TODO: Can I safely assume that no attempt will be made to unplace fixed
 // Activities?
 func (ttinfo *TtInfo) UnplaceActivity(aix ActivityIndex) {

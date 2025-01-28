@@ -2,6 +2,7 @@ package fet
 
 import (
 	"W365toFET/base"
+	"W365toFET/ttbase"
 	"encoding/xml"
 	"strconv"
 )
@@ -60,15 +61,49 @@ type activityPreferredTimes struct {
 	Active                         bool
 }
 
-type sameStartingTime struct {
-	XMLName              xml.Name `xml:"ConstraintActivitiesSameStartingTime"`
-	Weight_Percentage    string
-	Number_of_Activities int
-	Activity_Id          []int
-	Active               bool
+// addSameStartingTime adds parallel constraints for the activities
+// of the courses in the supplied list.
+// This is done assuming that the FET activities correspond to the
+// [ttbase.Activity] items and not to the [ttbase.TtLesson] items.
+func (fetinfo *fetInfo) addSameStartingTime(
+	clist []Ref,
+	weight string, // call with weight2fet(weight), if not "100"
+) {
+	tclist := &fetinfo.fetdata.Time_Constraints_List
+	// Collect parallel activities from each of the courses
+	llists := map[int][]ActivityIndex{}
+	for _, cref := range clist {
+		cinfo := fetinfo.ttinfo.CourseInfo[cref]
+		for i, lix := range cinfo.Lessons {
+			llists[i] = append(llists[i], lix)
+		}
+	}
+	// Add the constraints
+	for i := 0; i < len(llists); i++ {
+		llist := llists[i]
+		tclist.ConstraintActivitiesSameStartingTime = append(
+			tclist.ConstraintActivitiesSameStartingTime,
+			sameStartingTime{
+				Weight_Percentage:    weight,
+				Number_of_Activities: len(llist),
+				Activity_Id:          llist,
+				Active:               true,
+			})
+	}
 }
 
-func getExtraConstraints(fetinfo *fetInfo) {
+// TODO: This will be rather difficult to do with the supplied data!
+// Unfortunately it has been too far processed for this type of constraint.
+// I would need to get ActivityIndexes from the LessonUnitIndexes and
+// also filter out duplicate constraints ...
+// This would be easier if an earlier form of the data was available!
+// addDaysBetween adds MinDaysBetweenActivities constraints for the
+// lessons in the supplied ActivityGroup.
+func (fetinfo *fetInfo) addDaysBetween(ag *ttbase.ActivityGroup) {
+
+}
+
+func (fetinfo *fetInfo) getExtraConstraints() {
 	tclist := &fetinfo.fetdata.Time_Constraints_List
 	ttinfo := fetinfo.ttinfo
 
@@ -90,17 +125,8 @@ func getExtraConstraints(fetinfo *fetInfo) {
 			})
 	}
 
-	for _, pl := range ttinfo.ParallelLessons {
-		for _, alist := range pl.LessonGroups {
-			tclist.ConstraintActivitiesSameStartingTime = append(
-				tclist.ConstraintActivitiesSameStartingTime,
-				sameStartingTime{
-					Weight_Percentage:    weight2fet(pl.Weight),
-					Number_of_Activities: len(alist),
-					Activity_Id:          alist,
-					Active:               true,
-				})
-		}
+	for _, pl := range ttinfo.SoftParallelCourses {
+		fetinfo.addSameStartingTime(pl.Courses, weight2fet(pl.Weight))
 	}
 
 	for _, c := range ttinfo.Constraints["LessonsEndDay"] {
