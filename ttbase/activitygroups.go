@@ -22,7 +22,7 @@ type TtLesson struct {
 	// it is not dynamic so it is just be a "copy" of the ActivityGroup field
 	Placement   SlotIndex
 	Fixed       bool
-	DaysBetween []DaysBetweenConstraint
+	DaysBetween []DaysBetweenLessons
 }
 
 type TtPlacement struct {
@@ -160,53 +160,3 @@ func (ttinfo *TtInfo) PrepareActivityGroups() {
 		}
 	}
 }
-
-// TODO
-func (ttinfo *TtInfo) processDaysBetweenConstraints() {
-	// Sort the constraints according to their activity groups.
-	agconstraints := map[ActivityGroupIndex][]*base.DaysBetween{}
-	for _, c := range ttinfo.Constraints["DAYS_BETWEEN"] {
-		dbc := c.(*base.DaysBetween)
-		for _, cref := range dbc.Courses {
-			agix := ttinfo.Placements.CourseActivityGroup[cref]
-			agconstraints[agix] = append(agconstraints[agix], dbc)
-		}
-	}
-	//TODO ...
-
-	// TODO ...
-	//
-	//	ttinfo.Constraints["DAYS_BETWEEN_JOIN"]
-}
-
-/*TODO
-
-	// Process DAYS_BETWEEN constraints (including automatic ones)
-	dbllist := ttinfo.processDaysBetween(ag)
-
-    for i, a := range alist {
-
-        // Collect days-between constraints
-        dbclist := []DaysBetweenConstraint{}
-        lulist := []int{}
-        for j := range alist {
-            if j != i {
-                lulist = append(lulist, ttli0+j)
-            }
-        }
-        for _, dbl := range dbllist {
-            dbclist = append(dbclist, DaysBetweenConstraint{
-                Weight: dbl.Weight,
-                // HoursGap assumes the use of an adequately long
-                // DayLength, including buffer space at the end of the
-                // real lesson slots
-                HoursGap:             dbl.DayGap * ttinfo.DayLength,
-                ConsecutiveIfSameDay: dbl.ConsecutiveIfSameDay,
-                LessonUnits:          lulist,
-            })
-        }
-
-    // Process DAYS_BETWEEN_JOIN constraints
-	ttinfo.processCrossDaysBetween()
-
-*/

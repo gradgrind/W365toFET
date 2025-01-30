@@ -219,6 +219,8 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 
 	// Add the remaining Activity information
 	ttinfo.addActivityInfo()
+
+	ttinfo.processDaysBetweenConstraints()
 }
 
 // orderResources generates an ordering index for each of the resources,
