@@ -51,9 +51,6 @@ type Activity struct {
 // can be checked for.
 func (ttinfo *TtInfo) addActivityInfo() {
 	//g2tt := ttinfo.AtomicGroupIndexes
-	// Collect non-fixed activities which need placing
-	toplace := []ActivityIndex{}
-
 	ttinfo.collectCourseResources()
 
 	// Complete the Activity items for each course
@@ -107,116 +104,6 @@ func (ttinfo *TtInfo) addActivityInfo() {
 	}
 
 	ttinfo.PrepareActivityGroups()
-
-	/////////-
-
-	//TODO: How much of the following is still needed, and in what form?
-
-	// To avoid multiple placement of parallels, mark Activities which have
-	// been placed.
-	placed := make([]bool, len(ttinfo.Activities))
-
-	// First place the fixed lessons, then build the PossibleSlots for
-	// non-fixed lessons.
-	for aix := 1; aix < len(ttinfo.Activities); aix++ {
-		a := ttinfo.Activities[aix]
-		p := a.Placement
-
-		if p >= 0 {
-			if placed[aix] {
-				continue
-			}
-
-			if a.Fixed {
-				// Check for end-of-day problems when duration > 1
-				h := p % ttinfo.DayLength
-				if h+a.Duration > ttinfo.NHours {
-					base.Error.Fatalf(
-						"Placement for Fixed Activity %d @ %d invalid:\n"+
-							"  -- %s\n",
-						aix, p, ttinfo.View(a.CourseInfo))
-					//a.XRooms = a.XRooms[:0]
-				}
-				if ttinfo.TestPlacement(aix, p) {
-					// Perform placement
-					ttinfo.PlaceActivity(aix, p)
-					placed[aix] = true
-					for _, paix := range a.Parallel {
-						placed[paix] = true
-					}
-				} else {
-					base.Error.Fatalf(
-						"Placement of Fixed Activity %d @ %d failed:\n"+
-							"  -- %s\n",
-						aix, p, ttinfo.View(a.CourseInfo))
-					//a.XRooms = a.XRooms[:0]
-				}
-			} else {
-				toplace = append(toplace, aix)
-			}
-		}
-	}
-
-	// Build PossibleSlots
-	ttinfo.makePossibleSlots()
-
-	// Place non-fixed lessons
-	for _, aix := range toplace {
-		if placed[aix] {
-			continue
-		}
-		a := ttinfo.Activities[aix]
-		p := a.Placement
-		if slices.Contains(a.PossibleSlots, p) &&
-			ttinfo.TestPlacement(aix, p) {
-
-			// Perform placement
-			ttinfo.PlaceActivity(aix, p)
-			placed[aix] = true
-			for _, paix := range a.Parallel {
-				placed[paix] = true
-			}
-		} else {
-			// Need CourseInfo for reporting details
-			ttl := ttinfo.Activities[aix-1]
-			cinfo := ttl.CourseInfo
-			//
-			base.Warning.Printf(
-				"Placement of Activity %d @ %d failed:\n"+
-					"  -- %s\n",
-				aix, p, ttinfo.View(cinfo))
-			a.Placement = -1
-			a.XRooms = a.XRooms[:0]
-		}
-	}
-
-	// Add room choices where possible.
-	for aix := 1; aix < len(ttinfo.Activities); aix++ {
-		a := ttinfo.Activities[aix]
-		if len(a.XRooms) != 0 {
-			var rnew []ResourceIndex
-			p := a.Placement
-			for _, rix := range a.XRooms {
-				if rix < 0 {
-					continue
-				}
-				slot := rix*ttinfo.SlotsPerWeek + p
-				if ttinfo.TtSlots[slot] == 0 {
-					ttinfo.TtSlots[slot] = aix
-				} else {
-					base.Warning.Printf(
-						"Lesson in course %s cannot use room %s\n",
-						ttinfo.View(a.CourseInfo),
-						ttinfo.Resources[rix].(*base.Room).Tag)
-					rnew = append(rnew, rix)
-				}
-			}
-			if len(rnew) != 0 {
-				a.XRooms = a.XRooms[:len(rnew)]
-				copy(a.XRooms, rnew)
-			}
-		}
-	}
 }
 
 // rclfunc uses recursion to match the rooms to the room-choice list,

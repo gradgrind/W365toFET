@@ -6,7 +6,102 @@ import (
 	"slices"
 )
 
-//TODO: These need modifying to work with ActiviyGroup and TtLesson items
+//TODO: These functions need modifying to work with ActiviyGroup and TtLesson items
+
+func (ttinfo *TtInfo) initialPlacement() {
+	ttplaces := ttinfo.Placements
+
+	//TODO: How much of the following is still needed, and in what form?
+
+	// Collect non-fixed lessons which need placing
+	toplace := []LessonUnitIndex{}
+
+	// First place the fixed lessons, then build the PossibleSlots for
+	// non-fixed lessons.
+	for _, ag := range ttplaces.ActivityGroups {
+
+		for _, lix := range ag.LessonUnits {
+			l := ttplaces.TtLessons[lix]
+			p := l.Placement
+			if p >= 0 {
+				if !l.Fixed {
+					toplace = append(toplace, lix)
+					continue
+				}
+				if ttinfo.TestPlacement(lix, p) {
+					// Perform placement
+					ttinfo.PlaceActivity(lix, p)
+				} else {
+					//TODO?
+					//a.XRooms = a.XRooms[:0]
+					base.Error.Fatalf(
+						"Placement of Fixed Activity %d @ %d failed:\n"+
+							"  Course -- %s (or parallel)\n",
+						lix, p, ttinfo.View(ttinfo.CourseInfo[ag.Courses[0]]))
+				}
+			}
+		}
+	}
+
+	// Build PossibleSlots
+	//TODO
+	ttinfo.makePossibleSlots()
+
+	// Place non-fixed lessons
+	for _, lix := range toplace {
+		ttl := ttplaces.TtLessons[lix]
+		p := ttl.Placement
+
+		if slices.Contains(ttl.PossibleSlots, p) &&
+			ttinfo.TestPlacement(lix, p) {
+
+			// Perform placement
+			ttinfo.PlaceActivity(lix, p)
+		} else {
+			// Need CourseInfo for reporting details
+
+			//TODO: the TtLesson items need a reference to the activity group
+
+			ttl := ttinfo.Activities[aix-1]
+			cinfo := ttl.CourseInfo
+			//
+			base.Warning.Printf(
+				"Placement of Activity %d @ %d failed:\n"+
+					"  -- %s\n",
+				aix, p, ttinfo.View(cinfo))
+			a.Placement = -1
+			a.XRooms = a.XRooms[:0]
+		}
+	}
+
+	// Add room choices where possible.
+	for aix := 1; aix < len(ttinfo.Activities); aix++ {
+		a := ttinfo.Activities[aix]
+		if len(a.XRooms) != 0 {
+			var rnew []ResourceIndex
+			p := a.Placement
+			for _, rix := range a.XRooms {
+				if rix < 0 {
+					continue
+				}
+				slot := rix*ttinfo.SlotsPerWeek + p
+				if ttinfo.TtSlots[slot] == 0 {
+					ttinfo.TtSlots[slot] = aix
+				} else {
+					base.Warning.Printf(
+						"Lesson in course %s cannot use room %s\n",
+						ttinfo.View(a.CourseInfo),
+						ttinfo.Resources[rix].(*base.Room).Tag)
+					rnew = append(rnew, rix)
+				}
+			}
+			if len(rnew) != 0 {
+				a.XRooms = a.XRooms[:len(rnew)]
+				copy(a.XRooms, rnew)
+			}
+		}
+	}
+}
 
 // TODO: Can I safely assume that no attempt will be made to unplace fixed
 // Activities?

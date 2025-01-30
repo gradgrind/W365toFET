@@ -34,7 +34,7 @@ type TtInfo struct {
 	// end of each day to ease handling of constraints which relate to days.
 	// It should be (at least) 2 * NHours - 1.
 	DayLength    int
-	SlotsPerWeek int // NDays * NHours
+	SlotsPerWeek int // NDays * DayLength
 	PMStart      int // index (0-based) of first afternoon hour
 	// LunchTimes is a contiguous, ordered list of hours (0-based indexes)
 	// in which a lunch break can be taken
@@ -126,6 +126,7 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 		DayLength:    daylength,
 		SlotsPerWeek: ndays * daylength,
 	}
+	ttinfo.blockPadding() // block the extra slots at the end of each day
 
 	// Build Ref -> Tag mapping for subjects, teachers, rooms, classes
 	// and groups. Set up this mapping for subjects, rooms and teachers.

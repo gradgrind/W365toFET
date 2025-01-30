@@ -35,6 +35,21 @@ func (ttinfo *TtInfo) addBlockers() {
 	}
 }
 
+// blockPadding sets the time-slots which are only there as padding (the
+// ones at the end of each day) to a blocking value.
+func (ttinfo *TtInfo) blockPadding() {
+	// Iterate over all resources
+	for rix := 0; rix < len(ttinfo.Resources); rix++ {
+		// ... and all days
+		for d := 0; d < ttinfo.NDays; d++ {
+			for h := ttinfo.NHours; h < ttinfo.DayLength; h++ {
+				p := d*ttinfo.DayLength + h
+				ttinfo.TtSlots[rix*ttinfo.SlotsPerWeek+p] = BLOCKED_ACTIVITY
+			}
+		}
+	}
+}
+
 func (ttinfo *TtInfo) blockResource(
 	rix ResourceIndex,
 	timeslots []base.TimeSlot,
