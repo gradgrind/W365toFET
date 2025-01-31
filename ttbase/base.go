@@ -39,10 +39,6 @@ type TtInfo struct {
 	// LunchTimes is a contiguous, ordered list of hours (0-based indexes)
 	// in which a lunch break can be taken
 	LunchTimes []int
-	// Activities provides indexed access to all the [Activity] items, via
-	// pointers. The first item should be free, as index 0 is used to
-	// indicate "no activity".
-	Activities []*Activity
 	// Resources provides indexed access to all resources (teachers,
 	// atomic student groups, rooms), via pointers. Type any is used
 	// rather than an interface because the resources are partly from
@@ -50,9 +46,11 @@ type TtInfo struct {
 	Resources []any // pointers to resource elements
 	// Placements is used for lesson (in the form of TtLesson items) placement
 	Placements *TtPlacement
+
+	//TODO--?
 	// TtSlots contains a full week of time-slots for each resource,
 	// with the same indexing as Resources
-	TtSlots []ActivityIndex
+	//TtSlots []ActivityIndex
 
 	// "Convenience" data
 
@@ -144,10 +142,12 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 
 	// Get the course info and generate the Activities list – though some
 	// fields will not yet be properly set.
-	gatherCourseInfo(ttinfo) // must be before call to filterDivisions
+	ttinfo.gatherCourseInfo()
 
-	// Get filtered class divisions (only those with lessons)
-	filterDivisions(ttinfo)
+	// Get filtered class divisions (only those with lessons). This uses
+	// the filtered courses (only those with lessons) set up by the call to
+	// [gatherCourseInfo].
+	ttinfo.filterDivisions()
 
 	// Handle the classes and groups (those used for lessons)
 	for cref, divs := range ttinfo.ClassDivisions {

@@ -15,7 +15,7 @@ type CourseInfo struct {
 	Teachers  []Ref
 	Room      VirtualRoom
 	Resources []ResourceIndex
-	Lessons   []ActivityIndex
+	Lessons   []*base.Lesson
 }
 
 // Make a shortish string view of a CourseInfo – can be useful in tests
@@ -56,7 +56,7 @@ func (ttinfo *TtInfo) View(cinfo *CourseInfo) string {
 	)
 }
 
-func gatherCourseInfo(ttinfo *TtInfo) {
+func (ttinfo *TtInfo) gatherCourseInfo() {
 	// Gather the Groups, Teachers and "rooms" for the Courses and
 	// SuperCourses – only those with lessons.
 	// Gather the Lessons for these Courses and SuperCourses.
@@ -65,7 +65,7 @@ func gatherCourseInfo(ttinfo *TtInfo) {
 	db := ttinfo.Db
 
 	// Collect Courses with Lessons.
-	roomData := collectCourses(ttinfo)
+	roomData := ttinfo.collectCourses()
 
 	// Prepare the internal room structure, filtering the room lists of
 	// the SuperCourses.
@@ -313,14 +313,16 @@ func (ttinfo *TtInfo) checkAllocatedRooms(cinfo *CourseInfo) {
 	}
 }
 
-func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
-	// Collect Courses with lessons/activities.
+// collectCourses gathers the courses ([base.Course] and [base.SuperCourse])
+// elements with lessons, retaining the order of the source structures.
+// The [CourseInfo] items generated for the supercourses combine the
+// resources of their subcourses.
+func (ttinfo *TtInfo) collectCourses() map[Ref][]Ref {
 	ttinfo.CourseInfo = map[Ref]*CourseInfo{}
-	ttinfo.Activities = make([]*Activity, 1) // 1-based indexing, 0 is invalid
-	roomData := map[Ref][]Ref{}              // course -> []room (any sort of "room")
+	roomData := map[Ref][]Ref{} // course -> []room (any sort of "room")
 	db := ttinfo.Db
 
-	// Create the CourseInfos and Activities.
+	// Create the CourseInfo items.
 	// Gather first the SuperCourses, then the Courses.
 
 	cinfo_list := []*CourseInfo{}
@@ -355,7 +357,7 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 			Groups:   slices.Compact(groups),
 			Teachers: slices.Compact(teachers),
 			//Room: filled later
-			Lessons: []ActivityIndex{},
+			Lessons: []*base.Lesson{},
 		})
 		clessons = append(clessons, spc.Lessons)
 		roomData[cref] = slices.Compact(rooms)
@@ -372,7 +374,7 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 			Groups:   c.Groups,
 			Teachers: c.Teachers,
 			//Room: filled later
-			Lessons: []ActivityIndex{},
+			Lessons: []*base.Lesson{},
 		})
 		clessons = append(clessons, c.Lessons)
 		roomData[cref] = rooms
@@ -386,31 +388,22 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 		llist := clessons[i]
 		for _, lref := range llist {
 			l := db.Elements[lref].(*base.Lesson)
+			// A stand-in lesson can be in any student group, so set
+			// the Groups field to nil to indicate this.
+			//TODO: Explain why this is necessary!
 			if slices.Contains(l.Flags, "SubstitutionService") {
 				cinfo.Groups = nil
 			}
-			// Index of new Activity:
-			ttlix := len(ttinfo.Activities)
-			p := -1
-			if l.Day >= 0 {
-				p = l.Day*ttinfo.DayLength + l.Hour
-			}
-			ttl := &Activity{
-				Index:      ttlix,
-				Placement:  p,
-				Duration:   l.Duration,
-				Fixed:      l.Fixed,
-				Lesson:     l,
-				CourseInfo: cinfo,
-			}
-			ttinfo.Activities = append(ttinfo.Activities, ttl)
-			cinfo.Lessons = append(cinfo.Lessons, ttlix)
+			cinfo.Lessons = append(cinfo.Lessons, l)
 		}
 
 		// Add to CourseInfo map
 		ttinfo.CourseInfo[cinfo.Id] = cinfo
 	}
-	return roomData
+
+	//TODO?
+	ttinfo.filterRoomData(roomData)
+	//return roomData
 }
 
 // for testing

@@ -5,37 +5,6 @@ import (
 	"strings"
 )
 
-func (db *DbTopLevel) readSubjects(newdb *base.DbTopLevel) {
-	db.SubjectMap = map[Ref]*base.Subject{}
-	db.SubjectTags = map[string]Ref{}
-	for _, e := range db.Subjects {
-		// Perform some checks and add to the SubjectTags map.
-		_, nok := db.SubjectTags[e.Tag]
-		if nok {
-			base.Error.Fatalf("Subject Tag (Shortcut) defined twice: %s\n",
-				e.Tag)
-		}
-		db.SubjectTags[e.Tag] = e.Id
-		//Copy data to base db.
-		n := newdb.NewSubject(e.Id)
-		n.Tag = e.Tag
-		n.Name = e.Name
-		db.SubjectMap[e.Id] = n
-	}
-}
-
-func (db *DbTopLevel) makeNewSubject(
-	newdb *base.DbTopLevel,
-	tag string,
-	name string,
-) base.Ref {
-	s := newdb.NewSubject("")
-	s.Tag = tag
-	s.Name = name
-	db.SubjectTags[tag] = s.Id
-	return s.Id
-}
-
 func (db *DbTopLevel) readCourses(newdb *base.DbTopLevel) {
 	db.CourseMap = map[Ref]bool{}
 	for _, e := range db.Courses {
@@ -131,9 +100,9 @@ func (db *DbTopLevel) getCourseSubject(
 		sklist := []string{}
 		for _, wsid := range srefs {
 			// Need Tag/Shortcut field
-			s, ok := db.SubjectMap[wsid]
+			stag, ok := db.SubjectMap[wsid]
 			if ok {
-				sklist = append(sklist, s.Tag)
+				sklist = append(sklist, stag)
 			} else {
 				base.Error.Fatalf(msg, courseId, wsid)
 			}
@@ -180,8 +149,7 @@ func (db *DbTopLevel) getCourseRoom(
 		if ok {
 			room = rref0
 		} else {
-			_, ok := db.RoomGroupMap[rref0]
-			if ok {
+			if db.RoomGroupMap[rref0] {
 				room = rref0
 			} else {
 				base.Error.Printf("Invalid room in Course/SubCourse %s:\n  %s\n",

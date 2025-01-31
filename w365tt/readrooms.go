@@ -8,7 +8,7 @@ import (
 )
 
 func (db *DbTopLevel) readRooms(newdb *base.DbTopLevel) {
-	db.RealRooms = map[base.Ref]*base.Room{}
+	db.RealRooms = map[base.Ref]string{}
 	db.RoomTags = map[string]base.Ref{}
 	db.RoomChoiceNames = map[string]base.Ref{}
 	for _, e := range db.Rooms {
@@ -26,13 +26,13 @@ func (db *DbTopLevel) readRooms(newdb *base.DbTopLevel) {
 		r.Tag = e.Tag
 		r.Name = e.Name
 		r.NotAvailable = tsl
-		db.RealRooms[e.Id] = r
+		db.RealRooms[e.Id] = e.Tag
 	}
 }
 
 // In the case of RoomGroups, cater for empty Tags (Shortcuts).
 func (db *DbTopLevel) readRoomGroups(newdb *base.DbTopLevel) {
-	db.RoomGroupMap = map[Ref]*base.RoomGroup{}
+	db.RoomGroupMap = map[Ref]bool{}
 	for _, e := range db.RoomGroups {
 		if e.Tag != "" {
 			_, nok := db.RoomTags[e.Tag]
@@ -48,7 +48,7 @@ func (db *DbTopLevel) readRoomGroups(newdb *base.DbTopLevel) {
 		r.Tag = e.Tag
 		r.Name = e.Name
 		r.Rooms = e.Rooms
-		db.RoomGroupMap[e.Id] = r
+		db.RoomGroupMap[e.Id] = true
 	}
 }
 
@@ -59,10 +59,10 @@ func (db *DbTopLevel) checkRoomGroups(newdb *base.DbTopLevel) {
 		taglist := []string{}
 		reflist := []Ref{}
 		for _, rref := range e.Rooms {
-			r, ok := db.RealRooms[rref]
+			rtag, ok := db.RealRooms[rref]
 			if ok {
 				reflist = append(reflist, rref)
-				taglist = append(taglist, r.Tag)
+				taglist = append(taglist, rtag)
 				continue
 
 			}
@@ -106,10 +106,10 @@ func (db *DbTopLevel) makeRoomChoiceGroup(
 	taglist := []string{}
 	reflist := []Ref{}
 	for _, rref := range rooms {
-		r, ok := db.RealRooms[rref]
+		rtag, ok := db.RealRooms[rref]
 		if ok {
 			reflist = append(reflist, rref)
-			taglist = append(taglist, r.Tag)
+			taglist = append(taglist, rtag)
 			continue
 		}
 		erlist = append(erlist,

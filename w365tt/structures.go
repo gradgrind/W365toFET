@@ -197,16 +197,29 @@ type DbTopLevel struct {
 	EpochPlans   []*EpochPlan
 	Constraints  []map[string]any
 
-	// These fields do not belong in the JSON object.
-	RealRooms       map[Ref]*base.Room      `json:"-"`
-	RoomGroupMap    map[Ref]*base.RoomGroup `json:"-"`
-	SubjectMap      map[Ref]*base.Subject   `json:"-"`
-	GroupRefMap     map[Ref]base.Ref        `json:"-"`
-	TeacherMap      map[Ref]bool            `json:"-"`
-	CourseMap       map[Ref]bool            `json:"-"`
-	SubjectTags     map[string]Ref          `json:"-"`
-	RoomTags        map[string]Ref          `json:"-"`
-	RoomChoiceNames map[string]Ref          `json:"-"`
+	// These fields do not belong in the JSON object:
+
+	// RealRooms is used to check the validity of a (real) room reference
+	// and to access the room's tag/shortcut
+	RealRooms map[Ref]string `json:"-"`
+	// RoomGroupMap is used to check the validity of a room-group reference
+	RoomGroupMap map[Ref]bool `json:"-"`
+	// SubjectMap is used to check the validity of a subject reference
+	// and to access the subject's tag/shortcut
+	SubjectMap map[Ref]string `json:"-"`
+	// GroupRefMap is used to check the validity os a group reference and to
+	// replace class references in courses by class-group references
+	GroupRefMap map[Ref]base.Ref `json:"-"`
+	// TeacherMap is used to check the validity of a teacher reference
+	TeacherMap map[Ref]bool `json:"-"`
+	CourseMap  map[Ref]bool `json:"-"`
+	// SubjectTags maps a subject's tag/shortcut to its reference/Id
+	SubjectTags map[string]Ref `json:"-"`
+	// RoomTags maps a subject's tag/shortcut to its reference/Id
+	RoomTags map[string]Ref `json:"-"`
+	// RoomChoiceNames allows reuse of [RoomChoice] elements, it maps the
+	// name, constructed from the component tags, to the reference/Id
+	RoomChoiceNames map[string]Ref `json:"-"`
 }
 
 // Block all afternoons if nAfternnons == 0.

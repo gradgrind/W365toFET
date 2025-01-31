@@ -125,6 +125,9 @@ func (db *DbTopLevel) NewLesson(ref Ref) *Lesson {
 	return e
 }
 
+// PrepareDB is called after the initial loading of the data to perform
+// a couple of checks and to complete the initialization of the basic data
+// structures.
 func (db *DbTopLevel) PrepareDb() {
 	if db.Info.MiddayBreak == nil {
 		db.Info.MiddayBreak = []int{}

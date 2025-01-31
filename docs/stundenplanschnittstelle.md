@@ -237,7 +237,7 @@ In Waldorf 365 ist eine Division ein Top-Level-Objekt. Deswegen haben sie ein "I
 {
     "Id":           "00c1ec1b-5f65-43c1-9a73-5fff8d8751e2",
     "Type":         "Group",
-	"Shortcut":     "F",
+	"Shortcut":     "F"
 }
 ```
 
@@ -320,6 +320,7 @@ Ein SubCourse-Element ist fast genau wie ein Course-Element, darf aber nicht als
 	"LocalRooms":   [
         "f28f3540-dd02-4c6d-a166-78bb359c1f26"
     ],
+    "Flags":    ["SubstitutionService"],
     "Background": "#FFE080",
     "Footnote": "Eine Anmerkung"
 }
@@ -327,13 +328,15 @@ Ein SubCourse-Element ist fast genau wie ein Course-Element, darf aber nicht als
 
 "Course" kann ein Course- oder ein SuperCourse-Element sein. "LocalRooms" sind die Room-Elemente (nur reale Räume), die dem Lesson-Element zugeordnet sind. Sie sollten kompatibel mit den "PreferredRooms" des Kurses sein.
 
+Wenn ein "Lesson" den Eintrag "SubstitutionService" in der "Flags"-Array hat, wird die Klasse (falls vorhanden) des entsprechenden Kurs ("Course"-Eigenschaft) als „Vertretungsplan-Klasse“ ausgesondert. 
+
 Ein nicht platziertes Lesson-Element hätte:
 
 ```
 	"Day":          -1,
 	"Hour":         -1,
     "Fixed":        false,
-    "LocalRooms":   []
+    "LocalRooms":   [],
 ```
 
 "Background" (Hintergrundfarbe) und "Footnote" sind für die Ausdrucke relevant. Die Farbe wird in der Form "#RRGGBB" erwartet. Wenn keine angegeben ist, wird die Voreinstellung im Typst-Skript benutzt.

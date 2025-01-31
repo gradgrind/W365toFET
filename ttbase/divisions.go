@@ -8,7 +8,7 @@ import (
 // containing only those Divisions which have Groups used in Lessons.
 // The result is saved to ttinfo.ClassDivisions using maps, so there is
 // no ordering.
-func filterDivisions(ttinfo *TtInfo) {
+func (ttinfo *TtInfo) filterDivisions() {
 	// Collect groups used in Lessons. Get them from the
 	// ttinfo.courseInfo.groups map, which only includes courses with lessons.
 	usedgroups := map[Ref]bool{}
