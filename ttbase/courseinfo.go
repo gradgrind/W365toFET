@@ -56,25 +56,108 @@ func (ttinfo *TtInfo) View(cinfo *CourseInfo) string {
 	)
 }
 
-func (ttinfo *TtInfo) gatherCourseInfo() {
-	// Gather the Groups, Teachers and "rooms" for the Courses and
-	// SuperCourses – only those with lessons.
-	// Gather the Lessons for these Courses and SuperCourses.
-	// Also, the SuperCourses (with lessons) get a list of their
-	// SubCourses.
+// collectCourses gathers the courses ([base.Course] and [base.SuperCourse])
+// elements with lessons, retaining the order of the source structures.
+// The [CourseInfo] items generated for the supercourses combine the
+// resources of their subcourses.
+func (ttinfo *TtInfo) collectCourses() {
+	ttinfo.CourseInfo = map[Ref]*CourseInfo{}
+	roomData := map[Ref][]Ref{} // course -> []room (any sort of "room")
 	db := ttinfo.Db
 
-	// Collect Courses with Lessons.
-	roomData := ttinfo.collectCourses()
+	// Create the CourseInfo items.
+	// Gather first the SuperCourses, then the Courses.
 
-	// Prepare the internal room structure, filtering the room lists of
-	// the SuperCourses.
+	cinfo_list := []*CourseInfo{}
+	clessons := [][]Ref{}
+	for _, spc := range db.SuperCourses {
+		cref := spc.Id
+		groups := []Ref{}
+		teachers := []Ref{}
+		rooms := []Ref{}
+		for _, sbcref := range spc.SubCourses {
+			sbc := db.Elements[sbcref].(*base.SubCourse)
+			// Add groups
+			if len(sbc.Groups) != 0 {
+				groups = append(groups, sbc.Groups...)
+			}
+			// Add teachers
+			if len(sbc.Teachers) != 0 {
+				teachers = append(teachers, sbc.Teachers...)
+			}
+			// Add rooms
+			if sbc.Room != "" {
+				rooms = append(rooms, sbc.Room)
+			}
+		}
+		// Eliminate duplicates by sorting and then compacting
+		slices.Sort(groups)
+		slices.Sort(teachers)
+		slices.Sort(rooms)
+		cinfo_list = append(cinfo_list, &CourseInfo{
+			Id:       cref,
+			Subject:  spc.Subject,
+			Groups:   slices.Compact(groups),
+			Teachers: slices.Compact(teachers),
+			//Room: filled later
+			Lessons: []*base.Lesson{},
+		})
+		clessons = append(clessons, spc.Lessons)
+		roomData[cref] = slices.Compact(rooms)
+	}
+	for _, c := range db.Courses {
+		cref := c.Id
+		rooms := []Ref{}
+		if c.Room != "" {
+			rooms = append(rooms, c.Room)
+		}
+		cinfo_list = append(cinfo_list, &CourseInfo{
+			Id:       cref,
+			Subject:  c.Subject,
+			Groups:   c.Groups,
+			Teachers: c.Teachers,
+			//Room: filled later
+			Lessons: []*base.Lesson{},
+		})
+		clessons = append(clessons, c.Lessons)
+		roomData[cref] = rooms
+	}
+
+	// Retain this ordered list of courses (with lessons)
+	ttinfo.LessonCourses = cinfo_list
+
+	for i, cinfo := range cinfo_list {
+		// Add lessons to CourseInfo
+		llist := clessons[i]
+		for _, lref := range llist {
+			l := db.Elements[lref].(*base.Lesson)
+			// A stand-in lesson can be in any student group, so set
+			// the Groups field to nil to indicate this.
+			//TODO: Explain why this is necessary!
+			if slices.Contains(l.Flags, "SubstitutionService") {
+				cinfo.Groups = nil
+			}
+			cinfo.Lessons = append(cinfo.Lessons, l)
+		}
+
+		// Add to CourseInfo map
+		ttinfo.CourseInfo[cinfo.Id] = cinfo
+	}
+
+	ttinfo.filterRoomData(roomData)
+}
+
+// filterRoomData prepares the internal room structures, filtering the room
+// lists of the SuperCourses.
+func (ttinfo *TtInfo) filterRoomData(roomData map[Ref][]Ref) {
+	db := ttinfo.Db
+
 	for cref, crlist := range roomData {
 		// Join all Rooms and the Rooms from RoomGroups into a "compulsory"
 		// list. Then go through the RoomChoiceGroups. If one contains a
 		// compulsory room, ignore the choice.
 		// The result is a list of Rooms and a list of Room-choice-lists,
-		// which can be converted into a tt virtual room.
+		// which can be combined in a [VirtualRoom].
 		rooms := []Ref{}
 		roomChoices := [][]Ref{}
 		for _, rref := range crlist {
@@ -246,11 +329,11 @@ func (ttinfo *TtInfo) gatherCourseInfo() {
 	}
 }
 
+// TODO
 func (ttinfo *TtInfo) checkAllocatedRooms(cinfo *CourseInfo) {
 	// Check the room allocations for the lessons of the given course.
 	// Report just one error per course.
-	for _, lix := range cinfo.Lessons {
-		l := ttinfo.Activities[lix].Lesson
+	for _, l := range cinfo.Lessons {
 		lrooms := l.Rooms
 		// If no rooms are allocated, don't regard this as invalid.
 		if len(lrooms) == 0 {
@@ -311,99 +394,6 @@ func (ttinfo *TtInfo) checkAllocatedRooms(cinfo *CourseInfo) {
 			return
 		}
 	}
-}
-
-// collectCourses gathers the courses ([base.Course] and [base.SuperCourse])
-// elements with lessons, retaining the order of the source structures.
-// The [CourseInfo] items generated for the supercourses combine the
-// resources of their subcourses.
-func (ttinfo *TtInfo) collectCourses() map[Ref][]Ref {
-	ttinfo.CourseInfo = map[Ref]*CourseInfo{}
-	roomData := map[Ref][]Ref{} // course -> []room (any sort of "room")
-	db := ttinfo.Db
-
-	// Create the CourseInfo items.
-	// Gather first the SuperCourses, then the Courses.
-
-	cinfo_list := []*CourseInfo{}
-	clessons := [][]Ref{}
-	for _, spc := range db.SuperCourses {
-		cref := spc.Id
-		groups := []Ref{}
-		teachers := []Ref{}
-		rooms := []Ref{}
-		for _, sbcref := range spc.SubCourses {
-			sbc := db.Elements[sbcref].(*base.SubCourse)
-			// Add groups
-			if len(sbc.Groups) != 0 {
-				groups = append(groups, sbc.Groups...)
-			}
-			// Add teachers
-			if len(sbc.Teachers) != 0 {
-				teachers = append(teachers, sbc.Teachers...)
-			}
-			// Add rooms
-			if sbc.Room != "" {
-				rooms = append(rooms, sbc.Room)
-			}
-		}
-		// Eliminate duplicates by sorting and then compacting
-		slices.Sort(groups)
-		slices.Sort(teachers)
-		slices.Sort(rooms)
-		cinfo_list = append(cinfo_list, &CourseInfo{
-			Id:       cref,
-			Subject:  spc.Subject,
-			Groups:   slices.Compact(groups),
-			Teachers: slices.Compact(teachers),
-			//Room: filled later
-			Lessons: []*base.Lesson{},
-		})
-		clessons = append(clessons, spc.Lessons)
-		roomData[cref] = slices.Compact(rooms)
-	}
-	for _, c := range db.Courses {
-		cref := c.Id
-		rooms := []Ref{}
-		if c.Room != "" {
-			rooms = append(rooms, c.Room)
-		}
-		cinfo_list = append(cinfo_list, &CourseInfo{
-			Id:       cref,
-			Subject:  c.Subject,
-			Groups:   c.Groups,
-			Teachers: c.Teachers,
-			//Room: filled later
-			Lessons: []*base.Lesson{},
-		})
-		clessons = append(clessons, c.Lessons)
-		roomData[cref] = rooms
-	}
-
-	// Retain this ordered list of courses (with lessons)
-	ttinfo.LessonCourses = cinfo_list
-
-	for i, cinfo := range cinfo_list {
-		// Add activities to CourseInfo
-		llist := clessons[i]
-		for _, lref := range llist {
-			l := db.Elements[lref].(*base.Lesson)
-			// A stand-in lesson can be in any student group, so set
-			// the Groups field to nil to indicate this.
-			//TODO: Explain why this is necessary!
-			if slices.Contains(l.Flags, "SubstitutionService") {
-				cinfo.Groups = nil
-			}
-			cinfo.Lessons = append(cinfo.Lessons, l)
-		}
-
-		// Add to CourseInfo map
-		ttinfo.CourseInfo[cinfo.Id] = cinfo
-	}
-
-	//TODO?
-	ttinfo.filterRoomData(roomData)
-	//return roomData
 }
 
 // for testing

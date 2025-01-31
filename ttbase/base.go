@@ -124,7 +124,6 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 		DayLength:    daylength,
 		SlotsPerWeek: ndays * daylength,
 	}
-	ttinfo.blockPadding() // block the extra slots at the end of each day
 
 	// Build Ref -> Tag mapping for subjects, teachers, rooms, classes
 	// and groups. Set up this mapping for subjects, rooms and teachers.
@@ -140,9 +139,9 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 		ref2Tag[r.Id] = r.Tag
 	}
 
-	// Get the course info and generate the Activities list – though some
-	// fields will not yet be properly set.
-	ttinfo.gatherCourseInfo()
+	// Generate the [CourseInfo] items and set up the references
+	// [TtInfo.CourseInfo] and [TtInfo.LessonCourses].
+	ttinfo.collectCourses()
 
 	// Get filtered class divisions (only those with lessons). This uses
 	// the filtered courses (only those with lessons) set up by the call to
@@ -168,12 +167,14 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	// for printing tag lists)
 	ttinfo.orderResources()
 
-	// Get "atomic" groups. The resources list (ttinfo.Resources) is begun
-	// with the atomic groups.
+	// Get "atomic" groups. The first elements of the resources list
+	// [TtInfo.Resources] are allocated to the atomic groups.
 	ttinfo.makeAtomicGroups()
 
 	return ttinfo
 }
+
+//TODO ...
 
 // PrepareCoreData adds teachers and (real) rooms to the resources list
 // (ttinfo.Resources).
@@ -189,12 +190,15 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 func (ttinfo *TtInfo) PrepareCoreData() {
 	db := ttinfo.Db
 
+	//TODO: This can be later? Indeed, the slots (in Placements) are not
+	// there yet ...
 	lt := len(db.Teachers)
 	lr := len(db.Rooms)
 
 	resix := ttinfo.NAtomicGroups
 	// Size the time-slot-array:
 	ttinfo.TtSlots = make([]ActivityIndex, (lt+lr+resix)*ttinfo.SlotsPerWeek)
+	ttinfo.blockPadding() // block the extra slots at the end of each day
 
 	// The AtomicGroup pointers are already at the beginning of the resources
 	// list. Add the teachers and rooms
@@ -212,6 +216,7 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 		resix++
 	}
 
+	//TODO: Still no slots ...
 	// Add the pseudo-activities arising from the NotAvailable lists
 	ttinfo.addBlockers()
 

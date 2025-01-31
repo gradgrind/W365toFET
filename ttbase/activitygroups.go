@@ -30,6 +30,7 @@ type TtPlacement struct {
 	// CourseActivityGroup maps a course to the index of its ActivityGroup
 	CourseActivityGroup map[Ref]ActivityGroupIndex
 	TtLessons           []*TtLesson
+	TtSlots             []LessonUnitIndex
 }
 
 // TODO: Should I link to the Activities? Maybe the Activities should link

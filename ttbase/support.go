@@ -1,5 +1,6 @@
 package ttbase
 
+/*
 import "fmt"
 
 // DEBUGGING only
@@ -29,3 +30,4 @@ func (ttinfo *TtInfo) CheckResourceIntegrity() {
 		}
 	}
 }
+*/
