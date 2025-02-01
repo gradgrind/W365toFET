@@ -325,9 +325,6 @@ func (ttinfo *TtInfo) filterRoomData(roomData map[Ref][]Ref) {
 			Rooms:       rooms,
 			RoomChoices: roomChoices,
 		}
-
-		// Check the allocated rooms at Lesson.Rooms
-		ttinfo.checkAllocatedRooms(cinfo)
 	}
 }
 
@@ -336,84 +333,117 @@ func (ttinfo *TtInfo) checkAllocatedRooms(cinfo *CourseInfo) {
 	// Unallocated room requirements are replaced by "", so that
 	// the lesson's Rooms field has the correct length.
 
-	//TODO?
-	// Report just one error per course.
-	// Get total number of rooms required
-	vr := cinfo.Room
-	nRooms := len(vr.Rooms) + len(vr.RoomChoices)
-	for _, l := range cinfo.Lessons {
-		lrooms := l.Rooms // the initial room allocation list
-		l.Rooms = make([]base.Ref, nRooms)
-		// If no rooms are allocated, don't regard this as invalid.
-		if len(lrooms) == 0 {
-			return
-		}
-		incomplete := false
-		// Check "compulsory" rooms
-		lrmap := map[Ref]bool{}
-		for _, rref := range lrooms {
-			lrmap[rref] = true
-		}
-		for i, rref := range vr.Rooms {
-			if lrmap[rref] {
-				delete(lrmap, rref)
-				l.Rooms[i] = rref
-			} else {
-				incomplete = true
+	for _, cinfo := range ttinfo.LessonCourses {
+		vr := cinfo.Room
+		nRooms := len(vr.Rooms) + len(vr.RoomChoices)
+		// Handle each lesson independently
+		for _, l := range cinfo.Lessons {
+			lrooms := l.Rooms // the initial room allocation list
+			l.Rooms = make([]base.Ref, nRooms)
+			// If no rooms are allocated, don't regard this as invalid.
+			if len(lrooms) == 0 {
+				return
 			}
-		}
-
-		// Check validity of "chosen" rooms, those remaining in lrmap.
-
-		nrc := len(vr.RoomChoices) // number of chosen rooms required
-		nl := len(lrmap)           // number of rooms still to check
-		cmap := make([]Ref, 0, nrc)
-
-		//TODO
-
-		// Use a recursive function to try to match the rooms to the choice
-		// lists. The parameter i is the index of the vr.RoomChoices list.
-		var fx func(i int) bool
-		fx = func(i int) bool {
-			if i == nrc {
-				cnt := 0
-				for _, rc := range cmap {
-					if rc != "" {
-						cnt++
-					}
+			complete := true // whether all requirements are fulfilled
+			// Check "compulsory" rooms.
+			// First collect all allocated rooms in a set.
+			lrmap := map[Ref]bool{}
+			for _, rref := range lrooms {
+				lrmap[rref] = true
+			}
+			// Remove those that belong to the "compulsory" list
+			for i, rref := range vr.Rooms {
+				if lrmap[rref] {
+					delete(lrmap, rref)
+					l.Rooms[i] = rref
+				} else {
+					// This "compulsory" room is not allocated
+					complete = false
 				}
-				return cnt == nl
 			}
 
-			// Look for a room in the choice list which is still in the
-			// list of chosen rooms (lrmap)
-			for _, rref := range vr.RoomChoices[i] {
-				if lrmap[rref] && !slices.Contains(cmap, rref) {
-					cmap = append(cmap, rref)
-					// Continue search with next choice list
-					if fx(i + 1) {
-						// The match worked
+			// Check validity of "chosen" rooms, those remaining in lrmap.
+
+			nrc := len(vr.RoomChoices) // number of chosen rooms required
+			nl := len(lrmap)           // number of rooms still to check
+			if nl < nrc {
+				complete = false
+			}
+			cmap := make([]Ref, 0, nrc)
+
+			// Use a recursive function to try to match the rooms to the choice
+			// lists. The parameter i is the index of the vr.RoomChoices list,
+			// n is the number of unmatched rooms from lrmap.
+
+			nmin := nl                      // best result so far
+			rmin := l.Rooms[len(vr.Rooms):] // rooms for best result so far
+			// When the remaining number of unallocated rooms reaches nend,
+			// a stoppping point has been reached.
+			// reached
+			nend := 0
+			if nl > nrc {
+				nend = nl - nrc
+			}
+
+			var fx func(i int, n int) bool
+			fx = func(i int, n int) bool {
+				if i == nrc {
+					if n == nend {
+						// An "optimal" selection has been found
+						nmin = n
+						copy(rmin, cmap)
 						return true
 					}
-					// The rest of the rooms didn't match, try again with
-					// the next room in the choice list
-					cmap = cmap[:i]
+					if n < nmin {
+						// An improvement on the current best ...
+						nmin = n
+						copy(rmin, cmap)
+					}
+					// ... but still not guaranteed optimal
+					return false
 				}
-			}
-			// No match found in this choice list
-			cmap = append(cmap, "")
-			return false
-		}
 
-		if !fx(0) {
+				// Look for a room in the choice list which is still in the
+				// list of chosen rooms (lrmap)
+				for _, rref := range vr.RoomChoices[i] {
+					if lrmap[rref] && !slices.Contains(cmap, rref) {
+						cmap = append(cmap, rref)
+						// Continue search with next choice list
+						if fx(i+1, n-1) {
+							// The match worked
+							return true
+						}
+						// The rest of the rooms didn't match, or weren't
+						// optimal. Try again with the next room in the
+						// choice list.
+						cmap = cmap[:i]
+					}
+				}
+				// No match found in this choice list
+				cmap = append(cmap, "")
+				return fx(i+1, n)
+			}
+
+			if !fx(0, nl) {
+				complete = false
+			}
+
 			rlist := []string{}
+			for _, rref := range rmin {
+				delete(lrmap, rref)
+			}
 			for rref := range lrmap {
 				rlist = append(rlist, ttinfo.Ref2Tag[rref])
 			}
-			base.Warning.Printf("Lesson in Course %s has invalid"+
-				" room-choice allocations: %+v\n",
-				ttinfo.View(cinfo), rlist)
-			return
+			if len(rlist) != 0 {
+				base.Warning.Printf("Lesson in Course %s has invalid"+
+					" room allocations: %+v\n",
+					ttinfo.View(cinfo), rlist)
+			} else if !complete {
+				base.Warning.Printf("Lesson in Course %s has incomplete"+
+					" room allocations\n",
+					ttinfo.View(cinfo))
+			}
 		}
 	}
 }

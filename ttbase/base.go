@@ -211,6 +211,9 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 		ttinfo.Resources = append(ttinfo.Resources, r)
 	}
 
+	// Check the allocated rooms at Lesson.Rooms
+	ttinfo.checkAllocatedRooms()
+
 	// Set the Resources field of the [CourseInfo] items
 	ttinfo.collectCourseResources()
 
