@@ -13,8 +13,6 @@ type ActivityGroup struct {
 	Resources   []ResourceIndex
 	Courses     []Ref
 	LessonUnits []LessonUnitIndex
-
-	//TODO--? PossiblePlacements [][]SlotIndex
 }
 
 type TtLesson struct {
@@ -23,6 +21,9 @@ type TtLesson struct {
 	Placement   SlotIndex
 	Fixed       bool
 	DaysBetween []DaysBetweenLessons
+	// XRooms is a list of chosen rooms, distinct from the required rooms
+	XRooms        []ResourceIndex
+	PossibleSlots []SlotIndex
 }
 
 type TtPlacement struct {

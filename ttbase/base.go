@@ -220,12 +220,12 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 	// Set up the lesson-placement mechanism with [TtInfo.Placements]
 	ttinfo.PrepareActivityGroups()
 
-	//TODO --?
-
-	// Add the remaining Activity information
-	ttinfo.addActivityInfo()
-
 	ttinfo.processDaysBetweenConstraints()
+
+	//TODO?
+	// Place fixed lessons?
+	// Set up possible slots?
+	// Place non-fixed lessons?
 }
 
 // orderResources generates an ordering index for each of the resources,
