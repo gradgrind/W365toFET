@@ -9,13 +9,15 @@ import (
 )
 
 type CourseInfo struct {
-	Id        Ref
-	Subject   Ref
-	Groups    []Ref
-	Teachers  []Ref
-	Room      VirtualRoom
+	Id       Ref
+	Subject  Ref
+	Groups   []Ref
+	Teachers []Ref
+	Room     VirtualRoom
+	Lessons  []*base.Lesson
+	// Resources is a list of all resource-indexes for this course.
+	// It is filled separately, later, for working with placements.
 	Resources []ResourceIndex
-	Lessons   []*base.Lesson
 }
 
 // Make a shortish string view of a CourseInfo – can be useful in tests
@@ -329,60 +331,80 @@ func (ttinfo *TtInfo) filterRoomData(roomData map[Ref][]Ref) {
 	}
 }
 
-// TODO
 func (ttinfo *TtInfo) checkAllocatedRooms(cinfo *CourseInfo) {
 	// Check the room allocations for the lessons of the given course.
+	// Unallocated room requirements are replaced by "", so that
+	// the lesson's Rooms field has the correct length.
+
+	//TODO?
 	// Report just one error per course.
+	// Get total number of rooms required
+	vr := cinfo.Room
+	nRooms := len(vr.Rooms) + len(vr.RoomChoices)
 	for _, l := range cinfo.Lessons {
-		lrooms := l.Rooms
+		lrooms := l.Rooms // the initial room allocation list
+		l.Rooms = make([]base.Ref, nRooms)
 		// If no rooms are allocated, don't regard this as invalid.
 		if len(lrooms) == 0 {
 			return
 		}
-		// First check number of rooms
-		vr := cinfo.Room
-		if len(vr.Rooms)+len(vr.RoomChoices) != len(lrooms) {
-			rlist := []string{}
-			for _, rref := range lrooms {
-				rlist = append(rlist, ttinfo.Ref2Tag[rref])
-			}
-			base.Warning.Printf("Lesson in Course %s has wrong number"+
-				" of rooms allocated:\n  -- %+v (expected %d)\n",
-				cinfo.Id, rlist, len(vr.Rooms)+len(vr.RoomChoices))
-			return
-		}
-		// Check validity of "compulsory" rooms
+		incomplete := false
+		// Check "compulsory" rooms
 		lrmap := map[Ref]bool{}
 		for _, rref := range lrooms {
 			lrmap[rref] = true
 		}
-		for _, rref := range vr.Rooms {
+		for i, rref := range vr.Rooms {
 			if lrmap[rref] {
 				delete(lrmap, rref)
+				l.Rooms[i] = rref
 			} else {
-				base.Warning.Printf("Lesson in Course %s needs room %s\n",
-					cinfo.Id, ttinfo.Ref2Tag[rref])
-				return
+				incomplete = true
 			}
 		}
-		// Check validity of "chosen" rooms
-		cmap := make([]Ref, 0, len(vr.RoomChoices))
+
+		// Check validity of "chosen" rooms, those remaining in lrmap.
+
+		nrc := len(vr.RoomChoices) // number of chosen rooms required
+		nl := len(lrmap)           // number of rooms still to check
+		cmap := make([]Ref, 0, nrc)
+
+		//TODO
+
+		// Use a recursive function to try to match the rooms to the choice
+		// lists. The parameter i is the index of the vr.RoomChoices list.
 		var fx func(i int) bool
 		fx = func(i int) bool {
-			if i == len(vr.RoomChoices) {
-				return true
+			if i == nrc {
+				cnt := 0
+				for _, rc := range cmap {
+					if rc != "" {
+						cnt++
+					}
+				}
+				return cnt == nl
 			}
+
+			// Look for a room in the choice list which is still in the
+			// list of chosen rooms (lrmap)
 			for _, rref := range vr.RoomChoices[i] {
 				if lrmap[rref] && !slices.Contains(cmap, rref) {
 					cmap = append(cmap, rref)
+					// Continue search with next choice list
 					if fx(i + 1) {
+						// The match worked
 						return true
 					}
+					// The rest of the rooms didn't match, try again with
+					// the next room in the choice list
 					cmap = cmap[:i]
 				}
 			}
+			// No match found in this choice list
+			cmap = append(cmap, "")
 			return false
 		}
+
 		if !fx(0) {
 			rlist := []string{}
 			for rref := range lrmap {
@@ -390,9 +412,74 @@ func (ttinfo *TtInfo) checkAllocatedRooms(cinfo *CourseInfo) {
 			}
 			base.Warning.Printf("Lesson in Course %s has invalid"+
 				" room-choice allocations: %+v\n",
-				cinfo.Id, rlist)
+				ttinfo.View(cinfo), rlist)
 			return
 		}
+	}
+}
+
+// collectCourseResources collects resource-indexes for each course, setting
+// the Resources field of the [CourseInfo] items.
+func (ttinfo *TtInfo) collectCourseResources() {
+	g2tt := ttinfo.AtomicGroupIndexes
+	t2tt := ttinfo.TeacherIndexes
+	r2tt := ttinfo.RoomIndexes
+	for _, cinfo := range ttinfo.CourseInfo {
+		resources := []ResourceIndex{}
+
+		for _, tref := range cinfo.Teachers {
+			resources = append(resources, t2tt[tref])
+		}
+
+		//TODO: Is this really useful?
+		// Get class(es) ... and atomic groups
+		// This is for finding the "extended groups" – in the activity's
+		// class(es) but not involved in the activity. This list may help
+		// finding activities which can be placed parallel.
+		cagmap := map[base.Ref][]ResourceIndex{}
+		for _, gref := range cinfo.Groups {
+			cagmap[ttinfo.Db.Elements[gref].(*base.Group).Class] = nil
+		}
+		aagmap := map[ResourceIndex]bool{}
+		for cref := range cagmap {
+			c := ttinfo.Db.Elements[cref].(*base.Class)
+			aglist := g2tt[c.ClassGroup]
+			//fmt.Printf("???????? %s: %+v\n", c.Tag, aglist)
+			for _, agix := range aglist {
+				aagmap[agix] = true
+			}
+		}
+		//--?
+
+		// Handle groups
+		for _, gref := range cinfo.Groups {
+			for _, agix := range g2tt[gref] {
+				// Check for repetitions
+				if slices.Contains(resources, agix) {
+					base.Warning.Printf(
+						"Lesson with repeated atomic group"+
+							" in Course: %s\n", ttinfo.View(cinfo))
+				} else {
+					resources = append(resources, agix)
+					aagmap[agix] = false
+				}
+			}
+		}
+
+		//TODO: What, if anything, to do with this?
+		extendedGroups := []ResourceIndex{}
+		for agix, ok := range aagmap {
+			if ok {
+				extendedGroups = append(extendedGroups, agix)
+			}
+		}
+
+		crooms := cinfo.Room.Rooms
+		for _, rref := range crooms {
+			// Only take the compulsory rooms here
+			resources = append(resources, r2tt[rref])
+		}
+		cinfo.Resources = resources
 	}
 }
 

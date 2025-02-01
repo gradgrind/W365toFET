@@ -39,10 +39,10 @@ type TtInfo struct {
 	// LunchTimes is a contiguous, ordered list of hours (0-based indexes)
 	// in which a lunch break can be taken
 	LunchTimes []int
-	// Resources provides indexed access to all resources (teachers,
-	// atomic student groups, rooms), via pointers. Type any is used
+	// Resources provides indexed access to all resources (atomic student
+	// groups, teachers, rooms), via pointers. Type "any" is used
 	// rather than an interface because the resources are partly from
-	// another package.
+	// another package. The atomic student groups start at index 0.
 	Resources []any // pointers to resource elements
 	// Placements is used for lesson (in the form of TtLesson items) placement
 	Placements *TtPlacement
@@ -171,13 +171,20 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	// [TtInfo.Resources] are allocated to the atomic groups.
 	ttinfo.makeAtomicGroups()
 
+	// Get preliminary constraint info, performing some checks
+	ttinfo.processConstraints()
+
 	return ttinfo
 }
 
 //TODO ...
 
 // PrepareCoreData adds teachers and (real) rooms to the resources list
-// (ttinfo.Resources).
+// (ttinfo.Resources). It also sets the Resources field of the [CourseInfo]
+// items. For the rooms that is only the "necessary" rooms, the rooms where
+// a choice can be made are not included.
+//
+
 // Also an array of pointers to all the Activities is set up, keeping the
 // first entry free (0 should be an invalid activity index).
 // Also an array of time-slot-weeks is set up. Each resource has a block of
@@ -190,38 +197,27 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 func (ttinfo *TtInfo) PrepareCoreData() {
 	db := ttinfo.Db
 
-	//TODO: This can be later? Indeed, the slots (in Placements) are not
-	// there yet ...
-	lt := len(db.Teachers)
-	lr := len(db.Rooms)
-
-	resix := ttinfo.NAtomicGroups
-	// Size the time-slot-array:
-	ttinfo.TtSlots = make([]ActivityIndex, (lt+lr+resix)*ttinfo.SlotsPerWeek)
-	ttinfo.blockPadding() // block the extra slots at the end of each day
-
 	// The AtomicGroup pointers are already at the beginning of the resources
 	// list. Add the teachers and rooms
 
 	ttinfo.TeacherIndexes = map[Ref]ResourceIndex{}
 	for _, t := range db.Teachers {
-		ttinfo.TeacherIndexes[t.Id] = resix
+		ttinfo.TeacherIndexes[t.Id] = len(ttinfo.Resources)
 		ttinfo.Resources = append(ttinfo.Resources, t)
-		resix++
 	}
 	ttinfo.RoomIndexes = map[Ref]ResourceIndex{}
 	for _, r := range db.Rooms {
-		ttinfo.RoomIndexes[r.Id] = resix
+		ttinfo.RoomIndexes[r.Id] = len(ttinfo.Resources)
 		ttinfo.Resources = append(ttinfo.Resources, r)
-		resix++
 	}
 
-	//TODO: Still no slots ...
-	// Add the pseudo-activities arising from the NotAvailable lists
-	ttinfo.addBlockers()
+	// Set the Resources field of the [CourseInfo] items
+	ttinfo.collectCourseResources()
 
-	// Get preliminary constraint info – needed by addActivityInfo
-	ttinfo.processConstraints()
+	// Set up the lesson-placement mechanism with [TtInfo.Placements]
+	ttinfo.PrepareActivityGroups()
+
+	//TODO --?
 
 	// Add the remaining Activity information
 	ttinfo.addActivityInfo()

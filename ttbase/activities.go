@@ -51,7 +51,6 @@ type Activity struct {
 // can be checked for.
 func (ttinfo *TtInfo) addActivityInfo() {
 	//g2tt := ttinfo.AtomicGroupIndexes
-	ttinfo.collectCourseResources()
 
 	// Complete the Activity items for each course
 	r2tt := ttinfo.RoomIndexes
@@ -103,7 +102,6 @@ func (ttinfo *TtInfo) addActivityInfo() {
 
 	}
 
-	ttinfo.PrepareActivityGroups()
 }
 
 // rclfunc uses recursion to match the rooms to the room-choice list,
@@ -136,71 +134,4 @@ func rclfunc(rclist [][]Ref, rlist []Ref) []Ref {
 		return append([]Ref{""}, rl...)
 	}
 	return nil
-}
-
-// collectCourseResources collects resources for each course
-func (ttinfo *TtInfo) collectCourseResources() {
-	g2tt := ttinfo.AtomicGroupIndexes
-	t2tt := ttinfo.TeacherIndexes
-	r2tt := ttinfo.RoomIndexes
-	for _, cinfo := range ttinfo.CourseInfo {
-		resources := []ResourceIndex{}
-
-		for _, tref := range cinfo.Teachers {
-			resources = append(resources, t2tt[tref])
-		}
-
-		//TODO: Is this really useful?
-		// Get class(es) ... and atomic groups
-		// This is for finding the "extended groups" – in the activity's
-		// class(es) but not involved in the activity. This list may help
-		// finding activities which can be placed parallel.
-		cagmap := map[base.Ref][]ResourceIndex{}
-		for _, gref := range cinfo.Groups {
-			cagmap[ttinfo.Db.Elements[gref].(*base.Group).Class] = nil
-		}
-		aagmap := map[ResourceIndex]bool{}
-		for cref := range cagmap {
-			c := ttinfo.Db.Elements[cref].(*base.Class)
-			aglist := g2tt[c.ClassGroup]
-			//fmt.Printf("???????? %s: %+v\n", c.Tag, aglist)
-			for _, agix := range aglist {
-				aagmap[agix] = true
-			}
-		}
-		//--?
-
-		// Handle groups
-		for _, gref := range cinfo.Groups {
-			for _, agix := range g2tt[gref] {
-				// Check for repetitions
-				if slices.Contains(resources, agix) {
-					base.Warning.Printf(
-						"Lesson with repeated atomic group"+
-							" in Course: %s\n", ttinfo.View(cinfo))
-				} else {
-					resources = append(resources, agix)
-					aagmap[agix] = false
-				}
-			}
-		}
-
-		//TODO: What, if anything, to do with this?
-		extendedGroups := []ResourceIndex{}
-		for agix, ok := range aagmap {
-			if ok {
-				extendedGroups = append(extendedGroups, agix)
-			}
-		}
-
-		//TODO--
-		//fmt.Printf("COURSE: %s\n", ttinfo.View(cinfo))
-
-		crooms := cinfo.Room.Rooms
-		for _, rref := range crooms {
-			// Only take the compulsory rooms here
-			resources = append(resources, r2tt[rref])
-		}
-		cinfo.Resources = resources
-	}
 }

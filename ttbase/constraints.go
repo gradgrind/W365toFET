@@ -3,7 +3,6 @@ package ttbase
 import (
 	"W365toFET/base"
 	"slices"
-	"strings"
 )
 
 // A DayGapConstraints encapsulates the data arising from the constraints
@@ -35,6 +34,11 @@ func (ttinfo *TtInfo) processConstraints() {
 	// Some constraints can be "preprocessed" into more convenient structures.
 	db := ttinfo.Db
 
+	// For parallel courses
+	ttinfo.HardParallelCourses = map[Ref][]Ref{}
+	ttinfo.SoftParallelCourses = []*base.ParallelCourses{}
+	pclists := map[Ref][]Ref{} // to check for duplicate parallel constraints
+
 	dayGapConstraints := &DayGapConstraints{
 		DefaultDifferentDaysWeight: -1, // uninitialized
 		//DefaultDifferentDaysConsecutiveIfSameDay: false,
@@ -52,7 +56,7 @@ func (ttinfo *TtInfo) processConstraints() {
 		{
 			cn, ok := c.(*base.ParallelCourses)
 			if ok {
-				ttinfo.addParallelCoursesConstraint(cn)
+				ttinfo.addParallelCoursesConstraint(pclists, cn)
 				continue
 			}
 		}
@@ -87,43 +91,34 @@ func (dgdata *DayGapConstraints) constraintAutomaticDifferentDays(
 // to start at the same time (constraint "PARALLEL_COURSES").
 // The courses must have the same number of lessons and the durations of the
 // corresponding lessons must also be the same.
-func (ttinfo *TtInfo) addParallelCoursesConstraint(c *base.ParallelCourses) {
-	ttinfo.HardParallelCourses = map[Ref][]Ref{}
-	ttinfo.SoftParallelCourses = []*base.ParallelCourses{}
-
-	pclists := map[Ref][]Ref{} // for checking for duplicate constraints
+func (ttinfo *TtInfo) addParallelCoursesConstraint(
+	pclists map[Ref][]Ref, // to check for duplicate constraints
+	c *base.ParallelCourses,
+) {
 	// Check lesson lengths
 	footprint := []int{} // lesson sizes
 	ll := 0              // number of lessons in each course
-	//var llists [][]int   // collect the parallel lessons
 	for i, cref := range c.Courses {
 		cinfo := ttinfo.CourseInfo[cref]
 		if i == 0 {
 			ll = len(cinfo.Lessons)
-			//llists = make([][]int, ll)
 		} else if len(cinfo.Lessons) != ll {
-			clist := []string{}
-			for _, cr := range c.Courses {
-				clist = append(clist, string(cr))
-			}
-			base.Error.Fatalf("Parallel courses have different"+
-				" lessons: %s\n",
-				strings.Join(clist, ","))
+			base.Error.Printf("Parallel courses have different"+
+				" lessons: %s\n", ttinfo.View(cinfo))
+			return
 		}
-		for j, lix := range cinfo.Lessons {
-			a := ttinfo.Activities[lix]
+		for j, l := range cinfo.Lessons {
 			if i == 0 {
-				footprint = append(footprint, a.Duration)
-			} else if a.Duration != footprint[j] {
+				footprint = append(footprint, l.Duration)
+			} else if l.Duration != footprint[j] {
 				clist := []string{}
 				for _, cr := range c.Courses {
 					clist = append(clist, string(cr))
 				}
-				base.Error.Fatalf("Parallel courses have lesson"+
-					" mismatch: %s\n",
-					strings.Join(clist, ","))
+				base.Error.Printf("Parallel courses have lesson"+
+					" mismatch: %s\n", ttinfo.View(cinfo))
+				return
 			}
-			//llists[j] = append(llists[j], lix)
 		}
 
 		// Check for duplicate constraints
@@ -134,15 +129,18 @@ func (ttinfo *TtInfo) addParallelCoursesConstraint(c *base.ParallelCourses) {
 					continue
 				}
 				if slices.Contains(pc, cr) {
-					base.Error.Fatalf("Courses subject to more than one"+
+					base.Error.Printf("Courses subject to more than one"+
 						" parallel constraint:\n  -- %s\n  -- %s\n",
 						ttinfo.View(cinfo),
 						ttinfo.View(ttinfo.CourseInfo[cr]))
+					return
 				}
 				pclists[cref] = append(pclists[cref], cr)
 			}
 		}
-
+	}
+	// Add the constraint
+	for _, cref := range c.Courses {
 		// Treat weight = MAXWEIGHT as a special case
 		if c.Weight == base.MAXWEIGHT {
 			// For hard constraints, link each course to its parallel courses

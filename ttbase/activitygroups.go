@@ -45,16 +45,26 @@ type TtPlacement struct {
 // courses listed in [TtInfo.LessonCourses].
 // TODO: This will need intensive testing!
 func (ttinfo *TtInfo) PrepareActivityGroups() {
-	// The handling of the first encountered course of a hard-parallel set
-	// will also deal with the other courses in the set.
+	// Initialize th [TtPlacement] structure
+	nResources := len(ttinfo.Resources)
 	ttplaces := &TtPlacement{
 		ActivityGroups:      []*ActivityGroup{},
 		CourseActivityGroup: map[Ref]ActivityGroupIndex{},
 		// The first entry of TtLessons is invalid, allowing 0 to be used
 		// as a null index.
 		TtLessons: []*TtLesson{nil},
+		// Each resource has a vector of time-slots covering the whole week
+		TtSlots: make([]LessonUnitIndex, nResources*ttinfo.SlotsPerWeek),
 	}
 	ttinfo.Placements = ttplaces
+
+	// Add pseudo-lessons to block certain slots:
+	ttinfo.blockPadding() // block the extra slots at the end of each day
+	ttinfo.addBlockers()  // block the resources' not-available slots
+
+	// Build activity groups from the [CouurseInfo] items.
+	// The handling of the first encountered course of a hard-parallel set
+	// will also deal with the other courses in the set.
 	for _, cinfo := range ttinfo.LessonCourses {
 		cref := cinfo.Id
 		if _, nok := ttplaces.CourseActivityGroup[cref]; nok {
@@ -65,16 +75,13 @@ func (ttinfo *TtInfo) PrepareActivityGroups() {
 		agindex := len(ttplaces.ActivityGroups)
 		// Reference ActivityGroup, also mark this course as "handled"
 		ttplaces.CourseActivityGroup[cref] = agindex
-		// Gather the course's Activity elements for comparison with those of
+		// Gather the course's lessons for comparison with those of
 		// the parallel courses
-		alist := []*Activity{}
-		for _, aix := range cinfo.Lessons {
-			alist = append(alist, ttinfo.Activities[aix])
-		}
+		llist0 := cinfo.Lessons
 		// Gather hard-parallel courses and all their resources.
 		// The process will need to be restarted from scratch when fields
 		// of a parallel course override those of the first course: Fixed
-		// and Placement fields should be the same in the Activity items of
+		// and Placement fields should be the same in the lessons of
 		// all hard-parallel courses.
 	restart:
 		pcourses := []Ref{cref} // list of parallel courses
@@ -93,32 +100,33 @@ func (ttinfo *TtInfo) PrepareActivityGroups() {
 			pcinfo := ttinfo.CourseInfo[hpc]
 			resources = append(resources, pcinfo.Resources...)
 
-			// Get Activities – these should have the same number and duration
+			// Get lessons – these should have the same number and duration
 			// in every parallel course. That should have been checked in
 			// [addParallelCoursesConstraint], called via [processConstraints]
-			// from [PrepareCoreData]. Here it is assumed correct!
+			// from [MakeTtInfo]. Here it is assumed correct!
 			update := false // flag whether the loop needs restarting
-			for i, aix := range pcinfo.Lessons {
-				a := ttinfo.Activities[aix]
-				a0 := alist[i]
-				if a.Fixed {
-					if !a0.Fixed {
-						a0.Fixed = true
+			for i, l := range pcinfo.Lessons {
+				l0 := llist0[i]
+				if l.Fixed {
+					if !l0.Fixed {
+						l0.Fixed = true
 						update = true
 					}
 				} else {
-					if a0.Fixed {
-						a.Fixed = true
+					if l0.Fixed {
+						l.Fixed = true
 					}
 				}
-				if a.Placement < 0 {
-					if a0.Placement >= 0 {
-						a.Placement = a0.Placement
+				if l.Day < 0 {
+					if l0.Day >= 0 {
+						l.Day = l0.Day
+						l.Hour = l0.Hour
 					}
-				} else if a0.Placement < 0 {
-					a0.Placement = a.Placement
+				} else if l0.Day < 0 {
+					l0.Day = l.Day
+					l0.Hour = l.Hour
 					update = true
-				} else if a.Placement != a0.Placement {
+				} else if l.Day != l0.Day || l.Hour != l0.Hour {
 					base.Error.Printf("Parallel Activities with"+
 						"different placements in courses\n"+
 						" -- %s\n -- %s\n",
@@ -126,9 +134,11 @@ func (ttinfo *TtInfo) PrepareActivityGroups() {
 					// Patch the data to avoid conflict
 					if update {
 						// a0 was previously unfixed, a fixed
-						a0.Placement = a.Placement
+						l0.Day = l.Day
+						l0.Hour = l.Hour
 					} else {
-						a.Placement = a0.Placement
+						l.Day = l0.Day
+						l.Hour = l0.Hour
 					}
 				}
 			}
@@ -149,12 +159,16 @@ func (ttinfo *TtInfo) PrepareActivityGroups() {
 
 		// Add the TtLessons
 		ttli0 := len(ttplaces.TtLessons)
-		for i, a := range alist {
+		for i, l := range llist0 {
+			p := -1 // placement slot
+			if l.Day >= 0 {
+				p = l.Day * ttinfo.DayLength * l.Hour
+			}
 			ttl := &TtLesson{
 				Resources: ag.Resources,
-				Placement: a.Placement,
-				Fixed:     a.Fixed,
-				//DaysBetween: TODO
+				Placement: p,
+				Fixed:     l.Fixed,
+				//DaysBetween: will be added later
 			}
 			ttplaces.TtLessons = append(ttplaces.TtLessons, ttl)
 			ag.LessonUnits = append(ag.LessonUnits, ttli0+i)
