@@ -328,7 +328,7 @@ func (ttinfo *TtInfo) filterRoomData(roomData map[Ref][]Ref) {
 	}
 }
 
-func (ttinfo *TtInfo) checkAllocatedRooms(cinfo *CourseInfo) {
+func (ttinfo *TtInfo) checkAllocatedRooms() {
 	// Check the room allocations for the lessons of the given course.
 	// Unallocated room requirements are replaced by "", so that
 	// the lesson's Rooms field has the correct length.
