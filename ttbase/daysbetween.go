@@ -4,22 +4,18 @@ import (
 	"W365toFET/base"
 )
 
-//TODO: Make the filtered constraints available to the (fet) backend,
-// presumably in ttinfo.DayGapConstraints.
-
 // The days-between constraints must be processed after all ActivityGroup
 // elements have been generated, so that their TtLesson indexes are available.
 
 type DaysBetweenLessons struct {
-	Weight               int
-	HoursGap             int
+	Weight   int
+	HoursGap int // the actual gap must be at least this big
+	// ConsecutiveIfSameDay determines whether the lessons must be consecutive
+	// if the HoursGap is not fulfilled
 	ConsecutiveIfSameDay bool
 	LessonUnits          []LessonUnitIndex
 }
 
-// TODO: call this from PrepareCoreData (in base) after addActivityInfo()?
-// Cut addActivityInfo() before PrepareActivityGroups() and call this
-// after that?
 func (ttinfo *TtInfo) processDaysBetweenConstraints() {
 	// Handle the DAYS_BETWEEN constraints. Sort them according to their
 	// activity groups.
@@ -60,6 +56,11 @@ func (ttinfo *TtInfo) processDaysBetweenConstraints() {
 func (ttinfo *TtInfo) processDaysBetween(
 	agconstraints map[ActivityGroupIndex][]*base.DaysBetween,
 ) {
+	// Determine the minimum gap in "hours" between lessons on adjacent days.
+	// Its correct usage depends on adequate padding slots at the end of
+	// each day.
+	minGapDelta := ttinfo.DayLength - ttinfo.NHours + 1
+
 	dgc := ttinfo.DayGapConstraints
 	dgc.CourseConstraints = map[ActivityGroupIndex][]DaysBetweenConstraint{}
 	ttplaces := ttinfo.Placements
@@ -138,12 +139,13 @@ func (ttinfo *TtInfo) processDaysBetween(
 				}
 			}
 			for _, dbc := range dbclist {
+				hgap := dbc.DayGap*ttinfo.DayLength - minGapDelta
 				dbllist = append(dbllist, DaysBetweenLessons{
 					Weight: dbc.Weight,
 					// HoursGap assumes the use of an adequately long
 					// DayLength, including buffer space at the end of the
 					// real lesson slots
-					HoursGap:             dbc.DayGap * ttinfo.DayLength,
+					HoursGap:             hgap,
 					ConsecutiveIfSameDay: dbc.ConsecutiveIfSameDay,
 					LessonUnits:          lulist,
 				})
@@ -159,6 +161,11 @@ func (ttinfo *TtInfo) processDaysBetween(
 func (ttinfo *TtInfo) processCrossDaysBetween(
 	agconstraints map[ActivityGroupIndex][]*base.DaysBetweenJoin,
 ) {
+	// Determine the minimum gap in "hours" between lessons on adjacent days.
+	// Its correct usage depends on adequate padding slots at the end of
+	// each day.
+	minGapDelta := ttinfo.DayLength - ttinfo.NHours + 1
+
 	dgc := ttinfo.DayGapConstraints
 	dgc.CrossCourseConstraints = map[ActivityGroupIndex]map[ActivityGroupIndex][]DaysBetweenConstraint{}
 	ttplaces := ttinfo.Placements
@@ -229,7 +236,7 @@ func (ttinfo *TtInfo) processCrossDaysBetween(
 			for _, dbc := range dbclist {
 				// Collect the parameters
 				gap := dbc.DayGap
-				hgap := gap * ttinfo.DayLength
+				hgap := gap*ttinfo.DayLength - minGapDelta
 				weight := dbc.Weight
 				cisd := dbc.ConsecutiveIfSameDay
 
@@ -259,13 +266,14 @@ func (ttinfo *TtInfo) processCrossDaysBetween(
 				// Add constraints to the lessons of activity group ag2
 				for _, lix := range ag2.LessonUnits {
 					xl := ttplaces.TtLessons[lix]
+					hgap := dbc.DayGap*ttinfo.DayLength - ttinfo.NHours
 					xl.DaysBetween = append(xl.DaysBetween,
 						DaysBetweenLessons{
 							Weight: dbc.Weight,
 							// HoursGap assumes the use of an adequately long
 							// DayLength, including buffer space at the end of
 							// the real lesson slots.
-							HoursGap:             dbc.DayGap * ttinfo.DayLength,
+							HoursGap:             hgap,
 							ConsecutiveIfSameDay: dbc.ConsecutiveIfSameDay,
 							LessonUnits:          ag.LessonUnits,
 						})

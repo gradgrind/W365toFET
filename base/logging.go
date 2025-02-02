@@ -43,8 +43,20 @@ func OpenLog(logpath string) {
 	Bug = log.New(file, "*BUG* ", log.Lshortfile)
 }
 
-// TODO ... Expect a string array, to allow for some type checking, even
-// though an any array is actually needed.
+func I18N(msg string, args ...any) string {
+	// Look up message
+	msgt, ok := logbase.LangMap[msg]
+	if !ok {
+		msgt, ok = logbase.Fallback[msg]
+		if !ok {
+			panic("Unknown message: " + msg)
+		}
+	}
+	return fmt.Sprintf(msgt+"\n", args...)
+}
+
+// TODO: Change to "Report" and include the report type in the message,
+// e.g. Report("ERROR_SOMETHING_WENT_WRONG?1", "oops!")
 func (logbase *LogBase) ReportError(msg string, args ...string) {
 	// Look up message
 	msgt, ok := logbase.LangMap[msg]

@@ -328,11 +328,11 @@ func (ttinfo *TtInfo) filterRoomData(roomData map[Ref][]Ref) {
 	}
 }
 
+// checkAllocatedRooms checks the principle validity of room allocations
+// for all defined lessons.
+// Unallocated room requirements are replaced by "", so that
+// the lesson's Rooms field has the correct length.
 func (ttinfo *TtInfo) checkAllocatedRooms() {
-	// Check the room allocations for the lessons of the given course.
-	// Unallocated room requirements are replaced by "", so that
-	// the lesson's Rooms field has the correct length.
-
 	for _, cinfo := range ttinfo.LessonCourses {
 		vr := cinfo.Room
 		nRooms := len(vr.Rooms) + len(vr.RoomChoices)

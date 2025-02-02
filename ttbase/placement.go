@@ -6,227 +6,223 @@ import (
 	"slices"
 )
 
-//TODO: These functions need modifying to work with ActiviyGroup and TtLesson items
-
-func (ttinfo *TtInfo) initialPlacement() {
+// initialFixedPlacement places the fixed lessons.
+func (ttinfo *TtInfo) initialFixedPlacement() {
 	ttplaces := ttinfo.Placements
-
-	//TODO: How much of the following is still needed, and in what form?
-
-	// Collect non-fixed lessons which need placing
-	toplace := []LessonUnitIndex{}
-
-	// First place the fixed lessons, then build the PossibleSlots for
-	// non-fixed lessons.
 	for _, ag := range ttplaces.ActivityGroups {
-
 		for _, lix := range ag.LessonUnits {
 			l := ttplaces.TtLessons[lix]
+			if !l.Fixed {
+				continue
+			}
+
 			p := l.Placement
-			if p >= 0 {
-				if !l.Fixed {
-					toplace = append(toplace, lix)
-					continue
+			if p < 0 {
+				base.Error.Fatalf("Fixed lesson has no placement,"+
+					" course: %s\n", ttinfo.printAGCourse(ag))
+			}
+
+			if ttinfo.TestPlacement(lix, p) {
+				// Perform placement
+				ttinfo.PlaceLesson(lix, p)
+			} else {
+				t := fmt.Sprintf("%d.%d",
+					p/ttinfo.DayLength, p%ttinfo.DayLength)
+				base.Error.Fatalf(
+					"Placement of fixed lesson @ %s failed,\n"+
+						"  course: %s\n",
+					t, ttinfo.printAGCourse(ag))
+			}
+		}
+	}
+}
+
+// initialNonFixedPlacement places those non-fixed lessons which have
+// placements.
+func (ttinfo *TtInfo) initialNonFixedPlacement() {
+	ttplaces := ttinfo.Placements
+	for _, ag := range ttplaces.ActivityGroups {
+		for _, lix := range ag.LessonUnits {
+			l := ttplaces.TtLessons[lix]
+			if l.Fixed {
+				continue
+			}
+			if l.Placement < 0 {
+				// Ensure that the room choices are empty
+				for i := range l.XRooms {
+					l.XRooms[i] = -1
 				}
-				if ttinfo.TestPlacement(lix, p) {
-					// Perform placement
-					ttinfo.PlaceActivity(lix, p)
-				} else {
-					//TODO?
-					//a.XRooms = a.XRooms[:0]
-					base.Error.Fatalf(
-						"Placement of Fixed Activity %d @ %d failed:\n"+
-							"  Course -- %s (or parallel)\n",
-						lix, p, ttinfo.View(ttinfo.CourseInfo[ag.Courses[0]]))
+				continue
+			}
+
+			p := l.Placement
+			if slices.Contains(l.PossibleSlots, p) &&
+				ttinfo.TestPlacement(lix, p) {
+
+				// Perform placement
+				ttinfo.PlaceLesson(lix, p)
+			} else {
+				t := fmt.Sprintf("%d.%d",
+					p/ttinfo.DayLength, p%ttinfo.DayLength)
+				base.Error.Printf(
+					"Placement of non-fixed lesson @ %s failed,\n"+
+						"  course: %s\n",
+					t, ttinfo.printAGCourse(ag))
+				l.Placement = -1
+				for i := range l.XRooms {
+					l.XRooms[i] = -1
 				}
 			}
 		}
 	}
+}
 
-	// Build PossibleSlots
-	//TODO
-	ttinfo.makePossibleSlots()
-
-	// Place non-fixed lessons
-	for _, lix := range toplace {
-		ttl := ttplaces.TtLessons[lix]
-		p := ttl.Placement
-
-		if slices.Contains(ttl.PossibleSlots, p) &&
-			ttinfo.TestPlacement(lix, p) {
-
-			// Perform placement
-			ttinfo.PlaceActivity(lix, p)
-		} else {
-			// Need CourseInfo for reporting details
-
-			//TODO: the TtLesson items need a reference to the activity group
-
-			ttl := ttinfo.Activities[aix-1]
-			cinfo := ttl.CourseInfo
-			//
-			base.Warning.Printf(
-				"Placement of Activity %d @ %d failed:\n"+
-					"  -- %s\n",
-				aix, p, ttinfo.View(cinfo))
-			a.Placement = -1
-			a.XRooms = a.XRooms[:0]
-		}
-	}
-
-	// Add room choices where possible.
-	for aix := 1; aix < len(ttinfo.Activities); aix++ {
-		a := ttinfo.Activities[aix]
-		if len(a.XRooms) != 0 {
-			var rnew []ResourceIndex
-			p := a.Placement
-			for _, rix := range a.XRooms {
+// initialRoomChoices tries to allocate the rooms from choice lists as
+// supplied with the input data. If XRooms is incomplete, the missing
+// room indexes are represented by -1.
+func (ttinfo *TtInfo) initialRoomChoices() {
+	ttplaces := ttinfo.Placements
+	for _, ag := range ttplaces.ActivityGroups {
+		for _, lix := range ag.LessonUnits {
+			l := ttplaces.TtLessons[lix]
+			p := l.Placement
+			if p < 0 {
+				continue
+			}
+			for i, rix := range l.XRooms {
 				if rix < 0 {
 					continue
 				}
 				slot := rix*ttinfo.SlotsPerWeek + p
-				if ttinfo.TtSlots[slot] == 0 {
-					ttinfo.TtSlots[slot] = aix
+				if ttplaces.TtSlots[slot] == 0 {
+					ttplaces.TtSlots[slot] = lix
 				} else {
 					base.Warning.Printf(
-						"Lesson in course %s cannot use room %s\n",
-						ttinfo.View(a.CourseInfo),
-						ttinfo.Resources[rix].(*base.Room).Tag)
-					rnew = append(rnew, rix)
+						"Lesson cannot use room %s,\n  course: %s\n",
+						ttinfo.Resources[rix].(*base.Room).Tag,
+						ttinfo.printAGCourse(ag),
+					)
+					l.XRooms[i] = -1
 				}
-			}
-			if len(rnew) != 0 {
-				a.XRooms = a.XRooms[:len(rnew)]
-				copy(a.XRooms, rnew)
 			}
 		}
 	}
 }
 
+// UnplaceLesson displaces a lesson from the slot in which it had been
+// placed, deallocating its resources.
 // TODO: Can I safely assume that no attempt will be made to unplace fixed
-// Activities?
-func (ttinfo *TtInfo) UnplaceActivity(aix ActivityIndex) {
-	a := ttinfo.Activities[aix]
-	slot := a.Placement
+// lessons?
+func (ttinfo *TtInfo) UnplaceLesson(lix LessonUnitIndex) {
+	ttplaces := ttinfo.Placements
+	l := ttplaces.TtLessons[lix]
+	slot := l.Placement
 
 	//TODO--- for testing
-	if a.Fixed {
-		base.Bug.Fatalf("Can't unplace %d – fixed\n", aix)
+	if l.Fixed {
+		base.Bug.Fatalf("Can't unplace %d – fixed\n", lix)
 	}
 	if slot < 0 {
-		base.Bug.Printf("Can't unplace %d – not placed\n", aix)
-		panic(1)
-		return
+		base.Bug.Fatalf("Can't unplace %d – not placed\n", lix)
 	}
+	//--
 
-	for _, rix := range a.Resources {
+	for _, rix := range l.Resources {
 		i := rix*ttinfo.SlotsPerWeek + slot
-		for ix := 0; ix < a.Duration; ix++ {
-			ttinfo.TtSlots[i+ix] = 0
+		for ix := 0; ix < l.Duration; ix++ {
+			ttplaces.TtSlots[i+ix] = 0
 		}
 	}
-	for _, rix := range a.XRooms {
+	for _, rix := range l.XRooms {
+		if rix < 0 {
+			continue
+		}
 		i := rix*ttinfo.SlotsPerWeek + slot
-		for ix := 0; ix < a.Duration; ix++ {
-			ttinfo.TtSlots[i+ix] = 0
+		for ix := 0; ix < l.Duration; ix++ {
+			ttplaces.TtSlots[i+ix] = 0
 		}
 	}
-	a.Placement = -1
-
-	for _, aixp := range a.Parallel {
-		a := ttinfo.Activities[aixp]
-		for _, rix := range a.Resources {
-			i := rix*ttinfo.SlotsPerWeek + slot
-			for ix := 0; ix < a.Duration; ix++ {
-				ttinfo.TtSlots[i+ix] = 0
-			}
-		}
-		for _, rix := range a.XRooms {
-			i := rix*ttinfo.SlotsPerWeek + slot
-			for ix := 0; ix < a.Duration; ix++ {
-				ttinfo.TtSlots[i+ix] = 0
-			}
-		}
-		a.Placement = -1
-	}
+	l.Placement = -1
 	//--ttinfo.CheckResourceIntegrity()
 }
 
-// Note that – at present – testPlacement, findClashes and placeActivity
+// Note that – at present – testPlacement, findClashes and placeLesson
 // don't try to place room choices. This is intentional, assuming that these
 // will be placed by other functions ...
 
-func (ttinfo *TtInfo) TestPlacement(aix ActivityIndex, slot int) bool {
-	// Simple boolean placement test. It assumes the slot is possible –
-	// so that it will not, for example, be the last slot of a day if
-	// the activity duration is 2.
-	a := ttinfo.Activities[aix]
-	day := slot / ttinfo.DayLength
-	for _, addix := range a.DifferentDays {
-		add := ttinfo.Activities[addix]
-		if add.Placement >= 0 && add.Placement/ttinfo.DayLength == day {
+// TestPlacement is a simple boolean placement test. It assumes the slot is
+// possible for the lesson – so that it will not, for example, be the last
+// slot of a day if the activity duration is 2.
+func (ttinfo *TtInfo) TestPlacement(lix LessonUnitIndex, slot int) bool {
+	ttplaces := ttinfo.Placements
+	l := ttplaces.TtLessons[lix]
+
+	// Check for resource collisions
+	for _, rix := range l.Resources {
+		i := rix*ttinfo.SlotsPerWeek + slot
+		for ix := 0; ix < l.Duration; ix++ {
+			if ttplaces.TtSlots[i+ix] != 0 {
+				return false
+			}
+		}
+	}
+
+	// Check for days-between conflicts
+	for _, dbc := range l.DaysBetween {
+		mingap := dbc.HoursGap
+		for _, xlix := range dbc.LessonUnits {
+			xl := ttplaces.TtLessons[xlix]
+			xp := xl.Placement
+			if xp < 1 {
+				continue
+			}
+			gap := xp - slot
+			if gap < 0 {
+				if -gap >= mingap {
+					continue
+				}
+			} else if gap >= mingap {
+				continue
+			}
+			// The gap is too small.
+			if dbc.Weight == base.MAXWEIGHT {
+				return false
+			}
+			//TODO: How to handle this?
+			// Otherwise if Consecutive... it is only acceptable if the
+			// slots are adjacent,
+			// and then only when a probability test succeeds.
+
 			return false
 		}
 	}
-	for _, rix := range a.Resources {
-		i := rix*ttinfo.SlotsPerWeek + slot
-		for ix := 0; ix < a.Duration; ix++ {
-			if ttinfo.TtSlots[i+ix] != 0 {
-				return false
-			}
-		}
-	}
-	for _, aixp := range a.Parallel {
-		a := ttinfo.Activities[aixp]
-		for _, addix := range a.DifferentDays {
-			add := ttinfo.Activities[addix]
-			if add.Placement >= 0 && add.Placement/ttinfo.DayLength == day {
-				return false
-			}
-		}
-		for _, rix := range a.Resources {
-			i := rix*ttinfo.SlotsPerWeek + slot
-			for ix := 0; ix < a.Duration; ix++ {
-				if ttinfo.TtSlots[i+ix] != 0 {
-					return false
-				}
-			}
-		}
-	}
+
 	return true
 }
 
-func (ttinfo *TtInfo) PlaceActivity(aix ActivityIndex, slot int) {
-	// Allocate the resources, assuming none of the slots are blocked!
+// PlaceLesson places a lesson in a given slot, allocating the resources.
+// It assumes none of the slots are blocked, i.e. that the validity of the
+// placement has been checked already.
+func (ttinfo *TtInfo) PlaceLesson(lix LessonUnitIndex, slot int) {
 	//--fmt.Printf("++++++++ PLACE ++++++++ %d: %d\n", aix, slot)
-	a := ttinfo.Activities[aix]
+	ttplaces := ttinfo.Placements
+	l := ttplaces.TtLessons[lix]
 
 	//TODO-- This is for debugging
-	p := a.Placement
+	p := l.Placement
 	if p >= 0 && p != slot {
-		fmt.Printf("::::: %+v\n", a)
-		panic(fmt.Sprintf("Activity %d already placed: %d\n", aix, p))
+		fmt.Printf("::::: %+v\n", l)
+		panic(fmt.Sprintf("Lesson %d already placed: %d\n", lix, p))
 	}
 	//
 
-	for _, rix := range a.Resources {
+	for _, rix := range l.Resources {
 		i := rix*ttinfo.SlotsPerWeek + slot
-		for ix := 0; ix < a.Duration; ix++ {
-			ttinfo.TtSlots[i+ix] = aix
+		for ix := 0; ix < l.Duration; ix++ {
+			ttplaces.TtSlots[i+ix] = lix
 		}
 	}
-	a.Placement = slot
-
-	for _, aixp := range a.Parallel {
-		a := ttinfo.Activities[aixp]
-		for _, rix := range a.Resources {
-			i := rix*ttinfo.SlotsPerWeek + slot
-			for ix := 0; ix < a.Duration; ix++ {
-				ttinfo.TtSlots[i+ix] = aixp
-			}
-		}
-		a.Placement = slot
-	}
+	l.Placement = slot
 	//--ttinfo.CheckResourceIntegrity()
 }
 

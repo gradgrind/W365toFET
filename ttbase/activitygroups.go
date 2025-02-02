@@ -4,8 +4,16 @@ import (
 	"W365toFET/base"
 )
 
+func init() {
+	base.Tr(map[string]string{
+		"OR_PARALLEL?1": "%s (or parallel)",
+	})
+}
+
+type ResourceIndex = int
 type ActivityGroupIndex = int
 type LessonUnitIndex = int
+type SlotIndex = int
 
 // An ActivityGroup manages placement of the lessons of a course and
 // any hard-parallel courses by combining their resources and activities.
@@ -18,6 +26,7 @@ type ActivityGroup struct {
 type TtLesson struct {
 	Resources []ResourceIndex // same as ActivityGroup Resources,
 	// it is not dynamic so it is just be a "copy" of the ActivityGroup field
+	Duration    int
 	Placement   SlotIndex
 	Fixed       bool
 	DaysBetween []DaysBetweenLessons
@@ -34,19 +43,19 @@ type TtPlacement struct {
 	TtSlots             []LessonUnitIndex
 }
 
-// TODO: Should I link to the Activities? Maybe the Activities should link
-// to their TtLessons, possibly via the ActivityGroups?
-
-// TODO: To be able to handle unplacement I would need XRooms. Would accessing
-// these via the Activities be too inefficient? Probably the inner loops
-// should be handled in TtLesson as far as possible. On the other hand,
-// unplacing would take place far less frequently than testing.
+func (ttinfo *TtInfo) printAGCourse(ag *ActivityGroup) string {
+	c := ttinfo.CourseInfo[ag.Courses[0]]
+	if len(ag.Courses) == 1 {
+		return ttinfo.View(c)
+	}
+	return base.I18N("OR_PARALLEL?1", ttinfo.View(c))
+}
 
 // PrepareActivityGroups creates the [ActivityGroup] items from the
 // courses listed in [TtInfo.LessonCourses].
 // TODO: This will need intensive testing!
 func (ttinfo *TtInfo) PrepareActivityGroups() {
-	// Initialize th [TtPlacement] structure
+	// Initialize the [TtPlacement] structure
 	nResources := len(ttinfo.Resources)
 	ttplaces := &TtPlacement{
 		ActivityGroups:      []*ActivityGroup{},
@@ -159,17 +168,36 @@ func (ttinfo *TtInfo) PrepareActivityGroups() {
 		ttplaces.ActivityGroups = append(ttplaces.ActivityGroups, ag)
 
 		// Add the TtLessons
+		// To get the room choices it is necessary to know their starting
+		// index in [base.Lesson.Rooms]
+		ichoices0 := len(cinfo.Room.Rooms)
+		nchoices := len(cinfo.Room.RoomChoices)
+
 		ttli0 := len(ttplaces.TtLessons)
 		for i, l := range llist0 {
 			p := -1 // placement slot
 			if l.Day >= 0 {
 				p = l.Day * ttinfo.DayLength * l.Hour
 			}
+			// Convert the room choices
+			xrooms := make([]ResourceIndex, nchoices)
+			for i := range nchoices {
+				rref := l.Rooms[ichoices0+i]
+				if rref == "" {
+					xrooms[i] = -1
+				} else {
+					xrooms[i] = ttinfo.RoomIndexes[rref]
+				}
+			}
+			// Add the [TtLesson]
 			ttl := &TtLesson{
 				Resources: ag.Resources,
 				Placement: p,
+				Duration:  l.Duration,
 				Fixed:     l.Fixed,
-				//DaysBetween: will be added later
+				XRooms:    xrooms,
+				//DaysBetween:   will be added later
+				//PossibleSlots: will be added later
 			}
 			ttplaces.TtLessons = append(ttplaces.TtLessons, ttl)
 			ag.LessonUnits = append(ag.LessonUnits, ttli0+i)

@@ -47,11 +47,6 @@ type TtInfo struct {
 	// Placements is used for lesson (in the form of TtLesson items) placement
 	Placements *TtPlacement
 
-	//TODO--?
-	// TtSlots contains a full week of time-slots for each resource,
-	// with the same indexing as Resources
-	//TtSlots []ActivityIndex
-
 	// "Convenience" data
 
 	// Db is a reference to the underlying school data
@@ -78,11 +73,11 @@ type TtInfo struct {
 	// AtomicGroupIndexes maps a [base.Group] reference to a list of
 	// resource indexes (for the AtomicGroup elements)
 	AtomicGroupIndexes map[Ref][]ResourceIndex
-	// TeacherIndexes maps a [base.Teacher] reference to a list of
-	// resource indexes (for the Teacher elements)
+	// TeacherIndexes maps a [base.Teacher] reference to the resource index
+	// (for the Teacher elements)
 	TeacherIndexes map[Ref]ResourceIndex
-	// RoomIndexes maps a [base.Roomr] reference to a list of
-	// resource indexes (for the Room elements)
+	// RoomIndexes maps a [base.Room] reference to the resource index
+	// (for the Room elements)
 	RoomIndexes map[Ref]ResourceIndex
 	// NAtomicGroups ist the total number of [AtomicGroup] items.
 	NAtomicGroups int
@@ -222,10 +217,14 @@ func (ttinfo *TtInfo) PrepareCoreData() {
 
 	ttinfo.processDaysBetweenConstraints()
 
-	//TODO?
-	// Place fixed lessons?
-	// Set up possible slots?
-	// Place non-fixed lessons?
+	// Place fixed lessons
+	ttinfo.initialFixedPlacement()
+	// Set up possible slots for non-fixed lessons
+	ttinfo.makePossibleSlots()
+	// Place any non-fixed lessons which have a placement
+	ttinfo.initialNonFixedPlacement()
+	// Allocate supplied room choices as far as possible
+	ttinfo.initialRoomChoices()
 }
 
 // orderResources generates an ordering index for each of the resources,
