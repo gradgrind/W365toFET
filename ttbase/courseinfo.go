@@ -496,14 +496,6 @@ func (ttinfo *TtInfo) collectCourseResources() {
 			}
 		}
 
-		//TODO: What, if anything, to do with this?
-		extendedGroups := []ResourceIndex{}
-		for agix, ok := range aagmap {
-			if ok {
-				extendedGroups = append(extendedGroups, agix)
-			}
-		}
-
 		crooms := cinfo.Room.Rooms
 		for _, rref := range crooms {
 			// Only take the compulsory rooms here

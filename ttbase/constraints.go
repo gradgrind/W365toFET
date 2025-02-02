@@ -111,10 +111,6 @@ func (ttinfo *TtInfo) addParallelCoursesConstraint(
 			if i == 0 {
 				footprint = append(footprint, l.Duration)
 			} else if l.Duration != footprint[j] {
-				clist := []string{}
-				for _, cr := range c.Courses {
-					clist = append(clist, string(cr))
-				}
 				base.Error.Printf("Parallel courses have lesson"+
 					" mismatch: %s\n", ttinfo.View(cinfo))
 				return

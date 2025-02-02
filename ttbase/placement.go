@@ -176,7 +176,7 @@ func (ttinfo *TtInfo) TestPlacement(lix LessonUnitIndex, slot int) bool {
 			if xp < 1 {
 				continue
 			}
-			gap := xp - slot
+			gap := slot - xp
 			if gap < 0 {
 				if -gap >= mingap {
 					continue
@@ -188,12 +188,31 @@ func (ttinfo *TtInfo) TestPlacement(lix LessonUnitIndex, slot int) bool {
 			if dbc.Weight == base.MAXWEIGHT {
 				return false
 			}
-			//TODO: How to handle this?
-			// Otherwise if Consecutive... it is only acceptable if the
-			// slots are adjacent,
-			// and then only when a probability test succeeds.
 
-			return false
+			// For soft constraints with ConsecutiveIfSameDay true, the
+			// lessons must be adjacent if they are on the same day.
+
+			if dbc.ConsecutiveIfSameDay {
+				if gap < 0 {
+					if -gap < ttinfo.NHours {
+						// The slot is before xp on the same day
+						if l.Duration+slot != xp {
+							return false
+						}
+					}
+				} else if gap < ttinfo.NHours {
+					// The slot is after xp on the same day
+					if xl.Duration+xp != slot {
+						return false
+					}
+				}
+			}
+
+			// Whether this slot is acceptable depends on a random number
+			// and the weight.
+			if RejectRandom(dbc.Weight) {
+				return false
+			}
 		}
 	}
 
@@ -226,53 +245,30 @@ func (ttinfo *TtInfo) PlaceLesson(lix LessonUnitIndex, slot int) {
 	//--ttinfo.CheckResourceIntegrity()
 }
 
-func (ttinfo *TtInfo) FindClashes(aix ActivityIndex, slot int) []ActivityIndex {
-	// Return a list of activities (indexes) which are in conflict with
+func (ttinfo *TtInfo) FindClashes(
+	lix LessonUnitIndex,
+	slot int,
+) []LessonUnitIndex {
+	// Return a list of lessons (indexes) which are in conflict with
 	// the proposed placement. It assumes the slot is in principle possible –
 	// so that it will not, for example, be the last slot of a day if
 	// the activity duration is 2.
-	clashes := []ActivityIndex{}
-	a := ttinfo.Activities[aix]
-	day := slot / ttinfo.DayLength
-	//--fmt.Printf("????0 aix: %d slot %d\n", aix, slot)
-	for _, addix := range a.DifferentDays {
-		add := ttinfo.Activities[addix]
-		if add.Placement >= 0 && add.Placement/ttinfo.DayLength == day {
-			clashes = append(clashes, addix)
-			//--fmt.Printf("????1 %d\n", addix)
-		}
-	}
-	for _, rix := range a.Resources {
+	clashes := []LessonUnitIndex{}
+	ttplaces := ttinfo.Placements
+	l := ttplaces.TtLessons[lix]
+
+	for _, rix := range l.Resources {
 		i := rix*ttinfo.SlotsPerWeek + slot
-		for ix := 0; ix < a.Duration; ix++ {
-			c := ttinfo.TtSlots[i+ix]
+		for ix := 0; ix < l.Duration; ix++ {
+			c := ttplaces.TtSlots[i+ix]
 			if c != 0 {
-				//--xxx := ttinfo.Activities[c].Placement
 				clashes = append(clashes, c)
-				//--fmt.Printf("????2 %d %d r: %d p: %d\n", c, ix, rix, xxx)
 			}
 		}
 	}
-	for _, aixp := range a.Parallel {
-		a := ttinfo.Activities[aixp]
-		for _, addix := range a.DifferentDays {
-			add := ttinfo.Activities[addix]
-			if add.Placement >= 0 && add.Placement/ttinfo.DayLength == day {
-				clashes = append(clashes, addix)
-				//--fmt.Printf("????3 %d\n", addix)
-			}
-		}
-		for _, rix := range a.Resources {
-			i := rix*ttinfo.SlotsPerWeek + slot
-			for ix := 0; ix < a.Duration; ix++ {
-				c := ttinfo.TtSlots[i+ix]
-				if c != 0 {
-					clashes = append(clashes, c)
-					//--fmt.Printf("????4 %d %d\n", c, ix)
-				}
-			}
-		}
-	}
+
+	//TODO: Addapt different-days handling from above
+
 	slices.Sort(clashes)
 	return slices.Compact(clashes)
 }

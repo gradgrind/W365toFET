@@ -11,7 +11,7 @@ import (
 )
 
 type Ref = base.Ref
-type ActivityIndex = ttbase.ActivityIndex
+type ActivityIndex = int
 
 const CLASS_GROUP_SEP = "."
 const ATOMIC_GROUP_SEP1 = "#"
