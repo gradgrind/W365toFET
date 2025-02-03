@@ -334,6 +334,7 @@ func (ttinfo *TtInfo) filterRoomData(roomData map[Ref][]Ref) {
 // the lesson's Rooms field has the correct length.
 func (ttinfo *TtInfo) checkAllocatedRooms() {
 	for _, cinfo := range ttinfo.LessonCourses {
+		warned := false // flag to limit warnings per course
 		vr := cinfo.Room
 		nRooms := len(vr.Rooms) + len(vr.RoomChoices)
 		// Handle each lesson independently
@@ -342,7 +343,7 @@ func (ttinfo *TtInfo) checkAllocatedRooms() {
 			l.Rooms = make([]base.Ref, nRooms)
 			// If no rooms are allocated, don't regard this as invalid.
 			if len(lrooms) == 0 {
-				return
+				continue
 			}
 			complete := true // whether all requirements are fulfilled
 			// Check "compulsory" rooms.
@@ -435,14 +436,16 @@ func (ttinfo *TtInfo) checkAllocatedRooms() {
 			for rref := range lrmap {
 				rlist = append(rlist, ttinfo.Ref2Tag[rref])
 			}
-			if len(rlist) != 0 {
+			if len(rlist) != 0 && !warned {
 				base.Warning.Printf("Lesson in Course %s has invalid"+
 					" room allocations: %+v\n",
 					ttinfo.View(cinfo), rlist)
-			} else if !complete {
+				warned = true
+			} else if !complete && !warned {
 				base.Warning.Printf("Lesson in Course %s has incomplete"+
 					" room allocations\n",
 					ttinfo.View(cinfo))
+				warned = true
 			}
 		}
 	}

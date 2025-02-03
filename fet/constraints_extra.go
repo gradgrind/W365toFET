@@ -116,8 +116,8 @@ func (fetinfo *fetInfo) getExtraConstraints() {
 	for agix, dbclist := range dgc.CourseConstraints {
 		// Get the activity group
 		ag := ttplaces.ActivityGroups[agix]
-		// Only the first course is necessary, as any others in the list are
-		// hard-parallel.
+		// Only the first course is necessary, as any others in the list
+		// are hard-parallel.
 		cinfo := ttinfo.CourseInfo[ag.Courses[0]]
 		llist := []ActivityIndex{}
 		for _, l := range cinfo.Lessons {
@@ -139,10 +139,43 @@ func (fetinfo *fetInfo) getExtraConstraints() {
 
 	// ... then the cross-activity-group days-between constraints
 
-	//TODO
 	for agix, xdbcmap := range dgc.CrossCourseConstraints {
-		for agix2, dbclist := range xdbcmap {
+		// Get the activity group
+		ag := ttplaces.ActivityGroups[agix]
+		// Only the first course is necessary, as any others in the list
+		// are hard-parallel.
+		cinfo := ttinfo.CourseInfo[ag.Courses[0]]
+		llist := []ActivityIndex{}
+		for _, l := range cinfo.Lessons {
+			llist = append(llist, fetinfo.lessonActivity[l.Id])
+		}
 
+		for agix2, dbclist := range xdbcmap {
+			// Get the activity group
+			ag2 := ttplaces.ActivityGroups[agix2]
+			// Only the first course is necessary, as any others in the list
+			// are hard-parallel.
+			// Add a constraint for each activity-index pair ...
+			cinfo2 := ttinfo.CourseInfo[ag2.Courses[0]]
+			for _, l := range cinfo2.Lessons {
+				ai2 := fetinfo.lessonActivity[l.Id]
+				for _, ai := range llist {
+					aipair := []ActivityIndex{ai, ai2}
+					// ... and each constraint in the list
+					for _, dbc := range dbclist {
+						tclist.ConstraintMinDaysBetweenActivities = append(
+							tclist.ConstraintMinDaysBetweenActivities,
+							minDaysBetweenActivities{
+								Weight_Percentage:       weight2fet(dbc.Weight),
+								Consecutive_If_Same_Day: dbc.ConsecutiveIfSameDay,
+								Number_of_Activities:    2,
+								Activity_Id:             aipair,
+								MinDays:                 dbc.DayGap,
+								Active:                  true,
+							})
+					}
+				}
+			}
 		}
 	}
 

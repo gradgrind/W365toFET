@@ -172,12 +172,11 @@ func (ttinfo *TtInfo) PrepareActivityGroups() {
 		// index in [base.Lesson.Rooms]
 		ichoices0 := len(cinfo.Room.Rooms)
 		nchoices := len(cinfo.Room.RoomChoices)
-
 		ttli0 := len(ttplaces.TtLessons)
 		for i, l := range llist0 {
 			p := -1 // placement slot
 			if l.Day >= 0 {
-				p = l.Day * ttinfo.DayLength * l.Hour
+				p = l.Day*ttinfo.DayLength + l.Hour
 			}
 			// Convert the room choices
 			xrooms := make([]ResourceIndex, nchoices)
