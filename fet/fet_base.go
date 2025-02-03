@@ -5,7 +5,7 @@ import (
 	"W365toFET/base"
 	"W365toFET/ttbase"
 	"encoding/xml"
-	"math"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -53,17 +53,49 @@ type fet struct {
 	Space_Constraints_List spaceConstraints
 }
 
-func weight2fet(w int) string {
-	if w <= 0 {
+// weight2fet converts a weight to a FET percentage. It assumes weights are
+// in the range 0 – 100.
+func weight2fet(w0 int) string {
+	if base.MAXWEIGHT != 100 {
+		base.Warning.Printf("Weight range not 0 – 100, converting. There" +
+			" may be a loss of precision.\n")
+		w0 = (w0 * 100) / base.MAXWEIGHT
+	}
+
+	if w0 <= 0 {
 		return "0"
 	}
-	if w >= 100 {
+	if w0 >= 100 {
 		return "100"
 	}
-	wf := float64(w)
+
+	// Calculate p = ((100 - w0) + ((100 - w)^8 / 10^13)),
+	// giving p a range of 0 – 1100, the highest value results from w0 = 0
+	w := uint64(100 - w0)
+	w2 := w * w
+	w4 := w2 * w2
+	p := w + ((w4 * w4) / 10000000000000)
+
+	// Convert p to a FET percentage
+	pz := fmt.Sprintf("%04d", (1100-p)*100/11)
+	pzl1 := len(pz) - 2
+	pz1, _ := strings.CutPrefix(pz[:pzl1], "0")
+	pz2 := pz[pzl1:]
+	wfs := pz1 + "." + pz2
+
+	// Random acceptance function
+	//if p > rand.Uint64N(1100) {
+	//	  accept the constraint breakage
+	//}
+
+	/* Previous algorithm:
+	wf := float64(w0)
 	n := wf + math.Pow(2, wf/12)
 	wfet := 100.0 - 100.0/n
-	return strconv.FormatFloat(wfet, 'f', 3, 64)
+	wfs := strconv.FormatFloat(wfet, 'f', 3, 64)
+	*/
+
+	return wfs
 }
 
 type idMap struct {

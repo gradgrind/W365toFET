@@ -210,7 +210,7 @@ func (ttinfo *TtInfo) TestPlacement(lix LessonUnitIndex, slot int) bool {
 
 			// Whether this slot is acceptable depends on a random number
 			// and the weight.
-			if RejectRandom(dbc.Weight) {
+			if !AcceptRandom(dbc.Weight) {
 				return false
 			}
 		}
