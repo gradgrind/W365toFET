@@ -110,21 +110,43 @@ func (fetinfo *fetInfo) getExtraConstraints() {
 	//	fmt.Printf("CTYPE: %s\n", ctype)
 	//}
 
-	for _, dbc := range fetinfo.ttinfo.MinDaysBetweenLessons {
-		tclist.ConstraintMinDaysBetweenActivities = append(
-			tclist.ConstraintMinDaysBetweenActivities,
-			minDaysBetweenActivities{
-				Weight_Percentage:       weight2fet(dbc.Weight),
-				Consecutive_If_Same_Day: dbc.ConsecutiveIfSameDay,
-				Number_of_Activities:    len(dbc.Lessons),
-				Activity_Id:             dbc.Lessons,
-				MinDays:                 dbc.MinDays,
-				Active:                  true,
-			})
+	// Deal with days-between constraints, first within one activity group
+	ttplaces := ttinfo.Placements
+	dgc := ttinfo.DayGapConstraints
+	for agix, dbclist := range dgc.CourseConstraints {
+		// Get the activity group
+		ag := ttplaces.ActivityGroups[agix]
+		// Only the first course is necessary, as any others in the list are
+		// hard-parallel.
+		cinfo := ttinfo.CourseInfo[ag.Courses[0]]
+		llist := []ActivityIndex{}
+		for _, l := range cinfo.Lessons {
+			llist = append(llist, fetinfo.lessonActivity[l.Id])
+		}
+		for _, dbc := range dbclist {
+			tclist.ConstraintMinDaysBetweenActivities = append(
+				tclist.ConstraintMinDaysBetweenActivities,
+				minDaysBetweenActivities{
+					Weight_Percentage:       weight2fet(dbc.Weight),
+					Consecutive_If_Same_Day: dbc.ConsecutiveIfSameDay,
+					Number_of_Activities:    len(llist),
+					Activity_Id:             llist,
+					MinDays:                 dbc.DayGap,
+					Active:                  true,
+				})
+		}
+	}
+
+	// ... then the cross-activity-group days-between constraints
+
+	//TODO
+	for agix, xdbcmap := range dgc.CrossCourseConstraints {
+		for agix2, dbclist := range xdbcmap {
+
+		}
 	}
 
 	// HardParallelCourses
-	ttplaces := ttinfo.Placements
 	for _, cagix := range ttplaces.CourseActivityGroup {
 		cag := ttplaces.ActivityGroups[cagix]
 		courses := cag.Courses
