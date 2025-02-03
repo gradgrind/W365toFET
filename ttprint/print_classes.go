@@ -93,8 +93,7 @@ func getClassData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 				}
 			}
 			// The rooms are associated with the lessons
-			for _, lix := range cinfo.Lessons {
-				l := ttinfo.Activities[lix].Lesson
+			for _, l := range cinfo.Lessons {
 				if l.Day < 0 {
 					continue
 				}
@@ -175,8 +174,7 @@ func getClassData(ttinfo *ttbase.TtInfo) map[base.Ref][]Tile {
 			tstrings := ttinfo.SortList(tlist)
 
 			// The rooms are associated with the lessons
-			for _, lix := range cinfo.Lessons {
-				l := ttinfo.Activities[lix].Lesson
+			for _, l := range cinfo.Lessons {
 				if l.Day < 0 {
 					continue
 				}

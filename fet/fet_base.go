@@ -111,6 +111,9 @@ type fetInfo struct {
 	fetVirtualRooms map[string]string // cache for FET virtual rooms,
 	// "hash" -> FET-virtual-room tag
 	fetVirtualRoomN map[string]int // FET-virtual-room tag -> number of room sets
+
+	// lessonActivity maps a lesson's Id (Ref) to its activity index
+	lessonActivity map[Ref]int
 }
 
 type timeConstraints struct {

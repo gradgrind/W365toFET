@@ -61,10 +61,8 @@ type activityPreferredTimes struct {
 	Active                         bool
 }
 
-// addSameStartingTime adds parallel constraints for the activities
+// addSameStartingTime adds parallel constraints for the lessons
 // of the courses in the supplied list.
-// This is done assuming that the FET activities correspond to the
-// [ttbase.Activity] items and not to the [ttbase.TtLesson] items.
 func (fetinfo *fetInfo) addSameStartingTime(
 	clist []Ref,
 	weight string, // call with weight2fet(weight), if not "100"
@@ -74,8 +72,8 @@ func (fetinfo *fetInfo) addSameStartingTime(
 	llists := map[int][]ActivityIndex{}
 	for _, cref := range clist {
 		cinfo := fetinfo.ttinfo.CourseInfo[cref]
-		for i, lix := range cinfo.Lessons {
-			llists[i] = append(llists[i], lix)
+		for i, l := range cinfo.Lessons {
+			llists[i] = append(llists[i], fetinfo.lessonActivity[l.Id])
 		}
 	}
 	// Add the constraints
@@ -125,6 +123,16 @@ func (fetinfo *fetInfo) getExtraConstraints() {
 			})
 	}
 
+	// HardParallelCourses
+	ttplaces := ttinfo.Placements
+	for _, cagix := range ttplaces.CourseActivityGroup {
+		cag := ttplaces.ActivityGroups[cagix]
+		courses := cag.Courses
+		if len(courses) > 1 {
+			fetinfo.addSameStartingTime(courses, "100")
+		}
+	}
+	// SoftParallelConstraints
 	for _, pl := range ttinfo.SoftParallelCourses {
 		fetinfo.addSameStartingTime(pl.Courses, weight2fet(pl.Weight))
 	}
@@ -132,12 +140,12 @@ func (fetinfo *fetInfo) getExtraConstraints() {
 	for _, c := range ttinfo.Constraints["LessonsEndDay"] {
 		cn := c.(*base.LessonsEndDay)
 		cinfo := ttinfo.CourseInfo[cn.Course]
-		for _, aid := range cinfo.Lessons {
+		for _, l := range cinfo.Lessons {
 			tclist.ConstraintActivityEndsStudentsDay = append(
 				tclist.ConstraintActivityEndsStudentsDay,
 				lessonEndsDay{
 					Weight_Percentage: weight2fet(cn.Weight),
-					Activity_Id:       aid,
+					Activity_Id:       fetinfo.lessonActivity[l.Id],
 					Active:            true,
 				})
 		}
@@ -208,12 +216,12 @@ func (fetinfo *fetInfo) getExtraConstraints() {
 			if !ok {
 				base.Bug.Fatalf("Invalid course: %s\n", k)
 			}
-			for _, aid := range cinfo.Lessons {
+			for _, l := range cinfo.Lessons {
 				tclist.ConstraintActivityPreferredTimeSlots = append(
 					tclist.ConstraintActivityPreferredTimeSlots,
 					activityPreferredTimes{
 						Weight_Percentage:              weight2fet(cn.Weight),
-						Activity_Id:                    aid,
+						Activity_Id:                    fetinfo.lessonActivity[l.Id],
 						Number_of_Preferred_Time_Slots: len(timeslots),
 						Preferred_Time_Slot:            timeslots,
 						Active:                         true,

@@ -267,8 +267,61 @@ func (ttinfo *TtInfo) FindClashes(
 		}
 	}
 
-	//TODO: Addapt different-days handling from above
+	// Different-days handling adapted from [TestPlacement]
 
+	// Check for days-between conflicts
+	for _, dbc := range l.DaysBetween {
+		mingap := dbc.HoursGap
+		for _, xlix := range dbc.LessonUnits {
+			xl := ttplaces.TtLessons[xlix]
+			xp := xl.Placement
+			if xp < 1 {
+				continue
+			}
+			gap := slot - xp
+			if gap < 0 {
+				if -gap >= mingap {
+					continue
+				}
+			} else if gap >= mingap {
+				continue
+			}
+			// The gap is too small.
+			if dbc.Weight == base.MAXWEIGHT {
+				clashes = append(clashes, xlix)
+				continue
+			}
+
+			// For soft constraints with ConsecutiveIfSameDay true, the
+			// lessons must be adjacent if they are on the same day.
+
+			if dbc.ConsecutiveIfSameDay {
+				if gap < 0 {
+					if -gap < ttinfo.NHours {
+						// The slot is before xp on the same day
+						if l.Duration+slot != xp {
+							clashes = append(clashes, xlix)
+							continue
+						}
+					}
+				} else if gap < ttinfo.NHours {
+					// The slot is after xp on the same day
+					if xl.Duration+xp != slot {
+						clashes = append(clashes, xlix)
+						continue
+					}
+				}
+			}
+
+			// Whether this slot is acceptable depends on a random number
+			// and the weight.
+			if !AcceptRandom(dbc.Weight) {
+				clashes = append(clashes, xlix)
+			}
+		}
+	}
+
+	// Eliminate duplicates
 	slices.Sort(clashes)
 	return slices.Compact(clashes)
 }

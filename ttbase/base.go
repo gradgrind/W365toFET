@@ -172,22 +172,20 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	return ttinfo
 }
 
-//TODO ...
-
 // PrepareCoreData adds teachers and (real) rooms to the resources list
-// (ttinfo.Resources). It also sets the Resources field of the [CourseInfo]
+// ([TtInfo.Resources]). It also sets the Resources field of the [CourseInfo]
 // items. For the rooms that is only the "necessary" rooms, the rooms where
 // a choice can be made are not included.
 //
-
-// Also an array of pointers to all the Activities is set up, keeping the
-// first entry free (0 should be an invalid activity index).
+// The data structures for keeping track of placements are set up at
+// [TtInfo.Placements]. This includes an array of pointers to all the
+// [TtLesson] items, keeping the first entry free (0 should be an invalid
+// lesson index).
 // Also an array of time-slot-weeks is set up. Each resource has a block of
-// time-slots representing a timetable week, arranged as an array in
-// [TtInfo.TimeSlots], the resource order being the same as in the
-// [TtInfo.Resource] array. Each time-slot contains the index of the
-// activity (in [TtInfo.Activities]) claiming that resource in the
-// time-slot in question. The value may also be 0 (resource free) or -1
+// time-slots representing a timetable week, arranged as an array, the
+// resource order being the same as in the [TtInfo.Resource] array.
+// Each time-slot contains the index of the lesson claiming that resource in
+// the time-slot in question. The value may also be 0 (resource free) or -1
 // (resource blocked – "not available").
 func (ttinfo *TtInfo) PrepareCoreData() {
 	db := ttinfo.Db
