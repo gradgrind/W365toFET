@@ -3,7 +3,6 @@ package ttbase
 import (
 	"W365toFET/base"
 	"fmt"
-	"math/big"
 	"slices"
 	"strings"
 )
@@ -183,148 +182,13 @@ func (ttinfo *TtInfo) filterRoomData(roomData map[Ref][]Ref) {
 			}
 		}
 
-		// Filter out any "necessary" rooms
-
-	restart:
-		//fmt.Printf("roomChoices1: %d\n", len(roomChoices))
-
-		/*
-			{ // Print roomChoices
-				rlist1 := []string{}
-				for _, rlist := range roomChoices {
-					rlist1a := []string{}
-					for _, rref := range rlist {
-						rlist1a = append(rlist1a, ttinfo.Ref2Tag[rref])
-					}
-					rlist1 = append(rlist1, strings.Join(rlist1a, "|"))
-				}
-				slices.Sort(rlist1)
-				r1 := strings.Join(rlist1, " + ")
-				fmt.Printf(" 00> %s\n", r1)
-			}
-		*/
-		{
-			rclList := [][]Ref{}
-			for _, rcl0 := range roomChoices {
-				rcl := []Ref{}
-				for _, rc := range rcl0 {
-					// Using list search will be slow for long lists, but
-					// most lists will be very short, which should
-					// compensate for that.
-					if slices.Contains(rooms, rc) {
-						continue
-					}
-					rcl = append(rcl, rc)
-				}
-				if len(rcl) == 0 {
-					// Skip choice
-					continue
-				}
-				if len(rcl) == 1 {
-					rooms = append(rooms, rcl[0])
-					goto restart
-				}
-				rclList = append(rclList, rcl)
-			}
-			//fmt.Printf("roomChoices2: %d\n", len(rclList))
-			roomChoices = rclList
-			//ttinfo.pRooms(rooms, "$ Rooms", ",")
-		}
-
-		// Convert rooms to indexes to ease handling
-
-		rmap := map[Ref]int{} // room id -> index
-		rvec := []Ref{}       // room index -> id
-		rindex := 0
-		rilList := [][]int{}
-		//for i, rcl := range roomChoices {
-		for _, rcl := range roomChoices {
-			//ttinfo.pRooms(rcl, fmt.Sprintf("$ RC0 %d", i), ",")
-			ril := []int{}
-			for _, rc := range rcl {
-				// Index the room
-				ri, ok := rmap[rc]
-				if !ok {
-					ri = rindex
-					rmap[rc] = ri
-					rvec = append(rvec, rc)
-					rindex++
-				}
-				ril = append(ril, ri)
-			}
-			rilList = append(rilList, ril)
-			//ttinfo.pRoomsI(ril, rvec, fmt.Sprintf("$ RC1 %d", i), ",")
-		}
-
-		// Investigate all paths, seeking and counting clashes per room
-
-		rclashes := map[int]int{}
-		paths := []*big.Int{}
-		for _, ril := range rilList {
-
-			if len(paths) == 0 {
-				// Build initial paths
-				for _, ri := range ril {
-					b := big.NewInt(0)
-					b.SetBit(b, ri, 1)
-					paths = append(paths, b)
-				}
-				continue
-			}
-
-			// Extend paths
-			paths1 := []*big.Int{}
-			for _, b := range paths {
-				for _, ri := range ril {
-					if b.Bit(ri) == 0 {
-						b1 := big.NewInt(0)
-						b1.SetBit(b, ri, 1)
-						// Skip duplicates
-						for _, b0 := range paths1 {
-							if b1.Cmp(b0) == 0 {
-								goto skip1
-							}
-						}
-						paths1 = append(paths1, b1)
-					} else {
-						// Clash, register and skip path
-						rclashes[ri]++
-					}
-				skip1:
-				}
-			}
-			if len(paths1) == 0 {
-				// No paths left, make room with most clashes "necessary"
-				rcm := -1
-				nmax := 0
-				for rc, n := range rclashes {
-					if n > nmax {
-						rcm = rc
-					}
-				}
-				rooms = append(rooms, rvec[rcm])
-				goto restart
-			}
-			if len(paths1) == 1 {
-				// Make all rooms in paths1 "necessary"
-				path := paths1[0]
-				for ri := 0; ri < rindex; ri++ {
-					if path.Bit(ri) == 1 {
-						rooms = append(rooms, rvec[ri])
-					}
-				}
-				goto restart
-			}
-			paths = paths1
-		}
-
-		// Add virtual room to CourseInfo item
-
+		// Filter out any "necessary" rooms and add virtual room to
+		// [CourseInfo] item
 		cinfo := ttinfo.CourseInfo[cref]
-		cinfo.Room = VirtualRoom{
-			Rooms:       rooms,
-			RoomChoices: roomChoices,
-		}
+		cinfo.Room = roomChoiceFilter(rooms, roomChoices)
+
+		// Check the allocated rooms at Lesson.Rooms
+		ttinfo.checkAllocatedRooms()
 	}
 }
 
@@ -517,22 +381,6 @@ func (ttinfo *TtInfo) pRooms(
 	rlist1 := []string{}
 	for _, rref := range rlist {
 		rlist1 = append(rlist1, ttinfo.Ref2Tag[rref])
-	}
-	slices.Sort(rlist1)
-	r1 := strings.Join(rlist1, jn)
-	fmt.Printf("%s %s\n", prefix, r1)
-}
-
-// for testing
-func (ttinfo *TtInfo) pRoomsI(
-	rlist []int,
-	rvec []Ref,
-	prefix string,
-	jn string,
-) {
-	rlist1 := []string{}
-	for _, rix := range rlist {
-		rlist1 = append(rlist1, ttinfo.Ref2Tag[rvec[rix]])
 	}
 	slices.Sort(rlist1)
 	r1 := strings.Join(rlist1, jn)
