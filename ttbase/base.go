@@ -162,9 +162,6 @@ func MakeTtInfo(db *base.DbTopLevel) *TtInfo {
 	// for printing tag lists)
 	ttinfo.orderResources()
 
-	// Check the allocated rooms at Lesson.Rooms
-	ttinfo.checkAllocatedRooms()
-
 	// Get "atomic" groups. The first elements of the resources list
 	// [TtInfo.Resources] are allocated to the atomic groups.
 	ttinfo.makeAtomicGroups()

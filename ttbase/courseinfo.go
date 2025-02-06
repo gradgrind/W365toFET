@@ -211,8 +211,13 @@ func (ttinfo *TtInfo) checkAllocatedRooms() {
 			// First collect all allocated rooms in a set.
 			lrmap := map[Ref]bool{}
 			for _, rref := range lrooms {
-				lrmap[rref] = true
+				if rref != "" {
+					lrmap[rref] = true
+				}
 			}
+
+			nplaced := len(lrmap) // number of room placements (for warnings)
+
 			// Remove those that belong to the "compulsory" list
 			for i, rref := range vr.Rooms {
 				if lrmap[rref] {
@@ -302,7 +307,7 @@ func (ttinfo *TtInfo) checkAllocatedRooms() {
 					" room allocations: %+v\n",
 					ttinfo.View(cinfo), rlist)
 				warned = true
-			} else if !complete && !warned {
+			} else if !complete && !warned && nplaced != 0 {
 				base.Warning.Printf("Lesson in Course %s has incomplete"+
 					" room allocations\n",
 					ttinfo.View(cinfo))
@@ -325,26 +330,6 @@ func (ttinfo *TtInfo) collectCourseResources() {
 			resources = append(resources, t2tt[tref])
 		}
 
-		//TODO: Is this really useful?
-		// Get class(es) ... and atomic groups
-		// This is for finding the "extended groups" – in the activity's
-		// class(es) but not involved in the activity. This list may help
-		// finding activities which can be placed parallel.
-		cagmap := map[base.Ref][]ResourceIndex{}
-		for _, gref := range cinfo.Groups {
-			cagmap[ttinfo.Db.Elements[gref].(*base.Group).Class] = nil
-		}
-		aagmap := map[ResourceIndex]bool{}
-		for cref := range cagmap {
-			c := ttinfo.Db.Elements[cref].(*base.Class)
-			aglist := g2tt[c.ClassGroup]
-			//fmt.Printf("???????? %s: %+v\n", c.Tag, aglist)
-			for _, agix := range aglist {
-				aagmap[agix] = true
-			}
-		}
-		//--?
-
 		// Handle groups
 		for _, gref := range cinfo.Groups {
 			for _, agix := range g2tt[gref] {
@@ -355,7 +340,6 @@ func (ttinfo *TtInfo) collectCourseResources() {
 							" in Course: %s\n", ttinfo.View(cinfo))
 				} else {
 					resources = append(resources, agix)
-					aagmap[agix] = false
 				}
 			}
 		}
