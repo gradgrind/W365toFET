@@ -186,9 +186,6 @@ func (ttinfo *TtInfo) filterRoomData(roomData map[Ref][]Ref) {
 		// [CourseInfo] item
 		cinfo := ttinfo.CourseInfo[cref]
 		cinfo.Room = roomChoiceFilter(rooms, roomChoices)
-
-		// Check the allocated rooms at Lesson.Rooms
-		ttinfo.checkAllocatedRooms()
 	}
 }
 

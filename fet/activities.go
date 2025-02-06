@@ -129,7 +129,6 @@ func getActivities(fetinfo *fetInfo) []idMap {
 
 func addPlacementConstraints(fetinfo *fetInfo) {
 	ttinfo := fetinfo.ttinfo
-	ref2fet := ttinfo.Ref2Tag
 
 	//TODO: Use the ActivityGroup list as primary loop?
 
@@ -196,7 +195,13 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 				continue
 			}
 
+			/*TODO--
+			What is the point of this. To allow preselection of rooms where
+			there is a choice? Surely there shouldn't be a choice in such
+			cases?
+
 			// Get room tags of the Lesson's Rooms.
+			ref2fet := ttinfo.Ref2Tag
 			rlist := []string{}
 			for _, rref := range l.Rooms {
 				rlist = append(rlist, ref2fet[rref])
@@ -246,6 +251,7 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 					Active:             true,
 				},
 			)
+			*/
 		}
 	}
 }

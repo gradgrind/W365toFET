@@ -4,6 +4,7 @@ import (
 	"W365toFET/ttbase"
 	"encoding/xml"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -102,38 +103,24 @@ func (fetinfo *fetInfo) getFetRooms(room ttbase.VirtualRoom) []string {
 	// The fet virtual rooms are cached at fetinfo.fetVirtualRooms.
 	var result []string
 
-	/*--
-	rlist0 := []string{}
-	for _, rref := range room.Rooms {
-		rlist0 = append(rlist0, fetinfo.ttinfo.Ref2Tag[rref])
-	}
-	r0 := strings.Join(rlist0, ",")
-	rlist1 := []string{}
-	for _, rlist := range room.RoomChoices {
-		rlist1a := []string{}
-		for _, rref := range rlist {
-			rlist1a = append(rlist1a, fetinfo.ttinfo.Ref2Tag[rref])
-		}
-		rlist1 = append(rlist1, strings.Join(rlist1a, "|"))
-	}
-	r1 := strings.Join(rlist1, "+")
-	fmt.Printf("getFetRooms [%s & %s]\n", r0, r1)
-	*/
-
 	// First convert the Ref values to Element Tags for FET.
 	rtags := []string{}
 	ref2fet := fetinfo.ttinfo.Ref2Tag
 	for _, rref := range room.Rooms {
 		rtags = append(rtags, ref2fet[rref])
 	}
+	slices.Sort(rtags)
 	rctags := [][]string{}
 	for _, rc := range room.RoomChoices {
 		rcl := []string{}
 		for _, rref := range rc {
 			rcl = append(rcl, ref2fet[rref])
 		}
+		slices.Sort(rcl)
 		rctags = append(rctags, rcl)
 	}
+	//fmt.Printf("getFetRooms, FIXED: %+v\n", rtags)
+	//fmt.Printf("getFetRooms, CHOICES: %+v\n", rctags)
 
 	if len(rctags) == 0 && len(rtags) < 2 {
 		result = rtags

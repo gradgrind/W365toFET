@@ -16,7 +16,7 @@ restart:
 
 	newlist := [][]Ref{}
 
-	cp := []map[Ref]nothing{map[Ref]nothing{}}
+	cp := []map[Ref]nothing{{}}
 	for i, rc0 := range rclist {
 		rc := []Ref{}
 		for _, r := range rc0 {
@@ -39,7 +39,7 @@ restart:
 		for _, cpm := range cp {
 			for _, r := range rc {
 				if _, ok := cpm[r]; !ok {
-					newcpm := map[Ref]nothing{r: nothing{}}
+					newcpm := map[Ref]nothing{r: {}}
 					maps.Copy(newcpm, cpm)
 					newcp = append(newcp, newcpm)
 				}
