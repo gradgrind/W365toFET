@@ -148,7 +148,13 @@ func (db *DbTopLevel) getCourseSubject(
 			subject = db.makeNewSubject(newdb, sktag, "Compound Subject")
 		}
 	} else {
-		base.Error.Fatalf("Course/SubCourse has no subject: %s\n", courseId)
+		base.Error.Printf("Course/SubCourse has no subject: %s\n", courseId)
+		// Use a dummy Subject.
+		var ok bool
+		subject, ok = db.SubjectTags["?"]
+		if !ok {
+			subject = db.makeNewSubject(newdb, "?", "No Subject")
+		}
 	}
 	return subject
 }

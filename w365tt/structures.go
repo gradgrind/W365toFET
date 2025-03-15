@@ -228,7 +228,11 @@ func (dbp *DbTopLevel) handleZeroAfternoons(
 	}
 	// In the second pass, include existing blocked hours.
 	for _, ts := range notAvailable {
-		namap[ts.Day][ts.Hour] = true
+		if ts.Hour < len(dbp.Hours) {
+			// Exclude invalid hours
+			namap[ts.Day][ts.Hour] = true
+		}
+		//TODO: else an error message?
 	}
 	// Build a new base.TimeSlot list
 	na := []base.TimeSlot{}
