@@ -128,7 +128,7 @@ func (db *DbTopLevel) NewLesson(ref Ref) *Lesson {
 func (db *DbTopLevel) PrepareDb() {
 	if db.Info.MiddayBreak == nil {
 		db.Info.MiddayBreak = []int{}
-	} else {
+	} else if len(db.Info.MiddayBreak) > 1 {
 		// Sort and check contiguity.
 		slices.Sort(db.Info.MiddayBreak)
 		mb := db.Info.MiddayBreak

@@ -91,10 +91,9 @@ func addClassConstraints(fetinfo *fetInfo) {
 			mgpweek = 0
 		}
 
-		if cl.LunchBreak {
+		if mbhours := db.Info.MiddayBreak; len(mbhours) != 0 && cl.LunchBreak {
 			// Generate the constraint unless all days have a blocked lesson
 			// at lunchtime.
-			mbhours := db.Info.MiddayBreak
 			lbdays := ndays
 			d := 0
 			for _, ts := range cl.NotAvailable {

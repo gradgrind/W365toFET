@@ -83,10 +83,9 @@ func addTeacherConstraints(fetinfo *fetInfo) {
 		mgpday := t.MaxGapsPerDay
 		mgpweek := t.MaxGapsPerWeek
 
-		if t.LunchBreak {
+		if mbhours := db.Info.MiddayBreak; len(mbhours) != 0 && t.LunchBreak {
 			// Generate the constraint unless all days have a blocked lesson
 			// at lunchtime.
-			mbhours := db.Info.MiddayBreak
 			lbdays := ndays
 			d := 0
 			for _, ts := range t.NotAvailable {
