@@ -9,6 +9,7 @@
 // supporting package is defined.
 // However, there is basic in-built support for reading from and saving to
 // JSON.
+// TODO: Currently dealing only with the elements needed for the timetable
 package base
 
 // A Ref is used to identify the constituent elements of the database.
@@ -305,4 +306,12 @@ type DbTopLevel struct {
 
 	// These fields do not belong in the JSON object:
 	Elements map[Ref]Elem `json:"-"`
+}
+
+func (db *DbTopLevel) Ref2Tag(ref Ref) string {
+	e, ok := db.Elements[ref]
+	if !ok {
+		Bug.Fatalf("No Ref2Tag for %s\n", ref)
+	}
+	return e.getTag()
 }
