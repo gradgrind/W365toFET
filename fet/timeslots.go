@@ -33,7 +33,7 @@ type fetHoursList struct {
 func getDays(fetinfo *fetInfo) {
 	days := []fetDay{}
 	//	dlist := []string{}
-	for d, n := range fetinfo.ttinfo.Db.Days {
+	for d, n := range fetinfo.tt_data.Db.Days {
 		days = append(days, fetDay{
 			Name:      strconv.Itoa(d),
 			Long_Name: n.Tag + "*" + n.Name,
@@ -50,7 +50,7 @@ func getDays(fetinfo *fetInfo) {
 func getHours(fetinfo *fetInfo) {
 	hours := []fetHour{}
 	//	hlist := []string{}
-	for h, n := range fetinfo.ttinfo.Db.Hours {
+	for h, n := range fetinfo.tt_data.Db.Hours {
 		hours = append(hours, fetHour{
 			Name:      strconv.Itoa(h),
 			Long_Name: fmt.Sprintf("%s*%s@%s-%s", n.Tag, n.Name, n.Start, n.End),

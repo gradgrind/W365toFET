@@ -31,10 +31,10 @@ func addClassConstraints(fetinfo *fetInfo) {
 	cmaxaft := []maxDaysinIntervalPerWeek{}
 	cmaxls := []maxLateStarts{}
 	clblist := []lunchBreak{}
-	ttinfo := fetinfo.ttinfo
-	ndays := ttinfo.NDays
-	nhours := ttinfo.NHours
-	db := ttinfo.Db
+	tt_data := fetinfo.tt_data
+	ndays := tt_data.NDays
+	nhours := tt_data.NHours
+	db := tt_data.Db
 
 	for _, cl := range db.Classes {
 		if cl.Tag == "" {

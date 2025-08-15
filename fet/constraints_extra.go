@@ -71,14 +71,14 @@ type sameStartingTime struct {
 
 func getExtraConstraints(fetinfo *fetInfo) {
 	tclist := &fetinfo.fetdata.Time_Constraints_List
-	ttinfo := fetinfo.ttinfo
+	tt_data := fetinfo.tt_data
 
 	//TODO--
-	//for ctype := range ttinfo.Constraints {
+	//for ctype := range tt_data.Constraints {
 	//	fmt.Printf("CTYPE: %s\n", ctype)
 	//}
 
-	for _, dbc := range fetinfo.ttinfo.MinDaysBetweenLessons {
+	for _, dbc := range fetinfo.tt_data.MinDaysBetweenLessons {
 		tclist.ConstraintMinDaysBetweenActivities = append(
 			tclist.ConstraintMinDaysBetweenActivities,
 			minDaysBetweenActivities{
@@ -91,7 +91,7 @@ func getExtraConstraints(fetinfo *fetInfo) {
 			})
 	}
 
-	for _, pl := range ttinfo.ParallelLessons {
+	for _, pl := range tt_data.ParallelLessons {
 		for _, alist := range pl.LessonGroups {
 			tclist.ConstraintActivitiesSameStartingTime = append(
 				tclist.ConstraintActivitiesSameStartingTime,
@@ -104,9 +104,9 @@ func getExtraConstraints(fetinfo *fetInfo) {
 		}
 	}
 
-	for _, c := range ttinfo.Constraints["LessonsEndDay"] {
+	for _, c := range tt_data.Constraints["LessonsEndDay"] {
 		cn := c.(*base.LessonsEndDay)
-		cinfo := ttinfo.CourseInfo[cn.Course]
+		cinfo := tt_data.CourseInfo[cn.Course]
 		for _, aid := range cinfo.Lessons {
 			tclist.ConstraintActivityEndsStudentsDay = append(
 				tclist.ConstraintActivityEndsStudentsDay,
@@ -120,7 +120,7 @@ func getExtraConstraints(fetinfo *fetInfo) {
 
 	//TODO: Specification pending
 	var doubleBlocked []bool
-	for _, c := range ttinfo.Constraints["DoubleLessonNotOverBreaks"] {
+	for _, c := range tt_data.Constraints["DoubleLessonNotOverBreaks"] {
 		cn := c.(*base.DoubleLessonNotOverBreaks)
 
 		if len(doubleBlocked) != 0 {
@@ -131,11 +131,11 @@ func getExtraConstraints(fetinfo *fetInfo) {
 		timeslots := []preferredStart{}
 		// Note that a double lesson can't start in the last slot of
 		// the day.
-		doubleBlocked = make([]bool, ttinfo.NHours-1)
+		doubleBlocked = make([]bool, tt_data.NHours-1)
 		for _, h := range cn.Hours {
 			doubleBlocked[h-1] = true
 		}
-		for d := 0; d < ttinfo.NDays; d++ {
+		for d := 0; d < tt_data.NDays; d++ {
 			for h, bl := range doubleBlocked {
 				if !bl {
 					timeslots = append(timeslots, preferredStart{
@@ -156,12 +156,12 @@ func getExtraConstraints(fetinfo *fetInfo) {
 			})
 	}
 
-	for _, c := range ttinfo.Constraints["BeforeAfterHour"] {
+	for _, c := range tt_data.Constraints["BeforeAfterHour"] {
 		cn := c.(*base.BeforeAfterHour)
 		timeslots := []preferredTime{}
 		if cn.After {
-			for d := 0; d < ttinfo.NDays; d++ {
-				for h := cn.Hour + 1; h < ttinfo.NHours; h++ {
+			for d := 0; d < tt_data.NDays; d++ {
+				for h := cn.Hour + 1; h < tt_data.NHours; h++ {
 					timeslots = append(timeslots, preferredTime{
 						Preferred_Day:  strconv.Itoa(d),
 						Preferred_Hour: strconv.Itoa(h),
@@ -169,7 +169,7 @@ func getExtraConstraints(fetinfo *fetInfo) {
 				}
 			}
 		} else {
-			for d := 0; d < ttinfo.NDays; d++ {
+			for d := 0; d < tt_data.NDays; d++ {
 				for h := 0; h < cn.Hour; h++ {
 					timeslots = append(timeslots, preferredTime{
 						Preferred_Day:  strconv.Itoa(d),
@@ -179,7 +179,7 @@ func getExtraConstraints(fetinfo *fetInfo) {
 			}
 		}
 		for _, k := range cn.Courses {
-			cinfo, ok := ttinfo.CourseInfo[k]
+			cinfo, ok := tt_data.CourseInfo[k]
 			if !ok {
 				base.Bug.Fatalf("Invalid course: %s\n", k)
 			}

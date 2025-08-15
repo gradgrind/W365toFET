@@ -29,10 +29,10 @@ func addTeacherConstraints(fetinfo *fetInfo) {
 	tmaxgpw := []maxGapsPerWeekT{}
 	tmaxaft := []maxDaysinIntervalPerWeekT{}
 	tlblist := []lunchBreakT{}
-	ttinfo := fetinfo.ttinfo
-	ndays := ttinfo.NDays
-	nhours := ttinfo.NHours
-	db := ttinfo.Db
+	tt_data := fetinfo.tt_data
+	ndays := tt_data.NDays
+	nhours := tt_data.NHours
+	db := tt_data.Db
 
 	for _, t := range db.Teachers {
 		n := t.MaxDays

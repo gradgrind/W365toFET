@@ -2,7 +2,7 @@ package fet
 
 import (
 	"W365toFET/base"
-	"W365toFET/ttbase"
+	"W365toFET/timetable"
 	"encoding/xml"
 	"io"
 	"os"
@@ -31,7 +31,7 @@ type ActivityPlacement struct {
 }
 
 func ReadPlacements(
-	ttinfo *ttbase.TtInfo,
+	tt_data *timetable.TtData,
 	xmlpath string,
 ) []ActivityPlacement {
 	// Open the  XML activities file
@@ -52,7 +52,7 @@ func ReadPlacements(
 
 	// Need mapping for the Rooms
 	rmap := map[string]Ref{}
-	for _, r := range ttinfo.Db.Rooms {
+	for _, r := range tt_data.Db.Rooms {
 		rmap[r.Tag] = r.Id
 	}
 

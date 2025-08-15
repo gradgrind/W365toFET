@@ -63,7 +63,7 @@ type roomNotAvailable struct {
 func getRooms(fetinfo *fetInfo) {
 	rooms := []fetRoom{}
 	natimes := []roomNotAvailable{}
-	for _, n := range fetinfo.ttinfo.Db.Rooms {
+	for _, n := range fetinfo.tt_data.Db.Rooms {
 		rooms = append(rooms, fetRoom{
 			Name:      n.Tag,
 			Long_Name: n.Name,
@@ -99,21 +99,23 @@ func getRooms(fetinfo *fetInfo) {
 		ConstraintRoomNotAvailableTimes = natimes
 }
 
+// TODO
 func (fetinfo *fetInfo) getFetRooms(room ttbase.VirtualRoom) []string {
 	// The fet virtual rooms are cached at fetinfo.fetVirtualRooms.
 	var result []string
+	db := fetinfo.tt_data.Db
 
 	/*--
 	rlist0 := []string{}
 	for _, rref := range room.Rooms {
-		rlist0 = append(rlist0, fetinfo.ttinfo.Ref2Tag[rref])
+		rlist0 = append(rlist0, fetinfo.tt_data.Ref2Tag[rref])
 	}
 	r0 := strings.Join(rlist0, ",")
 	rlist1 := []string{}
 	for _, rlist := range room.RoomChoices {
 		rlist1a := []string{}
 		for _, rref := range rlist {
-			rlist1a = append(rlist1a, fetinfo.ttinfo.Ref2Tag[rref])
+			rlist1a = append(rlist1a, fetinfo.tt_data.Ref2Tag[rref])
 		}
 		rlist1 = append(rlist1, strings.Join(rlist1a, "|"))
 	}
@@ -123,15 +125,14 @@ func (fetinfo *fetInfo) getFetRooms(room ttbase.VirtualRoom) []string {
 
 	// First convert the Ref values to Element Tags for FET.
 	rtags := []string{}
-	ref2fet := fetinfo.ttinfo.Ref2Tag
 	for _, rref := range room.Rooms {
-		rtags = append(rtags, ref2fet[rref])
+		rtags = append(rtags, db.Ref2Tag(rref))
 	}
 	rctags := [][]string{}
 	for _, rc := range room.RoomChoices {
 		rcl := []string{}
 		for _, rref := range rc {
-			rcl = append(rcl, ref2fet[rref])
+			rcl = append(rcl, db.Ref2Tag(rref))
 		}
 		rctags = append(rctags, rcl)
 	}
