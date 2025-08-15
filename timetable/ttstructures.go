@@ -51,6 +51,7 @@ type TimetableUnit struct {
 
 // A TtData is the top-level structure for the timetable data.
 type TtData struct {
+	Db           *base.DbTopLevel
 	NDays        int
 	NHours       int
 	HoursPerWeek int
@@ -80,7 +81,7 @@ type TtData struct {
 	// Set up by `MakeActivities`
 	Activities []*TtActivity
 	//?? ActivityCourses []*TtCourseInfo
-	//?? CourseInfo      map[NodeRef]*TtCourseInfo // key is Course or SuperCourse
+	CourseInfoList []*CourseInfo
 
 	/*???
 	DayIndex     map[string]int
@@ -99,30 +100,31 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 	days := len(db.Days)
 	hours := len(db.Hours)
 	tt_data := &TtData{
+		Db:           db,
 		NDays:        days,
 		NHours:       hours,
 		HoursPerWeek: days * hours,
 		//?? ActivitySlots: slices.Repeat([]TimeSlot{-1}, activities+1),
 	}
 
-	course_info := CollectCourses(db)
-	class_divisions := FilterDivisions(db, course_info)
+	tt_data.CollectCourses()
+	class_divisions := tt_data.FilterDivisions()
 
 	// Atomic groups: an atomic group is a "resource", it is an ordered list
 	// of single groups, one from each division.
 	// The atomic groups take the lowest resource indexes (starting at 0).
 	// `AtomicGroups` maps the classes and groups to a list of their resource
 	// indexes.
-	tt_data.MakeAtomicGroups(db, class_divisions)
+	tt_data.MakeAtomicGroups(class_divisions)
 
 	// Add teachers and rooms to resource array
-	tt_data.TeacherResources(db)
-	tt_data.RoomResources(db)
+	tt_data.TeacherResources()
+	tt_data.RoomResources()
 	tt_data.ResourceWeeks = make([]ActivityIndex,
 		(len(tt_data.Resources))*days*hours)
 
 	// Get the activities for the timetable
-	tt_data.MakeActivities(db, course_info)
+	tt_data.MakeActivities()
 	// ... initially all unplaced
 	tt_data.ActivitySlots = slices.Repeat(
 		[]TimeSlot{-1},
@@ -130,7 +132,7 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 
 	// Add the pseudo activities due to the NotAvailable lists of classes,
 	// teachers and rooms.
-	tt_data.BlockResources(db)
+	tt_data.BlockResources()
 
 	/* TODO
 	// Get preliminary constraint info – needed for the call to addActivity
@@ -147,18 +149,18 @@ func (tt_data *TtData) BlockResource(resource ResourceIndex, slot TimeSlot) {
 	tt_data.ResourceWeeks[int(resource)*tt_data.HoursPerWeek+int(slot)] = -1
 }
 
-func (tt_data *TtData) TeacherResources(db *base.DbTopLevel) {
+func (tt_data *TtData) TeacherResources() {
 	tt_data.TeacherIndex = map[NodeRef]ResourceIndex{}
-	for _, t := range db.Teachers {
+	for _, t := range tt_data.Db.Teachers {
 		i := len(tt_data.Resources)
 		tt_data.TeacherIndex[t.Id] = i
 		tt_data.Resources = append(tt_data.Resources, t)
 	}
 }
 
-func (tt_data *TtData) RoomResources(db *base.DbTopLevel) {
+func (tt_data *TtData) RoomResources() {
 	tt_data.RoomIndex = map[NodeRef]ResourceIndex{}
-	for _, r := range db.Rooms {
+	for _, r := range tt_data.Db.Rooms {
 		i := len(tt_data.Resources)
 		tt_data.RoomIndex[r.Id] = i
 		tt_data.Resources = append(tt_data.Resources, r)

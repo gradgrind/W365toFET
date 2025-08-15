@@ -15,20 +15,17 @@ type ClassDivision struct {
 
 // Prepare filtered versions of the class Divisions containing only
 // those Divisions which have Groups used in Lessons.
-func FilterDivisions(
-	db *base.DbTopLevel,
-	course_info []*CourseInfo,
-) []ClassDivision {
+func (tt_data *TtData) FilterDivisions() []ClassDivision {
 	// Collect groups used in activities, using CourseInfo structures.
 	usedgroups := map[NodeRef]bool{}
-	for _, cinfo := range course_info {
+	for _, cinfo := range tt_data.CourseInfoList {
 		for _, g := range cinfo.Groups {
 			usedgroups[g] = true
 		}
 	}
 	// Filter the class divisions, discarding the division names.
 	cdivs := []ClassDivision{}
-	for _, c := range db.Classes {
+	for _, c := range tt_data.Db.Classes {
 		divs := [][]NodeRef{}
 		for _, div := range c.Divisions {
 			for _, gref := range div.Groups {
@@ -51,13 +48,11 @@ type AtomicGroup struct {
 	Tag    string // A constructed tag to represent the atomic group
 }
 
-func (tt_data *TtData) MakeAtomicGroups(
-	db *base.DbTopLevel,
-	class_divisions []ClassDivision,
-) {
+func (tt_data *TtData) MakeAtomicGroups(class_divisions []ClassDivision) {
 	// An atomic group is an ordered list of single groups, one from each
 	// division.
 	tt_data.AtomicGroups = map[NodeRef][]ResourceIndex{}
+	db := tt_data.Db
 
 	// Go through the classes inspecting their Divisions.
 	// Build a list-basis for the atomic groups based on the Cartesian product.
@@ -102,7 +97,7 @@ func (tt_data *TtData) MakeAtomicGroups(
 		for _, ag := range agrefs {
 			glist := []string{}
 			for _, gref := range ag {
-				gtag := db.Elements[gref].(*base.Group).Tag
+				gtag := db.Ref2Tag(gref)
 				glist = append(glist, gtag)
 			}
 			agix := len(tt_data.Resources)

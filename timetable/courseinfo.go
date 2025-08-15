@@ -7,12 +7,12 @@ import (
 	"strings"
 )
 
-// TODO: Activities should (already) be ordered, highest duration first,
-// and ActivityGroup should have the same order.
+// Activities are (already) ordered, highest duration first,
+// and ActivityGroup has the same order.
 // A CourseInfo is an intermediate representation of a course (Course or
 // SuperCourse) for the timetable.
 type CourseInfo struct {
-	Id            NodeRef
+	Id            NodeRef // Course or SuperCourse
 	Subject       NodeRef
 	Groups        []NodeRef
 	Teachers      []NodeRef
@@ -40,8 +40,8 @@ func View(db *base.DbTopLevel, cinfo *CourseInfo) string {
 
 // Collect courses (Course and SuperCourse) and their activities.
 // Build a list of CourseInfo structures.
-func CollectCourses(db *base.DbTopLevel) []*CourseInfo {
-	cinfo_list := []*CourseInfo{}
+func (tt_data *TtData) CollectCourses() {
+	db := tt_data.Db
 
 	// Gather the SuperCourses.
 	for _, spc := range db.SuperCourses {
@@ -49,8 +49,7 @@ func CollectCourses(db *base.DbTopLevel) []*CourseInfo {
 		groups := []NodeRef{}
 		teachers := []NodeRef{}
 		rooms := []NodeRef{}
-		for _, sbcref := range spc.SubCourses {
-			sbc := db.Elements[sbcref].(*base.SubCourse)
+		for _, sbc := range spc.SubCourses {
 			// Add groups
 			if len(sbc.Groups) != 0 {
 				groups = append(groups, sbc.Groups...)
@@ -68,7 +67,7 @@ func CollectCourses(db *base.DbTopLevel) []*CourseInfo {
 		slices.Sort(groups)
 		slices.Sort(teachers)
 		slices.Sort(rooms)
-		cinfo_list = append(cinfo_list, &CourseInfo{
+		tt_data.CourseInfoList = append(tt_data.CourseInfoList, &CourseInfo{
 			Id:         cref,
 			Subject:    spc.Subject,
 			Groups:     slices.Compact(groups),
@@ -85,7 +84,7 @@ func CollectCourses(db *base.DbTopLevel) []*CourseInfo {
 		if c.Room != "" {
 			rooms = append(rooms, c.Room)
 		}
-		cinfo_list = append(cinfo_list, &CourseInfo{
+		tt_data.CourseInfoList = append(tt_data.CourseInfoList, &CourseInfo{
 			Id:         cref,
 			Subject:    c.Subject,
 			Groups:     c.Groups,
@@ -94,14 +93,13 @@ func CollectCourses(db *base.DbTopLevel) []*CourseInfo {
 			Activities: c.Lessons,
 		})
 	}
-
-	return cinfo_list
 }
 
 // `MakeActivities` creates the `TtActivity` structures ...
-func (tt_data *TtData) MakeActivities(db *base.DbTopLevel, cinfo_list []*CourseInfo) {
+func (tt_data *TtData) MakeActivities() {
+	db := tt_data.Db
 	tt_data.Activities = []*TtActivity{{}} // first entry is empty
-	for _, cinfo := range cinfo_list {
+	for _, cinfo := range tt_data.CourseInfoList {
 		// Get resource indexes
 		resources := []ResourceIndex{}
 		for _, r := range cinfo.Groups {

@@ -188,7 +188,7 @@ type Class struct {
 type Group struct {
 	Element
 	// These fields do not belong in the JSON object:
-	Class Ref `json:"-"`
+	Class *Class `json:"-"`
 }
 
 // A Course specifies a collection of resources needed for a set of
@@ -222,8 +222,8 @@ type SuperCourse struct {
 	Element
 	Subject Ref
 	// These fields do not belong in the JSON object:
-	SubCourses []Ref     `json:"-"`
-	Lessons    []*Lesson `json:"-"`
+	SubCourses []*SubCourse `json:"-"`
+	Lessons    []*Lesson    `json:"-"`
 }
 
 func (c *SuperCourse) IsSuperCourse() bool {

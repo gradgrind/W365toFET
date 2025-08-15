@@ -3,7 +3,7 @@ package fet
 
 import (
 	"W365toFET/base"
-	"W365toFET/ttbase"
+	"W365toFET/timetable"
 	"encoding/xml"
 	"math"
 	"strconv"
@@ -66,12 +66,12 @@ func weight2fet(w int) string {
 }
 
 type idMap struct {
-	activityId int
+	activityId timetable.ActivityIndex
 	baseId     string
 }
 
 type fetInfo struct {
-	ttinfo        *ttbase.TtInfo
+	tt_data       *timetable.TtData
 	ref2grouponly map[Ref]string
 	fetdata       fet
 
@@ -132,8 +132,8 @@ type basicSpaceConstraint struct {
 	Active            bool
 }
 
-func MakeFetFile(ttinfo *ttbase.TtInfo) (string, string) {
-	dbdata := ttinfo.Db
+func MakeFetFile(tt_data *timetable.TtData) (string, string) {
+	dbdata := tt_data.Db
 
 	// Build ref-index -> fet-key mapping
 	ref2grouponly := map[Ref]string{}
@@ -146,7 +146,7 @@ func MakeFetFile(ttinfo *ttbase.TtInfo) (string, string) {
 	//fmt.Printf("ref2fet: %v\n", ref2fet)
 
 	fetinfo := fetInfo{
-		ttinfo:        ttinfo,
+		tt_data:       tt_data,
 		ref2grouponly: ref2grouponly,
 		fetdata: fet{
 			Version:          fet_version,
@@ -196,7 +196,7 @@ func MakeFetFile(ttinfo *ttbase.TtInfo) (string, string) {
 	idmlines := []string{}
 	for _, idm := range lessonIdMap {
 		idmlines = append(idmlines,
-			strconv.Itoa(idm.activityId)+":"+string(idm.baseId))
+			strconv.Itoa(int(idm.activityId))+":"+string(idm.baseId))
 	}
 	lidmap := strings.Join(idmlines, "\n")
 

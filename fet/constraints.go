@@ -1,13 +1,14 @@
 package fet
 
 import (
+	"W365toFET/timetable"
 	"encoding/xml"
 )
 
 type startingTime struct {
 	XMLName            xml.Name `xml:"ConstraintActivityPreferredStartingTime"`
 	Weight_Percentage  int
-	Activity_Id        int
+	Activity_Id        timetable.ActivityIndex
 	Preferred_Day      string
 	Preferred_Hour     string
 	Permanently_Locked bool
@@ -19,7 +20,7 @@ type minDaysBetweenActivities struct {
 	Weight_Percentage       string
 	Consecutive_If_Same_Day bool
 	Number_of_Activities    int
-	Activity_Id             []int
+	Activity_Id             []timetable.ActivityIndex
 	MinDays                 int
 	Active                  bool
 }

@@ -2,6 +2,7 @@ package fet
 
 import (
 	"W365toFET/base"
+	"W365toFET/timetable"
 	"encoding/xml"
 	"strconv"
 )
@@ -47,14 +48,14 @@ type preferredStart struct {
 type lessonEndsDay struct {
 	XMLName           xml.Name `xml:"ConstraintActivityEndsStudentsDay"`
 	Weight_Percentage string
-	Activity_Id       int
+	Activity_Id       timetable.ActivityIndex
 	Active            bool
 }
 
 type activityPreferredTimes struct {
 	XMLName                        xml.Name `xml:"ConstraintActivityPreferredTimeSlots"`
 	Weight_Percentage              string
-	Activity_Id                    int
+	Activity_Id                    timetable.ActivityIndex
 	Number_of_Preferred_Time_Slots int
 	Preferred_Time_Slot            []preferredTime
 	Active                         bool
@@ -64,7 +65,7 @@ type sameStartingTime struct {
 	XMLName              xml.Name `xml:"ConstraintActivitiesSameStartingTime"`
 	Weight_Percentage    string
 	Number_of_Activities int
-	Activity_Id          []int
+	Activity_Id          []timetable.ActivityIndex
 	Active               bool
 }
 
@@ -211,7 +212,7 @@ func getExtraConstraints(fetinfo *fetInfo) {
 						Weight_Percentage:       weight2fet(cn.Weight),
 						Consecutive_If_Same_Day: cn.ConsecutiveIfSameDay,
 						Number_of_Activities:    2,
-						Activity_Id:             []int{l1, l2},
+						Activity_Id:             []timetable.ActivityIndex{l1, l2},
 						MinDays:                 cn.DaysBetween,
 						Active:                  true,
 					})

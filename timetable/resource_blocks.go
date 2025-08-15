@@ -18,7 +18,8 @@ func (tt_data *TtData) blockResource(
 // `BlockResources` blocks the resource in the time slots specified in the
 // NotAvailable fields of their nodes in the main data structure
 // (base.DbTopLevel).
-func (tt_data *TtData) BlockResources(db *base.DbTopLevel) {
+func (tt_data *TtData) BlockResources() {
+	db := tt_data.Db
 	for _, tnode := range db.Teachers {
 		rix, ok := tt_data.TeacherIndex[tnode.Id]
 		if ok {

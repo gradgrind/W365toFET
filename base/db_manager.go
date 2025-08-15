@@ -141,7 +141,7 @@ func (db *DbTopLevel) PrepareDb() {
 	for _, sbc := range db.SubCourses {
 		for _, spcref := range sbc.SuperCourses {
 			spc := db.Elements[spcref].(*SuperCourse)
-			spc.SubCourses = append(spc.SubCourses, sbc.Id)
+			spc.SubCourses = append(spc.SubCourses, sbc)
 		}
 	}
 
@@ -168,16 +168,16 @@ func (db *DbTopLevel) PrepareDb() {
 			// Not a real class
 			continue
 		}
-		db.Elements[c.ClassGroup].(*Group).Class = c.Id // Tag is empty.
+		db.Elements[c.ClassGroup].(*Group).Class = c // Tag is empty.
 		for _, d := range c.Divisions {
 			for _, gref := range d.Groups {
-				db.Elements[gref].(*Group).Class = c.Id
+				db.Elements[gref].(*Group).Class = c
 			}
 		}
 	}
 	// Check that all groups belong to a class
 	for _, g := range db.Groups {
-		if g.Class == "" {
+		if g.Class == nil {
 			// This is a loader failure, it should not be possible.
 			Bug.Fatalf("Group not in Class: %s\n", g.Id)
 		}

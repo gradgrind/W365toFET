@@ -52,11 +52,13 @@ package main
 
 import (
 	"W365toFET/base"
+	"W365toFET/fet"
 	"W365toFET/timetable"
 	"W365toFET/w365tt"
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -93,11 +95,10 @@ func main() {
 
 	// ********** Build the fet file **********
 
-	/* TODO
 	fetfile := stempath
 	mapfile := stempath
 	thisdir := filepath.Dir(stempath)
-	moduleData := ttinfo.Db.ModuleData
+	moduleData := db.ModuleData
 	fetData, ok := moduleData["FetData"].(map[string]string)
 	if ok {
 		var f string
@@ -113,7 +114,7 @@ func main() {
 	fetfile += ".fet"
 	mapfile += ".map"
 
-	xmlitem, lessonIdMap := fet.MakeFetFile(ttinfo)
+	xmlitem, lessonIdMap := fet.MakeFetFile(tt_data)
 
 	// Write FET file
 	f, err := os.Create(fetfile)
@@ -140,5 +141,4 @@ func main() {
 	base.Message.Printf("Id-map written to: %s\n", mapfile)
 
 	base.Message.Println("OK")
-	*/
 }
