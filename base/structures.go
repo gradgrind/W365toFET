@@ -200,15 +200,19 @@ type Course struct {
 	Teachers []Ref
 	Room     Ref // [Room], [RoomGroup] or [RoomChoiceGroup] element
 	// These fields do not belong in the JSON object:
-	Lessons []Ref `json:"-"`
+	Lessons []*Lesson `json:"-"`
+}
+
+func (c *Course) GetLessonList() []*Lesson {
+	return c.Lessons
+}
+
+func (c *Course) SetLessonList(ll []*Lesson) {
+	c.Lessons = ll
 }
 
 func (c *Course) IsSuperCourse() bool {
 	return false
-}
-
-func (c *Course) AddLesson(lref Ref) {
-	c.Lessons = append(c.Lessons, lref)
 }
 
 // A SuperCourse specifies a collection of [SubCourse] elements which are
@@ -218,16 +222,20 @@ type SuperCourse struct {
 	Element
 	Subject Ref
 	// These fields do not belong in the JSON object:
-	SubCourses []Ref `json:"-"`
-	Lessons    []Ref `json:"-"`
+	SubCourses []Ref     `json:"-"`
+	Lessons    []*Lesson `json:"-"`
 }
 
 func (c *SuperCourse) IsSuperCourse() bool {
 	return true
 }
 
-func (c *SuperCourse) AddLesson(lref Ref) {
-	c.Lessons = append(c.Lessons, lref)
+func (c *SuperCourse) GetLessonList() []*Lesson {
+	return c.Lessons
+}
+
+func (c *SuperCourse) SetLessonList(ll []*Lesson) {
+	c.Lessons = ll
 }
 
 // A SubCourse has no Lessons of its own, but shares those of its parent
@@ -269,10 +277,14 @@ type Lesson struct {
 // [Course] or a [SuperCourse].
 type LessonCourse interface {
 	IsSuperCourse() bool // whether this is a SuperCourse
-	// AddLesson is used to add a lesson to the course. When the data is
-	// initially loaded the courses have no attached lessons. This list is
-	// built using the course references in the Lesson elements.
-	AddLesson(Ref) // add a lesson to the course
+
+	// When the data is initially loaded the courses have no attached lessons.
+	// The lesson list is built from the course references in the Lesson
+	// elements. The individual lessons are inserted such that they are
+	// ordered with the longest (duration) first. The following functions
+	// are used in the building of these lists.
+	GetLessonList() []*Lesson
+	SetLessonList([]*Lesson)
 }
 
 // Constraint is a rule used in the construction of a timetable.

@@ -52,12 +52,11 @@ package main
 
 import (
 	"W365toFET/base"
-	"W365toFET/fet"
-	"W365toFET/ttbase"
+	"W365toFET/timetable"
 	"W365toFET/w365tt"
 	"flag"
+	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 	"strings"
 )
@@ -85,11 +84,16 @@ func main() {
 	db := base.NewDb()
 	w365tt.LoadJSON(db, abspath)
 	db.PrepareDb()
-	ttinfo := ttbase.MakeTtInfo(db)
-	ttinfo.PrepareCoreData()
+	//ttinfo := ttbase.MakeTtInfo(db)
+	//ttinfo.PrepareCoreData()
+
+	tt_data := timetable.BasicSetup(db)
+	fmt.Printf("Resources: %d\n", len(tt_data.Resources))
+	fmt.Printf("Activities: %d\n", len(tt_data.Activities))
 
 	// ********** Build the fet file **********
 
+	/* TODO
 	fetfile := stempath
 	mapfile := stempath
 	thisdir := filepath.Dir(stempath)
@@ -136,4 +140,5 @@ func main() {
 	base.Message.Printf("Id-map written to: %s\n", mapfile)
 
 	base.Message.Println("OK")
+	*/
 }

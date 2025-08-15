@@ -17,7 +17,7 @@ type CourseInfo struct {
 	Groups        []NodeRef
 	Teachers      []NodeRef
 	Rooms         []NodeRef // items can be Room, RoomGroup or RoomChoiceGroup
-	Activities    []NodeRef
+	Activities    []*base.Lesson
 	ActivityGroup []ActivityIndex
 }
 
@@ -169,26 +169,9 @@ func (tt_data *TtData) MakeActivities(db *base.DbTopLevel, cinfo_list []*CourseI
 			}
 		}
 
-		// Build a TtActivity for each lesson.
-		// First sort according to length.
-		activities := make([]*base.Lesson, 0, len(cinfo.Activities))
-		for _, lref := range cinfo.Activities {
-			l := db.Elements[lref].(*base.Lesson)
-			if slices.Contains(l.Flags, "SubstitutionService") {
-				cinfo.Groups = nil
-			}
-			d := l.Duration
-			var i int = 0
-			for _, a := range activities {
-				if a.Duration <= d {
-					break
-				}
-				i++
-			}
-			activities = slices.Insert(activities, i, l)
-		}
-
-		for _, l := range activities {
+		// Build a TtActivity for each Activity – they are already sorted
+		// with the longest first.
+		for _, l := range cinfo.Activities {
 			//p := -1
 			//if l.Day >= 0 {
 			//	p = l.Day*tt_data.NHours + l.Hour

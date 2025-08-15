@@ -2,7 +2,6 @@ package w365tt
 
 import (
 	"W365toFET/base"
-	"W365toFET/ttprint"
 	"encoding/json"
 )
 
@@ -180,8 +179,8 @@ type EpochPlan struct {
 }
 
 type DbTopLevel struct {
-	Info         Info `json:"W365TT"`
-	PrintTables  []*ttprint.PrintTable
+	Info Info `json:"W365TT"`
+	//PrintTables  []*ttprint.PrintTable
 	FetData      map[string]string
 	Days         []*Day
 	Hours        []*Hour

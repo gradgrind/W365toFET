@@ -145,9 +145,21 @@ func (db *DbTopLevel) PrepareDb() {
 		}
 	}
 
-	// Collect the Lessons for each Course and SuperCourse
+	// Collect the Lessons for each Course and SuperCourse, the list being
+	// ordered with the longest durations first
 	for _, l := range db.Lessons {
-		db.Elements[l.Course].(LessonCourse).AddLesson(l.Id)
+		c := db.Elements[l.Course].(LessonCourse)
+		d := l.Duration
+		var i int = 0
+		ll := c.GetLessonList()
+		for _, a := range ll {
+			if a.Duration <= d {
+				break
+			}
+			i++
+		}
+		ll = slices.Insert(ll, i, l)
+		c.SetLessonList(ll)
 	}
 
 	// Expand Group information
