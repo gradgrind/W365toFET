@@ -65,8 +65,8 @@ func test2() {
 }
 
 func TestTtEngine(t *testing.T) {
-	test2()
-	return
+	//test2()
+	//return
 
 	base.OpenLog("")
 	for _, fxml := range inputfiles {
