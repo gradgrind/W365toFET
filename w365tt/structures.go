@@ -136,7 +136,7 @@ type Course struct {
 	Id             Ref
 	Type           string
 	Subjects       []Ref
-	Groups         []Ref
+	Groups         []Ref // can be `Class` or `Group`
 	Teachers       []Ref
 	PreferredRooms []Ref
 }
@@ -152,23 +152,23 @@ type SubCourse struct {
 	Id             Ref
 	Type           string
 	Subjects       []Ref
-	Groups         []Ref
+	Groups         []Ref // can be `Class` or `Group`
 	Teachers       []Ref
 	PreferredRooms []Ref
 }
 
 type Lesson struct {
-	Id         Ref
-	Type       string
-	Course     Ref // Course or SuperCourse Elements
-	Duration   int
-	Day        int
-	Hour       int
-	Fixed      bool
-	Rooms      []Ref `json:"LocalRooms"` // only Room Elements
-	Flags      []string
-	Background string
-	Footnote   string
+	Id       Ref
+	Type     string
+	Course   Ref // Course or SuperCourse Elements
+	Duration int
+	Day      int
+	Hour     int
+	Fixed    bool
+	Rooms    []Ref `json:"LocalRooms"` // only Room Elements
+	//Flags      []string
+	//Background string
+	//Footnote   string
 }
 
 type EpochPlan struct {
@@ -200,7 +200,7 @@ type DbTopLevel struct {
 	RealRooms       map[Ref]*base.Room      `json:"-"`
 	RoomGroupMap    map[Ref]*base.RoomGroup `json:"-"`
 	SubjectMap      map[Ref]*base.Subject   `json:"-"`
-	GroupRefMap     map[Ref]base.Ref        `json:"-"`
+	GroupRefMap     map[Ref]Ref             `json:"-"`
 	TeacherMap      map[Ref]bool            `json:"-"`
 	CourseMap       map[Ref]bool            `json:"-"`
 	SubjectTags     map[string]Ref          `json:"-"`

@@ -25,6 +25,7 @@ type TtActivity struct {
 	//Constraints []TtConstraint
 }
 
+/* TODO
 type TtRoom struct {
 	Id       NodeRef
 	Tag      string
@@ -48,6 +49,7 @@ type TimetableUnit struct {
 	//Constraints []TtConstraint
 	Next int
 }
+*/
 
 // A TtData is the top-level structure for the timetable data.
 type TtData struct {
@@ -67,16 +69,16 @@ type TtData struct {
 
 	// `Resources` is an array mapping resource indexes to their corresponding
 	// atomic group, teacher or room nodes (it contains pointers).
-	Resources    []any
+	Resources    []base.Resource //TODO: or any?
 	RoomIndex    map[NodeRef]ResourceIndex
 	TeacherIndex map[NodeRef]ResourceIndex
 
 	// `AtomicGroups` maps a class or group NodeRef to its list of atomic
 	// group indexes.
 	AtomicGroups map[NodeRef][]ResourceIndex
-	// `ClassDivisions` maps a class NodeRef to its list of divisions, each of
-	// these being a list of group NodeRefs.
-	ClassDivisions map[NodeRef][][]NodeRef
+	// `ClassDivisions` is a list with an entry for each class, containing a
+	// list of its divisions ([][]NodeRef).
+	ClassDivisions []ClassDivision
 
 	// Set up by `MakeActivities`
 	Activities []*TtActivity
@@ -94,6 +96,11 @@ type TtData struct {
 	//?? CollectedBags         map[*BasicActivityGroup]*BagCollection
 }
 
+type ClassDivision struct {
+	Class     *base.Class
+	Divisions [][]NodeRef
+}
+
 // BasicSetup performs the initialization of a TtData structure, collecting
 // "resources" (atomic student groups, teachers and rooms) and "activities".
 func BasicSetup(db *base.DbTopLevel) *TtData {
@@ -107,15 +114,15 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 		//?? ActivitySlots: slices.Repeat([]TimeSlot{-1}, activities+1),
 	}
 
-	tt_data.CollectCourses()
-	class_divisions := tt_data.FilterDivisions()
+	// Collect ClassDivisions
+	tt_data.FilterDivisions()
 
 	// Atomic groups: an atomic group is a "resource", it is an ordered list
 	// of single groups, one from each division.
 	// The atomic groups take the lowest resource indexes (starting at 0).
 	// `AtomicGroups` maps the classes and groups to a list of their resource
 	// indexes.
-	tt_data.MakeAtomicGroups(class_divisions)
+	tt_data.MakeAtomicGroups()
 
 	// Add teachers and rooms to resource array
 	tt_data.TeacherResources()
@@ -123,6 +130,7 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 	tt_data.ResourceWeeks = make([]ActivityIndex,
 		(len(tt_data.Resources))*days*hours)
 
+	tt_data.CollectCourses()
 	// Get the activities for the timetable
 	tt_data.MakeActivities()
 	// ... initially all unplaced

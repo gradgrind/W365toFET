@@ -15,7 +15,7 @@ func (db *DbTopLevel) readClasses(newdb *base.DbTopLevel) {
 		pregroups[n.Id] = false
 	}
 
-	db.GroupRefMap = map[base.Ref]base.Ref{}
+	db.GroupRefMap = map[Ref]Ref{}
 	for _, e := range db.Classes {
 		// MaxAfternoons = 0 has a special meaning (all blocked)
 		amax := e.MaxAfternoons

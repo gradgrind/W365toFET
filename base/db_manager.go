@@ -9,7 +9,7 @@ import (
 
 func NewDb() *DbTopLevel {
 	db := &DbTopLevel{}
-	db.Elements = map[Ref]Elem{}
+	db.Elements = map[Ref]Element{}
 	return db
 }
 
@@ -22,7 +22,7 @@ func (db *DbTopLevel) newId() Ref {
 	return Ref(u2.String())
 }
 
-func (db *DbTopLevel) addElement(ref Ref, element Elem) Ref {
+func (db *DbTopLevel) addElement(ref Ref, element Element) Ref {
 	if ref == "" {
 		ref = db.newId()
 	}
@@ -189,9 +189,9 @@ func (db *DbTopLevel) PrepareDb() {
 	newtags("Teacher", db.Teachers)
 }
 
-func newtags[T Elem](etype string, elist []T) {
+func newtags[T Element](etype string, elist []T) {
 	checktags := map[string]bool{}
-	errortags := []Elem{}
+	errortags := []Element{}
 	for _, e0 := range elist {
 		tag := e0.getTag()
 		if checktags[tag] {

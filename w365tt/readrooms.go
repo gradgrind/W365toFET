@@ -8,9 +8,9 @@ import (
 )
 
 func (db *DbTopLevel) readRooms(newdb *base.DbTopLevel) {
-	db.RealRooms = map[base.Ref]*base.Room{}
-	db.RoomTags = map[string]base.Ref{}
-	db.RoomChoiceNames = map[string]base.Ref{}
+	db.RealRooms = map[Ref]*base.Room{}
+	db.RoomTags = map[string]Ref{}
+	db.RoomChoiceNames = map[string]Ref{}
 	for _, e := range db.Rooms {
 		// Perform some checks and add to the RoomTags map.
 		_, nok := db.RoomTags[e.Tag]

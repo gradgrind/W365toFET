@@ -55,39 +55,39 @@ type Info struct {
 	Reference string
 }
 
-type Element struct {
+type ElementBase struct {
 	Id Ref
-	// Not all Element objects use the Tag field
+	// Not all elements use the Tag field
 	Tag string // abbreviation/acronmym
 }
 
-type Elem interface {
+type Element interface {
 	getId() Ref
 	getTag() string
 	setTag(string)
 }
 
-func (e *Element) getId() Ref {
+func (e *ElementBase) getId() Ref {
 	return e.Id
 }
 
-func (e *Element) getTag() string {
+func (e *ElementBase) getTag() string {
 	return e.Tag
 }
 
-func (e *Element) setTag(tag string) {
+func (e *ElementBase) setTag(tag string) {
 	e.Tag = tag
 }
 
 // A Day represents a day of the timetable's week
 type Day struct {
-	Element
+	ElementBase
 	Name string
 }
 
 // An Hour represents a lesson period ("hour") of a timetable's day
 type Hour struct {
-	Element
+	ElementBase
 	Name  string
 	Start string // start time, format hour:mins, e.g. "13:45"
 	End   string // end time, format hour:mins, e.g. "14:30"
@@ -97,7 +97,7 @@ type Hour struct {
 // information relevant for the timetable.
 // It can be specified as a recourse for an activity.
 type Teacher struct {
-	Element
+	ElementBase
 	Name      string
 	Firstname string
 	// NotAvailable is an ordered list of time-slots in which the teacher
@@ -116,13 +116,13 @@ type Teacher struct {
 // it can also be used for any other activities which are timetabled (say,
 // conferences).
 type Subject struct {
-	Element
+	ElementBase
 	Name string
 }
 
 // A Room is a resource which can be specified for an activity.
 type Room struct {
-	Element
+	ElementBase
 	Name string
 	// NotAvailable is an ordered list of time-slots in which the room is to
 	// be regarded as not available for the timetable.
@@ -137,7 +137,7 @@ func (r *Room) IsReal() bool {
 
 // A RoomGroup is a collection of [Room] items, all of which are "required".
 type RoomGroup struct {
-	Element
+	ElementBase
 	Name  string
 	Rooms []Ref
 }
@@ -149,7 +149,7 @@ func (r *RoomGroup) IsReal() bool {
 // A RoomChoiceGroup is a collection of [Room] items, one of which is
 // "required".
 type RoomChoiceGroup struct {
-	Element
+	ElementBase
 	Name  string
 	Rooms []Ref
 }
@@ -169,7 +169,7 @@ func (r *RoomChoiceGroup) IsReal() bool {
 // is the combination, e.g. "11A". The Name field can be used for a longer
 // description of the class.
 type Class struct {
-	Element
+	ElementBase
 	Name             string
 	Year             int
 	Letter           string
@@ -186,7 +186,7 @@ type Class struct {
 }
 
 type Group struct {
-	Element
+	ElementBase
 	// These fields do not belong in the JSON object:
 	Class *Class `json:"-"`
 }
@@ -194,9 +194,9 @@ type Group struct {
 // A Course specifies a collection of resources needed for a set of
 // activities ([Lesson] elements). The [Subject] field is a sort of label.
 type Course struct {
-	Element
+	ElementBase
 	Subject  Ref
-	Groups   []Ref
+	Groups   []Ref // always `Group`: class references use the ClassGroup
 	Teachers []Ref
 	Room     Ref // [Room], [RoomGroup] or [RoomChoiceGroup] element
 	// These fields do not belong in the JSON object:
@@ -219,7 +219,7 @@ func (c *Course) IsSuperCourse() bool {
 // associated with a set of activities ([Lesson] elements). The [Subject]
 // field is a sort of label.
 type SuperCourse struct {
-	Element
+	ElementBase
 	Subject Ref
 	// These fields do not belong in the JSON object:
 	SubCourses []*SubCourse `json:"-"`
@@ -243,10 +243,10 @@ func (c *SuperCourse) SetLessonList(ll []*Lesson) {
 // [SuperCourse]. Otherwise it is much like a [Course], bundling the
 // necessary resources.
 type SubCourse struct {
-	Element
+	ElementBase
 	SuperCourses []Ref
 	Subject      Ref
-	Groups       []Ref
+	Groups       []Ref // always `Group`: class references use the ClassGroup
 	Teachers     []Ref
 	Room         Ref //  [Room], [RoomGroup] or [RoomChoiceGroup] element
 }
@@ -260,17 +260,15 @@ type GeneralRoom interface {
 // Its resources are determined by the course ([Course] or [SuperCourse]) to
 // which it belongs.
 type Lesson struct {
-	Element
+	ElementBase
 	Course   Ref   // [Course] or [SuperCourse] elements
 	Duration int   // number of "hours" covered
 	Day      int   // 0-based index, -1 for "unplaced"
 	Hour     int   // 0-based index
 	Fixed    bool  // whether the Lesson is unmovable
 	Rooms    []Ref // actually allocated Room elements
-	// Flags allows additional directions to be specified for the timetabling
-	Flags      []string `json:",omitempty"`
-	Background string   // colour, as "#RRGGBB"
-	Footnote   string
+	//Background string // colour, as "#RRGGBB"
+	//Footnote   string
 }
 
 // LessonCourse is a type of course which can have lessons, i.e. a
@@ -317,7 +315,15 @@ type DbTopLevel struct {
 	Constraints      []Constraint   `json:",omitempty"`
 
 	// These fields do not belong in the JSON object:
-	Elements map[Ref]Elem `json:"-"`
+	Elements map[Ref]Element `json:"-"`
+}
+
+func (db *DbTopLevel) GetElement(ref Ref) Element {
+	e, ok := db.Elements[ref]
+	if !ok {
+		panic("GetElement, unknown Ref: " + ref)
+	}
+	return e
 }
 
 func (db *DbTopLevel) Ref2Tag(ref Ref) string {
@@ -326,4 +332,16 @@ func (db *DbTopLevel) Ref2Tag(ref Ref) string {
 		Bug.Fatalf("No Ref2Tag for %s\n", ref)
 	}
 	return e.getTag()
+}
+
+type Resource interface {
+	GetResourceTag() string
+}
+
+func (t *Teacher) GetResourceTag() string {
+	return t.Tag
+}
+
+func (r *Room) GetResourceTag() string {
+	return r.Tag
 }

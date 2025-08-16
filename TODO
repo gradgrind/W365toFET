@@ -1,0 +1,11 @@
+# TODO
+
+## Vertretungsbereitschaft
+
+Aktuell hat `Lesson` ein "Flags"-Feld, dessen Wert ein string-array ist. Soweit ich sehen kann, wird dieses Feld nur für "SubstitutionService" benutzt.
+
+Diese Eigenschaft steht aber in Waldorf365 eher mit einer Gruppe oder einem Fach als "Spezialfall" in Verbindung. Ich habe diese Eigenschaft auch noch nicht dokumentiert – vielleicht weil ich damit nicht besonders glücklich war. In W365toFET wird dieses Flag umgesetzt, indem die Schülergruppen des Kurses, zu dem das `Lesson` gehört, entfernt werden.
+
+Für mich wäre es am sinnvollsten, wenn W365toFET nichts damit zu tun hätte, dass also die JSON-Ausgabe von Waldorf365 bei den Kursen dieser Vertretungsbereitschaftsstunden "automatisch" keine Schülergruppen hätten, egal wie diese Stunden in Waldorf365 gehandhabt werden.
+
+

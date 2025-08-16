@@ -1,30 +1,36 @@
 package timetable
 
 import (
-	"W365toFET/base"
 	"strings"
 )
 
 const ATOMIC_GROUP_SEP1 = "#"
 const ATOMIC_GROUP_SEP2 = "~"
 
-type ClassDivision struct {
-	Class     *base.Class
-	Divisions [][]NodeRef
-}
-
 // Prepare filtered versions of the class Divisions containing only
 // those Divisions which have Groups used in Lessons.
-func (tt_data *TtData) FilterDivisions() []ClassDivision {
-	// Collect groups used in activities, using CourseInfo structures.
+func (tt_data *TtData) FilterDivisions() {
+	db := tt_data.Db
+
+	// Collect groups used in courses
 	usedgroups := map[NodeRef]bool{}
-	for _, cinfo := range tt_data.CourseInfoList {
-		for _, g := range cinfo.Groups {
-			usedgroups[g] = true
+
+	// Gather groups from the SuperCourses.
+	for _, spc := range db.SuperCourses {
+		for _, sbc := range spc.SubCourses {
+			for _, gref := range sbc.Groups {
+				usedgroups[gref] = true
+			}
 		}
 	}
+	// Gather groups from the plain Courses.
+	for _, c := range db.Courses {
+		for _, gref := range c.Groups {
+			usedgroups[gref] = true
+		}
+	}
+
 	// Filter the class divisions, discarding the division names.
-	cdivs := []ClassDivision{}
 	for _, c := range tt_data.Db.Classes {
 		divs := [][]NodeRef{}
 		for _, div := range c.Divisions {
@@ -35,9 +41,9 @@ func (tt_data *TtData) FilterDivisions() []ClassDivision {
 				}
 			}
 		}
-		cdivs = append(cdivs, ClassDivision{c, divs})
+		tt_data.ClassDivisions = append(tt_data.ClassDivisions,
+			ClassDivision{c, divs})
 	}
-	return cdivs
 }
 
 // TODO: Do I actually need the Index field?
@@ -48,7 +54,11 @@ type AtomicGroup struct {
 	Tag    string // A constructed tag to represent the atomic group
 }
 
-func (tt_data *TtData) MakeAtomicGroups(class_divisions []ClassDivision) {
+func (a *AtomicGroup) GetResourceTag() string {
+	return a.Tag
+}
+
+func (tt_data *TtData) MakeAtomicGroups() {
 	// An atomic group is an ordered list of single groups, one from each
 	// division.
 	tt_data.AtomicGroups = map[NodeRef][]ResourceIndex{}
@@ -56,7 +66,7 @@ func (tt_data *TtData) MakeAtomicGroups(class_divisions []ClassDivision) {
 
 	// Go through the classes inspecting their Divisions.
 	// Build a list-basis for the atomic groups based on the Cartesian product.
-	for _, cdivs := range class_divisions {
+	for _, cdivs := range tt_data.ClassDivisions {
 		cl := cdivs.Class
 		if len(cdivs.Divisions) == 0 {
 			// Make an atomic group for the class
@@ -112,7 +122,6 @@ func (tt_data *TtData) MakeAtomicGroups(class_divisions []ClassDivision) {
 			aglist = append(aglist, agix)
 		}
 		tt_data.AtomicGroups[cl.ClassGroup] = aglist
-
 		// Map the individual groups to their atomic groups.
 		count := 1
 		divIndex := len(cdivs.Divisions)

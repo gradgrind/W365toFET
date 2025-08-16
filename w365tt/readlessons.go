@@ -14,7 +14,7 @@ func (db *DbTopLevel) readLessons(newdb *base.DbTopLevel) {
 				e.Id, e.Course)
 		}
 		// Check the Rooms.
-		reflist := []base.Ref{}
+		reflist := []Ref{}
 		for _, rref := range e.Rooms {
 			_, ok := db.RealRooms[rref]
 			if ok {

@@ -7,72 +7,135 @@ import (
 	"strings"
 )
 
-// Activities are (already) ordered, highest duration first,
+// A CourseInfo is a representation of a course (Course or SuperCourse) for
+// the timetable.
+// Activities within a course are (already) ordered, highest duration first,
 // and ActivityGroup has the same order.
-// A CourseInfo is an intermediate representation of a course (Course or
-// SuperCourse) for the timetable.
 type CourseInfo struct {
-	Id            NodeRef // Course or SuperCourse
-	Subject       NodeRef
-	Groups        []NodeRef
-	Teachers      []NodeRef
-	Rooms         []NodeRef // items can be Room, RoomGroup or RoomChoiceGroup
-	Activities    []*base.Lesson
-	ActivityGroup []ActivityIndex
+	Id           NodeRef // Course or SuperCourse
+	Subject      string
+	Groups       []*base.Group // a `Class` is represented by its ClassGroup
+	AtomicGroups []ResourceIndex
+	Teachers     []ResourceIndex
+	FixedRooms   []ResourceIndex
+	RoomChoices  [][]ResourceIndex
+	Activities   []ActivityIndex
 }
 
 // Make a shortish string view of a CourseInfo – can be useful in tests
-func View(db *base.DbTopLevel, cinfo *CourseInfo) string {
+func (tt_data *TtData) View(cinfo *CourseInfo) string {
 	tlist := []string{}
 	for _, t := range cinfo.Teachers {
-		tlist = append(tlist, db.Ref2Tag(t))
+		tlist = append(tlist, tt_data.Resources[t].GetResourceTag())
 	}
 	glist := []string{}
 	for _, g := range cinfo.Groups {
-		glist = append(glist, db.Ref2Tag(g))
+		glist = append(glist, g.Tag)
 	}
 	return fmt.Sprintf("<Course %s/%s:%s>",
 		strings.Join(glist, ","),
 		strings.Join(tlist, ","),
-		db.Ref2Tag(cinfo.Subject),
+		cinfo.Subject,
 	)
 }
 
 // Collect courses (Course and SuperCourse) and their activities.
 // Build a list of CourseInfo structures.
-func (tt_data *TtData) CollectCourses() {
+func (tt_data *TtData) CollectCourses() []CourseInfo {
 	db := tt_data.Db
+	tt_data.Activities = []*TtActivity{{}} // first entry is empty
 
 	// Gather the SuperCourses.
 	for _, spc := range db.SuperCourses {
-		cref := spc.Id
-		groups := []NodeRef{}
-		teachers := []NodeRef{}
-		rooms := []NodeRef{}
+		groups := []*base.Group{}
+		agroups := []ResourceIndex{}
+		teachers := []ResourceIndex{}
+		rooms := []ResourceIndex{}
+		crooms := [][]ResourceIndex{}
 		for _, sbc := range spc.SubCourses {
 			// Add groups
-			if len(sbc.Groups) != 0 {
-				groups = append(groups, sbc.Groups...)
+			for _, gref := range sbc.Groups {
+				g, ok := db.GetElement(gref).(*base.Group)
+				if !ok {
+					panic("Invalid Group ref: " + gref)
+				}
+				groups = append(groups, g)
+				agroups = append(agroups, tt_data.AtomicGroups[gref]...)
 			}
 			// Add teachers
-			if len(sbc.Teachers) != 0 {
-				teachers = append(teachers, sbc.Teachers...)
+			for _, tref := range sbc.Teachers {
+				t, ok := tt_data.TeacherIndex[tref]
+				if !ok {
+					panic("Invalid Teacher ref: " + tref)
+				}
+				teachers = append(teachers, t)
 			}
 			// Add rooms
 			if sbc.Room != "" {
-				rooms = append(rooms, sbc.Room)
+				r, ok := tt_data.RoomIndex[sbc.Room]
+				if ok {
+					rooms = append(rooms, r)
+					continue
+				}
+
+				// Not a `Room` – it can be a RoomGroup or RoomChoiceGroup
+
+				gr := db.GetElement(sbc.Room)
+				rg, ok := gr.(*base.RoomGroup)
+				if ok {
+					for _, rr := range rg.Rooms {
+						r, ok = tt_data.RoomIndex[rr]
+						if !ok {
+							base.Bug.Fatalf(
+								"Unknown room in RoomGroup %s: %s",
+								rr, sbc.Room)
+						}
+						rooms = append(rooms, r)
+					}
+					continue
+				}
+
+				rcg, ok := gr.(*base.RoomChoiceGroup)
+				if ok {
+					roomlist := []ResourceIndex{}
+					for _, rr := range rcg.Rooms {
+						r, ok = tt_data.RoomIndex[rr]
+						if !ok {
+							base.Bug.Fatalf(
+								"Unknown room in RoomChoiceGroup %s: %s",
+								rr, sbc.Room)
+						}
+						roomlist = append(roomlist, r)
+					}
+
+					//TODO: don't add if it is a duplicate
+					crooms = append(crooms, roomlist)
+					continue
+				}
+
+				panic("Expecting room element, found: " + sbc.Room)
 			}
 		}
+
 		// Eliminate duplicate resources by sorting and then compacting
-		slices.Sort(groups)
+		slices.Sort(agroups)
 		slices.Sort(teachers)
 		slices.Sort(rooms)
+		sbj, ok := db.GetElement(spc.Subject).(*base.Subject)
+		if !ok {
+			panic("Invalid Subject ref: " + spc.Subject)
+		}
 		tt_data.CourseInfoList = append(tt_data.CourseInfoList, &CourseInfo{
-			Id:         cref,
-			Subject:    spc.Subject,
-			Groups:     slices.Compact(groups),
-			Teachers:   slices.Compact(teachers),
-			Rooms:      slices.Compact(rooms),
+			Id:           spc.Id,
+			Subject:      sbj.Tag,
+			Groups:       groups,
+			AtomicGroups: slices.Compact(agroups),
+			Teachers:     slices.Compact(teachers),
+			FixedRooms:   slices.Compact(rooms),
+			RoomChoices:  crooms,
+
+			//TODO
+
 			Activities: spc.Lessons,
 		})
 	}
