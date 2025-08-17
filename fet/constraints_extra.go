@@ -84,15 +84,15 @@ func getExtraConstraints(fetinfo *fetInfo) {
 			minDaysBetweenActivities{
 				Weight_Percentage:       weight2fet(dbc.Weight),
 				Consecutive_If_Same_Day: dbc.ConsecutiveIfSameDay,
-				Number_of_Activities:    len(dbc.Lessons),
-				Activity_Id:             dbc.Lessons,
+				Number_of_Activities:    len(dbc.Activities),
+				Activity_Id:             dbc.Activities,
 				MinDays:                 dbc.MinDays,
 				Active:                  true,
 			})
 	}
 
 	for _, pl := range tt_data.ParallelLessons {
-		for _, alist := range pl.LessonGroups {
+		for _, alist := range pl.ActivityGroups {
 			tclist.ConstraintActivitiesSameStartingTime = append(
 				tclist.ConstraintActivitiesSameStartingTime,
 				sameStartingTime{
@@ -106,8 +106,8 @@ func getExtraConstraints(fetinfo *fetInfo) {
 
 	for _, c := range tt_data.Constraints["LessonsEndDay"] {
 		cn := c.(*base.LessonsEndDay)
-		cinfo := tt_data.CourseInfo[cn.Course]
-		for _, aid := range cinfo.Lessons {
+		cinfo := tt_data.Ref2CourseInfo[cn.Course]
+		for _, aid := range cinfo.Activities {
 			tclist.ConstraintActivityEndsStudentsDay = append(
 				tclist.ConstraintActivityEndsStudentsDay,
 				lessonEndsDay{
@@ -179,11 +179,11 @@ func getExtraConstraints(fetinfo *fetInfo) {
 			}
 		}
 		for _, k := range cn.Courses {
-			cinfo, ok := tt_data.CourseInfo[k]
+			cinfo, ok := tt_data.Ref2CourseInfo[k]
 			if !ok {
 				base.Bug.Fatalf("Invalid course: %s\n", k)
 			}
-			for _, aid := range cinfo.Lessons {
+			for _, aid := range cinfo.Activities {
 				tclist.ConstraintActivityPreferredTimeSlots = append(
 					tclist.ConstraintActivityPreferredTimeSlots,
 					activityPreferredTimes{

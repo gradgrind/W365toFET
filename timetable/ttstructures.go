@@ -70,9 +70,17 @@ type TtData struct {
 	ClassDivisions []ClassDivision
 
 	// Set up by `MakeActivities`
-	Activities []*TtActivity
+	Activities []*Activity
 	//?? ActivityCourses []*TtCourseInfo
 	CourseInfoList []*CourseInfo
+	Ref2CourseInfo map[NodeRef]*CourseInfo
+
+	Constraints map[string][]any
+
+	MinDaysBetweenLessons []MinDaysBetweenLessons
+	ParallelLessons       []ParallelLessons
+
+	WITHOUT_ROOM_PLACEMENTS bool // ignore initial room placements
 
 	/*???
 	DayIndex     map[string]int
@@ -119,10 +127,10 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 	tt_data.ResourceWeeks = make([]ActivityIndex,
 		(len(tt_data.Resources))*days*hours)
 
+	// Get the courses (-> CourseInfo) and activities for the timetable
 	tt_data.CollectCourses()
-	// Get the activities for the timetable
-	tt_data.MakeActivities()
-	// ... initially all unplaced
+
+	// ... initially all activities unplaced
 	tt_data.ActivitySlots = slices.Repeat(
 		[]TimeSlot{-1},
 		len(tt_data.Activities))
@@ -162,4 +170,17 @@ func (tt_data *TtData) RoomResources() {
 		tt_data.RoomIndex[r.Id] = i
 		tt_data.Resources = append(tt_data.Resources, r)
 	}
+}
+
+type MinDaysBetweenLessons struct {
+	// Result of processing constraints DifferentDays and DaysBetween
+	Weight               int
+	ConsecutiveIfSameDay bool
+	Activities           []ActivityIndex
+	MinDays              int
+}
+
+type ParallelLessons struct {
+	Weight         int
+	ActivityGroups [][]ActivityIndex
 }

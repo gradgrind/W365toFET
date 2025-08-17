@@ -2,7 +2,6 @@ package fet
 
 import (
 	"W365toFET/timetable"
-	"W365toFET/ttbase"
 	"encoding/xml"
 	"fmt"
 	"strconv"
@@ -100,49 +99,29 @@ func getRooms(fetinfo *fetInfo) {
 }
 
 // TODO
-func (fetinfo *fetInfo) getFetRooms(room ttbase.VirtualRoom) []string {
+func (fetinfo *fetInfo) getFetRooms(cinfo *timetable.CourseInfo) []string {
 	// The fet virtual rooms are cached at fetinfo.fetVirtualRooms.
 	var result []string
-	db := fetinfo.tt_data.Db
+	tt_data := fetinfo.tt_data
 
-	/*--
-	rlist0 := []string{}
-	for _, rref := range room.Rooms {
-		rlist0 = append(rlist0, fetinfo.tt_data.Ref2Tag[rref])
-	}
-	r0 := strings.Join(rlist0, ",")
-	rlist1 := []string{}
-	for _, rlist := range room.RoomChoices {
-		rlist1a := []string{}
-		for _, rref := range rlist {
-			rlist1a = append(rlist1a, fetinfo.tt_data.Ref2Tag[rref])
-		}
-		rlist1 = append(rlist1, strings.Join(rlist1a, "|"))
-	}
-	r1 := strings.Join(rlist1, "+")
-	fmt.Printf("getFetRooms [%s & %s]\n", r0, r1)
-	*/
-
-	// First convert the Ref values to Element Tags for FET.
+	// First get the Element Tags for FET.
 	rtags := []string{}
-	for _, rref := range room.Rooms {
-		rtags = append(rtags, db.Ref2Tag(rref))
+	for _, rr := range cinfo.FixedRooms {
+		rtags = append(rtags, tt_data.Resources[rr].GetResourceTag())
 	}
 	rctags := [][]string{}
-	for _, rc := range room.RoomChoices {
+	for _, rc := range cinfo.RoomChoices {
 		rcl := []string{}
-		for _, rref := range rc {
-			rcl = append(rcl, db.Ref2Tag(rref))
+		for _, rr := range rc {
+			rcl = append(rcl, tt_data.Resources[rr].GetResourceTag())
 		}
 		rctags = append(rctags, rcl)
 	}
 
 	if len(rctags) == 0 && len(rtags) < 2 {
 		result = rtags
-		//return rtags
 	} else if len(rctags) == 1 && len(rtags) == 0 {
 		result = rctags[0]
-		//return rctags[0]
 	} else {
 		// Otherwise a virtual room is necessary.
 		srctags := []string{}
@@ -184,7 +163,6 @@ func (fetinfo *fetInfo) getFetRooms(room ttbase.VirtualRoom) []string {
 			fetinfo.fetVirtualRoomN[vr] = len(rrslist)
 		}
 		result = []string{vr}
-		//return []string{vr}
 	}
 	//--fmt.Printf("   --> %+v\n", result)
 	return result

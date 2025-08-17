@@ -51,10 +51,12 @@ func (tt_data *TtData) View(cinfo *CourseInfo) string {
 // Build a list of CourseInfo structures.
 func (tt_data *TtData) CollectCourses() {
 	db := tt_data.Db
+	tt_data.Ref2CourseInfo = map[NodeRef]*CourseInfo{}
 	tt_data.Activities = []*Activity{{}} // first entry is empty
 
 	// Gather the SuperCourses.
 	for _, spc := range db.SuperCourses {
+		cref := spc.Id
 		groups := []*base.Group{}
 		agroups := []ResourceIndex{}
 		teachers := []ResourceIndex{}
@@ -140,7 +142,7 @@ func (tt_data *TtData) CollectCourses() {
 			panic("Invalid Subject ref: " + spc.Subject)
 		}
 		cinfo := &CourseInfo{
-			Id:           spc.Id,
+			Id:           cref,
 			Subject:      sbj.Tag,
 			Groups:       groups,
 			AtomicGroups: slices.Compact(agroups),
@@ -152,9 +154,10 @@ func (tt_data *TtData) CollectCourses() {
 		}
 		tt_data.makeActivities(cinfo)
 		tt_data.CourseInfoList = append(tt_data.CourseInfoList, cinfo)
+		tt_data.Ref2CourseInfo[cref] = cinfo
 	}
 
-	// Gather the plain Courses.
+	// *** Gather the plain Courses. ***
 	for _, c := range db.Courses {
 		cref := c.Id
 
@@ -243,17 +246,13 @@ func (tt_data *TtData) CollectCourses() {
 		}
 		tt_data.makeActivities(cinfo)
 		tt_data.CourseInfoList = append(tt_data.CourseInfoList, cinfo)
+		tt_data.Ref2CourseInfo[cref] = cinfo
 	}
 }
 
 // Build an `Activity` for each `Lesson` – they are already sorted
 // with the longest first.
 func (tt_data *TtData) makeActivities(cinfo *CourseInfo) {
-	resources := make([]ResourceIndex, 0,
-		len(cinfo.AtomicGroups)+len(cinfo.Teachers)+len(cinfo.FixedRooms))
-	resources = append(resources, cinfo.AtomicGroups...)
-	resources = append(resources, cinfo.Teachers...)
-	resources = append(resources, cinfo.FixedRooms...)
 	for _, l := range cinfo.Lessons {
 		p := -1
 		if l.Day >= 0 {

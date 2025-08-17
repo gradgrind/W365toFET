@@ -60,19 +60,14 @@ func getClasses(fetinfo *fetInfo) {
 	db := tt_data.Db
 	items := []fetClass{}
 	natimes := []studentsNotAvailable{}
-	for _, cl := range db.Classes {
+	for _, cdiv := range tt_data.ClassDivisions {
+		cl := cdiv.Class
 		cname := cl.Tag
 		// Skip "special" classes.
 		if cname == "" {
 			continue
 		}
-		divs, ok := tt_data.ClassDivisions[cl.Id]
-		if !ok {
-			base.Bug.Fatalf(
-				"Class %s has no entry in ttinfo.ClassDivisions\n",
-				cname)
-		}
-
+		divs := cdiv.Divisions
 		// Construct the Groups and Subgroups
 		groups := []fetGroup{}
 		for _, div := range divs {
@@ -83,7 +78,7 @@ func getClasses(fetinfo *fetInfo) {
 				for _, ag := range ags {
 					subgroups = append(subgroups,
 						fetSubgroup{
-							Name: tt_data.Resources[ag].(*base.Group).Tag},
+							Name: tt_data.Resources[ag].GetResourceTag()},
 					)
 				}
 				groups = append(groups, fetGroup{

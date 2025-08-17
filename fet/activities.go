@@ -41,8 +41,6 @@ type fetActivityTags struct {
 // Generate the fet activties.
 func getActivities(fetinfo *fetInfo) []idMap {
 	tt_data := fetinfo.tt_data
-	db := tt_data.Db
-	//ref2fet := tt_data.Db.Ref2Tag
 
 	// ************* Start with the activity tags
 	tags := []fetActivityTag{}
@@ -66,13 +64,13 @@ func getActivities(fetinfo *fetInfo) []idMap {
 		// Teachers
 		tlist := []string{}
 		for _, ti := range cinfo.Teachers {
-			tlist = append(tlist, db.Ref2Tag(ti))
+			tlist = append(tlist, tt_data.Resources[ti].GetResourceTag())
 		}
 		slices.Sort(tlist)
 		// Groups
 		glist := []string{}
-		for _, cgref := range cinfo.Groups {
-			glist = append(glist, db.Ref2Tag(cgref))
+		for _, cg := range cinfo.Groups {
+			glist = append(glist, cg.Tag)
 		}
 		slices.Sort(glist)
 		/* ???
@@ -85,21 +83,21 @@ func getActivities(fetinfo *fetInfo) []idMap {
 		// Generate the Activities for this course (one per Lesson).
 		totalDuration := 0
 		//llist := []*ttbase.Activity{}
-		for _, l := range cinfo.Activities {
+		for _, l := range cinfo.Lessons {
 			totalDuration += l.Duration
 			//llist = append(llist, l)
 		}
 		var agid timetable.ActivityIndex = 0
 		if len(cinfo.Activities) > 1 {
-			agid = cinfo.ActivityGroup[0]
+			agid = cinfo.Activities[0]
 		}
-		for i, l := range cinfo.Activities {
-			aid := cinfo.ActivityGroup[i]
+		for i, l := range cinfo.Lessons {
+			aid := cinfo.Activities[i]
 			activities = append(activities,
 				fetActivity{
 					Id:       aid,
 					Teacher:  tlist,
-					Subject:  db.Ref2Tag(cinfo.Subject),
+					Subject:  cinfo.Subject,
 					Students: glist,
 					//Activity_Tag:      atag,
 					Active:            true,
@@ -136,7 +134,7 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 	db := tt_data.Db
 	for _, cinfo := range tt_data.CourseInfoList {
 		// Set "preferred" rooms.
-		rooms := fetinfo.getFetRooms(cinfo.Rooms)
+		rooms := fetinfo.getFetRooms(cinfo)
 
 		//--fmt.Printf("COURSE: %s\n", ttinfo.View(cinfo))
 		//--fmt.Printf("   --> %+v\n", rooms)
@@ -144,8 +142,8 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 		// Add the constraints.
 		scl := &fetinfo.fetdata.Space_Constraints_List
 		tcl := &fetinfo.fetdata.Time_Constraints_List
-		for i, l := range cinfo.Activities {
-			aid := cinfo.ActivityGroup[i]
+		for i, l := range cinfo.Lessons {
+			aid := cinfo.Activities[i]
 			if len(rooms) != 0 {
 				scl.ConstraintActivityPreferredRooms = append(
 					scl.ConstraintActivityPreferredRooms,
@@ -176,10 +174,9 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 				},
 			)
 
-			//TODO:
-			//if tt_data.WITHOUT_ROOM_PLACEMENTS {
-			//	continue
-			//}
+			if tt_data.WITHOUT_ROOM_PLACEMENTS {
+				continue
+			}
 			if len(l.Rooms) == 0 {
 				continue
 			}
