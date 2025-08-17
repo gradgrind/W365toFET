@@ -9,8 +9,8 @@ import (
 
 // A CourseInfo is a representation of a course (Course or SuperCourse) for
 // the timetable.
-// Activities within a course are (already) ordered, highest duration first,
-// and ActivityGroup has the same order.
+// Lessons within a course are (already) ordered, highest duration first,
+// and the Activities field has the same order.
 type CourseInfo struct {
 	Id           NodeRef // Course or SuperCourse
 	Subject      string
@@ -19,7 +19,15 @@ type CourseInfo struct {
 	Teachers     []ResourceIndex
 	FixedRooms   []ResourceIndex
 	RoomChoices  [][]ResourceIndex
+	Lessons      []*base.Lesson
 	Activities   []ActivityIndex
+}
+
+type Activity struct {
+	CourseInfo *CourseInfo
+	Placement  TimeSlot
+	Duration   int16
+	Fixed      bool
 }
 
 // Make a shortish string view of a CourseInfo – can be useful in tests
@@ -41,9 +49,9 @@ func (tt_data *TtData) View(cinfo *CourseInfo) string {
 
 // Collect courses (Course and SuperCourse) and their activities.
 // Build a list of CourseInfo structures.
-func (tt_data *TtData) CollectCourses() []CourseInfo {
+func (tt_data *TtData) CollectCourses() {
 	db := tt_data.Db
-	tt_data.Activities = []*TtActivity{{}} // first entry is empty
+	tt_data.Activities = []*Activity{{}} // first entry is empty
 
 	// Gather the SuperCourses.
 	for _, spc := range db.SuperCourses {
@@ -86,9 +94,9 @@ func (tt_data *TtData) CollectCourses() []CourseInfo {
 					for _, rr := range rg.Rooms {
 						r, ok = tt_data.RoomIndex[rr]
 						if !ok {
-							base.Bug.Fatalf(
+							panic(fmt.Sprintf(
 								"Unknown room in RoomGroup %s: %s",
-								rr, sbc.Room)
+								rr, sbc.Room))
 						}
 						rooms = append(rooms, r)
 					}
@@ -101,15 +109,21 @@ func (tt_data *TtData) CollectCourses() []CourseInfo {
 					for _, rr := range rcg.Rooms {
 						r, ok = tt_data.RoomIndex[rr]
 						if !ok {
-							base.Bug.Fatalf(
+							panic(fmt.Sprintf(
 								"Unknown room in RoomChoiceGroup %s: %s",
-								rr, sbc.Room)
+								rr, sbc.Room))
 						}
 						roomlist = append(roomlist, r)
 					}
 
-					//TODO: don't add if it is a duplicate
+					// Don't add if it is a duplicate
+					for _, rl := range crooms {
+						if slices.Equal(rl, roomlist) {
+							goto skip
+						}
+					}
 					crooms = append(crooms, roomlist)
+				skip:
 					continue
 				}
 
@@ -125,7 +139,7 @@ func (tt_data *TtData) CollectCourses() []CourseInfo {
 		if !ok {
 			panic("Invalid Subject ref: " + spc.Subject)
 		}
-		tt_data.CourseInfoList = append(tt_data.CourseInfoList, &CourseInfo{
+		cinfo := &CourseInfo{
 			Id:           spc.Id,
 			Subject:      sbj.Tag,
 			Groups:       groups,
@@ -133,123 +147,126 @@ func (tt_data *TtData) CollectCourses() []CourseInfo {
 			Teachers:     slices.Compact(teachers),
 			FixedRooms:   slices.Compact(rooms),
 			RoomChoices:  crooms,
-
-			//TODO
-
-			Activities: spc.Lessons,
-		})
+			Lessons:      spc.Lessons,
+			//Activities
+		}
+		tt_data.makeActivities(cinfo)
+		tt_data.CourseInfoList = append(tt_data.CourseInfoList, cinfo)
 	}
 
 	// Gather the plain Courses.
 	for _, c := range db.Courses {
 		cref := c.Id
-		rooms := []NodeRef{}
-		if c.Room != "" {
-			rooms = append(rooms, c.Room)
+
+		// Get groups
+		groups := []*base.Group{}
+		agroups := []ResourceIndex{}
+		for _, gref := range c.Groups {
+			g, ok := db.GetElement(gref).(*base.Group)
+			if !ok {
+				panic("Invalid Group ref: " + gref)
+			}
+			groups = append(groups, g)
+			agroups = append(agroups, tt_data.AtomicGroups[gref]...)
 		}
-		tt_data.CourseInfoList = append(tt_data.CourseInfoList, &CourseInfo{
-			Id:         cref,
-			Subject:    c.Subject,
-			Groups:     c.Groups,
-			Teachers:   c.Teachers,
-			Rooms:      rooms,
-			Activities: c.Lessons,
-		})
+
+		// Get teachers
+		teachers := []ResourceIndex{}
+		for _, tref := range c.Teachers {
+			t, ok := tt_data.TeacherIndex[tref]
+			if !ok {
+				panic("Invalid Teacher ref: " + tref)
+			}
+			teachers = append(teachers, t)
+		}
+
+		// Get rooms
+		rooms := []ResourceIndex{}
+		crooms := [][]ResourceIndex{}
+		if c.Room != "" {
+			r, ok := tt_data.RoomIndex[c.Room]
+			if ok {
+				rooms = append(rooms, r)
+			} else {
+				// Not a `Room` – it can be a RoomGroup or RoomChoiceGroup
+				gr := db.GetElement(c.Room)
+				rg, ok := gr.(*base.RoomGroup)
+				if ok {
+					for _, rr := range rg.Rooms {
+						r, ok = tt_data.RoomIndex[rr]
+						if !ok {
+							panic(fmt.Sprintf(
+								"Unknown room in RoomGroup %s: %s",
+								rr, c.Room))
+						}
+						rooms = append(rooms, r)
+					}
+				} else {
+					rcg, ok := gr.(*base.RoomChoiceGroup)
+					if ok {
+						roomlist := []ResourceIndex{}
+						for _, rr := range rcg.Rooms {
+							r, ok = tt_data.RoomIndex[rr]
+							if !ok {
+								panic(fmt.Sprintf(
+									"Unknown room in RoomChoiceGroup %s: %s",
+									rr, c.Room))
+							}
+							roomlist = append(roomlist, r)
+						}
+						crooms = append(crooms, roomlist)
+					} else {
+						panic("Expecting room element, found: " + c.Room)
+					}
+				}
+			}
+		}
+
+		sbj, ok := db.GetElement(c.Subject).(*base.Subject)
+		if !ok {
+			panic("Invalid Subject ref: " + c.Subject)
+		}
+		// Sort and compact lists
+		slices.Sort(agroups)
+		slices.Sort(teachers) // shouldn't need compacting
+		slices.Sort(rooms)    // shouldn't need compacting
+		cinfo := &CourseInfo{
+			Id:           cref,
+			Subject:      sbj.Tag,
+			Groups:       groups,
+			AtomicGroups: slices.Compact(agroups),
+			Teachers:     teachers,
+			FixedRooms:   rooms,
+			RoomChoices:  crooms,
+			Lessons:      c.Lessons,
+			//Activities
+		}
+		tt_data.makeActivities(cinfo)
+		tt_data.CourseInfoList = append(tt_data.CourseInfoList, cinfo)
 	}
 }
 
-// `MakeActivities` creates the `TtActivity` structures ...
-func (tt_data *TtData) MakeActivities() {
-	db := tt_data.Db
-	tt_data.Activities = []*TtActivity{{}} // first entry is empty
-	for _, cinfo := range tt_data.CourseInfoList {
-		// Get resource indexes
-		resources := []ResourceIndex{}
-		for _, r := range cinfo.Groups {
-			agilist, ok := tt_data.AtomicGroups[r]
-			if !ok {
-				base.Bug.Fatalf("Unknown group: %s", r)
-			}
-			resources = append(resources, agilist...)
+// Build an `Activity` for each `Lesson` – they are already sorted
+// with the longest first.
+func (tt_data *TtData) makeActivities(cinfo *CourseInfo) {
+	resources := make([]ResourceIndex, 0,
+		len(cinfo.AtomicGroups)+len(cinfo.Teachers)+len(cinfo.FixedRooms))
+	resources = append(resources, cinfo.AtomicGroups...)
+	resources = append(resources, cinfo.Teachers...)
+	resources = append(resources, cinfo.FixedRooms...)
+	for _, l := range cinfo.Lessons {
+		p := -1
+		if l.Day >= 0 {
+			p = l.Day*tt_data.NHours + l.Hour
 		}
-		for _, r := range cinfo.Teachers {
-			agi, ok := tt_data.TeacherIndex[r]
-			if !ok {
-				base.Bug.Fatalf("Unknown teacher: %s", r)
-			}
-			resources = append(resources, agi)
+		aix := ActivityIndex(len(tt_data.Activities))
+		ttl := &Activity{
+			CourseInfo: cinfo,
+			Placement:  TimeSlot(p),
+			Duration:   int16(l.Duration),
+			Fixed:      l.Fixed,
 		}
-		roomchoices := [][]ResourceIndex{}
-		for _, r := range cinfo.Rooms {
-			agi, ok := tt_data.RoomIndex[r]
-			if ok {
-				resources = append(resources, agi)
-				continue
-			}
-			// Not a Room – it can be a RoomGroup or RoomChoiceGroup
-			elem, ok := db.Elements[r]
-			if !ok {
-				base.Bug.Fatalf("Unknown room: %s", r)
-			}
-			rg, ok := elem.(*base.RoomGroup)
-			if ok {
-				for _, rr := range rg.Rooms {
-					agi, ok = tt_data.RoomIndex[rr]
-					if !ok {
-						base.Bug.Fatalf(
-							"Unknown room in RoomGroup %s: %s", r, rr)
-					}
-					resources = append(resources, agi)
-				}
-				continue
-			}
-			rcg, ok := elem.(*base.RoomChoiceGroup)
-			if ok {
-				rooms := []ResourceIndex{}
-				for _, rr := range rcg.Rooms {
-					agi, ok = tt_data.RoomIndex[rr]
-					if !ok {
-						base.Bug.Fatalf(
-							"Unknown room in RoomChoiceGroup %s: %s", r, rr)
-					}
-					rooms = append(rooms, agi)
-				}
-				roomchoices = append(roomchoices, rooms)
-				continue
-			}
-			base.Bug.Fatalf("Expecting room element, found: %s", r)
-		}
-		// Check for duplicate resources
-		//TODO: Is this a bug, or can it happen "legally"?
-		// If the latter, duplicates would need to be removed.
-		rset := map[ResourceIndex]bool{}
-		for _, ri := range resources {
-			if rset[ri] {
-				base.Bug.Fatalf("Duplicate resource: %+v\n in course: %+v",
-					tt_data.Resources[ri], cinfo)
-			}
-		}
-
-		// Build a TtActivity for each Activity – they are already sorted
-		// with the longest first.
-		for _, l := range cinfo.Activities {
-			//p := -1
-			//if l.Day >= 0 {
-			//	p = l.Day*tt_data.NHours + l.Hour
-			//}
-			aix := ActivityIndex(len(tt_data.Activities))
-			ttl := &TtActivity{
-				Id: aix,
-				//Placement:  p,
-				Duration:    int16(l.Duration),
-				Fixed:       l.Fixed,
-				Resources:   resources,
-				RoomChoices: roomchoices,
-				//Lesson:     l,
-				//CourseInfo: cinfo,
-			}
-			cinfo.ActivityGroup = append(cinfo.ActivityGroup, aix)
-			tt_data.Activities = append(tt_data.Activities, ttl)
-		}
+		cinfo.Activities = append(cinfo.Activities, aix)
+		tt_data.Activities = append(tt_data.Activities, ttl)
 	}
 }

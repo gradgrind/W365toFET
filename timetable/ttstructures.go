@@ -14,17 +14,6 @@ type ActivityIndex int16
 type ResourceIndex = int
 type TimeSlot int16
 
-type TtActivity struct {
-	Id       ActivityIndex
-	Duration int16
-	Fixed    bool
-	//BasicActivityGroup *BasicActivityGroup
-	Resources   []ResourceIndex
-	RoomChoices [][]ResourceIndex
-	//TODO: Constraints to be applied when placing manually?
-	//Constraints []TtConstraint
-}
-
 /* TODO
 type TtRoom struct {
 	Id       NodeRef
