@@ -72,7 +72,15 @@ func getClasses(fetinfo *fetInfo) {
 		groups := []fetGroup{}
 		for _, div := range divs {
 			for _, gref := range div {
-				g := db.Ref2Tag(gref)
+
+				//TODO: Need to construct group name with class, group
+				// and CLASS_GROUP_SEP ... also in activities.
+				e := db.Elements[gref].(*base.Group)
+				g := e.Class.Tag
+				if e.Tag != "" {
+					g += CLASS_GROUP_SEP + e.Tag
+				}
+
 				subgroups := []fetSubgroup{}
 				ags := tt_data.AtomicGroups[gref]
 				for _, ag := range ags {
