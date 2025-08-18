@@ -70,7 +70,7 @@ func getActivities(fetinfo *fetInfo) []idMap {
 		// Groups
 		glist := []string{}
 		for _, cg := range cinfo.Groups {
-			glist = append(glist, cg.Tag)
+			glist = append(glist, fetGroupTag(cg))
 		}
 		slices.Sort(glist)
 		/* ???

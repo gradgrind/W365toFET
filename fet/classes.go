@@ -73,13 +73,9 @@ func getClasses(fetinfo *fetInfo) {
 		for _, div := range divs {
 			for _, gref := range div {
 
-				//TODO: Need to construct group name with class, group
-				// and CLASS_GROUP_SEP ... also in activities.
-				e := db.Elements[gref].(*base.Group)
-				g := e.Class.Tag
-				if e.Tag != "" {
-					g += CLASS_GROUP_SEP + e.Tag
-				}
+				// Need to construct group name with class, group
+				// and CLASS_GROUP_SEP
+				g := fetGroupTag(db.Elements[gref].(*base.Group))
 
 				subgroups := []fetSubgroup{}
 				ags := tt_data.AtomicGroups[gref]
@@ -154,4 +150,15 @@ func getClasses(fetinfo *fetInfo) {
 	fetinfo.fetdata.Students_List = fetStudentsList{Year: items}
 	fetinfo.fetdata.Time_Constraints_List.
 		ConstraintStudentsSetNotAvailableTimes = natimes
+}
+
+// In FET the group identifier is constructed from the class tag
+// CLASS_GROUP_SEP and the group tag. However, if the group is the
+// whole class, just the class tag is used.
+func fetGroupTag(g *base.Group) string {
+	gt := g.Class.Tag
+	if g.Tag != "" {
+		gt += CLASS_GROUP_SEP + g.Tag
+	}
+	return gt
 }

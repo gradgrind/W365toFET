@@ -2124,6 +2124,14 @@
       <Teacher>Tut</Teacher>
       <Teacher>Xe</Teacher>
       <Subject>US</Subject>
+      <Students>1</Students>
+      <Students>2</Students>
+      <Students>3</Students>
+      <Students>4</Students>
+      <Students>5</Students>
+      <Students>6</Students>
+      <Students>7</Students>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2142,6 +2150,14 @@
       <Teacher>Tut</Teacher>
       <Teacher>Xe</Teacher>
       <Subject>US</Subject>
+      <Students>1</Students>
+      <Students>2</Students>
+      <Students>3</Students>
+      <Students>4</Students>
+      <Students>5</Students>
+      <Students>6</Students>
+      <Students>7</Students>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2160,6 +2176,14 @@
       <Teacher>Tut</Teacher>
       <Teacher>Xe</Teacher>
       <Subject>US</Subject>
+      <Students>1</Students>
+      <Students>2</Students>
+      <Students>3</Students>
+      <Students>4</Students>
+      <Students>5</Students>
+      <Students>6</Students>
+      <Students>7</Students>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2178,6 +2202,14 @@
       <Teacher>Tut</Teacher>
       <Teacher>Xe</Teacher>
       <Subject>US</Subject>
+      <Students>1</Students>
+      <Students>2</Students>
+      <Students>3</Students>
+      <Students>4</Students>
+      <Students>5</Students>
+      <Students>6</Students>
+      <Students>7</Students>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2196,6 +2228,14 @@
       <Teacher>Tut</Teacher>
       <Teacher>Xe</Teacher>
       <Subject>US</Subject>
+      <Students>1</Students>
+      <Students>2</Students>
+      <Students>3</Students>
+      <Students>4</Students>
+      <Students>5</Students>
+      <Students>6</Students>
+      <Students>7</Students>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2214,6 +2254,14 @@
       <Teacher>Tut</Teacher>
       <Teacher>Xe</Teacher>
       <Subject>US</Subject>
+      <Students>1</Students>
+      <Students>2</Students>
+      <Students>3</Students>
+      <Students>4</Students>
+      <Students>5</Students>
+      <Students>6</Students>
+      <Students>7</Students>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2232,6 +2280,14 @@
       <Teacher>Tut</Teacher>
       <Teacher>Xe</Teacher>
       <Subject>US</Subject>
+      <Students>1</Students>
+      <Students>2</Students>
+      <Students>3</Students>
+      <Students>4</Students>
+      <Students>5</Students>
+      <Students>6</Students>
+      <Students>7</Students>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2250,6 +2306,14 @@
       <Teacher>Tut</Teacher>
       <Teacher>Xe</Teacher>
       <Subject>US</Subject>
+      <Students>1</Students>
+      <Students>2</Students>
+      <Students>3</Students>
+      <Students>4</Students>
+      <Students>5</Students>
+      <Students>6</Students>
+      <Students>7</Students>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2268,6 +2332,14 @@
       <Teacher>Tut</Teacher>
       <Teacher>Xe</Teacher>
       <Subject>US</Subject>
+      <Students>1</Students>
+      <Students>2</Students>
+      <Students>3</Students>
+      <Students>4</Students>
+      <Students>5</Students>
+      <Students>6</Students>
+      <Students>7</Students>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2286,6 +2358,14 @@
       <Teacher>Tut</Teacher>
       <Teacher>Xe</Teacher>
       <Subject>US</Subject>
+      <Students>1</Students>
+      <Students>2</Students>
+      <Students>3</Students>
+      <Students>4</Students>
+      <Students>5</Students>
+      <Students>6</Students>
+      <Students>7</Students>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2313,6 +2393,12 @@
       <Teacher>Wa</Teacher>
       <Teacher>Wo</Teacher>
       <Subject>OS</Subject>
+      <Students>10</Students>
+      <Students>11</Students>
+      <Students>12FH</Students>
+      <Students>12M</Students>
+      <Students>13</Students>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2340,6 +2426,12 @@
       <Teacher>Wa</Teacher>
       <Teacher>Wo</Teacher>
       <Subject>OS</Subject>
+      <Students>10</Students>
+      <Students>11</Students>
+      <Students>12FH</Students>
+      <Students>12M</Students>
+      <Students>13</Students>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2367,6 +2459,12 @@
       <Teacher>Wa</Teacher>
       <Teacher>Wo</Teacher>
       <Subject>OS</Subject>
+      <Students>10</Students>
+      <Students>11</Students>
+      <Students>12FH</Students>
+      <Students>12M</Students>
+      <Students>13</Students>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2394,6 +2492,12 @@
       <Teacher>Wa</Teacher>
       <Teacher>Wo</Teacher>
       <Subject>OS</Subject>
+      <Students>10</Students>
+      <Students>11</Students>
+      <Students>12FH</Students>
+      <Students>12M</Students>
+      <Students>13</Students>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2421,6 +2525,12 @@
       <Teacher>Wa</Teacher>
       <Teacher>Wo</Teacher>
       <Subject>OS</Subject>
+      <Students>10</Students>
+      <Students>11</Students>
+      <Students>12FH</Students>
+      <Students>12M</Students>
+      <Students>13</Students>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2448,6 +2558,12 @@
       <Teacher>Wa</Teacher>
       <Teacher>Wo</Teacher>
       <Subject>OS</Subject>
+      <Students>10</Students>
+      <Students>11</Students>
+      <Students>12FH</Students>
+      <Students>12M</Students>
+      <Students>13</Students>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2475,6 +2591,12 @@
       <Teacher>Wa</Teacher>
       <Teacher>Wo</Teacher>
       <Subject>OS</Subject>
+      <Students>10</Students>
+      <Students>11</Students>
+      <Students>12FH</Students>
+      <Students>12M</Students>
+      <Students>13</Students>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2502,6 +2624,12 @@
       <Teacher>Wa</Teacher>
       <Teacher>Wo</Teacher>
       <Subject>OS</Subject>
+      <Students>10</Students>
+      <Students>11</Students>
+      <Students>12FH</Students>
+      <Students>12M</Students>
+      <Students>13</Students>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2529,6 +2657,12 @@
       <Teacher>Wa</Teacher>
       <Teacher>Wo</Teacher>
       <Subject>OS</Subject>
+      <Students>10</Students>
+      <Students>11</Students>
+      <Students>12FH</Students>
+      <Students>12M</Students>
+      <Students>13</Students>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2556,6 +2690,12 @@
       <Teacher>Wa</Teacher>
       <Teacher>Wo</Teacher>
       <Subject>OS</Subject>
+      <Students>10</Students>
+      <Students>11</Students>
+      <Students>12FH</Students>
+      <Students>12M</Students>
+      <Students>13</Students>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>10</Total_Duration>
       <Duration>1</Duration>
@@ -2566,8 +2706,8 @@
       <Id>21</Id>
       <Teacher>No</Teacher>
       <Subject>E</Subject>
-      <Students>U</Students>
-      <Students>U</Students>
+      <Students>10.U</Students>
+      <Students>9.U</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -2578,8 +2718,8 @@
       <Id>22</Id>
       <Teacher>No</Teacher>
       <Subject>E</Subject>
-      <Students>U</Students>
-      <Students>U</Students>
+      <Students>10.U</Students>
+      <Students>9.U</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -2590,8 +2730,8 @@
       <Id>23</Id>
       <Teacher>No</Teacher>
       <Subject>E</Subject>
-      <Students>U</Students>
-      <Students>U</Students>
+      <Students>10.U</Students>
+      <Students>9.U</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -2602,7 +2742,7 @@
       <Id>24</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
-      <Students>V</Students>
+      <Students>9.V</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -2613,7 +2753,7 @@
       <Id>25</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
-      <Students>V</Students>
+      <Students>9.V</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -2624,7 +2764,7 @@
       <Id>26</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
-      <Students>V</Students>
+      <Students>9.V</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -2635,7 +2775,7 @@
       <Id>27</Id>
       <Teacher>Da</Teacher>
       <Subject>E</Subject>
-      <Students>V</Students>
+      <Students>10.V</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -2646,7 +2786,7 @@
       <Id>28</Id>
       <Teacher>Da</Teacher>
       <Subject>E</Subject>
-      <Students>V</Students>
+      <Students>10.V</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -2657,7 +2797,7 @@
       <Id>29</Id>
       <Teacher>Da</Teacher>
       <Subject>E</Subject>
-      <Students>V</Students>
+      <Students>10.V</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -2668,6 +2808,7 @@
       <Id>30</Id>
       <Teacher>Fr</Teacher>
       <Subject>E</Subject>
+      <Students>1</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -2678,6 +2819,7 @@
       <Id>31</Id>
       <Teacher>Fr</Teacher>
       <Subject>E</Subject>
+      <Students>1</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -2688,6 +2830,7 @@
       <Id>32</Id>
       <Teacher>Sc</Teacher>
       <Subject>EU</Subject>
+      <Students>1</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -2698,6 +2841,7 @@
       <Id>33</Id>
       <Teacher>Sa</Teacher>
       <Subject>MU</Subject>
+      <Students>1</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -2708,6 +2852,7 @@
       <Id>34</Id>
       <Teacher>Ka</Teacher>
       <Subject>SP</Subject>
+      <Students>1</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -2718,6 +2863,7 @@
       <Id>35</Id>
       <Teacher>Ber</Teacher>
       <Subject>RE</Subject>
+      <Students>1</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -2728,6 +2874,7 @@
       <Id>36</Id>
       <Teacher>Ka</Teacher>
       <Subject>ÜB</Subject>
+      <Students>1</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -2738,6 +2885,7 @@
       <Id>37</Id>
       <Teacher>Ka</Teacher>
       <Subject>ÜB</Subject>
+      <Students>1</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -2749,6 +2897,7 @@
       <Teacher>Kr</Teacher>
       <Teacher>Va</Teacher>
       <Subject>SP</Subject>
+      <Students>10</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -2759,6 +2908,7 @@
       <Id>39</Id>
       <Teacher>Ba</Teacher>
       <Subject>MU</Subject>
+      <Students>10</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -2769,6 +2919,7 @@
       <Id>40</Id>
       <Teacher>Ba</Teacher>
       <Subject>MU</Subject>
+      <Students>10</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -2780,6 +2931,7 @@
       <Teacher>No</Teacher>
       <Teacher>Wo</Teacher>
       <Subject>TUT</Subject>
+      <Students>10</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -2790,6 +2942,7 @@
       <Id>42</Id>
       <Teacher>Fa</Teacher>
       <Subject>M</Subject>
+      <Students>10</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -2800,6 +2953,7 @@
       <Id>43</Id>
       <Teacher>Fa</Teacher>
       <Subject>M</Subject>
+      <Students>10</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -2810,6 +2964,7 @@
       <Id>44</Id>
       <Teacher>Li</Teacher>
       <Subject>D</Subject>
+      <Students>10</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -2820,6 +2975,7 @@
       <Id>45</Id>
       <Teacher>Ha</Teacher>
       <Subject>PRA</Subject>
+      <Students>10</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -2830,6 +2986,7 @@
       <Id>46</Id>
       <Teacher>Ha</Teacher>
       <Subject>PRA</Subject>
+      <Students>10</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -2840,6 +2997,7 @@
       <Id>47</Id>
       <Teacher>Ha</Teacher>
       <Subject>PRA</Subject>
+      <Students>10</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -2850,6 +3008,7 @@
       <Id>48</Id>
       <Teacher>Ha</Teacher>
       <Subject>PRA</Subject>
+      <Students>10</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -2860,6 +3019,7 @@
       <Id>49</Id>
       <Teacher>Pa</Teacher>
       <Subject>PRA</Subject>
+      <Students>10</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -2871,6 +3031,7 @@
       <Teacher>Ba</Teacher>
       <Teacher>Fs</Teacher>
       <Subject>TUT</Subject>
+      <Students>11</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -2881,6 +3042,7 @@
       <Id>51</Id>
       <Teacher>Ba</Teacher>
       <Subject>MU</Subject>
+      <Students>11</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -2891,6 +3053,7 @@
       <Id>52</Id>
       <Teacher>Ba</Teacher>
       <Subject>MU</Subject>
+      <Students>11</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -2901,6 +3064,7 @@
       <Id>53</Id>
       <Teacher>Kr</Teacher>
       <Subject>SP</Subject>
+      <Students>11</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -2911,6 +3075,7 @@
       <Id>54</Id>
       <Teacher>Kr</Teacher>
       <Subject>SP</Subject>
+      <Students>11</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -2921,6 +3086,7 @@
       <Id>55</Id>
       <Teacher>Bo</Teacher>
       <Subject>D</Subject>
+      <Students>11</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -2931,6 +3097,7 @@
       <Id>56</Id>
       <Teacher>Bo</Teacher>
       <Subject>D</Subject>
+      <Students>11</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -2941,6 +3108,7 @@
       <Id>57</Id>
       <Teacher>Ha</Teacher>
       <Subject>PRA</Subject>
+      <Students>11</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -2951,6 +3119,7 @@
       <Id>58</Id>
       <Teacher>Ha</Teacher>
       <Subject>PRA</Subject>
+      <Students>11</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -2961,6 +3130,7 @@
       <Id>59</Id>
       <Teacher>Ha</Teacher>
       <Subject>PRA</Subject>
+      <Students>11</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -2972,6 +3142,8 @@
       <Teacher>Da</Teacher>
       <Teacher>Ig</Teacher>
       <Subject>TUT</Subject>
+      <Students>12FH</Students>
+      <Students>12M</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -2982,6 +3154,7 @@
       <Id>61</Id>
       <Teacher>Ba</Teacher>
       <Subject>MU</Subject>
+      <Students>12FH</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -2992,6 +3165,7 @@
       <Id>62</Id>
       <Teacher>Fa</Teacher>
       <Subject>M</Subject>
+      <Students>12FH</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3002,6 +3176,7 @@
       <Id>63</Id>
       <Teacher>Fa</Teacher>
       <Subject>M</Subject>
+      <Students>12FH</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3012,6 +3187,7 @@
       <Id>64</Id>
       <Teacher>Fa</Teacher>
       <Subject>M</Subject>
+      <Students>12FH</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3022,6 +3198,7 @@
       <Id>65</Id>
       <Teacher>Fa</Teacher>
       <Subject>M</Subject>
+      <Students>12FH</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3032,6 +3209,7 @@
       <Id>66</Id>
       <Teacher>Da</Teacher>
       <Subject>BIO</Subject>
+      <Students>12FH</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3042,6 +3220,7 @@
       <Id>67</Id>
       <Teacher>Da</Teacher>
       <Subject>BIO</Subject>
+      <Students>12FH</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3052,6 +3231,7 @@
       <Id>68</Id>
       <Teacher>Da</Teacher>
       <Subject>E</Subject>
+      <Students>12FH</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3062,6 +3242,7 @@
       <Id>69</Id>
       <Teacher>Da</Teacher>
       <Subject>E</Subject>
+      <Students>12FH</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3072,6 +3253,7 @@
       <Id>70</Id>
       <Teacher>Da</Teacher>
       <Subject>E</Subject>
+      <Students>12FH</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3082,6 +3264,7 @@
       <Id>71</Id>
       <Teacher>Da</Teacher>
       <Subject>E</Subject>
+      <Students>12FH</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3092,6 +3275,7 @@
       <Id>72</Id>
       <Teacher>Bo</Teacher>
       <Subject>D</Subject>
+      <Students>12FH</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -3102,6 +3286,7 @@
       <Id>73</Id>
       <Teacher>Bo</Teacher>
       <Subject>D</Subject>
+      <Students>12FH</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -3112,6 +3297,7 @@
       <Id>74</Id>
       <Teacher>Bo</Teacher>
       <Subject>D</Subject>
+      <Students>12FH</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -3122,6 +3308,8 @@
       <Id>75</Id>
       <Teacher>Ri</Teacher>
       <Subject>KS</Subject>
+      <Students>12FH</Students>
+      <Students>12M</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -3132,6 +3320,7 @@
       <Id>76</Id>
       <Teacher>Wo</Teacher>
       <Subject>G</Subject>
+      <Students>12M</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3142,6 +3331,7 @@
       <Id>77</Id>
       <Teacher>Wo</Teacher>
       <Subject>G</Subject>
+      <Students>12M</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3152,6 +3342,7 @@
       <Id>78</Id>
       <Teacher>Ig</Teacher>
       <Subject>BIO</Subject>
+      <Students>12M</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3162,6 +3353,7 @@
       <Id>79</Id>
       <Teacher>Ig</Teacher>
       <Subject>BIO</Subject>
+      <Students>12M</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3172,6 +3364,7 @@
       <Id>80</Id>
       <Teacher>Ig</Teacher>
       <Subject>D</Subject>
+      <Students>12M</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3182,6 +3375,7 @@
       <Id>81</Id>
       <Teacher>Ig</Teacher>
       <Subject>D</Subject>
+      <Students>12M</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3192,6 +3386,7 @@
       <Id>82</Id>
       <Teacher>No</Teacher>
       <Subject>E</Subject>
+      <Students>12M</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -3202,6 +3397,7 @@
       <Id>83</Id>
       <Teacher>No</Teacher>
       <Subject>E</Subject>
+      <Students>12M</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -3212,6 +3408,7 @@
       <Id>84</Id>
       <Teacher>No</Teacher>
       <Subject>E</Subject>
+      <Students>12M</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -3222,6 +3419,7 @@
       <Id>85</Id>
       <Teacher>Mu</Teacher>
       <Subject>M</Subject>
+      <Students>12M</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3232,6 +3430,7 @@
       <Id>86</Id>
       <Teacher>Mu</Teacher>
       <Subject>M</Subject>
+      <Students>12M</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3242,6 +3441,7 @@
       <Id>87</Id>
       <Teacher>Mu</Teacher>
       <Subject>M</Subject>
+      <Students>12M</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3252,6 +3452,7 @@
       <Id>88</Id>
       <Teacher>Mu</Teacher>
       <Subject>M</Subject>
+      <Students>12M</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3262,6 +3463,7 @@
       <Id>89</Id>
       <Teacher>Ba</Teacher>
       <Subject>MU</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3272,6 +3474,7 @@
       <Id>90</Id>
       <Teacher>Ba</Teacher>
       <Subject>MU</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3282,6 +3485,7 @@
       <Id>91</Id>
       <Teacher>Fa</Teacher>
       <Subject>M</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -3292,6 +3496,7 @@
       <Id>92</Id>
       <Teacher>Fa</Teacher>
       <Subject>M</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -3302,6 +3507,7 @@
       <Id>93</Id>
       <Teacher>Fa</Teacher>
       <Subject>M</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -3312,6 +3518,7 @@
       <Id>94</Id>
       <Teacher>Fs</Teacher>
       <Subject>GEO</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3322,6 +3529,7 @@
       <Id>95</Id>
       <Teacher>Fs</Teacher>
       <Subject>GEO</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3332,6 +3540,7 @@
       <Id>96</Id>
       <Teacher>Da</Teacher>
       <Subject>BIO</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -3342,6 +3551,7 @@
       <Id>97</Id>
       <Teacher>Da</Teacher>
       <Subject>BIO</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -3352,6 +3562,7 @@
       <Id>98</Id>
       <Teacher>Da</Teacher>
       <Subject>BIO</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -3362,6 +3573,7 @@
       <Id>99</Id>
       <Teacher>Ba</Teacher>
       <Subject>G</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3372,6 +3584,7 @@
       <Id>100</Id>
       <Teacher>Ba</Teacher>
       <Subject>G</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3382,6 +3595,7 @@
       <Id>101</Id>
       <Teacher>Ba</Teacher>
       <Subject>G</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3392,6 +3606,7 @@
       <Id>102</Id>
       <Teacher>Ba</Teacher>
       <Subject>G</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3402,6 +3617,7 @@
       <Id>103</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>5</Total_Duration>
       <Duration>1</Duration>
@@ -3412,6 +3628,7 @@
       <Id>104</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>5</Total_Duration>
       <Duration>1</Duration>
@@ -3422,6 +3639,7 @@
       <Id>105</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>5</Total_Duration>
       <Duration>1</Duration>
@@ -3432,6 +3650,7 @@
       <Id>106</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>5</Total_Duration>
       <Duration>1</Duration>
@@ -3442,6 +3661,7 @@
       <Id>107</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>5</Total_Duration>
       <Duration>1</Duration>
@@ -3452,6 +3672,7 @@
       <Id>108</Id>
       <Teacher>Li</Teacher>
       <Subject>D</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3462,6 +3683,7 @@
       <Id>109</Id>
       <Teacher>Li</Teacher>
       <Subject>D</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3472,6 +3694,7 @@
       <Id>110</Id>
       <Teacher>Li</Teacher>
       <Subject>D</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3482,6 +3705,7 @@
       <Id>111</Id>
       <Teacher>Li</Teacher>
       <Subject>D</Subject>
+      <Students>13</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -3492,6 +3716,7 @@
       <Id>112</Id>
       <Teacher>Fr</Teacher>
       <Subject>E</Subject>
+      <Students>2</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3502,6 +3727,7 @@
       <Id>113</Id>
       <Teacher>Fr</Teacher>
       <Subject>E</Subject>
+      <Students>2</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3512,6 +3738,7 @@
       <Id>114</Id>
       <Teacher>Sc</Teacher>
       <Subject>EU</Subject>
+      <Students>2</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -3522,6 +3749,7 @@
       <Id>115</Id>
       <Teacher>Tut</Teacher>
       <Subject>MU</Subject>
+      <Students>2</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -3532,6 +3760,7 @@
       <Id>116</Id>
       <Teacher>Tut</Teacher>
       <Subject>SP</Subject>
+      <Students>2</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -3542,6 +3771,7 @@
       <Id>117</Id>
       <Teacher>Ber</Teacher>
       <Subject>RE</Subject>
+      <Students>2</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -3552,6 +3782,7 @@
       <Id>118</Id>
       <Teacher>Fr</Teacher>
       <Subject>E</Subject>
+      <Students>3</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -3562,6 +3793,7 @@
       <Id>119</Id>
       <Teacher>Fr</Teacher>
       <Subject>E</Subject>
+      <Students>3</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -3572,6 +3804,7 @@
       <Id>120</Id>
       <Teacher>Fr</Teacher>
       <Subject>E</Subject>
+      <Students>3</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -3582,6 +3815,7 @@
       <Id>121</Id>
       <Teacher>Sc</Teacher>
       <Subject>EU</Subject>
+      <Students>3</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -3592,6 +3826,7 @@
       <Id>122</Id>
       <Teacher>Sa</Teacher>
       <Subject>MU</Subject>
+      <Students>3</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3602,6 +3837,7 @@
       <Id>123</Id>
       <Teacher>Sa</Teacher>
       <Subject>MU</Subject>
+      <Students>3</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3612,6 +3848,7 @@
       <Id>124</Id>
       <Teacher>Xe</Teacher>
       <Subject>SP</Subject>
+      <Students>3</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -3622,6 +3859,7 @@
       <Id>125</Id>
       <Teacher>Xe</Teacher>
       <Subject>ÜB</Subject>
+      <Students>3</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3632,6 +3870,7 @@
       <Id>126</Id>
       <Teacher>Xe</Teacher>
       <Subject>ÜB</Subject>
+      <Students>3</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3642,6 +3881,7 @@
       <Id>127</Id>
       <Teacher>Fr</Teacher>
       <Subject>E</Subject>
+      <Students>4</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3652,6 +3892,7 @@
       <Id>128</Id>
       <Teacher>Fr</Teacher>
       <Subject>E</Subject>
+      <Students>4</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3662,6 +3903,7 @@
       <Id>129</Id>
       <Teacher>Ba</Teacher>
       <Subject>MU</Subject>
+      <Students>4</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3672,6 +3914,7 @@
       <Id>130</Id>
       <Teacher>Ba</Teacher>
       <Subject>MU</Subject>
+      <Students>4</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3682,6 +3925,7 @@
       <Id>131</Id>
       <Teacher>Ber</Teacher>
       <Subject>ÜB</Subject>
+      <Students>4</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3692,6 +3936,7 @@
       <Id>132</Id>
       <Teacher>Ber</Teacher>
       <Subject>ÜB</Subject>
+      <Students>4</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3702,6 +3947,7 @@
       <Id>133</Id>
       <Teacher>Da</Teacher>
       <Subject>E</Subject>
+      <Students>5</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3712,6 +3958,7 @@
       <Id>134</Id>
       <Teacher>Da</Teacher>
       <Subject>E</Subject>
+      <Students>5</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3722,6 +3969,7 @@
       <Id>135</Id>
       <Teacher>Sa</Teacher>
       <Subject>ÜB</Subject>
+      <Students>5</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -3732,6 +3980,7 @@
       <Id>136</Id>
       <Teacher>Sa</Teacher>
       <Subject>MU</Subject>
+      <Students>5</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3742,6 +3991,7 @@
       <Id>137</Id>
       <Teacher>Sa</Teacher>
       <Subject>MU</Subject>
+      <Students>5</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3752,6 +4002,7 @@
       <Id>138</Id>
       <Teacher>Ca</Teacher>
       <Subject>ÜB</Subject>
+      <Students>6</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -3762,6 +4013,7 @@
       <Id>139</Id>
       <Teacher>Ba</Teacher>
       <Subject>MU</Subject>
+      <Students>6</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3772,6 +4024,7 @@
       <Id>140</Id>
       <Teacher>Ba</Teacher>
       <Subject>MU</Subject>
+      <Students>6</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3782,6 +4035,7 @@
       <Id>141</Id>
       <Teacher>Ju</Teacher>
       <Subject>ÜB</Subject>
+      <Students>7</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -3792,6 +4046,7 @@
       <Id>142</Id>
       <Teacher>Sa</Teacher>
       <Subject>MU</Subject>
+      <Students>7</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3802,6 +4057,7 @@
       <Id>143</Id>
       <Teacher>Sa</Teacher>
       <Subject>MU</Subject>
+      <Students>7</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3813,6 +4069,7 @@
       <Teacher>Kr</Teacher>
       <Teacher>Va</Teacher>
       <Subject>SP</Subject>
+      <Students>7</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3824,6 +4081,7 @@
       <Teacher>Kr</Teacher>
       <Teacher>Va</Teacher>
       <Subject>SP</Subject>
+      <Students>7</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3834,6 +4092,7 @@
       <Id>146</Id>
       <Teacher>Ne</Teacher>
       <Subject>ÜB</Subject>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -3844,6 +4103,7 @@
       <Id>147</Id>
       <Teacher>Ne</Teacher>
       <Subject>RE</Subject>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -3854,6 +4114,7 @@
       <Id>148</Id>
       <Teacher>Ne</Teacher>
       <Subject>KS</Subject>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3864,6 +4125,7 @@
       <Id>149</Id>
       <Teacher>Ne</Teacher>
       <Subject>KS</Subject>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3874,6 +4136,7 @@
       <Id>150</Id>
       <Teacher>Wo</Teacher>
       <Subject>GK</Subject>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3884,6 +4147,7 @@
       <Id>151</Id>
       <Teacher>Wo</Teacher>
       <Subject>GK</Subject>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3895,6 +4159,7 @@
       <Teacher>Kr</Teacher>
       <Teacher>Va</Teacher>
       <Subject>SP</Subject>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3906,6 +4171,7 @@
       <Teacher>Kr</Teacher>
       <Teacher>Va</Teacher>
       <Subject>SP</Subject>
+      <Students>8</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3917,6 +4183,7 @@
       <Teacher>Kr</Teacher>
       <Teacher>Va</Teacher>
       <Subject>SP</Subject>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3928,6 +4195,7 @@
       <Teacher>Kr</Teacher>
       <Teacher>Va</Teacher>
       <Subject>SP</Subject>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3938,6 +4206,7 @@
       <Id>156</Id>
       <Teacher>Ba</Teacher>
       <Subject>MU</Subject>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3948,6 +4217,7 @@
       <Id>157</Id>
       <Teacher>Ba</Teacher>
       <Subject>MU</Subject>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3959,6 +4229,7 @@
       <Teacher>Ha</Teacher>
       <Teacher>Li</Teacher>
       <Subject>TUT</Subject>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -3969,6 +4240,7 @@
       <Id>159</Id>
       <Teacher>Fa</Teacher>
       <Subject>M</Subject>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3979,6 +4251,7 @@
       <Id>160</Id>
       <Teacher>Fa</Teacher>
       <Subject>M</Subject>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -3989,6 +4262,7 @@
       <Id>161</Id>
       <Teacher>Li</Teacher>
       <Subject>D</Subject>
+      <Students>9</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -3999,7 +4273,7 @@
       <Id>162</Id>
       <Teacher>Wo</Teacher>
       <Subject>E</Subject>
-      <Students>A</Students>
+      <Students>7.A</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4010,7 +4284,7 @@
       <Id>163</Id>
       <Teacher>Wo</Teacher>
       <Subject>E</Subject>
-      <Students>A</Students>
+      <Students>7.A</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4021,7 +4295,7 @@
       <Id>164</Id>
       <Teacher>Wo</Teacher>
       <Subject>E</Subject>
-      <Students>A</Students>
+      <Students>7.A</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4032,7 +4306,7 @@
       <Id>165</Id>
       <Teacher>Ne</Teacher>
       <Subject>E</Subject>
-      <Students>A</Students>
+      <Students>6.A</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4043,7 +4317,7 @@
       <Id>166</Id>
       <Teacher>Ne</Teacher>
       <Subject>E</Subject>
-      <Students>A</Students>
+      <Students>6.A</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4054,7 +4328,7 @@
       <Id>167</Id>
       <Teacher>Ne</Teacher>
       <Subject>E</Subject>
-      <Students>A</Students>
+      <Students>6.A</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4065,7 +4339,7 @@
       <Id>168</Id>
       <Teacher>Wo</Teacher>
       <Subject>GK</Subject>
-      <Students>A</Students>
+      <Students>9.A</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4076,7 +4350,7 @@
       <Id>169</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
-      <Students>A</Students>
+      <Students>8.A</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4087,7 +4361,7 @@
       <Id>170</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
-      <Students>A</Students>
+      <Students>8.A</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4098,7 +4372,7 @@
       <Id>171</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
-      <Students>A</Students>
+      <Students>8.A</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4109,7 +4383,7 @@
       <Id>172</Id>
       <Teacher>Da</Teacher>
       <Subject>E</Subject>
-      <Students>A</Students>
+      <Students>5.A</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4120,7 +4394,7 @@
       <Id>173</Id>
       <Teacher>Ju</Teacher>
       <Subject>ÜB</Subject>
-      <Students>A</Students>
+      <Students>7.A</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4131,7 +4405,7 @@
       <Id>174</Id>
       <Teacher>Ca</Teacher>
       <Subject>ÜB</Subject>
-      <Students>A</Students>
+      <Students>6.A</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4142,7 +4416,7 @@
       <Id>175</Id>
       <Teacher>Fr</Teacher>
       <Subject>E</Subject>
-      <Students>A</Students>
+      <Students>4.A</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4153,7 +4427,7 @@
       <Id>176</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>A</Students>
+      <Students>7.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4164,7 +4438,7 @@
       <Id>177</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>A</Students>
+      <Students>7.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4175,7 +4449,7 @@
       <Id>178</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>A</Students>
+      <Students>8.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4186,7 +4460,7 @@
       <Id>179</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>A</Students>
+      <Students>8.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4197,7 +4471,7 @@
       <Id>180</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>A</Students>
+      <Students>6.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4208,7 +4482,7 @@
       <Id>181</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>A</Students>
+      <Students>6.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4219,7 +4493,7 @@
       <Id>182</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>A</Students>
+      <Students>5.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4230,7 +4504,7 @@
       <Id>183</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>A</Students>
+      <Students>5.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4241,7 +4515,7 @@
       <Id>184</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>A</Students>
+      <Students>4.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4252,7 +4526,7 @@
       <Id>185</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>A</Students>
+      <Students>4.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4263,8 +4537,8 @@
       <Id>186</Id>
       <Teacher>Be</Teacher>
       <Subject>EU</Subject>
-      <Students>A</Students>
-      <Students>A</Students>
+      <Students>12FH.A</Students>
+      <Students>12M.A</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4275,7 +4549,7 @@
       <Id>187</Id>
       <Teacher>Be</Teacher>
       <Subject>EU</Subject>
-      <Students>A</Students>
+      <Students>7.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4286,7 +4560,7 @@
       <Id>188</Id>
       <Teacher>Be</Teacher>
       <Subject>EU</Subject>
-      <Students>A</Students>
+      <Students>7.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4297,7 +4571,7 @@
       <Id>189</Id>
       <Teacher>Be</Teacher>
       <Subject>EU</Subject>
-      <Students>A</Students>
+      <Students>10.A</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4308,7 +4582,7 @@
       <Id>190</Id>
       <Teacher>Be</Teacher>
       <Subject>EU</Subject>
-      <Students>A</Students>
+      <Students>9.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4319,7 +4593,7 @@
       <Id>191</Id>
       <Teacher>Be</Teacher>
       <Subject>EU</Subject>
-      <Students>A</Students>
+      <Students>9.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4330,7 +4604,7 @@
       <Id>192</Id>
       <Teacher>Be</Teacher>
       <Subject>EU</Subject>
-      <Students>A</Students>
+      <Students>8.A</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4341,7 +4615,7 @@
       <Id>193</Id>
       <Teacher>Sc</Teacher>
       <Subject>EU</Subject>
-      <Students>A</Students>
+      <Students>6.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4352,7 +4626,7 @@
       <Id>194</Id>
       <Teacher>Sc</Teacher>
       <Subject>EU</Subject>
-      <Students>A</Students>
+      <Students>6.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4363,7 +4637,7 @@
       <Id>195</Id>
       <Teacher>Sc</Teacher>
       <Subject>EU</Subject>
-      <Students>A</Students>
+      <Students>5.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4374,7 +4648,7 @@
       <Id>196</Id>
       <Teacher>Sc</Teacher>
       <Subject>EU</Subject>
-      <Students>A</Students>
+      <Students>5.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4385,7 +4659,7 @@
       <Id>197</Id>
       <Teacher>Sc</Teacher>
       <Subject>EU</Subject>
-      <Students>A</Students>
+      <Students>4.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4396,7 +4670,7 @@
       <Id>198</Id>
       <Teacher>Sc</Teacher>
       <Subject>EU</Subject>
-      <Students>A</Students>
+      <Students>4.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4407,7 +4681,7 @@
       <Id>199</Id>
       <Teacher>Ne</Teacher>
       <Subject>ÜB</Subject>
-      <Students>A</Students>
+      <Students>8.A</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4418,7 +4692,7 @@
       <Id>200</Id>
       <Teacher>Sa</Teacher>
       <Subject>ÜB</Subject>
-      <Students>A</Students>
+      <Students>5.A</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4429,7 +4703,7 @@
       <Id>201</Id>
       <Teacher>Kr</Teacher>
       <Subject>SP</Subject>
-      <Students>A</Students>
+      <Students>4.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4440,7 +4714,7 @@
       <Id>202</Id>
       <Teacher>Kr</Teacher>
       <Subject>SP</Subject>
-      <Students>A</Students>
+      <Students>4.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4451,7 +4725,7 @@
       <Id>203</Id>
       <Teacher>Ju</Teacher>
       <Subject>GA</Subject>
-      <Students>A</Students>
+      <Students>7.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4462,7 +4736,7 @@
       <Id>204</Id>
       <Teacher>Ju</Teacher>
       <Subject>GA</Subject>
-      <Students>A</Students>
+      <Students>7.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4473,7 +4747,7 @@
       <Id>205</Id>
       <Teacher>Fs</Teacher>
       <Subject>ÖK</Subject>
-      <Students>A</Students>
+      <Students>9.A</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4484,7 +4758,7 @@
       <Id>206</Id>
       <Teacher>Fs</Teacher>
       <Subject>GA</Subject>
-      <Students>A</Students>
+      <Students>8.A</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4495,7 +4769,7 @@
       <Id>207</Id>
       <Teacher>Ju</Teacher>
       <Subject>GA</Subject>
-      <Students>A</Students>
+      <Students>6.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4506,7 +4780,7 @@
       <Id>208</Id>
       <Teacher>Ju</Teacher>
       <Subject>GA</Subject>
-      <Students>A</Students>
+      <Students>6.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4517,7 +4791,7 @@
       <Id>209</Id>
       <Teacher>Tut</Teacher>
       <Subject>MU</Subject>
-      <Students>A</Students>
+      <Students>8.A</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4528,7 +4802,7 @@
       <Id>210</Id>
       <Teacher>Kr</Teacher>
       <Subject>SP</Subject>
-      <Students>A</Students>
+      <Students>6.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4539,7 +4813,7 @@
       <Id>211</Id>
       <Teacher>Kr</Teacher>
       <Subject>SP</Subject>
-      <Students>A</Students>
+      <Students>6.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4550,7 +4824,7 @@
       <Id>212</Id>
       <Teacher>Kr</Teacher>
       <Subject>SP</Subject>
-      <Students>A</Students>
+      <Students>5.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4561,7 +4835,7 @@
       <Id>213</Id>
       <Teacher>Kr</Teacher>
       <Subject>SP</Subject>
-      <Students>A</Students>
+      <Students>5.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4572,7 +4846,7 @@
       <Id>214</Id>
       <Teacher>Za</Teacher>
       <Subject>W</Subject>
-      <Students>A</Students>
+      <Students>7.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4583,7 +4857,7 @@
       <Id>215</Id>
       <Teacher>Za</Teacher>
       <Subject>W</Subject>
-      <Students>A</Students>
+      <Students>7.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4594,7 +4868,7 @@
       <Id>216</Id>
       <Teacher>Za</Teacher>
       <Subject>W</Subject>
-      <Students>A</Students>
+      <Students>8.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4605,7 +4879,7 @@
       <Id>217</Id>
       <Teacher>Za</Teacher>
       <Subject>W</Subject>
-      <Students>A</Students>
+      <Students>8.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4616,7 +4890,7 @@
       <Id>218</Id>
       <Teacher>Za</Teacher>
       <Subject>W</Subject>
-      <Students>A</Students>
+      <Students>6.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4627,7 +4901,7 @@
       <Id>219</Id>
       <Teacher>Za</Teacher>
       <Subject>W</Subject>
-      <Students>A</Students>
+      <Students>6.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4638,7 +4912,7 @@
       <Id>220</Id>
       <Teacher>Za</Teacher>
       <Subject>W</Subject>
-      <Students>A</Students>
+      <Students>5.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4649,7 +4923,7 @@
       <Id>221</Id>
       <Teacher>Za</Teacher>
       <Subject>W</Subject>
-      <Students>A</Students>
+      <Students>5.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4660,7 +4934,7 @@
       <Id>222</Id>
       <Teacher>Wa</Teacher>
       <Subject>MAL</Subject>
-      <Students>A</Students>
+      <Students>10.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4671,7 +4945,7 @@
       <Id>223</Id>
       <Teacher>Wa</Teacher>
       <Subject>MAL</Subject>
-      <Students>A</Students>
+      <Students>10.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4682,7 +4956,7 @@
       <Id>224</Id>
       <Teacher>Wa</Teacher>
       <Subject>ST</Subject>
-      <Students>A</Students>
+      <Students>10.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4693,7 +4967,7 @@
       <Id>225</Id>
       <Teacher>Wa</Teacher>
       <Subject>ST</Subject>
-      <Students>A</Students>
+      <Students>10.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4704,7 +4978,7 @@
       <Id>226</Id>
       <Teacher>Wo</Teacher>
       <Subject>GK</Subject>
-      <Students>A</Students>
+      <Students>10.A</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4715,7 +4989,7 @@
       <Id>227</Id>
       <Teacher>Wa</Teacher>
       <Subject>PL</Subject>
-      <Students>A</Students>
+      <Students>9.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4726,7 +5000,7 @@
       <Id>228</Id>
       <Teacher>Wa</Teacher>
       <Subject>PL</Subject>
-      <Students>A</Students>
+      <Students>9.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4737,7 +5011,7 @@
       <Id>229</Id>
       <Teacher>Mu</Teacher>
       <Subject>TE</Subject>
-      <Students>A</Students>
+      <Students>10.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4748,7 +5022,7 @@
       <Id>230</Id>
       <Teacher>Mu</Teacher>
       <Subject>TE</Subject>
-      <Students>A</Students>
+      <Students>10.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4759,7 +5033,7 @@
       <Id>231</Id>
       <Teacher>Mu</Teacher>
       <Subject>TE</Subject>
-      <Students>A</Students>
+      <Students>9.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4770,7 +5044,7 @@
       <Id>232</Id>
       <Teacher>Mu</Teacher>
       <Subject>TE</Subject>
-      <Students>A</Students>
+      <Students>9.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4781,7 +5055,7 @@
       <Id>233</Id>
       <Teacher>Xe</Teacher>
       <Subject>HA</Subject>
-      <Students>A</Students>
+      <Students>3.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4792,7 +5066,7 @@
       <Id>234</Id>
       <Teacher>Xe</Teacher>
       <Subject>HA</Subject>
-      <Students>A</Students>
+      <Students>3.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4803,7 +5077,7 @@
       <Id>235</Id>
       <Teacher>Ber</Teacher>
       <Subject>HA</Subject>
-      <Students>A</Students>
+      <Students>2.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4814,7 +5088,7 @@
       <Id>236</Id>
       <Teacher>Ber</Teacher>
       <Subject>HA</Subject>
-      <Students>A</Students>
+      <Students>2.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4825,7 +5099,7 @@
       <Id>237</Id>
       <Teacher>Ber</Teacher>
       <Subject>HA</Subject>
-      <Students>A</Students>
+      <Students>1.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4836,7 +5110,7 @@
       <Id>238</Id>
       <Teacher>Ber</Teacher>
       <Subject>HA</Subject>
-      <Students>A</Students>
+      <Students>1.A</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -4847,7 +5121,7 @@
       <Id>239</Id>
       <Teacher>Wo</Teacher>
       <Subject>E</Subject>
-      <Students>B</Students>
+      <Students>7.B</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4858,7 +5132,7 @@
       <Id>240</Id>
       <Teacher>Wo</Teacher>
       <Subject>E</Subject>
-      <Students>B</Students>
+      <Students>7.B</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4869,7 +5143,7 @@
       <Id>241</Id>
       <Teacher>Wo</Teacher>
       <Subject>E</Subject>
-      <Students>B</Students>
+      <Students>7.B</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4880,7 +5154,7 @@
       <Id>242</Id>
       <Teacher>Da</Teacher>
       <Subject>E</Subject>
-      <Students>B</Students>
+      <Students>6.B</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4891,7 +5165,7 @@
       <Id>243</Id>
       <Teacher>Da</Teacher>
       <Subject>E</Subject>
-      <Students>B</Students>
+      <Students>6.B</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4902,7 +5176,7 @@
       <Id>244</Id>
       <Teacher>Da</Teacher>
       <Subject>E</Subject>
-      <Students>B</Students>
+      <Students>6.B</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4913,7 +5187,7 @@
       <Id>245</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
-      <Students>B</Students>
+      <Students>8.B</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4924,7 +5198,7 @@
       <Id>246</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
-      <Students>B</Students>
+      <Students>8.B</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4935,7 +5209,7 @@
       <Id>247</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
-      <Students>B</Students>
+      <Students>8.B</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -4946,7 +5220,7 @@
       <Id>248</Id>
       <Teacher>Da</Teacher>
       <Subject>E</Subject>
-      <Students>B</Students>
+      <Students>5.B</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4957,7 +5231,7 @@
       <Id>249</Id>
       <Teacher>Ju</Teacher>
       <Subject>ÜB</Subject>
-      <Students>B</Students>
+      <Students>7.B</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4968,7 +5242,7 @@
       <Id>250</Id>
       <Teacher>Ca</Teacher>
       <Subject>ÜB</Subject>
-      <Students>B</Students>
+      <Students>6.B</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4979,7 +5253,7 @@
       <Id>251</Id>
       <Teacher>Fr</Teacher>
       <Subject>E</Subject>
-      <Students>B</Students>
+      <Students>4.B</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -4990,7 +5264,7 @@
       <Id>252</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>B</Students>
+      <Students>7.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5001,7 +5275,7 @@
       <Id>253</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>B</Students>
+      <Students>7.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5012,7 +5286,7 @@
       <Id>254</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>B</Students>
+      <Students>8.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5023,7 +5297,7 @@
       <Id>255</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>B</Students>
+      <Students>8.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5034,7 +5308,7 @@
       <Id>256</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>B</Students>
+      <Students>6.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5045,7 +5319,7 @@
       <Id>257</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>B</Students>
+      <Students>6.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5056,7 +5330,7 @@
       <Id>258</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>B</Students>
+      <Students>5.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5067,7 +5341,7 @@
       <Id>259</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>B</Students>
+      <Students>5.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5078,7 +5352,7 @@
       <Id>260</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>B</Students>
+      <Students>4.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5089,7 +5363,7 @@
       <Id>261</Id>
       <Teacher>Ge</Teacher>
       <Subject>HA</Subject>
-      <Students>B</Students>
+      <Students>4.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5100,8 +5374,8 @@
       <Id>262</Id>
       <Teacher>Be</Teacher>
       <Subject>EU</Subject>
-      <Students>B</Students>
-      <Students>B</Students>
+      <Students>12FH.B</Students>
+      <Students>12M.B</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -5112,7 +5386,7 @@
       <Id>263</Id>
       <Teacher>Be</Teacher>
       <Subject>EU</Subject>
-      <Students>B</Students>
+      <Students>7.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5123,7 +5397,7 @@
       <Id>264</Id>
       <Teacher>Be</Teacher>
       <Subject>EU</Subject>
-      <Students>B</Students>
+      <Students>7.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5134,7 +5408,7 @@
       <Id>265</Id>
       <Teacher>Be</Teacher>
       <Subject>EU</Subject>
-      <Students>B</Students>
+      <Students>10.B</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -5145,7 +5419,7 @@
       <Id>266</Id>
       <Teacher>Be</Teacher>
       <Subject>EU</Subject>
-      <Students>B</Students>
+      <Students>9.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5156,7 +5430,7 @@
       <Id>267</Id>
       <Teacher>Be</Teacher>
       <Subject>EU</Subject>
-      <Students>B</Students>
+      <Students>9.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5167,7 +5441,7 @@
       <Id>268</Id>
       <Teacher>Be</Teacher>
       <Subject>EU</Subject>
-      <Students>B</Students>
+      <Students>8.B</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -5178,7 +5452,7 @@
       <Id>269</Id>
       <Teacher>Sc</Teacher>
       <Subject>EU</Subject>
-      <Students>B</Students>
+      <Students>6.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5189,7 +5463,7 @@
       <Id>270</Id>
       <Teacher>Sc</Teacher>
       <Subject>EU</Subject>
-      <Students>B</Students>
+      <Students>6.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5200,7 +5474,7 @@
       <Id>271</Id>
       <Teacher>Sc</Teacher>
       <Subject>EU</Subject>
-      <Students>B</Students>
+      <Students>5.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5211,7 +5485,7 @@
       <Id>272</Id>
       <Teacher>Sc</Teacher>
       <Subject>EU</Subject>
-      <Students>B</Students>
+      <Students>5.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5222,7 +5496,7 @@
       <Id>273</Id>
       <Teacher>Sc</Teacher>
       <Subject>EU</Subject>
-      <Students>B</Students>
+      <Students>4.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5233,7 +5507,7 @@
       <Id>274</Id>
       <Teacher>Sc</Teacher>
       <Subject>EU</Subject>
-      <Students>B</Students>
+      <Students>4.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5244,7 +5518,7 @@
       <Id>275</Id>
       <Teacher>Ne</Teacher>
       <Subject>ÜB</Subject>
-      <Students>B</Students>
+      <Students>8.B</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -5255,7 +5529,7 @@
       <Id>276</Id>
       <Teacher>Sa</Teacher>
       <Subject>ÜB</Subject>
-      <Students>B</Students>
+      <Students>5.B</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -5266,7 +5540,7 @@
       <Id>277</Id>
       <Teacher>Kr</Teacher>
       <Subject>SP</Subject>
-      <Students>B</Students>
+      <Students>4.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5277,7 +5551,7 @@
       <Id>278</Id>
       <Teacher>Kr</Teacher>
       <Subject>SP</Subject>
-      <Students>B</Students>
+      <Students>4.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5288,7 +5562,7 @@
       <Id>279</Id>
       <Teacher>Ju</Teacher>
       <Subject>GA</Subject>
-      <Students>B</Students>
+      <Students>7.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5299,7 +5573,7 @@
       <Id>280</Id>
       <Teacher>Ju</Teacher>
       <Subject>GA</Subject>
-      <Students>B</Students>
+      <Students>7.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5310,7 +5584,7 @@
       <Id>281</Id>
       <Teacher>Fs</Teacher>
       <Subject>ÖK</Subject>
-      <Students>B</Students>
+      <Students>9.B</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -5321,7 +5595,7 @@
       <Id>282</Id>
       <Teacher>Fs</Teacher>
       <Subject>GA</Subject>
-      <Students>B</Students>
+      <Students>8.B</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -5332,7 +5606,7 @@
       <Id>283</Id>
       <Teacher>Ju</Teacher>
       <Subject>GA</Subject>
-      <Students>B</Students>
+      <Students>6.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5343,7 +5617,7 @@
       <Id>284</Id>
       <Teacher>Ju</Teacher>
       <Subject>GA</Subject>
-      <Students>B</Students>
+      <Students>6.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5354,7 +5628,7 @@
       <Id>285</Id>
       <Teacher>Tut</Teacher>
       <Subject>MU</Subject>
-      <Students>B</Students>
+      <Students>8.B</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -5365,7 +5639,7 @@
       <Id>286</Id>
       <Teacher>Kr</Teacher>
       <Subject>SP</Subject>
-      <Students>B</Students>
+      <Students>6.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5376,7 +5650,7 @@
       <Id>287</Id>
       <Teacher>Kr</Teacher>
       <Subject>SP</Subject>
-      <Students>B</Students>
+      <Students>6.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5387,7 +5661,7 @@
       <Id>288</Id>
       <Teacher>Kr</Teacher>
       <Subject>SP</Subject>
-      <Students>B</Students>
+      <Students>5.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5398,7 +5672,7 @@
       <Id>289</Id>
       <Teacher>Kr</Teacher>
       <Subject>SP</Subject>
-      <Students>B</Students>
+      <Students>5.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5409,7 +5683,7 @@
       <Id>290</Id>
       <Teacher>Ha</Teacher>
       <Subject>SCHR</Subject>
-      <Students>B</Students>
+      <Students>9.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5420,7 +5694,7 @@
       <Id>291</Id>
       <Teacher>Ha</Teacher>
       <Subject>SCHR</Subject>
-      <Students>B</Students>
+      <Students>9.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5431,7 +5705,7 @@
       <Id>292</Id>
       <Teacher>Ha</Teacher>
       <Subject>SCHR</Subject>
-      <Students>B</Students>
+      <Students>10.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5442,7 +5716,7 @@
       <Id>293</Id>
       <Teacher>Ha</Teacher>
       <Subject>SCHR</Subject>
-      <Students>B</Students>
+      <Students>10.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5453,7 +5727,7 @@
       <Id>294</Id>
       <Teacher>Wo</Teacher>
       <Subject>GK</Subject>
-      <Students>B</Students>
+      <Students>9.B</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -5464,7 +5738,7 @@
       <Id>295</Id>
       <Teacher>Za</Teacher>
       <Subject>W</Subject>
-      <Students>B</Students>
+      <Students>7.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5475,7 +5749,7 @@
       <Id>296</Id>
       <Teacher>Za</Teacher>
       <Subject>W</Subject>
-      <Students>B</Students>
+      <Students>7.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5486,7 +5760,7 @@
       <Id>297</Id>
       <Teacher>Za</Teacher>
       <Subject>W</Subject>
-      <Students>B</Students>
+      <Students>8.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5497,7 +5771,7 @@
       <Id>298</Id>
       <Teacher>Za</Teacher>
       <Subject>W</Subject>
-      <Students>B</Students>
+      <Students>8.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5508,7 +5782,7 @@
       <Id>299</Id>
       <Teacher>Za</Teacher>
       <Subject>W</Subject>
-      <Students>B</Students>
+      <Students>6.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5519,7 +5793,7 @@
       <Id>300</Id>
       <Teacher>Za</Teacher>
       <Subject>W</Subject>
-      <Students>B</Students>
+      <Students>6.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5530,7 +5804,7 @@
       <Id>301</Id>
       <Teacher>Za</Teacher>
       <Subject>W</Subject>
-      <Students>B</Students>
+      <Students>5.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5541,7 +5815,7 @@
       <Id>302</Id>
       <Teacher>Za</Teacher>
       <Subject>W</Subject>
-      <Students>B</Students>
+      <Students>5.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5552,7 +5826,7 @@
       <Id>303</Id>
       <Teacher>Wa</Teacher>
       <Subject>MAL</Subject>
-      <Students>B</Students>
+      <Students>9.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5563,7 +5837,7 @@
       <Id>304</Id>
       <Teacher>Wa</Teacher>
       <Subject>MAL</Subject>
-      <Students>B</Students>
+      <Students>9.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5574,7 +5848,7 @@
       <Id>305</Id>
       <Teacher>Wo</Teacher>
       <Subject>GK</Subject>
-      <Students>B</Students>
+      <Students>10.B</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -5585,7 +5859,7 @@
       <Id>306</Id>
       <Teacher>Wa</Teacher>
       <Subject>PL</Subject>
-      <Students>B</Students>
+      <Students>10.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5596,7 +5870,7 @@
       <Id>307</Id>
       <Teacher>Wa</Teacher>
       <Subject>PL</Subject>
-      <Students>B</Students>
+      <Students>10.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5607,7 +5881,7 @@
       <Id>308</Id>
       <Teacher>Ber</Teacher>
       <Subject>HA</Subject>
-      <Students>B</Students>
+      <Students>3.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5618,7 +5892,7 @@
       <Id>309</Id>
       <Teacher>Ber</Teacher>
       <Subject>HA</Subject>
-      <Students>B</Students>
+      <Students>3.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5629,7 +5903,7 @@
       <Id>310</Id>
       <Teacher>Xe</Teacher>
       <Subject>HA</Subject>
-      <Students>B</Students>
+      <Students>2.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5640,7 +5914,7 @@
       <Id>311</Id>
       <Teacher>Xe</Teacher>
       <Subject>HA</Subject>
-      <Students>B</Students>
+      <Students>2.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5651,7 +5925,7 @@
       <Id>312</Id>
       <Teacher>Ka</Teacher>
       <Subject>HA</Subject>
-      <Students>B</Students>
+      <Students>1.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5662,7 +5936,7 @@
       <Id>313</Id>
       <Teacher>Ka</Teacher>
       <Subject>HA</Subject>
-      <Students>B</Students>
+      <Students>1.B</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -5673,7 +5947,7 @@
       <Id>314</Id>
       <Teacher>Ne</Teacher>
       <Subject>RE</Subject>
-      <Students>C</Students>
+      <Students>7.C</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -5684,7 +5958,7 @@
       <Id>315</Id>
       <Teacher>Ber</Teacher>
       <Subject>RE</Subject>
-      <Students>C</Students>
+      <Students>6.C</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -5695,7 +5969,7 @@
       <Id>316</Id>
       <Teacher>Ne</Teacher>
       <Subject>RE</Subject>
-      <Students>C</Students>
+      <Students>5.C</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -5706,7 +5980,7 @@
       <Id>317</Id>
       <Teacher>Ne</Teacher>
       <Subject>RE</Subject>
-      <Students>C</Students>
+      <Students>3.C</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -5717,7 +5991,7 @@
       <Id>318</Id>
       <Teacher>Ne</Teacher>
       <Subject>RE</Subject>
-      <Students>C</Students>
+      <Students>4.C</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -5728,7 +6002,7 @@
       <Id>319</Id>
       <Teacher>Ig</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>10.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5739,7 +6013,7 @@
       <Id>320</Id>
       <Teacher>Ig</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>10.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5750,7 +6024,7 @@
       <Id>321</Id>
       <Teacher>Ig</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>10.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5761,7 +6035,7 @@
       <Id>322</Id>
       <Teacher>Uh</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>12FH.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5772,7 +6046,7 @@
       <Id>323</Id>
       <Teacher>Uh</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>12FH.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5783,7 +6057,7 @@
       <Id>324</Id>
       <Teacher>Uh</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>12FH.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5794,7 +6068,7 @@
       <Id>325</Id>
       <Teacher>Fs</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>11.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5805,7 +6079,7 @@
       <Id>326</Id>
       <Teacher>Fs</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>11.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5816,7 +6090,7 @@
       <Id>327</Id>
       <Teacher>Fs</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>11.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5827,7 +6101,7 @@
       <Id>328</Id>
       <Teacher>Fs</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>9.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5838,7 +6112,7 @@
       <Id>329</Id>
       <Teacher>Fs</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>9.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5849,7 +6123,7 @@
       <Id>330</Id>
       <Teacher>Fs</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>9.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5860,7 +6134,7 @@
       <Id>331</Id>
       <Teacher>Fs</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>13.F</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -5871,7 +6145,7 @@
       <Id>332</Id>
       <Teacher>Fs</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>13.F</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -5882,7 +6156,7 @@
       <Id>333</Id>
       <Teacher>Fs</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>13.F</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -5893,7 +6167,7 @@
       <Id>334</Id>
       <Teacher>Fs</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>13.F</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -5904,7 +6178,7 @@
       <Id>335</Id>
       <Teacher>Ig</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>8.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5915,7 +6189,7 @@
       <Id>336</Id>
       <Teacher>Ig</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>8.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5926,7 +6200,7 @@
       <Id>337</Id>
       <Teacher>Ig</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>8.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5937,7 +6211,7 @@
       <Id>338</Id>
       <Teacher>Uh</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>7.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5948,7 +6222,7 @@
       <Id>339</Id>
       <Teacher>Uh</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>7.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5959,7 +6233,7 @@
       <Id>340</Id>
       <Teacher>Uh</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>7.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5970,7 +6244,7 @@
       <Id>341</Id>
       <Teacher>Ig</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>6.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5981,7 +6255,7 @@
       <Id>342</Id>
       <Teacher>Ig</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>6.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -5992,7 +6266,7 @@
       <Id>343</Id>
       <Teacher>Ig</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>6.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6003,7 +6277,7 @@
       <Id>344</Id>
       <Teacher>Uh</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>5.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6014,7 +6288,7 @@
       <Id>345</Id>
       <Teacher>Uh</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>5.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6025,7 +6299,7 @@
       <Id>346</Id>
       <Teacher>Uh</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>5.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6036,7 +6310,7 @@
       <Id>347</Id>
       <Teacher>Uh</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>3.F</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -6047,7 +6321,7 @@
       <Id>348</Id>
       <Teacher>Uh</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>3.F</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -6058,7 +6332,7 @@
       <Id>349</Id>
       <Teacher>Ig</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>2.F</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -6069,7 +6343,7 @@
       <Id>350</Id>
       <Teacher>Ig</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>2.F</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -6080,7 +6354,7 @@
       <Id>351</Id>
       <Teacher>Uh</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>4.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6091,7 +6365,7 @@
       <Id>352</Id>
       <Teacher>Uh</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>4.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6102,7 +6376,7 @@
       <Id>353</Id>
       <Teacher>Uh</Teacher>
       <Subject>F</Subject>
-      <Students>F</Students>
+      <Students>4.F</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6113,7 +6387,7 @@
       <Id>354</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
-      <Students>FH</Students>
+      <Students>11.FH</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6124,7 +6398,7 @@
       <Id>355</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
-      <Students>FH</Students>
+      <Students>11.FH</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6135,7 +6409,7 @@
       <Id>356</Id>
       <Teacher>Ro</Teacher>
       <Subject>E</Subject>
-      <Students>FH</Students>
+      <Students>11.FH</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6146,7 +6420,7 @@
       <Id>357</Id>
       <Teacher>Fa</Teacher>
       <Subject>M</Subject>
-      <Students>FH</Students>
+      <Students>11.FH</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6157,7 +6431,7 @@
       <Id>358</Id>
       <Teacher>Fa</Teacher>
       <Subject>M</Subject>
-      <Students>FH</Students>
+      <Students>11.FH</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6168,7 +6442,7 @@
       <Id>359</Id>
       <Teacher>Fa</Teacher>
       <Subject>M</Subject>
-      <Students>FH</Students>
+      <Students>11.FH</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6179,7 +6453,7 @@
       <Id>360</Id>
       <Teacher>Bo</Teacher>
       <Subject>D</Subject>
-      <Students>FH</Students>
+      <Students>11.FH</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -6191,10 +6465,10 @@
       <Teacher>Ha</Teacher>
       <Teacher>Wa</Teacher>
       <Subject>MAL/SCHR</Subject>
-      <Students>G</Students>
-      <Students>G</Students>
-      <Students>H</Students>
-      <Students>H</Students>
+      <Students>12FH.G</Students>
+      <Students>12FH.H</Students>
+      <Students>12M.G</Students>
+      <Students>12M.H</Students>
       <Active>true</Active>
       <Total_Duration>7</Total_Duration>
       <Duration>1</Duration>
@@ -6206,10 +6480,10 @@
       <Teacher>Ha</Teacher>
       <Teacher>Wa</Teacher>
       <Subject>MAL/SCHR</Subject>
-      <Students>G</Students>
-      <Students>G</Students>
-      <Students>H</Students>
-      <Students>H</Students>
+      <Students>12FH.G</Students>
+      <Students>12FH.H</Students>
+      <Students>12M.G</Students>
+      <Students>12M.H</Students>
       <Active>true</Active>
       <Total_Duration>7</Total_Duration>
       <Duration>1</Duration>
@@ -6221,10 +6495,10 @@
       <Teacher>Ha</Teacher>
       <Teacher>Wa</Teacher>
       <Subject>MAL/SCHR</Subject>
-      <Students>G</Students>
-      <Students>G</Students>
-      <Students>H</Students>
-      <Students>H</Students>
+      <Students>12FH.G</Students>
+      <Students>12FH.H</Students>
+      <Students>12M.G</Students>
+      <Students>12M.H</Students>
       <Active>true</Active>
       <Total_Duration>7</Total_Duration>
       <Duration>1</Duration>
@@ -6236,10 +6510,10 @@
       <Teacher>Ha</Teacher>
       <Teacher>Wa</Teacher>
       <Subject>MAL/SCHR</Subject>
-      <Students>G</Students>
-      <Students>G</Students>
-      <Students>H</Students>
-      <Students>H</Students>
+      <Students>12FH.G</Students>
+      <Students>12FH.H</Students>
+      <Students>12M.G</Students>
+      <Students>12M.H</Students>
       <Active>true</Active>
       <Total_Duration>7</Total_Duration>
       <Duration>1</Duration>
@@ -6251,10 +6525,10 @@
       <Teacher>Ha</Teacher>
       <Teacher>Wa</Teacher>
       <Subject>MAL/SCHR</Subject>
-      <Students>G</Students>
-      <Students>G</Students>
-      <Students>H</Students>
-      <Students>H</Students>
+      <Students>12FH.G</Students>
+      <Students>12FH.H</Students>
+      <Students>12M.G</Students>
+      <Students>12M.H</Students>
       <Active>true</Active>
       <Total_Duration>7</Total_Duration>
       <Duration>1</Duration>
@@ -6266,10 +6540,10 @@
       <Teacher>Ha</Teacher>
       <Teacher>Wa</Teacher>
       <Subject>MAL/SCHR</Subject>
-      <Students>G</Students>
-      <Students>G</Students>
-      <Students>H</Students>
-      <Students>H</Students>
+      <Students>12FH.G</Students>
+      <Students>12FH.H</Students>
+      <Students>12M.G</Students>
+      <Students>12M.H</Students>
       <Active>true</Active>
       <Total_Duration>7</Total_Duration>
       <Duration>1</Duration>
@@ -6281,10 +6555,10 @@
       <Teacher>Ha</Teacher>
       <Teacher>Wa</Teacher>
       <Subject>MAL/SCHR</Subject>
-      <Students>G</Students>
-      <Students>G</Students>
-      <Students>H</Students>
-      <Students>H</Students>
+      <Students>12FH.G</Students>
+      <Students>12FH.H</Students>
+      <Students>12M.G</Students>
+      <Students>12M.H</Students>
       <Active>true</Active>
       <Total_Duration>7</Total_Duration>
       <Duration>1</Duration>
@@ -6296,8 +6570,8 @@
       <Teacher>Ha</Teacher>
       <Teacher>Wa</Teacher>
       <Subject>SCHR/MAL</Subject>
-      <Students>G</Students>
-      <Students>H</Students>
+      <Students>11.G</Students>
+      <Students>11.H</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -6309,8 +6583,8 @@
       <Teacher>Ha</Teacher>
       <Teacher>Wa</Teacher>
       <Subject>SCHR/MAL</Subject>
-      <Students>G</Students>
-      <Students>H</Students>
+      <Students>11.G</Students>
+      <Students>11.H</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -6322,8 +6596,8 @@
       <Teacher>Ha</Teacher>
       <Teacher>Wa</Teacher>
       <Subject>SCHR/MAL</Subject>
-      <Students>G</Students>
-      <Students>H</Students>
+      <Students>11.G</Students>
+      <Students>11.H</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -6335,8 +6609,8 @@
       <Teacher>Ha</Teacher>
       <Teacher>Wa</Teacher>
       <Subject>SCHR/MAL</Subject>
-      <Students>G</Students>
-      <Students>H</Students>
+      <Students>11.G</Students>
+      <Students>11.H</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -6347,7 +6621,7 @@
       <Id>372</Id>
       <Teacher>Yu</Teacher>
       <Subject>RE</Subject>
-      <Students>K</Students>
+      <Students>7.K</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -6358,7 +6632,7 @@
       <Id>373</Id>
       <Teacher>Yu</Teacher>
       <Subject>RE</Subject>
-      <Students>K</Students>
+      <Students>6.K</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -6369,7 +6643,7 @@
       <Id>374</Id>
       <Teacher>Yu</Teacher>
       <Subject>RE</Subject>
-      <Students>K</Students>
+      <Students>5.K</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -6380,7 +6654,7 @@
       <Id>375</Id>
       <Teacher>Tut</Teacher>
       <Subject>RE</Subject>
-      <Students>K</Students>
+      <Students>3.K</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -6391,7 +6665,7 @@
       <Id>376</Id>
       <Teacher>Yu</Teacher>
       <Subject>RE</Subject>
-      <Students>K</Students>
+      <Students>4.K</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -6402,7 +6676,7 @@
       <Id>377</Id>
       <Teacher>No</Teacher>
       <Subject>E</Subject>
-      <Students>MR</Students>
+      <Students>11.MR</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6413,7 +6687,7 @@
       <Id>378</Id>
       <Teacher>No</Teacher>
       <Subject>E</Subject>
-      <Students>MR</Students>
+      <Students>11.MR</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6424,7 +6698,7 @@
       <Id>379</Id>
       <Teacher>No</Teacher>
       <Subject>E</Subject>
-      <Students>MR</Students>
+      <Students>11.MR</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6435,7 +6709,7 @@
       <Id>380</Id>
       <Teacher>Li</Teacher>
       <Subject>D</Subject>
-      <Students>MR</Students>
+      <Students>11.MR</Students>
       <Active>true</Active>
       <Total_Duration>1</Total_Duration>
       <Duration>1</Duration>
@@ -6446,7 +6720,7 @@
       <Id>381</Id>
       <Teacher>Mu</Teacher>
       <Subject>M</Subject>
-      <Students>MR</Students>
+      <Students>11.MR</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6457,7 +6731,7 @@
       <Id>382</Id>
       <Teacher>Mu</Teacher>
       <Subject>M</Subject>
-      <Students>MR</Students>
+      <Students>11.MR</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6468,7 +6742,7 @@
       <Id>383</Id>
       <Teacher>Mu</Teacher>
       <Subject>M</Subject>
-      <Students>MR</Students>
+      <Students>11.MR</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6479,8 +6753,8 @@
       <Id>384</Id>
       <Teacher>Tut</Teacher>
       <Subject>FPU</Subject>
-      <Students>P</Students>
-      <Students>P</Students>
+      <Students>10.P</Students>
+      <Students>9.P</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6491,8 +6765,8 @@
       <Id>385</Id>
       <Teacher>Tut</Teacher>
       <Subject>FPU</Subject>
-      <Students>P</Students>
-      <Students>P</Students>
+      <Students>10.P</Students>
+      <Students>9.P</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6503,8 +6777,8 @@
       <Id>386</Id>
       <Teacher>Tut</Teacher>
       <Subject>FPU</Subject>
-      <Students>P</Students>
-      <Students>P</Students>
+      <Students>10.P</Students>
+      <Students>9.P</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6515,7 +6789,7 @@
       <Id>387</Id>
       <Teacher>Tut</Teacher>
       <Subject>FPU</Subject>
-      <Students>P</Students>
+      <Students>8.P</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6526,7 +6800,7 @@
       <Id>388</Id>
       <Teacher>Tut</Teacher>
       <Subject>FPU</Subject>
-      <Students>P</Students>
+      <Students>8.P</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6537,7 +6811,7 @@
       <Id>389</Id>
       <Teacher>Tut</Teacher>
       <Subject>FPU</Subject>
-      <Students>P</Students>
+      <Students>8.P</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6548,8 +6822,8 @@
       <Id>390</Id>
       <Teacher>Ol</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
-      <Students>R</Students>
+      <Students>11.R</Students>
+      <Students>12FH.R</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6560,8 +6834,8 @@
       <Id>391</Id>
       <Teacher>Ol</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
-      <Students>R</Students>
+      <Students>11.R</Students>
+      <Students>12FH.R</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6572,8 +6846,8 @@
       <Id>392</Id>
       <Teacher>Ol</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
-      <Students>R</Students>
+      <Students>11.R</Students>
+      <Students>12FH.R</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6584,8 +6858,8 @@
       <Id>393</Id>
       <Teacher>No</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
-      <Students>R</Students>
+      <Students>10.R</Students>
+      <Students>9.R</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6596,8 +6870,8 @@
       <Id>394</Id>
       <Teacher>No</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
-      <Students>R</Students>
+      <Students>10.R</Students>
+      <Students>9.R</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6608,8 +6882,8 @@
       <Id>395</Id>
       <Teacher>No</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
-      <Students>R</Students>
+      <Students>10.R</Students>
+      <Students>9.R</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6620,7 +6894,7 @@
       <Id>396</Id>
       <Teacher>No</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
+      <Students>13.R</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -6631,7 +6905,7 @@
       <Id>397</Id>
       <Teacher>No</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
+      <Students>13.R</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -6642,7 +6916,7 @@
       <Id>398</Id>
       <Teacher>No</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
+      <Students>13.R</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -6653,7 +6927,7 @@
       <Id>399</Id>
       <Teacher>No</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
+      <Students>13.R</Students>
       <Active>true</Active>
       <Total_Duration>4</Total_Duration>
       <Duration>1</Duration>
@@ -6664,8 +6938,8 @@
       <Id>400</Id>
       <Teacher>Ol</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
-      <Students>R</Students>
+      <Students>7.R</Students>
+      <Students>8.R</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6676,8 +6950,8 @@
       <Id>401</Id>
       <Teacher>Ol</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
-      <Students>R</Students>
+      <Students>7.R</Students>
+      <Students>8.R</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6688,8 +6962,8 @@
       <Id>402</Id>
       <Teacher>Ol</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
-      <Students>R</Students>
+      <Students>7.R</Students>
+      <Students>8.R</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6700,8 +6974,8 @@
       <Id>403</Id>
       <Teacher>Ol</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
-      <Students>R</Students>
+      <Students>5.R</Students>
+      <Students>6.R</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6712,8 +6986,8 @@
       <Id>404</Id>
       <Teacher>Ol</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
-      <Students>R</Students>
+      <Students>5.R</Students>
+      <Students>6.R</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6724,8 +6998,8 @@
       <Id>405</Id>
       <Teacher>Ol</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
-      <Students>R</Students>
+      <Students>5.R</Students>
+      <Students>6.R</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6736,8 +7010,8 @@
       <Id>406</Id>
       <Teacher>Ol</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
-      <Students>R</Students>
+      <Students>2.R</Students>
+      <Students>3.R</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -6748,8 +7022,8 @@
       <Id>407</Id>
       <Teacher>Ol</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
-      <Students>R</Students>
+      <Students>2.R</Students>
+      <Students>3.R</Students>
       <Active>true</Active>
       <Total_Duration>2</Total_Duration>
       <Duration>1</Duration>
@@ -6760,7 +7034,7 @@
       <Id>408</Id>
       <Teacher>Ol</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
+      <Students>4.R</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6771,7 +7045,7 @@
       <Id>409</Id>
       <Teacher>Ol</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
+      <Students>4.R</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>
@@ -6782,7 +7056,7 @@
       <Id>410</Id>
       <Teacher>Ol</Teacher>
       <Subject>RU</Subject>
-      <Students>R</Students>
+      <Students>4.R</Students>
       <Active>true</Active>
       <Total_Duration>3</Total_Duration>
       <Duration>1</Duration>

@@ -54,7 +54,7 @@ func (tt_data *TtData) CollectCourses() {
 	tt_data.Ref2CourseInfo = map[NodeRef]*CourseInfo{}
 	tt_data.Activities = []*Activity{{}} // first entry is empty
 
-	// Gather the SuperCourses.
+	// *** Gather the SuperCourses. ***
 	for _, spc := range db.SuperCourses {
 		cref := spc.Id
 		groups := []*base.Group{}
@@ -69,8 +69,10 @@ func (tt_data *TtData) CollectCourses() {
 				if !ok {
 					panic("Invalid Group ref: " + gref)
 				}
-				groups = append(groups, g)
-				agroups = append(agroups, tt_data.AtomicGroups[gref]...)
+				if !slices.Contains(groups, g) {
+					groups = append(groups, g)
+					agroups = append(agroups, tt_data.AtomicGroups[gref]...)
+				}
 			}
 			// Add teachers
 			for _, tref := range sbc.Teachers {
@@ -124,6 +126,9 @@ func (tt_data *TtData) CollectCourses() {
 							goto skip
 						}
 					}
+
+					fmt.Printf("++C: %v\n", roomlist)
+
 					crooms = append(crooms, roomlist)
 				skip:
 					continue
@@ -133,14 +138,33 @@ func (tt_data *TtData) CollectCourses() {
 			}
 		}
 
+		/*TODO
+		// All the Rooms and the individual Rooms from RoomGroups are joined
+		// into a "compulsory" list.
+		// The RoomChoiceGroups are now a list of lists. Any exact duplicates
+		// should have been removed. Now, if one contains a compulsory room,
+		// ignore the choice.
+
+		// Filter out any "necessary" rooms from the choices, something like
+		cinfo.Room = roomChoiceFilter(rooms, roomChoices)
+		*/
+
 		// Eliminate duplicate resources by sorting and then compacting
 		slices.Sort(agroups)
 		slices.Sort(teachers)
 		slices.Sort(rooms)
+
+		for _, r := range slices.Compact(rooms) {
+			fmt.Printf("++ %s\n", tt_data.Resources[r].GetResourceTag())
+		}
+
 		sbj, ok := db.GetElement(spc.Subject).(*base.Subject)
 		if !ok {
 			panic("Invalid Subject ref: " + spc.Subject)
 		}
+
+		fmt.Printf("^^^^ %s\n\n", sbj.Tag)
+
 		cinfo := &CourseInfo{
 			Id:           cref,
 			Subject:      sbj.Tag,
