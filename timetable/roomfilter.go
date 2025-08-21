@@ -74,7 +74,10 @@ restart:
 	}
 }
 
-func filterRooms() {
+func filterRooms(
+	fixedrooms []ResourceIndex,
+	roomchoices [][]ResourceIndex,
+) {
 	// Go through the classes inspecting their Divisions.
 	// Build a list-basis for the atomic groups based on the Cartesian product.
 	for _, cl := range ttinfo.Db.Classes {
