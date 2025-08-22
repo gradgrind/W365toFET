@@ -99,7 +99,7 @@ func (tt_data *TtData) CollectCourses() {
 						r, ok = tt_data.RoomIndex[rr]
 						if !ok {
 							panic(fmt.Sprintf(
-								"Unknown room in RoomGroup %s: %s",
+								"Bug: Unknown room in RoomGroup %s: %s",
 								rr, sbc.Room))
 						}
 						rooms = append(rooms, r)
@@ -114,11 +114,12 @@ func (tt_data *TtData) CollectCourses() {
 						r, ok = tt_data.RoomIndex[rr]
 						if !ok {
 							panic(fmt.Sprintf(
-								"Unknown room in RoomChoiceGroup %s: %s",
+								"Bug: Unknown room in RoomChoiceGroup %s: %s",
 								rr, sbc.Room))
 						}
 						roomlist = append(roomlist, r)
 					}
+					slices.Sort(roomlist)
 
 					// Don't add if it is a duplicate
 					for _, rl := range crooms {
@@ -134,20 +135,9 @@ func (tt_data *TtData) CollectCourses() {
 					continue
 				}
 
-				panic("Expecting room element, found: " + sbc.Room)
+				panic("Bug: Expecting room element, found: " + sbc.Room)
 			}
 		}
-
-		/*TODO
-		// All the Rooms and the individual Rooms from RoomGroups are joined
-		// into a "compulsory" list.
-		// The RoomChoiceGroups are now a list of lists. Any exact duplicates
-		// should have been removed. Now, if one contains a compulsory room,
-		// ignore the choice.
-
-		// Filter out any "necessary" rooms from the choices, something like
-		cinfo.Room = roomChoiceFilter(rooms, roomChoices)
-		*/
 
 		// Eliminate duplicate resources by sorting and then compacting
 		slices.Sort(agroups)
@@ -176,6 +166,9 @@ func (tt_data *TtData) CollectCourses() {
 			Lessons:      spc.Lessons,
 			//Activities
 		}
+		// Filter out any "necessary" rooms from the choices
+		roomChoiceFilter(cinfo)
+
 		tt_data.makeActivities(cinfo)
 		tt_data.CourseInfoList = append(tt_data.CourseInfoList, cinfo)
 		tt_data.Ref2CourseInfo[cref] = cinfo

@@ -125,6 +125,9 @@ func (db *DbTopLevel) NewLesson(ref Ref) *Lesson {
 	return e
 }
 
+// `PrepareDb` must be called after the data has been initially loaded into
+// the `DbTopLevel` structure. It processes the data by performing checks and
+// completing the initialization of the internal data structures.
 func (db *DbTopLevel) PrepareDb() {
 	if db.Info.MiddayBreak == nil {
 		db.Info.MiddayBreak = []int{}
@@ -187,6 +190,30 @@ func (db *DbTopLevel) PrepareDb() {
 	newtags("Subject", db.Subjects)
 	newtags("Room", db.Rooms)
 	newtags("Teacher", db.Teachers)
+
+	// Check that the Rooms in RoomGroups and RoomChoiceGroups are valid.
+	for _, rg := range db.RoomGroups {
+		rlist := []Ref{}
+		for _, r := range rg.Rooms {
+			if _, ok := db.Elements[r].(*Room); ok {
+				rlist = append(rlist, r)
+			} else {
+				Error.Printf("Invalid Room (%s) in RoomGroup %s", r, rg.Tag)
+			}
+		}
+		rg.Rooms = rlist
+	}
+	for _, rg := range db.RoomChoiceGroups {
+		rlist := []Ref{}
+		for _, r := range rg.Rooms {
+			if _, ok := db.Elements[r].(*Room); ok {
+				rlist = append(rlist, r)
+			} else {
+				Error.Printf("Invalid Room (%s) in RoomChoiceGroup %s", r, rg.Tag)
+			}
+		}
+		rg.Rooms = rlist
+	}
 }
 
 func newtags[T Element](etype string, elist []T) {
