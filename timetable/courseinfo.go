@@ -154,7 +154,7 @@ func (tt_data *TtData) CollectCourses() {
 			panic("Invalid Subject ref: " + spc.Subject)
 		}
 
-		fmt.Printf("^^^^ %s\n\n", sbj.Tag)
+		//fmt.Printf("^^^^ %s\n\n", sbj.Tag)
 
 		cinfo := &CourseInfo{
 			Id:           cref,
@@ -247,6 +247,9 @@ func (tt_data *TtData) CollectCourses() {
 		if !ok {
 			panic("Invalid Subject ref: " + c.Subject)
 		}
+
+		//fmt.Printf("^^__ %s\n\n", sbj.Tag)
+
 		// Sort and compact lists
 		slices.Sort(agroups)
 		slices.Sort(teachers) // shouldn't need compacting

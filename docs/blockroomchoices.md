@@ -4,16 +4,18 @@ Handling rooms for `SuperCourses` is difficult, because there is in general not 
 
 Thus it is strongly recommended to use only fixed rooms for `SubCourses`. The fixed room(s) of all the `SubGroups` are taken as fixed for the `SuperCourse`. It makes no difference if a room appears twice (duplicates simply being removed).
 
-If choice lists are indeed used for `SubCourses`, an attempt will be made to "condense" them:
+The room specification for `SuperCourses` is handled as follows:
 
-1) Any `RoomChoiceGroup` containing a fixed room (of the `SuperCourse`) will be ignored, assuming the requirement is fulfilled.
+1) The rooms specified for all the `SubCourses` are combined, rejecting duplicates, whether they are fixed rooms (`Rooms` and the `Rooms` within `RoomGroups`) or the sets of `Rooms` within `RoomChoiceGroup`. The total number of rooms to be reserved is the number of unique fixed rooms plus the number of unique choice lists (the order of `Rooms` within a `RoomChoiceGroup` is irrelevant).
 
-2) Any duplicates (same set of real rooms) will be removed.
+Thus, in order to ensure that an extra room is reserved, either a new fixed room or a new (distinct from those of the other `SubCourses`) room-choice list must be specified for a `SubCourse`. 
 
-3) In the remaining `RoomChoiceGroups` the occurrences of individual (real) rooms will be counted. If any rooms appear more than once, the one which appears most often will be added as a fixed room and those `RoomChoiceGroups` containing it will be removed. This step is repeated until there are no more multiple occurrences.
+At the end of this step there is a list of fixed rooms and a list of room-choice lists.
 
-TODO: Unfortunately, there are combinations which could be handled differently on different runs, which might lead to FET files which are sometimes soluble and sometimes not. I should change that!
- 
-A more promising approach might be to make every choice list (after removing duplicates) specify an additional room ...
+2) The fixed rooms are eliminated from the room-choice lists. If a list now contains only one room, this list is removed from the room-choice lists and the remaining room is added to the fixed rooms (i.e. no change in total number of rooms) – and then step 2 is repeated. If a room-choice list is empty, it is removed from the room-choice lists, causing the total number of rooms to drop. If the room total drops below the expectation, an error is reported and an attempt at recovery is made (simply dropping all room-choice lists). Note that the room total can increase at step 4.
 
-Then something like [[r1, r2], [r1, r3], [r2, r3]] would simplify to fixed [r1, r2, r3], and [[r1, r2], [r1, r3], [r2, r3], [r1, r2, r3]] would be rejected as impossible.
+3) The room-choice lists are then analysed by constructing their Cartesian product, eliminating result values which contain repeated rooms and duplicate values (room sets – the order of the rooms is irrelevant). With an invalid set of room-choice lists it is possible that this will lead to an empty result list. In that case, the error is reported and an attempt at recovery is made (simply dropping all room-choice lists).
+
+4) The individual value lists of the Cartesian product are then searched for rooms which are present in all value lists. These rooms are added to the fixed rooms (thus increasing the room total). If any changes were made, the process is started again at step 2.
+
+Depending on the algorithm used to "solve" the timetable, it may be more efficient to use a list of the final Cartesian product values than to use the list of room-choice lists.
