@@ -152,7 +152,7 @@ func getClasses(fetinfo *fetInfo) {
 		ConstraintStudentsSetNotAvailableTimes = natimes
 }
 
-// In FET the group identifier is constructed from the class tag
+// In FET the group identifier is constructed from the class tag,
 // CLASS_GROUP_SEP and the group tag. However, if the group is the
 // whole class, just the class tag is used.
 func fetGroupTag(g *base.Group) string {

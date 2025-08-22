@@ -25,7 +25,7 @@ type CourseInfo struct {
 
 type Activity struct {
 	CourseInfo *CourseInfo
-	Lesson     *base.Lesson //TODO!
+	Lesson     *base.Lesson
 	Placement  TimeSlot
 	Duration   int16
 	Fixed      bool
@@ -39,7 +39,7 @@ func (tt_data *TtData) View(cinfo *CourseInfo) string {
 	}
 	glist := []string{}
 	for _, g := range cinfo.Groups {
-		glist = append(glist, g.Tag)
+		glist = append(glist, base.GroupTag(g))
 	}
 	return fmt.Sprintf("<Course %s/%s:%s>",
 		strings.Join(glist, ","),
@@ -279,6 +279,7 @@ func (tt_data *TtData) makeActivities(cinfo *CourseInfo) {
 		aix := ActivityIndex(len(tt_data.Activities))
 		ttl := &Activity{
 			CourseInfo: cinfo,
+			Lesson:     l,
 			Placement:  TimeSlot(p),
 			Duration:   int16(l.Duration),
 			Fixed:      l.Fixed,

@@ -347,3 +347,16 @@ func (t *Teacher) GetResourceTag() string {
 func (r *Room) GetResourceTag() string {
 	return r.Tag
 }
+
+var CLASS_GROUP_SEPARATOR string = "."
+
+// The tag for a group within a class is constructed from the class tag,
+// CLASS_GROUP_SEPARATOR and the group tag. However, if the group is the
+// whole class, just the class tag is used.
+func GroupTag(g *Group) string {
+	gt := g.Class.Tag
+	if g.Tag != "" {
+		gt += CLASS_GROUP_SEPARATOR + g.Tag
+	}
+	return gt
+}
