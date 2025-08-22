@@ -1,11 +1,12 @@
 package timetable
 
 import (
-	"fmt"
+	"W365toFET/base"
 	"slices"
+	"strings"
 )
 
-func roomChoiceFilter(cinfo *CourseInfo) {
+func (tt_data *TtData) roomChoiceFilter(cinfo *CourseInfo) {
 	delta := 0
 
 	necessary := slices.Clone(cinfo.FixedRooms)
@@ -27,39 +28,44 @@ stage1:
 		if len(rc) >= 2 {
 			// Sort the elements.
 			slices.Sort(rc)
-			fmt.Printf("$%d %v -> %v\n", i, rc0, rc)
+			//fmt.Printf("$%d %v -> %v\n", i, rc0, rc)
 			newlist = append(newlist, rc)
-			fmt.Printf("(STATE1): [%d, %d, %d] %v\n",
-				len(necessary), len(rclist), delta,
-				necessary)
+			//fmt.Printf("(STATE1): [%d, %d, %d] %v\n",
+			//	len(necessary), len(rclist), delta,
+			//	necessary)
 		} else if len(rc) == 1 {
 			necessary = append(necessary, rc[0])
-			fmt.Printf("$%d %v -> %d\n", i, rc0, rc[0])
-			fmt.Printf("!!! FIXED %d, REPEATING\n", rc[0])
+			//fmt.Printf("$%d %v -> %d\n", i, rc0, rc[0])
+			//fmt.Printf("!!! FIXED %d, REPEATING\n", rc[0])
 			rclist = append(newlist, rclist[i+1:]...)
-			fmt.Printf("(STATE2): [%d, %d, %d] %v\n",
-				len(necessary), len(rclist), delta,
-				necessary)
+			//fmt.Printf("(STATE2): [%d, %d, %d] %v\n",
+			//	len(necessary), len(rclist), delta,
+			//	necessary)
 			goto stage1
 		} else {
-			fmt.Printf("$%d %v -> {}\n", i, rc0)
-			fmt.Printf("(STATE3): [%d, %d, %d] %v\n",
-				len(necessary), len(rclist), delta,
-				necessary)
+			//fmt.Printf("$%d %v -> {}\n", i, rc0)
+			//fmt.Printf("(STATE3): [%d, %d, %d] %v\n",
+			//	len(necessary), len(rclist), delta,
+			//	necessary)
 			delta--
 			if delta < 0 {
-				fmt.Printf("ERROR: choice list %v has no new rooms\n", rc0)
+				// Report error and try to recover by using current `necessary`
+				// and dropping choice lists
+				tt_data.errorRCG(cinfo, rc0)
+				cinfo.RoomChoices = nil
+				slices.Sort(necessary)
+				cinfo.FixedRooms = necessary
 				return
 			}
 		}
 	}
 
-	fmt.Printf("*******>>> %d %d %d\n", len(necessary), len(newlist), delta)
+	//fmt.Printf("*******>>> %d %d %d\n", len(necessary), len(newlist), delta)
 
 	// Now build the Cartesian product of the choice lists, omitting
 	// values with duplicate rooms and duplicate values generally.
 	cp := [][]ResourceIndex{{}} // build Cartesian product values here
-	for i, rc := range newlist {
+	for _, rc := range newlist {
 		// Add next choice list, extending the entries in `cp`
 		newcp := [][]ResourceIndex{} // build new `cp` here
 		for _, cp0 := range cp {     // for each C-p value
@@ -84,7 +90,12 @@ stage1:
 		}
 
 		if len(newcp) == 0 {
-			fmt.Printf("!!!!! newcp empty: %v\n", rc)
+			// Report error and try to recover by using current `necessary`
+			// and dropping choice lists
+			tt_data.errorRCG(cinfo, rc)
+			cinfo.RoomChoices = nil
+			slices.Sort(necessary)
+			cinfo.FixedRooms = necessary
 			return
 		} else {
 			do_restart := false
@@ -97,28 +108,42 @@ stage1:
 				// r is in all combinations
 				necessary = append(necessary, r)
 				delta++
-				fmt.Printf("!!! FIXED %d\n", r)
+				//fmt.Printf("!!! FIXED %d\n", r)
 				do_restart = true
 			next2:
 			}
 			if do_restart {
-				fmt.Println(" ... restarting")
+				//fmt.Println(" ... restarting")
 				rclist = newlist
 				goto stage1
 			}
 		}
 
 		cp = newcp
-		fmt.Printf("???7: %d – %v\n", i, len(newcp))
+		//fmt.Printf("???7: %d – %v\n", i, len(newcp))
 	}
 
 	slices.Sort(necessary)
 	cinfo.FixedRooms = necessary
 	cinfo.RoomChoices = newlist
 
-	fmt.Printf("\n $$ NECESSARY: %v\n\n", necessary)
-	for i, rc := range newlist {
-		fmt.Printf("*** %d: %v\n", i, rc)
+	//fmt.Printf("\n $$ NECESSARY: %v\n\n", necessary)
+	//for i, rc := range newlist {
+	//	fmt.Printf("*** %d: %v\n", i, rc)
+	//}
+	//fmt.Printf("\n delta: %d\n", delta)
+}
+
+func init() {
+	base.ErrorMessages["timetable__errorRCG__INVALID_ROOM_CHOICE_GROUPS"] =
+		"Course %s: Invalid room-choice-group with %s"
+}
+
+func (tt_data *TtData) errorRCG(cinfo *CourseInfo, rooms []ResourceIndex) {
+	rlist := []string{}
+	for _, r := range rooms {
+		rlist = append(rlist, tt_data.Resources[r].GetResourceTag())
 	}
-	fmt.Printf("\n delta: %d\n", delta)
+	base.ERROR("timetable__errorRCG__INVALID_ROOM_CHOICE_GROUPS",
+		tt_data.View(cinfo), strings.Join(rlist, ", "))
 }

@@ -1,6 +1,7 @@
 package base
 
 import (
+	"fmt"
 	"log"
 	"os"
 )
@@ -29,4 +30,11 @@ func OpenLog(logpath string) {
 	Warning = log.New(file, "*WARNING* ", log.Lshortfile)
 	Error = log.New(file, "*ERROR* ", log.Lshortfile)
 	Bug = log.New(file, "*BUG* ", log.Lshortfile)
+}
+
+// TODO? New error reporter?
+func ERROR(msg string, args ...any) {
+	fmt.Println("+++ Error +++++++++++++++")
+	fmt.Printf(ErrorMessages[msg], args...)
+	fmt.Println("\n-------------------------")
 }

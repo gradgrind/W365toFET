@@ -25,6 +25,7 @@ type CourseInfo struct {
 
 type Activity struct {
 	CourseInfo *CourseInfo
+	Lesson     *base.Lesson //TODO!
 	Placement  TimeSlot
 	Duration   int16
 	Fixed      bool
@@ -167,7 +168,7 @@ func (tt_data *TtData) CollectCourses() {
 			//Activities
 		}
 		// Filter out any "necessary" rooms from the choices
-		roomChoiceFilter(cinfo)
+		tt_data.roomChoiceFilter(cinfo)
 
 		tt_data.makeActivities(cinfo)
 		tt_data.CourseInfoList = append(tt_data.CourseInfoList, cinfo)

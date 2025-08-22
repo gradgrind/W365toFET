@@ -12,6 +12,8 @@
 // TODO: Currently dealing only with the elements needed for the timetable
 package base
 
+var ErrorMessages = map[string]string{}
+
 // A Ref is used to identify the constituent elements of the database.
 type Ref string // Element Id
 
