@@ -135,7 +135,8 @@ type basicSpaceConstraint struct {
 func MakeFetFile(tt_data *timetable.TtData) (string, string) {
 	dbdata := tt_data.Db
 
-	// Build ref-index -> fet-key mapping
+	// Build ref-index -> fet-key mapping. This is needed for the class
+	// divisions in the student group definitions.
 	ref2grouponly := map[Ref]string{}
 	for _, r := range dbdata.Groups {
 		if r.Tag != "" {
@@ -190,6 +191,7 @@ func MakeFetFile(tt_data *timetable.TtData) (string, string) {
 
 	addTeacherConstraints(&fetinfo)
 	addClassConstraints(&fetinfo)
+	addRoomConstraints(&fetinfo)
 	getExtraConstraints(&fetinfo)
 
 	// Convert lessonIdMap to string

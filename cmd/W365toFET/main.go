@@ -91,7 +91,7 @@ func main() {
 
 	tt_data := timetable.BasicSetup(db)
 	fmt.Printf("Resources: %d\n", len(tt_data.Resources))
-	fmt.Printf("Activities: %d\n", len(tt_data.Activities))
+	fmt.Printf("Activities: %d\n", len(tt_data.Activities)-1)
 
 	// ********** Build the fet file **********
 

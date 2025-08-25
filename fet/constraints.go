@@ -5,6 +5,30 @@ import (
 	"encoding/xml"
 )
 
+type notAvailableTime struct {
+	XMLName xml.Name `xml:"Not_Available_Time"`
+	Day     string
+	Hour    string
+}
+
+type teacherNotAvailable struct {
+	XMLName                       xml.Name `xml:"ConstraintTeacherNotAvailableTimes"`
+	Weight_Percentage             int
+	Teacher                       string
+	Number_of_Not_Available_Times int
+	Not_Available_Time            []notAvailableTime
+	Active                        bool
+}
+
+type studentsNotAvailable struct {
+	XMLName                       xml.Name `xml:"ConstraintStudentsSetNotAvailableTimes"`
+	Weight_Percentage             int
+	Students                      string
+	Number_of_Not_Available_Times int
+	Not_Available_Time            []notAvailableTime
+	Active                        bool
+}
+
 type startingTime struct {
 	XMLName            xml.Name `xml:"ConstraintActivityPreferredStartingTime"`
 	Weight_Percentage  int

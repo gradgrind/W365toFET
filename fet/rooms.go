@@ -61,7 +61,6 @@ type roomNotAvailable struct {
 // Generate the fet entries for the basic ("real") rooms.
 func getRooms(fetinfo *fetInfo) {
 	rooms := []fetRoom{}
-	natimes := []roomNotAvailable{}
 	for _, n := range fetinfo.tt_data.Db.Rooms {
 		rooms = append(rooms, fetRoom{
 			Name:      n.Tag,
@@ -70,35 +69,41 @@ func getRooms(fetinfo *fetInfo) {
 			Virtual:   false,
 			Comments:  string(n.Id),
 		})
+	}
+	fetinfo.fetdata.Rooms_List = fetRoomsList{
+		Room: rooms,
+	}
+}
 
+func addRoomConstraints(fetinfo *fetInfo) {
+	natimes := []roomNotAvailable{}
+	tt_data := fetinfo.tt_data
+	db := tt_data.Db
+
+	for _, r := range db.Rooms {
 		// "Not available" times
 		nats := []notAvailableTime{}
-		for _, dh := range n.NotAvailable {
+		for _, dh := range r.NotAvailable {
 			nats = append(nats,
 				notAvailableTime{
 					Day:  strconv.Itoa(dh.Day),
 					Hour: strconv.Itoa(dh.Hour)})
 		}
-
 		if len(nats) > 0 {
 			natimes = append(natimes,
 				roomNotAvailable{
 					Weight_Percentage:             100,
-					Room:                          n.Tag,
+					Room:                          r.Tag,
 					Number_of_Not_Available_Times: len(nats),
 					Not_Available_Time:            nats,
 					Active:                        true,
 				})
 		}
 	}
-	fetinfo.fetdata.Rooms_List = fetRoomsList{
-		Room: rooms,
-	}
 	fetinfo.fetdata.Space_Constraints_List.
 		ConstraintRoomNotAvailableTimes = natimes
 }
 
-// TODO
 func (fetinfo *fetInfo) getFetRooms(cinfo *timetable.CourseInfo) []string {
 	// The fet virtual rooms are cached at fetinfo.fetVirtualRooms.
 	var result []string
