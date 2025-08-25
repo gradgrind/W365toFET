@@ -51,14 +51,13 @@ information to be stored in the map file.
 package main
 
 import (
+	"W365toFET/autotimetable"
 	"W365toFET/base"
-	"W365toFET/fet"
 	"W365toFET/timetable"
 	"W365toFET/w365tt"
 	"flag"
 	"fmt"
 	"log"
-	"os"
 	"path/filepath"
 	"strings"
 )
@@ -93,52 +92,56 @@ func main() {
 	fmt.Printf("Resources: %d\n", len(tt_data.Resources))
 	fmt.Printf("Activities: %d\n", len(tt_data.Activities)-1)
 
-	// ********** Build the fet file **********
+	autotimetable.SteerGeneration(tt_data, stempath)
 
-	fetfile := stempath
-	mapfile := stempath
-	thisdir := filepath.Dir(stempath)
-	moduleData := db.ModuleData
-	fetData, ok := moduleData["FetData"].(map[string]string)
-	if ok {
-		var f string
-		f, ok = fetData["FetFile"]
+	/*
+		// ********** Build the fet file **********
+
+		fetfile := stempath
+		mapfile := stempath
+		thisdir := filepath.Dir(stempath)
+		moduleData := db.ModuleData
+		fetData, ok := moduleData["FetData"].(map[string]string)
 		if ok {
-			fetfile = filepath.Join(thisdir, f)
+			var f string
+			f, ok = fetData["FetFile"]
+			if ok {
+				fetfile = filepath.Join(thisdir, f)
+			}
+			f, ok = fetData["MapFile"]
+			if ok {
+				mapfile = filepath.Join(thisdir, f)
+			}
 		}
-		f, ok = fetData["MapFile"]
-		if ok {
-			mapfile = filepath.Join(thisdir, f)
+		fetfile += ".fet"
+		mapfile += ".map"
+
+		xmlitem, lessonIdMap := fet.MakeFetFile(tt_data)
+
+		// Write FET file
+		f, err := os.Create(fetfile)
+		if err != nil {
+			base.Bug.Fatalf("Couldn't open output file: %s\n", fetfile)
 		}
-	}
-	fetfile += ".fet"
-	mapfile += ".map"
+		defer f.Close()
+		_, err = f.WriteString(xmlitem)
+		if err != nil {
+			base.Bug.Fatalf("Couldn't write fet output to: %s\n", fetfile)
+		}
+		base.Message.Printf("FET file written to: %s\n", fetfile)
 
-	xmlitem, lessonIdMap := fet.MakeFetFile(tt_data)
+		// Write Id-map file.
+		fm, err := os.Create(mapfile)
+		if err != nil {
+			base.Bug.Fatalf("Couldn't open output file: %s\n", mapfile)
+		}
+		defer fm.Close()
+		_, err = fm.WriteString(lessonIdMap)
+		if err != nil {
+			base.Bug.Fatalf("Couldn't write fet output to: %s\n", mapfile)
+		}
+		base.Message.Printf("Id-map written to: %s\n", mapfile)
 
-	// Write FET file
-	f, err := os.Create(fetfile)
-	if err != nil {
-		base.Bug.Fatalf("Couldn't open output file: %s\n", fetfile)
-	}
-	defer f.Close()
-	_, err = f.WriteString(xmlitem)
-	if err != nil {
-		base.Bug.Fatalf("Couldn't write fet output to: %s\n", fetfile)
-	}
-	base.Message.Printf("FET file written to: %s\n", fetfile)
-
-	// Write Id-map file.
-	fm, err := os.Create(mapfile)
-	if err != nil {
-		base.Bug.Fatalf("Couldn't open output file: %s\n", mapfile)
-	}
-	defer fm.Close()
-	_, err = fm.WriteString(lessonIdMap)
-	if err != nil {
-		base.Bug.Fatalf("Couldn't write fet output to: %s\n", mapfile)
-	}
-	base.Message.Printf("Id-map written to: %s\n", mapfile)
-
-	base.Message.Println("OK")
+		base.Message.Println("OK")
+	*/
 }

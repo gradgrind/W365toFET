@@ -135,24 +135,12 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 		[]TimeSlot{-1},
 		len(tt_data.Activities))
 
-	// Add the pseudo activities due to the NotAvailable lists of classes,
-	// teachers and rooms.
-	tt_data.BlockResources()
-
-	/* TODO
-	// Get preliminary constraint info – needed for the call to addActivity
-	ttinfo.processConstraints()
-
-	// Add the remaining Activity information
-	ttinfo.addActivityInfo(t2tt, r2tt, g2ags)
-	*/
-
 	return tt_data
 }
 
-func (tt_data *TtData) BlockResource(resource ResourceIndex, slot TimeSlot) {
-	tt_data.ResourceWeeks[int(resource)*tt_data.HoursPerWeek+int(slot)] = -1
-}
+//func (tt_data *TtData) BlockResource(resource ResourceIndex, slot TimeSlot) {
+//	tt_data.ResourceWeeks[int(resource)*tt_data.HoursPerWeek+int(slot)] = -1
+//}
 
 func (tt_data *TtData) TeacherResources() {
 	tt_data.TeacherIndex = map[NodeRef]ResourceIndex{}
