@@ -157,6 +157,8 @@ func (db *DbTopLevel) NewDoubleLessonNotOverBreaks() *DoubleLessonNotOverBreaks 
 	return c
 }
 
+//TODO: Is this really useful? The W365 front end doesn't currently support it
+// and the MinHoursFollowing may be more useful.
 // ++ NotOnSameDay
 
 type NotOnSameDay struct {
