@@ -144,6 +144,9 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 		tcl := &fetinfo.fetdata.Time_Constraints_List
 		for i, l := range cinfo.Lessons {
 			aid := cinfo.Activities[i]
+
+			//TODO: 			if tt_data.WITHOUT_ROOM_PLACEMENTS {
+
 			if len(rooms) != 0 {
 				scl.ConstraintActivityPreferredRooms = append(
 					scl.ConstraintActivityPreferredRooms,
@@ -174,6 +177,7 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 				},
 			)
 
+			//TODO: What is this for?
 			if tt_data.WITHOUT_ROOM_PLACEMENTS {
 				continue
 			}

@@ -81,6 +81,20 @@ type TtData struct {
 	ParallelLessons       []ParallelLessons
 
 	WITHOUT_ROOM_PLACEMENTS bool // ignore initial room placements
+	//TODO: It's not actually clear what this means. Up to now it has been
+	// to suppress the generation of ActivityPreferredRoom constraints –
+	// but where do these come from? I think they should, in this scheme
+	// of things, exist only in the output (solution) FET-files. All normal
+	// room requests are done with ActivityPreferredRooms constraints.
+	// Indeed, even if I support FET-file input, any ActivityPreferredRoom
+	// constraints found in the input should get transformed.
+	// Nevertheless, I need to clarify whether there is any way that
+	// ActivityPreferredRoom constraints could be expected as output.
+	// Maybe the WITHOUT_ROOM_PLACEMENTS flag is useless and room requests
+	// should be suppressed similarly to time constraints. I suppose the
+	// question is, whether the user might want to explicitly disable room
+	// allocation. If so, perhaps the flag can be retained, but used to
+	// suppress the ActivityPreferredRooms constraints.
 
 	/*???
 	DayIndex     map[string]int

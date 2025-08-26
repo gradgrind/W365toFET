@@ -230,9 +230,6 @@ func addClassConstraints(fetinfo *fetInfo) {
 		// The lunch-break constraint may require adjustment of these:
 		mgpday := cl.MaxGapsPerDay
 		mgpweek := cl.MaxGapsPerWeek
-		if mgpweek < 0 {
-			mgpweek = 0
-		}
 
 		if mbhours := db.Info.MiddayBreak; len(mbhours) != 0 && cl.LunchBreak {
 			// Generate the constraint unless all days have a blocked lesson

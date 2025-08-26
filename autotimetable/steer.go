@@ -93,8 +93,6 @@ func SteerGeneration(tt_data *timetable.TtData, stempath string) {
 	}
 	db.Classes = new_classes
 
-	//TODO: Bug? Still getting students max gaps per week 100% 0 days!
-
 	//TODO... ???
 
 	runFET(tt_data, workingdir)
