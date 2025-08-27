@@ -49,9 +49,16 @@ func SteerGeneration(tt_data *timetable.TtData, stempath string) {
 		panic(err)
 	}
 
-	run_number = 0 // each run of FET is in its own subdirectory
-	db := tt_data.Db
-	db_0 := *db // save original data (shallow copy only!)
+	//TODO-- This is just for testing
+	run_number = -1 // each run of FET is in its own subdirectory
+	runFET(tt_data, workingdir)
+	//TODO++ This is the normal version
+	// run_number = 0 // each run of FET is in its own subdirectory
+
+	db0 := tt_data.Db
+	db_1 := *db0 // copy original data (shallow copy only!)
+	db := &db_1
+	tt_data.Db = db
 	// From tt_data the following fields are saved before modifying:
 	tt_data_constraints := tt_data.Constraints
 	tt_data_mindaysbetweenlessons := tt_data.MinDaysBetweenLessons
@@ -104,7 +111,7 @@ func SteerGeneration(tt_data *timetable.TtData, stempath string) {
 	tt_data.MinDaysBetweenLessons = tt_data_mindaysbetweenlessons
 	tt_data.ParallelLessons = tt_data_parallellessons
 	tt_data.WITHOUT_ROOM_PLACEMENTS = tt_data_withoutroomplacements
-	tt_data.Db = &db_0
+	tt_data.Db = db0
 
 	// A run with all constraints enabled
 	runFET(tt_data, workingdir)

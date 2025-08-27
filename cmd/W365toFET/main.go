@@ -85,63 +85,16 @@ func main() {
 	db := base.NewDb()
 	w365tt.LoadJSON(db, abspath)
 	db.PrepareDb()
-	//ttinfo := ttbase.MakeTtInfo(db)
-	//ttinfo.PrepareCoreData()
+
+	db.SaveDb(stempath + "_DB.json")
 
 	tt_data := timetable.BasicSetup(db)
 	fmt.Printf("Resources: %d\n", len(tt_data.Resources))
 	fmt.Printf("Activities: %d\n", len(tt_data.Activities)-1)
 
+	//db.SaveDb(stempath + "_DB1.json")
+
 	autotimetable.SteerGeneration(tt_data, stempath)
 
-	/*
-		// ********** Build the fet file **********
-
-		fetfile := stempath
-		mapfile := stempath
-		thisdir := filepath.Dir(stempath)
-		moduleData := db.ModuleData
-		fetData, ok := moduleData["FetData"].(map[string]string)
-		if ok {
-			var f string
-			f, ok = fetData["FetFile"]
-			if ok {
-				fetfile = filepath.Join(thisdir, f)
-			}
-			f, ok = fetData["MapFile"]
-			if ok {
-				mapfile = filepath.Join(thisdir, f)
-			}
-		}
-		fetfile += ".fet"
-		mapfile += ".map"
-
-		xmlitem, lessonIdMap := fet.MakeFetFile(tt_data)
-
-		// Write FET file
-		f, err := os.Create(fetfile)
-		if err != nil {
-			base.Bug.Fatalf("Couldn't open output file: %s\n", fetfile)
-		}
-		defer f.Close()
-		_, err = f.WriteString(xmlitem)
-		if err != nil {
-			base.Bug.Fatalf("Couldn't write fet output to: %s\n", fetfile)
-		}
-		base.Message.Printf("FET file written to: %s\n", fetfile)
-
-		// Write Id-map file.
-		fm, err := os.Create(mapfile)
-		if err != nil {
-			base.Bug.Fatalf("Couldn't open output file: %s\n", mapfile)
-		}
-		defer fm.Close()
-		_, err = fm.WriteString(lessonIdMap)
-		if err != nil {
-			base.Bug.Fatalf("Couldn't write fet output to: %s\n", mapfile)
-		}
-		base.Message.Printf("Id-map written to: %s\n", mapfile)
-
-		base.Message.Println("OK")
-	*/
+	//db.SaveDb(stempath + "_DB2.json")
 }
