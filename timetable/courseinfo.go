@@ -121,16 +121,12 @@ func (tt_data *TtData) CollectCourses() {
 						roomlist = append(roomlist, r)
 					}
 					slices.Sort(roomlist)
-
 					// Don't add if it is a duplicate
 					for _, rl := range crooms {
 						if slices.Equal(rl, roomlist) {
 							goto skip
 						}
 					}
-
-					fmt.Printf("++C: %v\n", roomlist)
-
 					crooms = append(crooms, roomlist)
 				skip:
 					continue
@@ -144,10 +140,6 @@ func (tt_data *TtData) CollectCourses() {
 		slices.Sort(agroups)
 		slices.Sort(teachers)
 		slices.Sort(rooms)
-
-		for _, r := range slices.Compact(rooms) {
-			fmt.Printf("++ %s\n", tt_data.Resources[r].GetResourceTag())
-		}
 
 		sbj, ok := db.GetElement(spc.Subject).(*base.Subject)
 		if !ok {
@@ -167,6 +159,7 @@ func (tt_data *TtData) CollectCourses() {
 			Lessons:      spc.Lessons,
 			//Activities
 		}
+
 		// Filter out any "necessary" rooms from the choices
 		tt_data.roomChoiceFilter(cinfo)
 
@@ -265,6 +258,7 @@ func (tt_data *TtData) CollectCourses() {
 			Lessons:      c.Lessons,
 			//Activities
 		}
+
 		tt_data.makeActivities(cinfo)
 		tt_data.CourseInfoList = append(tt_data.CourseInfoList, cinfo)
 		tt_data.Ref2CourseInfo[cref] = cinfo
