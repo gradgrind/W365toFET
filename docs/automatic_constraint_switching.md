@@ -44,7 +44,6 @@ The optimal order of constraint tests probably can't be determined in general, i
  - Lunch break: this is a simple switch, whether a break should be forced within a group of time slots on every day – the range of slots is specified globally)
  - Force first hour: whether the first time slot of each day must be filled
 
-
 ## Room specifications
 
 Because of the possibility of specifying a choice of possible rooms for an activity, handling the room allocation can be quite difficult. The best way to handle progressive testing is probably to eliminate room specifications for the initial tests, adding these only when the other basic constraints have been checked. Also, only the "necessary" rooms would be tested, the choice lists being left to the end, as it is difficult to allocate from these lists before all the activities have been placed.

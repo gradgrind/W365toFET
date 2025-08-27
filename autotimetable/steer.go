@@ -52,15 +52,17 @@ func SteerGeneration(tt_data *timetable.TtData, stempath string) {
 	run_number = 0 // each run of FET is in its own subdirectory
 	db := tt_data.Db
 	db_0 := *db // save original data (shallow copy only!)
-	//TODO: From tt_data I probably just need to save the following
+	// From tt_data the following fields are saved before modifying:
 	tt_data_constraints := tt_data.Constraints
 	tt_data_mindaysbetweenlessons := tt_data.MinDaysBetweenLessons
 	tt_data_parallellessons := tt_data.ParallelLessons
 	tt_data_withoutroomplacements := tt_data.WITHOUT_ROOM_PLACEMENTS
+
+	// Remove constraints
 	tt_data.Constraints = map[string][]any{}
 	tt_data.MinDaysBetweenLessons = nil
 	tt_data.ParallelLessons = nil
-	tt_data.WITHOUT_ROOM_PLACEMENTS = true // TODO: not working?
+	tt_data.WITHOUT_ROOM_PLACEMENTS = true
 
 	// First run with no constraints except the hard-blocked time slots and
 	// the fixed activities.
@@ -103,6 +105,9 @@ func SteerGeneration(tt_data *timetable.TtData, stempath string) {
 	tt_data.ParallelLessons = tt_data_parallellessons
 	tt_data.WITHOUT_ROOM_PLACEMENTS = tt_data_withoutroomplacements
 	tt_data.Db = &db_0
+
+	// A run with all constraints enabled
+	runFET(tt_data, workingdir)
 
 	/* ???
 

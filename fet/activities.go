@@ -1,7 +1,6 @@
 package fet
 
 import (
-	"W365toFET/base"
 	"W365toFET/timetable"
 	"encoding/xml"
 	"slices"
@@ -131,10 +130,12 @@ func getActivities(fetinfo *fetInfo) []idMap {
 
 func addPlacementConstraints(fetinfo *fetInfo) {
 	tt_data := fetinfo.tt_data
-	db := tt_data.Db
 	for _, cinfo := range tt_data.CourseInfoList {
-		// Set "preferred" rooms.
-		rooms := fetinfo.getFetRooms(cinfo)
+		var rooms []string
+		// Set "preferred" rooms, if not blocked.
+		if !tt_data.WITHOUT_ROOM_PLACEMENTS {
+			rooms = fetinfo.getFetRooms(cinfo)
+		}
 
 		//--fmt.Printf("COURSE: %s\n", ttinfo.View(cinfo))
 		//--fmt.Printf("   --> %+v\n", rooms)
@@ -144,9 +145,6 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 		tcl := &fetinfo.fetdata.Time_Constraints_List
 		for i, l := range cinfo.Lessons {
 			aid := cinfo.Activities[i]
-
-			//TODO: 			if tt_data.WITHOUT_ROOM_PLACEMENTS {
-
 			if len(rooms) != 0 {
 				scl.ConstraintActivityPreferredRooms = append(
 					scl.ConstraintActivityPreferredRooms,
@@ -177,64 +175,9 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 				},
 			)
 
-			//TODO: What is this for?
-			if tt_data.WITHOUT_ROOM_PLACEMENTS {
-				continue
-			}
-			if len(l.Rooms) == 0 {
-				continue
-			}
-
-			// Get room tags of the Lesson's Rooms.
-			rlist := []string{}
-			for _, rref := range l.Rooms {
-				rlist = append(rlist, db.Ref2Tag(rref))
-			}
-
-			// Special handling for FET's virtual rooms.
-
-			if len(rooms) == 1 {
-				// Check for virtual room.
-				n, ok := fetinfo.fetVirtualRoomN[rooms[0]]
-				if ok {
-					if len(rlist) != n {
-						// FET can't cope with this.
-						// A warning should have been issued in ttbase.
-						continue
-					}
-					scl.ConstraintActivityPreferredRoom = append(
-						scl.ConstraintActivityPreferredRoom,
-						placedRoom{
-							Weight_Percentage:    100,
-							Activity_Id:          aid,
-							Room:                 rooms[0],
-							Number_of_Real_Rooms: len(rlist),
-							Real_Room:            rlist,
-							Permanently_Locked:   false,
-							Active:               true,
-						},
-					)
-					continue
-				}
-			}
-
-			if len(rlist) != 1 {
-				base.Error.Printf(
-					"Course room is not virtual, but Lesson has"+
-						" more than one Room:\n  %s", l.Id)
-				continue
-			}
-
-			scl.ConstraintActivityPreferredRoom = append(
-				scl.ConstraintActivityPreferredRoom,
-				placedRoom{
-					Weight_Percentage:  100,
-					Activity_Id:        aid,
-					Room:               rlist[0],
-					Permanently_Locked: false,
-					Active:             true,
-				},
-			)
+			// The Rooms field of a Lesson item is not used for building
+			// FET input files. All room constraints are handled by
+			// "ConstraintActivityPreferredRooms".
 		}
 	}
 }
