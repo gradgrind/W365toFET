@@ -5,13 +5,13 @@ package timetable
  */
 
 type TtState struct {
-	ActivitySlots []TimeSlot
+	ActivitySlots []TtSlot
 	ResourceWeeks []ActivityIndex
 }
 
 // Make a new TtState item specifying the current placement state.
 func (tt_data *TtData) SaveState() TtState {
-	a := append([]TimeSlot{}, tt_data.ActivitySlots...)
+	a := append([]TtSlot{}, tt_data.ActivitySlots...)
 	r := append([]ActivityIndex{}, tt_data.ResourceWeeks...)
 	return TtState{a, r}
 }
@@ -28,6 +28,6 @@ func (tt_data *TtData) RestoreStateMove(state TtState) {
 // Restore from a saved state, leaving the the saved state as an independent
 // structure which can be used again.
 func (tt_data *TtData) RestoreStateClone(state TtState) {
-	tt_data.ActivitySlots = append([]TimeSlot{}, state.ActivitySlots...)
+	tt_data.ActivitySlots = append([]TtSlot{}, state.ActivitySlots...)
 	tt_data.ResourceWeeks = append([]ActivityIndex{}, state.ResourceWeeks...)
 }

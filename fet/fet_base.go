@@ -34,7 +34,7 @@ func makeXML(data interface{}, indent_level int) string {
 	return string(xmlData)
 }
 
-type fet struct {
+type Fet struct {
 	Version          string `xml:"version,attr"`
 	Mode             string
 	Institution_Name string
@@ -73,7 +73,7 @@ type idMap struct {
 type fetInfo struct {
 	tt_data       *timetable.TtData
 	ref2grouponly map[Ref]string
-	fetdata       fet
+	fetdata       Fet
 
 	fetVirtualRooms map[string]string // cache for FET virtual rooms,
 	// "hash" -> FET-virtual-room tag
@@ -149,7 +149,7 @@ func MakeFetFile(tt_data *timetable.TtData) (string, string) {
 	fetinfo := fetInfo{
 		tt_data:       tt_data,
 		ref2grouponly: ref2grouponly,
-		fetdata: fet{
+		fetdata: Fet{
 			Version:          fet_version,
 			Mode:             "Official",
 			Institution_Name: dbdata.Info.Institution,

@@ -12,7 +12,7 @@ type NodeRef = base.Ref // node reference (UUID)
 
 type ActivityIndex int16
 type ResourceIndex = int
-type TimeSlot int16
+type TtSlot int16
 
 /* TODO
 type TtRoom struct {
@@ -28,12 +28,12 @@ type TtVirtualRoom struct {
 
 type Placement struct {
 	Activity ActivityIndex
-	Slot     TimeSlot
+	Slot     TtSlot
 }
 
 type TimetableUnit struct {
 	Activities []ActivityIndex
-	Placements [][]TimeSlot
+	Placements [][]TtSlot
 	//TODO: Constraints to be applied after a TimetableUnit has been placed?
 	//Constraints []TtConstraint
 	Next int
@@ -49,7 +49,7 @@ type TtData struct {
 	// `ActivitySlots` is an array of activities + 1 entries, each entry being
 	// the time slot in which the corresponding activity has been placed, or
 	// -1 if unplaced. There is no activity with index 0.
-	ActivitySlots []TimeSlot
+	ActivitySlots []TtSlot
 	// `ResourceWeeks` contains the allocations of the "resources" (atomic
 	// groups, teachers, rooms) to activities (indexes). This is organized
 	// as an array of "week-chunks" (`HoursPerWeek` entries), one for each
@@ -108,7 +108,7 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 		NDays:        days,
 		NHours:       hours,
 		HoursPerWeek: days * hours,
-		//?? ActivitySlots: slices.Repeat([]TimeSlot{-1}, activities+1),
+		//?? ActivitySlots: slices.Repeat([]TtSlot{-1}, activities+1),
 	}
 
 	// Collect ClassDivisions
@@ -132,7 +132,7 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 
 	// ... initially all activities unplaced
 	tt_data.ActivitySlots = slices.Repeat(
-		[]TimeSlot{-1},
+		[]TtSlot{-1},
 		len(tt_data.Activities))
 
 	tt_data.processConstraints()
@@ -140,7 +140,7 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 	return tt_data
 }
 
-//func (tt_data *TtData) BlockResource(resource ResourceIndex, slot TimeSlot) {
+//func (tt_data *TtData) BlockResource(resource ResourceIndex, slot TtSlot) {
 //	tt_data.ResourceWeeks[int(resource)*tt_data.HoursPerWeek+int(slot)] = -1
 //}
 

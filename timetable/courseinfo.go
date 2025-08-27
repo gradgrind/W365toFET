@@ -26,7 +26,7 @@ type CourseInfo struct {
 type Activity struct {
 	CourseInfo *CourseInfo
 	Lesson     *base.Lesson
-	Placement  TimeSlot
+	Placement  TtSlot
 	Duration   int16
 	Fixed      bool
 }
@@ -277,7 +277,7 @@ func (tt_data *TtData) makeActivities(cinfo *CourseInfo) {
 		ttl := &Activity{
 			CourseInfo: cinfo,
 			Lesson:     l,
-			Placement:  TimeSlot(p),
+			Placement:  TtSlot(p),
 			Duration:   int16(l.Duration),
 			Fixed:      l.Fixed,
 		}
