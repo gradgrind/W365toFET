@@ -36,6 +36,8 @@ This constraint applies between the individual lessons of the two courses, not b
  - DaysBetween (integer)
  - ConsecutiveIfSameDay (boolean): If the lessons do end up on the same day, they should be consecutive.
 
+**NOTE:** The `ConsecutiveIfSameDay` flag will be respected by all the "days-between" constraints even if the weight is 0.
+
 ### LessonsEndDay
 
 The lessons of the specified course should be the last lessons of the day for the student group concerned.

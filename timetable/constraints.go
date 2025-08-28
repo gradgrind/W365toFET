@@ -5,30 +5,55 @@ import (
 	"strings"
 )
 
+// This structure is used in the collection of "different-days" constraints.
+// It records the parameters for the automatic "different-days" constraint
+// and collects overrides for specific courses.
 type differentDays struct {
 	weight               int
 	consecutiveIfSameDay bool
 	daysBetween          map[NodeRef][]*base.DaysBetween
 }
 
+//TODO: Some more checks on duplicate or inconsistent constraints?
+
+/* `processConstraints` transforms the constraint list from the database
+ * into a more convenient form for the timetable at `tt_data.Constraints`.
+ *
+ * In the basic data the constraints handled here are simply represented
+ * as a list of constraint nodes. This function collates them to produce a
+ * map of constraint types to a list of those constraint nodes. It also
+ * "preprocesses" some of the constraints where this can produce a more
+ * convenient structure for their implementation.
+ */
 func (tt_data *TtData) processConstraints() {
-	// Some constraints are "preprocessed" into more convenient structures.
 	db := tt_data.Db
+
+	// Initialize the `differentDays` structure. If an "AutomaticDifferentDays"
+	// constraint is present (at most one is permitted), the `weight` and
+	// `consecutiveIfSameDay` fields will be set accordingly, otherwise the
+	// default weight (`base.MAXWEIGHT`, i.e. a hard constraint) will be used.
 	diffDays := differentDays{
-		weight: -1, // uninitialized
+		weight:               -1, // uninitialized
+		consecutiveIfSameDay: false,
+		daysBetween:          map[NodeRef][]*base.DaysBetween{},
 	}
+
+	// Collect the "min-days-between" constraints based on activities rather
+	// than courses:
 	mdba := []MinDaysBetweenLessons{}
-	ddays := map[NodeRef]bool{} // collect diff days override flags
+	// Collect courses where automatic different-days is overridden:
+	ddays := map[NodeRef]bool{}
+	// Collect the categorized constraints:
 	tt_data.Constraints = map[string][]any{}
 	for _, c := range db.Constraints {
 		{
 			cn, ok := c.(*base.AutomaticDifferentDays)
-			if ok {
+			if ok { // At most one of these is permitted.
 				if diffDays.weight < 0 {
 					diffDays.weight = cn.Weight
 					diffDays.consecutiveIfSameDay = cn.ConsecutiveIfSameDay
-					diffDays.daysBetween = map[NodeRef][]*base.DaysBetween{}
 				} else {
+					//TODO: Invalid input data ...
 					panic("More than one AutomaticDifferentDays constraint")
 				}
 				continue
@@ -125,11 +150,11 @@ func (tt_data *TtData) processConstraints() {
 				continue
 			}
 		}
-		// Collect the other constraints according to type
+		// Collect the other constraints according to type, but unmodified
 		ctype := c.CType()
 		tt_data.Constraints[ctype] = append(tt_data.Constraints[ctype], c)
 	}
-	// Resolve the differentDays constraints into days-between-lessons.
+	// Resolve the differentDays constraints into days-between-activities
 	if diffDays.weight < 0 {
 		diffDays.weight = base.MAXWEIGHT
 	}
@@ -146,6 +171,7 @@ func (tt_data *TtData) processConstraints() {
 			}
 		}
 
+		// Get the constraints for this course
 		ddcs, ddcsok := diffDays.daysBetween[cref]
 		if len(unfixeds) == 0 || (len(fixeds) == 0 && len(unfixeds) == 1) {
 			// No constraints necessary
@@ -156,23 +182,29 @@ func (tt_data *TtData) processConstraints() {
 			}
 			continue
 		}
+		// Collect the activity groups to which the constraint is to be applied
 		aidlists := [][]ActivityIndex{}
 		if len(fixeds) <= 1 {
+			// At most 1 fixed activity, so all activities are relevant
 			aidlists = append(aidlists, cinfo.Activities)
 		} else {
-			for _, aid := range fixeds {
-				aids := []ActivityIndex{aid}
-				aids = append(aids, unfixeds...)
-				aidlists = append(aidlists, aids)
+			// Multiple fixed activities, at least one unfixed one:
+			for _, aidf := range fixeds {
+				for _, aidu := range unfixeds {
+					aidlists = append(aidlists, []ActivityIndex{aidf, aidu})
+				}
+			}
+			if len(unfixeds) > 1 {
+				aidlists = append(aidlists, unfixeds)
 			}
 		}
-
-		// Add constraints
-
-		if !ddays[cref] && diffDays.weight != 0 {
+		// Add the constraints as `MinDaysBetweenLessons`
+		if !ddays[cref] &&
+			(diffDays.weight != 0 || diffDays.consecutiveIfSameDay) {
 			// Add default constraint
 			for _, alist := range aidlists {
 				if len(alist) > tt_data.NDays {
+					//TODO
 					base.Warning.Printf("Course has too many lessons for"+
 						"DifferentDays constraint:\n  -- %s\n",
 						tt_data.View(cinfo))
@@ -186,11 +218,10 @@ func (tt_data *TtData) processConstraints() {
 				})
 			}
 		}
-
+		// Generate the additional constraints
 		if ddcsok {
-			// Generate the additional constraints
 			for _, ddc := range ddcs {
-				if ddc.Weight != 0 {
+				if ddc.Weight != 0 || ddc.ConsecutiveIfSameDay {
 					for _, alist := range aidlists {
 						if (len(alist)-1)*ddc.DaysBetween >= tt_data.NDays {
 							base.Warning.Printf("Course has too many lessons"+

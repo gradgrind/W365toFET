@@ -14,32 +14,6 @@ type ActivityIndex int16
 type ResourceIndex = int
 type TtSlot int16
 
-/* TODO
-type TtRoom struct {
-	Id       NodeRef
-	Tag      string
-	Resource ResourceIndex
-}
-
-type TtVirtualRoom struct {
-	RoomIndexes       []ResourceIndex
-	RoomChoiceIndexes [][]ResourceIndex
-}
-
-type Placement struct {
-	Activity ActivityIndex
-	Slot     TtSlot
-}
-
-type TimetableUnit struct {
-	Activities []ActivityIndex
-	Placements [][]TtSlot
-	//TODO: Constraints to be applied after a TimetableUnit has been placed?
-	//Constraints []TtConstraint
-	Next int
-}
-*/
-
 // A TtData is the top-level structure for the timetable data.
 type TtData struct {
 	Db           *base.DbTopLevel
@@ -81,16 +55,6 @@ type TtData struct {
 	ParallelLessons       []ParallelLessons
 
 	WITHOUT_ROOM_PLACEMENTS bool // ignore room allocation constraints
-
-	/*???
-	DayIndex     map[string]int
-	HourIndex    map[string]int
-	GroupIndexes map[string][]ResourceIndex
-	VirtualRooms map[string]TtVirtualRoom
-	*/
-
-	//?? basic_activity_groups map[int]*BasicActivityGroup
-	//?? CollectedBags         map[*BasicActivityGroup]*BagCollection
 }
 
 type ClassDivision struct {
@@ -108,7 +72,6 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 		NDays:        days,
 		NHours:       hours,
 		HoursPerWeek: days * hours,
-		//?? ActivitySlots: slices.Repeat([]TtSlot{-1}, activities+1),
 	}
 
 	// Collect ClassDivisions
@@ -137,12 +100,12 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 
 	tt_data.processConstraints()
 
+	//for _, mdbl := range tt_data.MinDaysBetweenLessons {
+	//	fmt.Printf("§§§ %v\n", mdbl)
+	//}
+
 	return tt_data
 }
-
-//func (tt_data *TtData) BlockResource(resource ResourceIndex, slot TtSlot) {
-//	tt_data.ResourceWeeks[int(resource)*tt_data.HoursPerWeek+int(slot)] = -1
-//}
 
 func (tt_data *TtData) TeacherResources() {
 	tt_data.TeacherIndex = map[NodeRef]ResourceIndex{}

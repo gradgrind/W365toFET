@@ -177,7 +177,7 @@ func (db *DbTopLevel) NewNotOnSameDay() *NotOnSameDay {
 	return c
 }
 
-//TODO ...
+//TODO ... more?
 
 // ++ MinHoursFollowing
 
