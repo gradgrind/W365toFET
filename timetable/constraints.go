@@ -23,7 +23,15 @@ type differentDays struct {
  * as a list of constraint nodes. This function collates them to produce a
  * map of constraint types to a list of those constraint nodes. It also
  * "preprocesses" some of the constraints where this can produce a more
- * convenient structure for their implementation.
+ * convenient structure for their implementation:
+ *
+ * The constraints AutomaticDifferentDays, DaysBetween and DaysBetweenJoin
+ * processed and combined to be replaced by MinDaysBetweenLessons constraints,
+ * which are then available directly as a field in the `TtData` structure.
+ *
+ * The ParallelCourses constraints are transformed to ParalllelLessons
+ * constraints, which are also available directly as a field in the `TtData`
+ * structure.
  */
 func (tt_data *TtData) processConstraints() {
 	db := tt_data.Db
@@ -97,9 +105,6 @@ func (tt_data *TtData) processConstraints() {
 			}
 		}
 		{
-			//TODO: This must happen BEFORE the result is used to add stuff
-			// to the Activities!
-
 			cn, ok := c.(*base.ParallelCourses)
 			if ok {
 				// The courses must have the same number of lessons and the
