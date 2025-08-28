@@ -35,7 +35,8 @@ func makeXML(data interface{}, indent_level int) string {
 }
 
 type Fet struct {
-	Version          string `xml:"version,attr"`
+	XMLName          xml.Name `xml:"fet"`
+	Version          string   `xml:"version,attr"`
 	Mode             string
 	Institution_Name string
 	Comments         string // this can be a source reference

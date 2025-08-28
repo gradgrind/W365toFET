@@ -173,4 +173,6 @@ func runFET(tt_data *timetable.TtData, workingdir string) {
 	base.Message.Printf("Id-map written to: %s\n", mapfile)
 
 	base.Message.Println("OK")
+
+	fet.RunFet(fetfile)
 }
