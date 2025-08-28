@@ -21,6 +21,7 @@ func RunFet(fetfile string) {
 	cwd := filepath.Dir(fetfile)
 	odir := filepath.Join(cwd, "out")
 	os.RemoveAll(odir)
+	run_name := filepath.Base(cwd)
 
 	ch := make(chan fetRun)
 	go execfet(ch, fetfile, odir)
@@ -29,7 +30,7 @@ func RunFet(fetfile string) {
 	stop := make(chan bool)
 	defer close(stop)
 	finished := make(chan bool)
-	go follow(stop, finished, logfile)
+	go follow(stop, finished, logfile, run_name)
 
 	fetresult := <-ch
 	stop <- true
@@ -39,18 +40,20 @@ func RunFet(fetfile string) {
 	if err := fetresult.err; err != nil {
 		switch e := err.(type) {
 		case *exec.Error:
-			fmt.Println("!!! failed executing:", err)
+			fmt.Printf("::%s>>> !!! failed executing: %s\n", run_name, err)
 		case *exec.ExitError:
 			// If FET aborts because of a data error, this case will be run
 			// Is the exit code then always 1?
 			// If killed the exit code seems to be -1.
-			fmt.Println("!!! command exit rc =", e.ExitCode())
+			fmt.Printf("::%s>>> !!! command exit rc = %d\n",
+				run_name, e.ExitCode())
 		default:
 			panic(err)
 		}
 	}
-	fmt.Println("----->>>")
-	fmt.Println(string(fetresult.output))
+	fmt.Println("--------------------------------------------------")
+	//fmt.Println("----->>>")
+	//fmt.Println(string(fetresult.output))
 }
 
 func execfet(ch chan fetRun, ifile string, odir string) {
@@ -93,7 +96,9 @@ func execfet(ch chan fetRun, ifile string, odir string) {
 
 var pattern = "time (.*), FET reached ([0-9]+)"
 
-func follow(stop chan bool, finished chan bool, ofile string) {
+func follow(
+	stop chan bool, finished chan bool, ofile string, run_name string) {
+
 	re := regexp.MustCompile(pattern)
 
 	defer close(finished)
@@ -126,7 +131,8 @@ func follow(stop chan bool, finished chan bool, ofile string) {
 				}
 				l := re.FindSubmatch([]byte(line))
 				if l != nil {
-					fmt.Printf(" @ %s : %s\n", string(l[1]), string(l[2]))
+					fmt.Printf(" .. %s> %s : %s\n",
+						run_name, string(l[1]), string(l[2]))
 				}
 			} else {
 				file, err := os.Open(ofile)

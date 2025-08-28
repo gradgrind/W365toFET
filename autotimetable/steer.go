@@ -38,7 +38,7 @@ import (
 
 var run_number int
 
-func SteerGeneration(tt_data *timetable.TtData, stempath string) {
+func SteerGeneration(tt_data_0 *timetable.TtData, stempath string) {
 	// `stempath` provides the path to the source file, including the stem
 	// (without file-type extension) of the file name. A new working directory
 	// will be created in the same directory.
@@ -49,21 +49,21 @@ func SteerGeneration(tt_data *timetable.TtData, stempath string) {
 		panic(err)
 	}
 
-	//TODO-- This is just for testing
-	run_number = -1 // each run of FET is in its own subdirectory
-	runFET(tt_data, workingdir)
-	//TODO++ This is the normal version
-	// run_number = 0 // each run of FET is in its own subdirectory
+	////TODO-- This is just for testing
+	//run_number = -1 // each run of FET is in its own subdirectory
+	//runFET(tt_data_0, workingdir)
+	////TODO++ This is the normal version
+	run_number = 0 // each run of FET is in its own subdirectory
 
-	db0 := tt_data.Db
-	db_1 := *db0 // copy original data (shallow copy only!)
+	// Copy original DbTopLevel (shallow copy only!)
+	db0 := tt_data_0.Db
+	db_1 := *db0
 	db := &db_1
+
+	// Copy original TtData (shallow copy only!)
+	tt_data_1 := *tt_data_0
+	tt_data := &tt_data_1
 	tt_data.Db = db
-	// From tt_data the following fields are saved before modifying:
-	tt_data_constraints := tt_data.Constraints
-	tt_data_mindaysbetweenlessons := tt_data.MinDaysBetweenLessons
-	tt_data_parallellessons := tt_data.ParallelLessons
-	tt_data_withoutroomplacements := tt_data.WITHOUT_ROOM_PLACEMENTS
 
 	// Remove constraints
 	tt_data.Constraints = map[string][]any{}
@@ -73,7 +73,7 @@ func SteerGeneration(tt_data *timetable.TtData, stempath string) {
 
 	// First run with no constraints except the hard-blocked time slots and
 	// the fixed activities.
-	// Clear teachers' constraints
+	// Regenerate the teachers list without constraints
 	new_teachers := make([]*base.Teacher, len(db.Teachers))
 	for i, t0p := range db.Teachers {
 		t := *t0p
@@ -87,7 +87,7 @@ func SteerGeneration(tt_data *timetable.TtData, stempath string) {
 		new_teachers[i] = &t
 	}
 	db.Teachers = new_teachers
-	// Clear class constraints
+	// Regenerate the classes list without constraints
 	new_classes := make([]*base.Class, len(db.Classes))
 	for i, c0p := range db.Classes {
 		c := *c0p
@@ -106,15 +106,15 @@ func SteerGeneration(tt_data *timetable.TtData, stempath string) {
 
 	runFET(tt_data, workingdir)
 
-	//TODO: Restore original data
-	tt_data.Constraints = tt_data_constraints
-	tt_data.MinDaysBetweenLessons = tt_data_mindaysbetweenlessons
-	tt_data.ParallelLessons = tt_data_parallellessons
-	tt_data.WITHOUT_ROOM_PLACEMENTS = tt_data_withoutroomplacements
-	tt_data.Db = db0
+	//// Restore original data
+	//tt_data.Constraints = tt_data_0.Constraints
+	//tt_data.MinDaysBetweenLessons = tt_data_0.MinDaysBetweenLessons
+	//tt_data.ParallelLessons = tt_data_0.ParallelLessons
+	//tt_data.WITHOUT_ROOM_PLACEMENTS = tt_data_0.WITHOUT_ROOM_PLACEMENTS
+	//tt_data.Db = db0
 
 	// A run with all constraints enabled
-	runFET(tt_data, workingdir)
+	runFET(tt_data_0, workingdir)
 
 	/* ???
 
