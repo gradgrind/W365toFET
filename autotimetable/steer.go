@@ -5,9 +5,33 @@ import (
 	"W365toFET/fet"
 	"W365toFET/timetable"
 	"os"
-	"path/filepath"
-	"strconv"
+	"runtime"
+	"time"
 )
+
+/*
+A `TtRunData` structure is constructed to manage the data being used by the
+timetable engine. Each trial run has a `TtInstance` structure to manage the
+data specific to this instance.
+
+A goroutine is used to run `checkProgress`, which monitors the state of all
+active runs by querying them every second, updating their `TtInstance`
+structures when progress is made. It is also possible to register timed
+handlers, e.g. a timeout.
+
+The `TtInstance` structures have an `Abort` function, allowing a run to be
+terminated before it stops naturally.
+
+Each trial run should have a success path and a failure path. One of these
+paths can be started preemptively, perhaps after a certain delay, if
+processor units are available. When a trial is resolved, it should be able
+to cancel any of the trials on the now invalidated path. Cancellation of a
+trial would need to specify which of the paths is to be taken (or none!).
+
+Would it be sensible to limit preemptive spawning of new instances, either by
+limiting the total number of active Instances allowed or by setting a minimum
+path start delay. The latter alone might not be enough, though.
+*/
 
 // TODO: At present this only supports a FET back-end. Perhaps a choice should
 // be possible ...
@@ -36,9 +60,13 @@ import (
 	mapfile += ".map"
 */
 
-var run_number int
+var MAXPROCESSES int //TODO: use this?
 
 func SteerGeneration(tt_data_0 *timetable.TtData, stempath string) {
+
+	//TODO: It may well be desirable to be able to override this
+	MAXPROCESSES = runtime.NumCPU()
+
 	// `stempath` provides the path to the source file, including the stem
 	// (without file-type extension) of the file name. A new working directory
 	// will be created in the same directory.
@@ -49,12 +77,18 @@ func SteerGeneration(tt_data_0 *timetable.TtData, stempath string) {
 		panic(err)
 	}
 
-	////TODO-- This is just for testing
-	//run_number = -1 // each run of FET is in its own subdirectory
-	//runFET(tt_data_0, workingdir)
-	////TODO++ This is the normal version
-	run_number = 0 // each run of FET is in its own subdirectory
+	rundata := &timetable.TtRunData{
+		TtData_0:   tt_data_0,
+		TtData:     tt_data_0,
+		WorkingDir: workingdir,
+		RunCounter: 0,
+		Active:     map[int]struct{}{},
+	}
 
+	// A run with all constraints enabled, no timeout
+	runTtEngine(rundata, 0)
+
+	// From now use modified TtData
 	// Copy original DbTopLevel (shallow copy only!)
 	db0 := tt_data_0.Db
 	db_1 := *db0
@@ -70,6 +104,8 @@ func SteerGeneration(tt_data_0 *timetable.TtData, stempath string) {
 	tt_data.MinDaysBetweenLessons = nil
 	tt_data.ParallelLessons = nil
 	tt_data.WITHOUT_ROOM_PLACEMENTS = true
+
+	rundata.TtData = tt_data
 
 	// First run with no constraints except the hard-blocked time slots and
 	// the fixed activities.
@@ -102,19 +138,12 @@ func SteerGeneration(tt_data_0 *timetable.TtData, stempath string) {
 	}
 	db.Classes = new_classes
 
+	stop := make(chan bool)
+	go checkProgress(stop, rundata)
+
 	//TODO... ???
 
-	runFET(tt_data, workingdir)
-
-	//// Restore original data
-	//tt_data.Constraints = tt_data_0.Constraints
-	//tt_data.MinDaysBetweenLessons = tt_data_0.MinDaysBetweenLessons
-	//tt_data.ParallelLessons = tt_data_0.ParallelLessons
-	//tt_data.WITHOUT_ROOM_PLACEMENTS = tt_data_0.WITHOUT_ROOM_PLACEMENTS
-	//tt_data.Db = db0
-
-	// A run with all constraints enabled
-	runFET(tt_data_0, workingdir)
+	runTtEngine(rundata, 30)
 
 	/* ???
 
@@ -131,48 +160,63 @@ func SteerGeneration(tt_data_0 *timetable.TtData, stempath string) {
 	//ttinfo.addActivityInfo(t2tt, r2tt, g2ags)
 
 	*/
+	stop <- true
 }
 
-func runFET(tt_data *timetable.TtData, workingdir string) {
-	run_number++
-	fname := "run_" + strconv.Itoa(run_number)
-	dir_n := filepath.Join(workingdir, fname)
-	err := os.Mkdir(dir_n, 0755)
-	if err != nil && !os.IsExist(err) {
-		panic(err)
-	}
-	stemfile := filepath.Join(dir_n, fname)
-	fetfile := stemfile + ".fet"
-	mapfile := stemfile + ".map"
+// TODO: At what stage should the goroutine be started, avoid race conditions
+// with RunCounter, Active handler, etc.
+// TODO: Take available CPUs into account.
+func runTtEngine(rundata *timetable.TtRunData, timeout int) {
+	//TODO: timeout
 
-	// Construct the FET-file
-	xmlitem, lessonIdMap := fet.MakeFetFile(tt_data)
+	instance := &timetable.TtInstance{}
+	rundata.Instances = append(rundata.Instances, instance)
+	rundata.Active[rundata.RunCounter] = struct{}{}
+	// Note that the instance already counts as "active" although it hasn't
+	// been initialized yet.
 
-	// Write FET file
-	f, err := os.Create(fetfile)
-	if err != nil {
-		panic("Couldn't open output file: " + fetfile)
-	}
-	defer f.Close()
-	_, err = f.WriteString(xmlitem)
-	if err != nil {
-		panic("Couldn't write fet output to: " + fetfile)
-	}
-	base.Message.Printf("FET file written to: %s\n", fetfile)
+	//TODO: The timetable "engine" should be replaceable.
+	fet.NewFet(rundata, instance)
 
-	// Write Id-map file.
-	fm, err := os.Create(mapfile)
-	if err != nil {
-		panic("Couldn't open output file: " + mapfile)
-	}
-	defer fm.Close()
-	_, err = fm.WriteString(lessonIdMap)
-	if err != nil {
-		panic("Couldn't write fet output to: " + mapfile)
-	}
-	base.Message.Printf("Id-map written to: %s\n", mapfile)
+	// Update `RunCounter` AFTER call to NewFet so that this can access the
+	// appropriate `RunCounter` value directly
+	rundata.RunCounter++
+}
 
-	base.Message.Println("OK")
+// Keep track of the subprocesses: their progress and completion state.
+// It should be possible to register handlers for particular times and to
+// issue cancellations. Timeouts should be possible.
+// The number of active processes should be recorded, so that a limit can
+// be set.
+func checkProgress(stop chan bool, rundata *timetable.TtRunData) {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-stop:
+			//fmt.Println("checkProgress done!")
+			return
+		case <-ticker.C:
+			// Update the progress records of the currently active
+			// subprocesses.
+			for i := range rundata.Active {
+				instance := rundata.Instances[i]
+				h := instance.UpdateHandler
+				if h != nil {
+					// The handler should only be set when the the process is
+					// fully running
+					h(instance)
+				}
+			}
+		}
+	}
+}
 
-	fet.RunFet(fetfile)
+// TODO
+func EndInstance(
+	instance *timetable.TtInstance,
+	successPath bool,
+	failurePath bool,
+) {
+
 }

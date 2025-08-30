@@ -137,3 +137,62 @@ type ParallelLessons struct {
 	Weight         int
 	ActivityGroups [][]ActivityIndex
 }
+
+// Structures and methods used in connection with the timetable "back-end"
+
+type TtHandler interface {
+	Update(*TtInstance)
+}
+
+type TtInstance struct {
+	Id    int
+	Ticks int
+	// `LastState` values:
+	//    0-100: progress in percent
+	//       -1: finished successfully
+	//       -2: failed
+	//       -3: cancelled
+	LastState int
+	// `LastTime` is some representation of the elapsed time at which
+	// the `LastState` field was last updated.
+	LastTime string
+	// `HandlerData` provides a field to be used by the timetable "back-end".
+	Message          string
+	HandlerData      any
+	UpdateHandler    func(instance *TtInstance)
+	Abort            func(any) // pass HandlerData
+	SuccessPathDelay int       // -1 => no preemptive start
+	SuccessPath      func(*TtRunData)
+	SuccessInstances []*TtInstance
+	FailurePathDelay int // -1 => no preemptive start
+	FailurePath      func(*TtRunData)
+	FailureInstances []*TtInstance
+}
+
+type TtRunData struct {
+	TtData_0   *TtData // original data
+	TtData     *TtData // current (modified) data
+	WorkingDir string
+	RunCounter int // count subprocesses, for indexing
+	Instances  []*TtInstance
+	Active     map[int]struct{}
+}
+
+func (rundata *TtRunData) GetHandlerData(i int) any {
+	return rundata.Instances[i].HandlerData
+}
+
+func (rundata *TtRunData) SetHandlerData(i int, data any) {
+	rundata.Instances[i].HandlerData = data
+}
+
+func (rundata *TtRunData) InstanceUpdate(i int, cc int, t string) {
+	tti := rundata.Instances[i]
+	tti.LastState = cc
+	tti.LastTime = t
+}
+
+func (rundata *TtRunData) InstanceTerminated(i int, msg string) {
+	rundata.Instances[i].Message = msg
+	delete(rundata.Active, i)
+}
