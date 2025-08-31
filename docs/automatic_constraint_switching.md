@@ -64,7 +64,7 @@ This specifies that the activities of a course should be before or after the spe
 
 **Parallel courses**
 
-This specifies that the activities of the specified courses should lie in the same time slots. The activities to be parallel must of course have the same duration and number. If this is a hard constraint, it may be possible to optimise its implementation (e.g. by building compound activities).
+This specifies that the activities of the specified courses should lie in the same time slots. The activities to be parallel must of course have the same duration and number. If this is a hard constraint, it may be possible to optimize its implementation (e.g. by building compound activities).
 
 **Double lesson not over breaks**
 
@@ -82,3 +82,28 @@ Because the end of a school day is often somewhat flexible, this is a difficult 
 
 At the centre of the procedure is a subprocess which runs FET on the data with the currently enabled constraints. As the duration of this process cannot be known, there must be some way of stopping it before a result (success or failure) has been returned. It is also desirable to be able to run several processes simultaneously (hardware permitting).
 
+Because of the halting problem, it is perhaps helpful to estimate the chances of success. In cases where no progress is made for a long (how long?) time, it might be sensible to assume failure, especially if the state is far from completion. There could even be two stages of failure prediction: at the first stage, the failure branch is activated, at the second the instance is halted and the success branch terminated.
+
+Each subprocess should have a success path and a failure path. One of these paths can be started pre-emptively, perhaps after a certain delay, if processor units are available. When a trial is resolved, it should be able to cancel any of the trials on the now invalidated path. When cancelling a trial it is necessary to specify which of the paths is to be taken (or none!).
+
+
+
+### The first tests
+
+If there are enough (what is enough?) processor units available, it might be worth running a test with all constraints enabled as a fairly independent control instance – there might, after all, be no problem with the data. If this instance terminates successfully before the rest of the testing stages have finished, the latter would all be forcibly terminated, having been found to be unnecessary. Some diagnostic information may still be useful to identify constraints which are difficult to fulfil.
+
+The first test with suppressed constraints would retain only the blocked time slots for teachers and classes. Room placements would be suppressed. On the success path, after a minimal delay, a test including (fixed) room placements could be run next to check for basic problems in that area. If this fails, a report concerning the activity or activities at which it got stuck could be returned as diagnosis. After a success, the tests would continue without room placements until a later stage.
+
+If even the minimally constrained data fails, diagnostic testing could try class-by-class allocation. Removing time-slot blocks is probably not an option as these blocks are supposed to be non-negotiable. It is assumed to be up to the user to loosen these constraints, if appropriate, on the basis of the diagnostic reports.
+
+It might be possible to speed up the testing of individual constraints or constraint groups by temporarily disabling constraints which have been found to increase processing time significantly. It could be helpful to have simple "switches" for each constraint type and some constraint groups.
+
+### Further tests
+
+ - Add "days-between" constraints. On failure, a binary search for the problematic constraints can be performed (cancelling the success branch).
+
+ - Add all class-specific constraints. On failure, an attempt can be made to find which of these constraints causes problems and which class(es) have these problems.
+
+ - Add all teacher-specific constraint – similar to the class-specific constraints.
+
+ - Add remaining (hard) constraint types one after the other. If one fails, there may be a strategy for isolating the problematic individual constraints. Another possibility might be to change the order of these remaining tests, applying the problematic one before the others, in case the problem lies in an interdependency – this could, however, be difficult to diagnose.

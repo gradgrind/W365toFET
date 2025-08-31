@@ -144,6 +144,15 @@ type TtHandler interface {
 	Update(*TtInstance)
 }
 
+type TtChainedFunc struct {
+	// `Delay` specifies the number of ticks after which the function should
+	// be called. 0 specifies an infinite delay (i.e. the function must be
+	// started in some other way), -1 specifies that the function will never
+	// be called – possibly because it has already been started.
+	Delay int
+	Func  func(*TtRunData)
+}
+
 type TtInstance struct {
 	Id    int
 	Ticks int
@@ -161,21 +170,26 @@ type TtInstance struct {
 	HandlerData      any
 	UpdateHandler    func(instance *TtInstance)
 	Abort            func(any) // pass HandlerData
-	SuccessPathDelay int       // -1 => no preemptive start
-	SuccessPath      func(*TtRunData)
+	SuccessPath      TtChainedFunc
 	SuccessInstances []*TtInstance
-	FailurePathDelay int // -1 => no preemptive start
-	FailurePath      func(*TtRunData)
+	FailurePath      TtChainedFunc
 	FailureInstances []*TtInstance
+	OtherPath        []TtChainedFunc
+	OtherInstances   []*TtInstance
 }
 
 type TtRunData struct {
 	TtData_0   *TtData // original data
 	TtData     *TtData // current (modified) data
 	WorkingDir string
-	RunCounter int // count subprocesses, for indexing
-	Instances  []*TtInstance
-	Active     map[int]struct{}
+
+	Stop        chan bool
+	NewInstance chan *TtInstance
+
+	//TODO: Use len(Instances) instead of RunCounter?
+	//RunCounter int // count subprocesses, for indexing
+	Instances []*TtInstance
+	Active    map[int]struct{}
 }
 
 func (rundata *TtRunData) GetHandlerData(i int) any {

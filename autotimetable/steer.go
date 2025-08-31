@@ -30,7 +30,11 @@ trial would need to specify which of the paths is to be taken (or none!).
 
 Would it be sensible to limit preemptive spawning of new instances, either by
 limiting the total number of active Instances allowed or by setting a minimum
-path start delay. The latter alone might not be enough, though.
+path start delay? The latter alone might not be enough, though.
+
+Perhaps the main goroutine, the one which starts the ball rolling, could
+act as a sort of general controller, receiving signals on a channel to abort
+runs, determine when the algorithm has finished, etc.
 */
 
 // TODO: At present this only supports a FET back-end. Perhaps a choice should
@@ -60,12 +64,64 @@ path start delay. The latter alone might not be enough, though.
 	mapfile += ".map"
 */
 
-var MAXPROCESSES int //TODO: use this?
+// TODO: It may well be desirable to be able to override this
+var MAXPROCESSES int = runtime.NumCPU() //TODO: use this?
+
+// TODO
+// The `success` function is called when the instance completes successfully,
+// or after its delay, whichever is sooner. The `failure` function is called
+// when the instance fails, or after its delay, whichever is sooner. The
+// `other` functions are called after their delays, unless the instance has
+// already completed.
+
+// TODO: see runTtEngine
+func newInstance(
+	rundata *timetable.TtRunData,
+	success timetable.TtChainedFunc,
+	failure timetable.TtChainedFunc,
+	others ...timetable.TtChainedFunc,
+) {
+	//TODO: danger of race condition here with run counter because any
+	// instance could start a new one ... This function should perhaps
+	// be handled in the main goroutine, triggered by a channel signal.
+	// OR maybe the check-progress goroutine is better? I could pass it
+	// a partly initialized `*timetable.TtInstance`.
+	// Perhaps the check-progress loop could be in the main goroutine ...
+	counter := rundata.RunCounter
+	instance := &timetable.TtInstance{
+		Id:          counter,
+		SuccessPath: success,
+		FailurePath: failure,
+		OtherPath:   others,
+	}
+
+	rundata.Instances = append(rundata.Instances, instance)
+	rundata.RunCounter++
+
+	rundata.Active[counter] = struct{}{}
+	// Note that the instance already counts as "active" although it hasn't
+	// been initialized yet.
+
+	//TODO: The timetable "engine" should be replaceable.
+	fet.NewFet(rundata, instance)
+}
+
+func startInstance(
+	rundata *timetable.TtRunData,
+	instance *timetable.TtInstance,
+) {
+	index := len(rundata.Instances)
+	instance.Id = index
+	rundata.Instances = append(rundata.Instances, instance)
+	rundata.Active[index] = struct{}{}
+	// Note that the instance already counts as "active" although it hasn't
+	// been initialized yet.
+
+	//TODO: The timetable "engine" should be replaceable.
+	fet.NewFet(rundata, instance)
+}
 
 func SteerGeneration(tt_data_0 *timetable.TtData, stempath string) {
-
-	//TODO: It may well be desirable to be able to override this
-	MAXPROCESSES = runtime.NumCPU()
 
 	// `stempath` provides the path to the source file, including the stem
 	// (without file-type extension) of the file name. A new working directory
@@ -77,15 +133,20 @@ func SteerGeneration(tt_data_0 *timetable.TtData, stempath string) {
 		panic(err)
 	}
 
+	stop := make(chan bool)
+	new_instance := make(chan *timetable.TtInstance)
+
 	rundata := &timetable.TtRunData{
-		TtData_0:   tt_data_0,
-		TtData:     tt_data_0,
-		WorkingDir: workingdir,
-		RunCounter: 0,
-		Active:     map[int]struct{}{},
+		TtData_0:    tt_data_0,
+		TtData:      tt_data_0,
+		WorkingDir:  workingdir,
+		NewInstance: new_instance,
+		Stop:        stop,
+		//RunCounter: 0,
+		Active: map[int]struct{}{},
 	}
 
-	// A run with all constraints enabled, no timeout
+	//TODO: A run with all constraints enabled, no timeout
 	runTtEngine(rundata, 0)
 
 	// From now use modified TtData
@@ -138,7 +199,35 @@ func SteerGeneration(tt_data_0 *timetable.TtData, stempath string) {
 	}
 	db.Classes = new_classes
 
-	stop := make(chan bool)
+	//***********************************
+
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-stop:
+			//fmt.Println("checkProgress done!")
+			//TODO: tidying up?
+			return
+		case new_instance := <-new_instance:
+			runInstance(new_instance)
+		case <-ticker.C:
+			// Update the progress records of the currently active
+			// subprocesses.
+			for i := range rundata.Active {
+				instance := rundata.Instances[i]
+				h := instance.UpdateHandler
+				if h != nil {
+					// The handler should only be set when the the process is
+					// fully running
+					h(instance)
+				}
+			}
+		}
+	}
+
+	//***********************************
+
 	go checkProgress(stop, rundata)
 
 	//TODO... ???
