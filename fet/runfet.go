@@ -147,6 +147,8 @@ type fetTtData struct {
 	cancel     func()
 }
 
+// `ttUpdate` runs in the event loop, so it may update the instance data.
+// It is called on every "tick".
 func ttUpdate(instance *timetable.TtInstance) {
 	data := instance.HandlerData.(fetTtData)
 	finished := data.state.State != 0
@@ -154,32 +156,35 @@ func ttUpdate(instance *timetable.TtInstance) {
 		// Await the existence of the log file
 		file, err := os.Open(data.logfile)
 		if err != nil {
-			return
+			goto exit
 		}
 		data.rdfile = file // this needs closing
 		data.reader = bufio.NewReader(file)
 	}
-	var l [][]byte
-	for {
-		line, err := data.reader.ReadString('\n')
-		if err == nil {
-			l = re.FindSubmatch([]byte(line))
-			continue
-		}
-		if err == io.EOF {
-			if l != nil {
-				count, err := strconv.Atoi(string(l[2]))
-				if err == nil {
-					if count > instance.Progress {
-						instance.Progress = count
-						instance.LastTime = instance.Ticks
+	{
+		var l [][]byte
+		for {
+			line, err := data.reader.ReadString('\n')
+			if err == nil {
+				l = re.FindSubmatch([]byte(line))
+				continue
+			}
+			if err == io.EOF {
+				if l != nil {
+					count, err := strconv.Atoi(string(l[2]))
+					if err == nil {
+						if count > instance.Progress {
+							instance.Progress = count
+							instance.LastTime = instance.Ticks
+						}
 					}
 				}
+				break
 			}
-			break
+			panic(err)
 		}
-		panic(err)
 	}
+exit:
 	if finished {
 		if data.rdfile != nil {
 			data.rdfile.Close()

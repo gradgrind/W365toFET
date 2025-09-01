@@ -164,6 +164,7 @@ type TtInstance struct {
 	Description string
 	Ticks       int
 	WorkingDir  string
+	Timeout     int
 
 	TtData_0 *TtData // original data
 	TtData   *TtData // current (possibly modified) data

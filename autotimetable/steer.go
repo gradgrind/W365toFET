@@ -13,31 +13,26 @@ import (
 var MAXPROCESSES int = runtime.NumCPU() //TODO: use this?
 
 /*
-A `TtRunData` structure is constructed to manage the data being used by the
-timetable engine. Each trial run has a `TtInstance` structure to manage the
-data specific to this instance.
+A `TtInstance` structure is constructed to manage the data for each
+timetable generation run, each run having its own goroutine.
 
-A goroutine is used to run `checkProgress`, which monitors the state of all
-active runs by querying them every second, updating their `TtInstance`
-structures when progress is made. It is also possible to register timed
-handlers, e.g. a timeout.
+Each instance can be given a set of "child" functions determining how the
+tests proceed. For each of these functions a delay is specified before it
+starts (after starting the parent function). It is also possible to specify
+a function to be called on "success" of the parent function, and one for
+failure. These can also be started pre-emptively by specifying a delay.
 
-The `TtInstance` structures have an `Abort` function, allowing a run to be
-terminated before it stops naturally.
+A timetable instance can be cancelled, including all child instances. When
+an instance finishes, any pre-emptively started child instances on the
+branch which is now known to be wrong (success or failure) will be cancelled
+automatically, including all their children. Because a run can continue
+for a long time with no result, there is also the possibility of stopping
+the instance and taking the "failure" branch.
 
-Each trial run should have a success path and a failure path. One of these
-paths can be started preemptively, perhaps after a certain delay, if
-processor units are available. When a trial is resolved, it should be able
-to cancel any of the trials on the now invalidated path. Cancellation of a
-trial would need to specify which of the paths is to be taken (or none!).
-
-Would it be sensible to limit preemptive spawning of new instances, either by
-limiting the total number of active Instances allowed or by setting a minimum
-path start delay? The latter alone might not be enough, though.
-
-Perhaps the main goroutine, the one which starts the ball rolling, could
-act as a sort of general controller, receiving signals on a channel to abort
-runs, determine when the algorithm has finished, etc.
+The main steering function starts a run with the fully constrained data and
+then enters an event loop which is triggered every second. This monitors the
+progress of each active instance and handles the actions resulting from the
+specified delays.
 */
 
 var Descriptions map[string]string = map[string]string{
@@ -94,10 +89,21 @@ func SteerGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 
 	// *** Channel reader loop ***
 
+	/*
+	 * Aborting an instance will lead to its demise in its own goroutine,
+	 * probably with a state resulting from the interruption (-2). The
+	 * consequences might be picked up here only on the next tick. It is
+	 * also vaguely possible that the instance completes naturally, so it
+	 * is important to avoid unexpected consequences. It may be safest to
+	 * suppress any changes resulting from the completion.
+	 */
+
 	active_instances := map[*timetable.TtInstance]struct{}{}
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
+	ended := []*timetable.TtInstance{}
 	for {
+		ended = ended[:0]
 		select {
 		case <-stop:
 			//fmt.Println("checkProgress done!")
@@ -111,6 +117,31 @@ func SteerGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 			// Update the progress records of the currently active
 			// subprocesses, handle tick-related events.
 			for inst := range active_instances {
+				// Once `inst.State` is no longer 0, the instance is removed
+				// from the active list. Its children are only started if they
+				// derive from a successful run or an unsuccessful one that
+				// was not terminated by `cancelAll`.
+				// `inst.State` is changed only once.
+				if inst.State != 0 {
+					ended = append(ended, inst)
+					// If appropriate, activate follow-on processes.
+					if inst.State == 1 {
+						// successful ...
+						cancelAll(inst.FailureInstance)
+						if inst.SuccessPath.Delay >= 0 {
+							inst.SuccessInstance = inst.SuccessPath.Func(inst)
+							inst.SuccessPath.Delay = -1
+						}
+					} else if inst.State != -3 {
+						// failed ...
+						cancelAll(inst.SuccessInstance)
+						if inst.FailurePath.Delay >= 0 {
+							inst.FailureInstance = inst.FailurePath.Func(inst)
+							inst.FailurePath.Delay = -1
+						}
+					}
+					continue
+				}
 				inst.Ticks++
 				h := inst.UpdateHandler
 				if h != nil {
@@ -118,41 +149,57 @@ func SteerGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 					// fully running
 					h(inst)
 					if inst.State != 0 {
-						// The instance has finished running.
-						//TODO
-						// If appropriate, activate follow-on processes.
-						if inst.State == 1 {
-							// successful ...
-							if inst.SuccessPath.Delay >= 0 {
-								inst.SuccessInstance = inst.SuccessPath.Func(inst)
-								inst.SuccessPath.Delay = -1
-							}
-						} else {
-							// failed ...
-						}
-						// If completely finished, remove from active processes.
+						continue
 					}
 				}
 
+				// Handle timeout
+				if inst.Ticks == inst.Timeout {
+					inst.State = -2
+					inst.Abort(inst.HandlerData)
+					continue
+				}
+
 				// Handle starting of follow-on paths
-				if inst.SuccessPath.Delay >= inst.Ticks {
+				if inst.SuccessPath.Delay == inst.Ticks {
 					inst.SuccessInstance = inst.SuccessPath.Func(inst)
-					inst.SuccessPath.Delay = -1
+					inst.SuccessPath.Delay = -1 // flag already started
 				}
-				if inst.FailurePath.Delay >= inst.Ticks {
+				if inst.FailurePath.Delay == inst.Ticks {
 					inst.FailureInstance = inst.FailurePath.Func(inst)
-					inst.FailurePath.Delay = -1
+					inst.FailurePath.Delay = -1 // flag already started
 				}
-				for i, chfunc := range inst.OtherPaths {
-					if chfunc.Delay >= inst.Ticks {
+				for _, chfunc := range inst.OtherPaths {
+					if chfunc.Delay == inst.Ticks {
 						inst.OtherInstances = append(inst.OtherInstances,
 							chfunc.Func(inst))
-						chfunc.Delay = -1
-						inst.OtherPaths[i] = chfunc
+						//chfunc.Delay = -1
+						//inst.OtherPaths[i] = chfunc
 					}
 				}
 			}
+			// Remove terminated instances from the active list
+			for _, inst := range ended {
+				delete(active_instances, inst)
+			}
 		}
+	}
+}
+
+// Stop an instance and all of its children. Not only the "success" branch is
+// to be stopped, but also all the others.
+func cancelAll(instance *timetable.TtInstance) {
+	if instance == nil {
+		return
+	}
+	if instance.State == 0 {
+		instance.Abort(instance.HandlerData)
+		instance.State = -3
+	}
+	cancelAll(instance.FailureInstance)
+	cancelAll(instance.SuccessInstance)
+	for _, i := range instance.OtherInstances {
+		cancelAll(i)
 	}
 }
 
