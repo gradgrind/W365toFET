@@ -117,6 +117,21 @@ func SteerGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 					// The handler should only be set when the the process is
 					// fully running
 					h(inst)
+					if inst.State != 0 {
+						// The instance has finished running.
+						//TODO
+						// If appropriate, activate follow-on processes.
+						if inst.State == 1 {
+							// successful ...
+							if inst.SuccessPath.Delay >= 0 {
+								inst.SuccessInstance = inst.SuccessPath.Func(inst)
+								inst.SuccessPath.Delay = -1
+							}
+						} else {
+							// failed ...
+						}
+						// If completely finished, remove from active processes.
+					}
 				}
 
 				// Handle starting of follow-on paths

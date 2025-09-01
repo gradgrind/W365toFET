@@ -138,6 +138,7 @@ type ParallelLessons struct {
 	ActivityGroups [][]ActivityIndex
 }
 
+// ***********************************************************************
 // Structures and methods used in connection with the timetable "back-end"
 
 type TtHandler interface {
@@ -153,6 +154,11 @@ type TtChainedFunc struct {
 	Func  func(*TtInstance) *TtInstance
 }
 
+type NewState struct {
+	State   int
+	Message string
+}
+
 type TtInstance struct {
 	//Id    int
 	Description string
@@ -162,18 +168,20 @@ type TtInstance struct {
 	TtData_0 *TtData // original data
 	TtData   *TtData // current (possibly modified) data
 
+	// Communication channels
 	Stop        chan bool
 	NewInstance chan *TtInstance
 
-	// `LastState` values:
-	//    0-100: progress in percent
-	//       -1: finished successfully
-	//       -2: failed
-	//       -3: cancelled
-	LastState int
-	// `LastTime` is some representation of the elapsed time at which
-	// the `LastState` field was last updated.
-	LastTime string
+	// `State` values:
+	//		 0: running
+	//     	 1: finished successfully
+	//		-1: failed
+	//		-2: cancelled
+	State    int
+	Progress int // percentage of activities which have been placed
+	// `LastTime` is the `Ticks` value at which the `Progress` field was
+	// last updated.
+	LastTime int
 	// `HandlerData` provides a field to be used by the timetable "back-end".
 	HandlerData     any
 	UpdateHandler   func(instance *TtInstance)
