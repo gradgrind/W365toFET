@@ -11,7 +11,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"time"
 )
 
@@ -19,13 +18,10 @@ func ttRunAbort(data any) {
 	data.(fetTtData).cancel()
 }
 
-func NewFet(
-	rundata *timetable.TtRunData,
-	instance *timetable.TtInstance,
-) {
+func NewFet(instance *timetable.TtInstance) {
 
-	fname := "run_" + strconv.Itoa(rundata.RunCounter)
-	dir_n := filepath.Join(rundata.WorkingDir, fname)
+	fname := instance.Description
+	dir_n := filepath.Join(instance.WorkingDir, fname)
 	err := os.Mkdir(dir_n, 0755)
 	if err != nil && !os.IsExist(err) {
 		panic(err)
@@ -35,7 +31,7 @@ func NewFet(
 	mapfile := stemfile + ".map"
 
 	// Construct the FET-file
-	xmlitem, lessonIdMap := MakeFetFile(rundata.TtData)
+	xmlitem, lessonIdMap := MakeFetFile(instance.TtData)
 
 	// Write FET file
 	f, err := os.Create(fetfile)

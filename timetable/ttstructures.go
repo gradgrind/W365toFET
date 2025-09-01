@@ -150,12 +150,21 @@ type TtChainedFunc struct {
 	// started in some other way), -1 specifies that the function will never
 	// be called – possibly because it has already been started.
 	Delay int
-	Func  func(*TtRunData)
+	Func  func(*TtInstance) *TtInstance
 }
 
 type TtInstance struct {
-	Id    int
-	Ticks int
+	//Id    int
+	Description string
+	Ticks       int
+	WorkingDir  string
+
+	TtData_0 *TtData // original data
+	TtData   *TtData // current (possibly modified) data
+
+	Stop        chan bool
+	NewInstance chan *TtInstance
+
 	// `LastState` values:
 	//    0-100: progress in percent
 	//       -1: finished successfully
@@ -166,47 +175,14 @@ type TtInstance struct {
 	// the `LastState` field was last updated.
 	LastTime string
 	// `HandlerData` provides a field to be used by the timetable "back-end".
-	Message          string
-	HandlerData      any
-	UpdateHandler    func(instance *TtInstance)
-	Abort            func(any) // pass HandlerData
-	SuccessPath      TtChainedFunc
-	SuccessInstances []*TtInstance
-	FailurePath      TtChainedFunc
-	FailureInstances []*TtInstance
-	OtherPath        []TtChainedFunc
-	OtherInstances   []*TtInstance
-}
-
-type TtRunData struct {
-	TtData_0   *TtData // original data
-	TtData     *TtData // current (modified) data
-	WorkingDir string
-
-	Stop        chan bool
-	NewInstance chan *TtInstance
-
-	//TODO: Use len(Instances) instead of RunCounter?
-	//RunCounter int // count subprocesses, for indexing
-	Instances []*TtInstance
-	Active    map[int]struct{}
-}
-
-func (rundata *TtRunData) GetHandlerData(i int) any {
-	return rundata.Instances[i].HandlerData
-}
-
-func (rundata *TtRunData) SetHandlerData(i int, data any) {
-	rundata.Instances[i].HandlerData = data
-}
-
-func (rundata *TtRunData) InstanceUpdate(i int, cc int, t string) {
-	tti := rundata.Instances[i]
-	tti.LastState = cc
-	tti.LastTime = t
-}
-
-func (rundata *TtRunData) InstanceTerminated(i int, msg string) {
-	rundata.Instances[i].Message = msg
-	delete(rundata.Active, i)
+	HandlerData     any
+	UpdateHandler   func(instance *TtInstance)
+	Message         string    // completion information
+	Abort           func(any) // pass HandlerData
+	SuccessPath     TtChainedFunc
+	SuccessInstance *TtInstance
+	FailurePath     TtChainedFunc
+	FailureInstance *TtInstance
+	OtherPaths      []TtChainedFunc
+	OtherInstances  []*TtInstance
 }

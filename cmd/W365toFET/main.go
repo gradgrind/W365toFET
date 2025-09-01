@@ -94,7 +94,8 @@ func main() {
 
 	//db.SaveDb(stempath + "_DB1.json")
 
-	autotimetable.SteerGeneration(tt_data, stempath)
+	workingdir := stempath + "_fet"
+	autotimetable.SteerGeneration(tt_data, workingdir)
 
 	//db.SaveDb(stempath + "_DB2.json")
 }

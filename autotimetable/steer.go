@@ -9,6 +9,9 @@ import (
 	"time"
 )
 
+// TODO: It may well be desirable to be able to override this
+var MAXPROCESSES int = runtime.NumCPU() //TODO: use this?
+
 /*
 A `TtRunData` structure is constructed to manage the data being used by the
 timetable engine. Each trial run has a `TtInstance` structure to manage the
@@ -37,8 +40,171 @@ act as a sort of general controller, receiving signals on a channel to abort
 runs, determine when the algorithm has finished, etc.
 */
 
+var Descriptions map[string]string = map[string]string{
+	"COMPLETE":           "All constraints active",
+	"ONLY_BLOCKED_SLOTS": "All constraints – except blocked slots – disabled",
+}
+
 // TODO: At present this only supports a FET back-end. Perhaps a choice should
 // be possible ...
+
+func SteerGeneration(tt_data_0 *timetable.TtData, workingdir string) {
+
+	// `workingdir` provides the path to a working directory which can be used
+	// freely during processing. It may or may not already exist, existing
+	// contents need not be preserved during processing.
+
+	// Open communication channels
+	stop := make(chan bool)
+	make_instance := make(chan *timetable.TtInstance)
+
+	{
+		// Provide an empty working directory.
+		os.RemoveAll(workingdir)
+		err := os.Mkdir(workingdir, 0755)
+		if err != nil && !os.IsExist(err) {
+			panic(err)
+		}
+
+		// First run: all constraints enabled, no timeout
+		//TODO: On successful completion, all other instances should be stopped.
+		// If it fails, just this instance should be wound up. Otherwise it
+		// should still be running when the whole process finishes, and would
+		// need stopping.
+		instance := &timetable.TtInstance{
+			//Id:          0,
+			Description: "COMPLETE",
+			Ticks:       0,
+			WorkingDir:  workingdir,
+			TtData_0:    tt_data_0,
+			TtData:      tt_data_0,
+			NewInstance: make_instance,
+			Stop:        stop,
+
+			FailurePath: timetable.TtChainedFunc{
+				Delay: 1, Func: test_sequence},
+		}
+
+		instance.FailurePath = timetable.TtChainedFunc{
+			Delay: 1, Func: test_sequence}
+
+		// Request start of instance
+		make_instance <- instance
+	}
+
+	// *** Channel reader loop ***
+
+	active_instances := map[*timetable.TtInstance]struct{}{}
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-stop:
+			//fmt.Println("checkProgress done!")
+			//TODO: tidying up?
+			return
+		case new_instance := <-make_instance:
+			//TODO: The timetable "engine" should be replaceable.
+			fet.NewFet(new_instance)
+			active_instances[new_instance] = struct{}{}
+		case <-ticker.C:
+			// Update the progress records of the currently active
+			// subprocesses, handle tick-related events.
+			for inst := range active_instances {
+				inst.Ticks++
+				h := inst.UpdateHandler
+				if h != nil {
+					// The handler should only be set when the the process is
+					// fully running
+					h(inst)
+				}
+
+				// Handle starting of follow-on paths
+				if inst.SuccessPath.Delay >= inst.Ticks {
+					inst.SuccessInstance = inst.SuccessPath.Func(inst)
+					inst.SuccessPath.Delay = -1
+				}
+				if inst.FailurePath.Delay >= inst.Ticks {
+					inst.FailureInstance = inst.FailurePath.Func(inst)
+					inst.FailurePath.Delay = -1
+				}
+				for i, chfunc := range inst.OtherPaths {
+					if chfunc.Delay >= inst.Ticks {
+						inst.OtherInstances = append(inst.OtherInstances,
+							chfunc.Func(inst))
+						chfunc.Delay = -1
+						inst.OtherPaths[i] = chfunc
+					}
+				}
+			}
+		}
+	}
+}
+
+func test_sequence(instance_0 *timetable.TtInstance) *timetable.TtInstance {
+	// Copy original DbTopLevel (shallow copy only!)
+	db0 := instance_0.TtData_0.Db
+	db := *db0
+
+	// Copy original TtData (shallow copy only!)
+	tt_data := *instance_0.TtData_0
+	tt_data.Db = &db
+
+	// Make a new `TtInstance`
+	instance := &timetable.TtInstance{
+		Description: "ONLY_BLOCKED_SLOTS",
+		Ticks:       0,
+		WorkingDir:  instance_0.WorkingDir,
+		TtData_0:    instance_0.TtData_0,
+		TtData:      &tt_data,
+		NewInstance: instance_0.NewInstance,
+		Stop:        instance_0.Stop,
+		//TODO: follow-on paths
+	}
+
+	// Keep only the hard-blocked time slots and the fixed activities.
+
+	// Remove activity constraints
+	tt_data.Constraints = map[string][]any{}
+	tt_data.MinDaysBetweenLessons = nil
+	tt_data.ParallelLessons = nil
+	tt_data.WITHOUT_ROOM_PLACEMENTS = true
+
+	// Regenerate the teachers list without constraints
+	new_teachers := make([]*base.Teacher, len(db.Teachers))
+	for i, t0p := range db.Teachers {
+		t := *t0p
+		t.MinLessonsPerDay = -1 // unconstrained
+		t.MaxLessonsPerDay = -1 // unconstrained
+		t.MaxDays = -1          // unconstrained
+		t.MaxGapsPerDay = -1    // unconstrained
+		t.MaxGapsPerWeek = -1   // unconstrained
+		t.MaxAfternoons = -1    // unconstrained
+		t.LunchBreak = false
+		new_teachers[i] = &t
+	}
+	db.Teachers = new_teachers
+
+	// Regenerate the classes list without constraints
+	new_classes := make([]*base.Class, len(db.Classes))
+	for i, c0p := range db.Classes {
+		c := *c0p
+		c.MinLessonsPerDay = -1 // unconstrained
+		c.MaxLessonsPerDay = -1 // unconstrained
+		c.MaxGapsPerDay = -1    // unconstrained
+		c.MaxGapsPerWeek = -1   // unconstrained
+		c.MaxAfternoons = -1    // unconstrained
+		c.LunchBreak = false
+		c.ForceFirstHour = false
+		new_classes[i] = &c
+	}
+	db.Classes = new_classes
+
+	// Request start of instance
+	instance.NewInstance <- instance
+	return instance
+}
+
 //
 /*
 // TODO:  Is this old bit fetching file names from db.ModuleData still
@@ -63,249 +229,3 @@ runs, determine when the algorithm has finished, etc.
 	fetfile += ".fet"
 	mapfile += ".map"
 */
-
-// TODO: It may well be desirable to be able to override this
-var MAXPROCESSES int = runtime.NumCPU() //TODO: use this?
-
-// TODO
-// The `success` function is called when the instance completes successfully,
-// or after its delay, whichever is sooner. The `failure` function is called
-// when the instance fails, or after its delay, whichever is sooner. The
-// `other` functions are called after their delays, unless the instance has
-// already completed.
-
-// TODO: see runTtEngine
-func newInstance(
-	rundata *timetable.TtRunData,
-	success timetable.TtChainedFunc,
-	failure timetable.TtChainedFunc,
-	others ...timetable.TtChainedFunc,
-) {
-	//TODO: danger of race condition here with run counter because any
-	// instance could start a new one ... This function should perhaps
-	// be handled in the main goroutine, triggered by a channel signal.
-	// OR maybe the check-progress goroutine is better? I could pass it
-	// a partly initialized `*timetable.TtInstance`.
-	// Perhaps the check-progress loop could be in the main goroutine ...
-	counter := rundata.RunCounter
-	instance := &timetable.TtInstance{
-		Id:          counter,
-		SuccessPath: success,
-		FailurePath: failure,
-		OtherPath:   others,
-	}
-
-	rundata.Instances = append(rundata.Instances, instance)
-	rundata.RunCounter++
-
-	rundata.Active[counter] = struct{}{}
-	// Note that the instance already counts as "active" although it hasn't
-	// been initialized yet.
-
-	//TODO: The timetable "engine" should be replaceable.
-	fet.NewFet(rundata, instance)
-}
-
-func startInstance(
-	rundata *timetable.TtRunData,
-	instance *timetable.TtInstance,
-) {
-	index := len(rundata.Instances)
-	instance.Id = index
-	rundata.Instances = append(rundata.Instances, instance)
-	rundata.Active[index] = struct{}{}
-	// Note that the instance already counts as "active" although it hasn't
-	// been initialized yet.
-
-	//TODO: The timetable "engine" should be replaceable.
-	fet.NewFet(rundata, instance)
-}
-
-func SteerGeneration(tt_data_0 *timetable.TtData, stempath string) {
-
-	// `stempath` provides the path to the source file, including the stem
-	// (without file-type extension) of the file name. A new working directory
-	// will be created in the same directory.
-	workingdir := stempath + "_fet"
-	os.RemoveAll(workingdir)
-	err := os.Mkdir(workingdir, 0755)
-	if err != nil && !os.IsExist(err) {
-		panic(err)
-	}
-
-	stop := make(chan bool)
-	new_instance := make(chan *timetable.TtInstance)
-
-	rundata := &timetable.TtRunData{
-		TtData_0:    tt_data_0,
-		TtData:      tt_data_0,
-		WorkingDir:  workingdir,
-		NewInstance: new_instance,
-		Stop:        stop,
-		//RunCounter: 0,
-		Active: map[int]struct{}{},
-	}
-
-	//TODO: A run with all constraints enabled, no timeout
-	runTtEngine(rundata, 0)
-
-	// From now use modified TtData
-	// Copy original DbTopLevel (shallow copy only!)
-	db0 := tt_data_0.Db
-	db_1 := *db0
-	db := &db_1
-
-	// Copy original TtData (shallow copy only!)
-	tt_data_1 := *tt_data_0
-	tt_data := &tt_data_1
-	tt_data.Db = db
-
-	// Remove constraints
-	tt_data.Constraints = map[string][]any{}
-	tt_data.MinDaysBetweenLessons = nil
-	tt_data.ParallelLessons = nil
-	tt_data.WITHOUT_ROOM_PLACEMENTS = true
-
-	rundata.TtData = tt_data
-
-	// First run with no constraints except the hard-blocked time slots and
-	// the fixed activities.
-	// Regenerate the teachers list without constraints
-	new_teachers := make([]*base.Teacher, len(db.Teachers))
-	for i, t0p := range db.Teachers {
-		t := *t0p
-		t.MinLessonsPerDay = -1 // unconstrained
-		t.MaxLessonsPerDay = -1 // unconstrained
-		t.MaxDays = -1          // unconstrained
-		t.MaxGapsPerDay = -1    // unconstrained
-		t.MaxGapsPerWeek = -1   // unconstrained
-		t.MaxAfternoons = -1    // unconstrained
-		t.LunchBreak = false
-		new_teachers[i] = &t
-	}
-	db.Teachers = new_teachers
-	// Regenerate the classes list without constraints
-	new_classes := make([]*base.Class, len(db.Classes))
-	for i, c0p := range db.Classes {
-		c := *c0p
-		c.MinLessonsPerDay = -1 // unconstrained
-		c.MaxLessonsPerDay = -1 // unconstrained
-		c.MaxGapsPerDay = -1    // unconstrained
-		c.MaxGapsPerWeek = -1   // unconstrained
-		c.MaxAfternoons = -1    // unconstrained
-		c.LunchBreak = false
-		c.ForceFirstHour = false
-		new_classes[i] = &c
-	}
-	db.Classes = new_classes
-
-	//***********************************
-
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-stop:
-			//fmt.Println("checkProgress done!")
-			//TODO: tidying up?
-			return
-		case new_instance := <-new_instance:
-			runInstance(new_instance)
-		case <-ticker.C:
-			// Update the progress records of the currently active
-			// subprocesses.
-			for i := range rundata.Active {
-				instance := rundata.Instances[i]
-				h := instance.UpdateHandler
-				if h != nil {
-					// The handler should only be set when the the process is
-					// fully running
-					h(instance)
-				}
-			}
-		}
-	}
-
-	//***********************************
-
-	go checkProgress(stop, rundata)
-
-	//TODO... ???
-
-	runTtEngine(rundata, 30)
-
-	/* ???
-
-	// Add the pseudo activities due to the NotAvailable lists of classes,
-	// teachers and rooms.
-	tt_data.BlockResources()
-
-	TODO?
-	// Get preliminary constraint info – needed for the call to addActivity
-	//ttinfo.processConstraints()
-
-	TODO?
-	// Add the remaining Activity information
-	//ttinfo.addActivityInfo(t2tt, r2tt, g2ags)
-
-	*/
-	stop <- true
-}
-
-// TODO: At what stage should the goroutine be started, avoid race conditions
-// with RunCounter, Active handler, etc.
-// TODO: Take available CPUs into account.
-func runTtEngine(rundata *timetable.TtRunData, timeout int) {
-	//TODO: timeout
-
-	instance := &timetable.TtInstance{}
-	rundata.Instances = append(rundata.Instances, instance)
-	rundata.Active[rundata.RunCounter] = struct{}{}
-	// Note that the instance already counts as "active" although it hasn't
-	// been initialized yet.
-
-	//TODO: The timetable "engine" should be replaceable.
-	fet.NewFet(rundata, instance)
-
-	// Update `RunCounter` AFTER call to NewFet so that this can access the
-	// appropriate `RunCounter` value directly
-	rundata.RunCounter++
-}
-
-// Keep track of the subprocesses: their progress and completion state.
-// It should be possible to register handlers for particular times and to
-// issue cancellations. Timeouts should be possible.
-// The number of active processes should be recorded, so that a limit can
-// be set.
-func checkProgress(stop chan bool, rundata *timetable.TtRunData) {
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-	for {
-		select {
-		case <-stop:
-			//fmt.Println("checkProgress done!")
-			return
-		case <-ticker.C:
-			// Update the progress records of the currently active
-			// subprocesses.
-			for i := range rundata.Active {
-				instance := rundata.Instances[i]
-				h := instance.UpdateHandler
-				if h != nil {
-					// The handler should only be set when the the process is
-					// fully running
-					h(instance)
-				}
-			}
-		}
-	}
-}
-
-// TODO
-func EndInstance(
-	instance *timetable.TtInstance,
-	successPath bool,
-	failurePath bool,
-) {
-
-}
