@@ -4,6 +4,7 @@ import (
 	"W365toFET/base"
 	"W365toFET/fet"
 	"W365toFET/timetable"
+	"fmt"
 	"os"
 	"runtime"
 	"time"
@@ -51,7 +52,8 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 
 	// Open communication channels
 	stop := make(chan bool)
-	make_instance := make(chan *timetable.TtInstance)
+	//TODO: Consider buffer size and blocking ...
+	make_instance := make(chan *timetable.TtInstance, 10)
 
 	{
 		// Provide an empty working directory.
@@ -152,7 +154,9 @@ loop:
 						cancelPath(inst.FailureInstance)
 						inst.FailureInstance = nil
 						if inst.SuccessPath.Delay >= 0 {
-							inst.SuccessInstance = inst.SuccessPath.Func(inst)
+							if inst.SuccessPath.Func != nil {
+								inst.SuccessInstance = inst.SuccessPath.Func(inst)
+							}
 							inst.SuccessPath.Delay = -1
 						}
 					} else if inst.State != 5 {
@@ -160,7 +164,9 @@ loop:
 						cancelPath(inst.SuccessInstance)
 						inst.SuccessInstance = nil
 						if inst.FailurePath.Delay >= 0 {
-							inst.FailureInstance = inst.FailurePath.Func(inst)
+							if inst.FailurePath.Func != nil {
+								inst.FailureInstance = inst.FailurePath.Func(inst)
+							}
 							inst.FailurePath.Delay = -1
 						}
 					}
@@ -186,11 +192,15 @@ loop:
 
 				// Handle starting of follow-on paths after their delays
 				if inst.SuccessPath.Delay == inst.Ticks {
-					inst.SuccessInstance = inst.SuccessPath.Func(inst)
+					if inst.SuccessPath.Func != nil {
+						inst.SuccessInstance = inst.SuccessPath.Func(inst)
+					}
 					inst.SuccessPath.Delay = -1 // flag already started
 				}
 				if inst.FailurePath.Delay == inst.Ticks {
-					inst.FailureInstance = inst.FailurePath.Func(inst)
+					if inst.FailurePath.Func != nil {
+						inst.FailureInstance = inst.FailurePath.Func(inst)
+					}
 					inst.FailurePath.Delay = -1 // flag already started
 				}
 				for _, chfunc := range inst.OtherPaths {
@@ -208,6 +218,8 @@ loop:
 					inactive_instances = append(inactive_instances, inst)
 				}
 				delete(active_instances, inst)
+
+				fmt.Println("=== End:", inst.Description, inst.State, inst.Progress)
 			}
 		}
 	}
@@ -306,11 +318,13 @@ func test_sequence(instance_0 *timetable.TtInstance) *timetable.TtInstance {
 	return instance
 }
 
+// This will probably need some tuning. There is probably no such thing as
+// an optimal algorithm, that depends very much on the data.
 func timed_out(instance *timetable.TtInstance) bool {
-	delta := instance.Ticks - instance.LastTime
-	if instance.Timeout != 0 && delta > instance.Timeout {
+	if instance.Timeout != 0 && instance.Ticks > instance.Timeout {
 		return true
 	}
+	delta := instance.Ticks - instance.LastTime
 	if delta < 5 {
 		return false
 	}
@@ -318,7 +332,7 @@ func timed_out(instance *timetable.TtInstance) bool {
 	if instance.Progress < 80 && delta*2 > instance.Progress {
 		return true
 	}
-	if instance.Progress < 95 && delta > instance.Progress+40 {
+	if instance.Progress < 95 && delta > 400 {
 		return true
 	}
 	return false

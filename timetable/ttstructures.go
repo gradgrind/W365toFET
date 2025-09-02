@@ -178,6 +178,7 @@ type TtInstance struct {
 	//     	 1: finished successfully
 	//		 2: failed
 	//		 3: process aborted
+	//       4: other incomplete termination
 	//		 5: cancelled by `cancelAll`
 	//		-1: timeout (awaiting completion)
 	State    int

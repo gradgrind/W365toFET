@@ -14,7 +14,7 @@ import (
 )
 
 func ttRunAbort(data any) {
-	data.(fetTtData).cancel()
+	data.(*fetTtData).cancel()
 }
 
 func NewFet(instance *timetable.TtInstance) {
@@ -41,6 +41,7 @@ func NewFet(instance *timetable.TtInstance) {
 	if err != nil {
 		panic("Couldn't write fet output to: " + fetfile)
 	}
+
 	//fmt.Printf("FET file written to: %s\n", fetfile)
 
 	// Write Id-map file.
@@ -101,7 +102,6 @@ func execfet(
 	)
 
 	res, err := runCmd.Output()
-
 	if err == nil {
 		fet_data.state = timetable.NewState{
 			State: 1, Message: string(res)}
@@ -152,7 +152,7 @@ type fetTtData struct {
 // `ttUpdate` runs in the event loop, so it may update the instance data.
 // It is called on every "tick".
 func ttUpdate(instance *timetable.TtInstance) {
-	data := instance.HandlerData.(fetTtData)
+	data := instance.HandlerData.(*fetTtData)
 	finished := data.state.State > 0
 	if data.reader == nil {
 		// Await the existence of the log file
@@ -175,10 +175,12 @@ func ttUpdate(instance *timetable.TtInstance) {
 				if l != nil {
 					count, err := strconv.Atoi(string(l[2]))
 					if err == nil {
-						percent := count * 100 / len(instance.TtData.Activities)
+						percent := count * 100 /
+							(len(instance.TtData.Activities) - 1)
 						if percent > instance.Progress {
 							instance.Progress = percent
 							instance.LastTime = instance.Ticks
+							fmt.Println(instance.Description, percent, "@", instance.Ticks)
 						}
 					}
 				}
@@ -192,7 +194,17 @@ exit:
 		if data.rdfile != nil {
 			data.rdfile.Close()
 		}
-		instance.State = data.state.State
+		if data.state.State == 1 {
+			// cc = 0 does not absolutely guarantee that the timetable is
+			// complete – when fet-cl is interrupted, for example
+			if instance.Progress == 100 {
+				instance.State = 1
+			} else {
+				instance.State = 4
+			}
+		} else {
+			instance.State = data.state.State
+		}
 		instance.Message = data.state.Message
 	}
 }
