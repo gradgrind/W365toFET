@@ -176,8 +176,10 @@ type TtInstance struct {
 	// `State` values:
 	//		 0: running
 	//     	 1: finished successfully
-	//		-1: failed
-	//		-2: cancelled
+	//		 2: failed
+	//		 3: process aborted
+	//		 5: cancelled by `cancelAll`
+	//		-1: timeout (awaiting completion)
 	State    int
 	Progress int // percentage of activities which have been placed
 	// `LastTime` is the `Ticks` value at which the `Progress` field was

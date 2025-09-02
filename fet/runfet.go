@@ -118,11 +118,13 @@ func execfet(
 			fmt.Printf(">>> !!! FET cc on %s = %d\n",
 				fet_data.ifile, e.ExitCode())
 			if e.ExitCode() < 0 {
+				// aborted
 				fet_data.state = timetable.NewState{
-					State: -2, Message: string(res)}
+					State: 3, Message: string(res)}
 			} else {
+				// error completion
 				fet_data.state = timetable.NewState{
-					State: -1, Message: string(res)}
+					State: 2, Message: string(res)}
 			}
 		default:
 			panic(err)
@@ -151,7 +153,7 @@ type fetTtData struct {
 // It is called on every "tick".
 func ttUpdate(instance *timetable.TtInstance) {
 	data := instance.HandlerData.(fetTtData)
-	finished := data.state.State != 0
+	finished := data.state.State > 0
 	if data.reader == nil {
 		// Await the existence of the log file
 		file, err := os.Open(data.logfile)
@@ -173,8 +175,9 @@ func ttUpdate(instance *timetable.TtInstance) {
 				if l != nil {
 					count, err := strconv.Atoi(string(l[2]))
 					if err == nil {
-						if count > instance.Progress {
-							instance.Progress = count
+						percent := count * 100 / len(instance.TtData.Activities)
+						if percent > instance.Progress {
+							instance.Progress = percent
 							instance.LastTime = instance.Ticks
 						}
 					}
