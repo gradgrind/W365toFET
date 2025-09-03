@@ -87,13 +87,10 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 
 			FailurePath: timetable.TtChainedFunc{
 				Delay: 1, Func: test_sequence},
+
+			SuccessPath: timetable.TtChainedFunc{
+				Delay: 0, Func: full_success},
 		}
-
-		instance.FailurePath = timetable.TtChainedFunc{
-			Delay: 1, Func: test_sequence}
-
-		instance.SuccessPath = timetable.TtChainedFunc{
-			Delay: 0, Func: full_success}
 
 		// Request start of instance
 		make_instance <- instance
@@ -254,18 +251,20 @@ func full_success(instance_0 *timetable.TtInstance) *timetable.TtInstance {
 	return nil
 }
 
-func test_sequence(instance_0 *timetable.TtInstance) *timetable.TtInstance {
-	// Copy original DbTopLevel (shallow copy only!)
-	db0 := instance_0.TtData_0.Db
-	db := *db0
-
+func newInstance(
+	instance_0 *timetable.TtInstance, descriptor string,
+) *timetable.TtInstance {
 	// Copy original TtData (shallow copy only!)
-	tt_data := *instance_0.TtData_0
+	tt_data := *instance_0.TtData
+
+	// Copy original DbTopLevel (shallow copy only!)
+	db0 := tt_data.Db
+	db := *db0
 	tt_data.Db = &db
 
 	// Make a new `TtInstance`
-	instance := &timetable.TtInstance{
-		Description: "ONLY_BLOCKED_SLOTS",
+	return &timetable.TtInstance{
+		Description: descriptor,
 		Ticks:       0,
 		WorkingDir:  instance_0.WorkingDir,
 		TtData_0:    instance_0.TtData_0,
@@ -274,6 +273,12 @@ func test_sequence(instance_0 *timetable.TtInstance) *timetable.TtInstance {
 		Stop:        instance_0.Stop,
 		//TODO: follow-on paths
 	}
+}
+
+func test_sequence(instance_0 *timetable.TtInstance) *timetable.TtInstance {
+	instance := newInstance(instance_0, "ONLY_BLOCKED_SLOTS")
+	tt_data := instance.TtData
+	db := tt_data.Db
 
 	// Keep only the hard-blocked time slots and the fixed activities.
 
@@ -312,6 +317,9 @@ func test_sequence(instance_0 *timetable.TtInstance) *timetable.TtInstance {
 		new_classes[i] = &c
 	}
 	db.Classes = new_classes
+
+	instance.SuccessPath = timetable.TtChainedFunc{
+		Delay: 0, Func: teacher_min_lessons_per_day}
 
 	// Request start of instance
 	instance.NewInstance <- instance
