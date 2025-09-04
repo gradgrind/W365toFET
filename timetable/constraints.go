@@ -25,7 +25,7 @@ type differentDays struct {
  * "preprocesses" some of the constraints where this can produce a more
  * convenient structure for their implementation:
  *
- * The constraints AutomaticDifferentDays, DaysBetween and DaysBetweenJoin
+ * The constraints AutomaticDifferentDays, DaysBetween and DaysBetweenJoin are
  * processed and combined to be replaced by MinDaysBetweenLessons constraints,
  * which are then available directly as a field in the `TtData` structure.
  *

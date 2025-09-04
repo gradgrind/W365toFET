@@ -6,7 +6,7 @@ A common approach to troubleshooting is to disable and re-enable groups of const
 
 With few constraints the generation of solutions will often be very quick, allowing many tests to be carried out in a short time. Automation can be very helpful at this stage. It won't be able to replace the insights of an expert timetable constructor, but can speed up the process even for them. As the run times get longer the savings will probably be less obvious, but some automation of the process can still assist less experienced timetable constructors. The possibility of running tests in parallel on suitable computer systems can also speed up the process considerably.
 
-Automation along these lines should be seen as a valuable assistant, but not as a magic bullet. In general, it can't tell you exactly what needs changing, it can only point to areas where changes might be necessary. Often there will be several – perhaps seemingly unrelated – areas in which changes in the specifications could lead to timetable improvements. Experience and analytical expertise are still very desirable qualities in a timetable constructor.
+Automation along these lines should be seen as a valuable assistant, but not as a panacea. In general, it can't tell you exactly what needs changing, it can only point to areas where changes might be necessary. Often there will be several – perhaps seemingly unrelated – areas in which changes in the specifications could lead to timetable improvements. Experience and analytical expertise are still very desirable qualities in a timetable constructor.
 
 ## The main constraints
 

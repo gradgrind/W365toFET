@@ -1,6 +1,7 @@
 package autotimetable
 
 import (
+	"W365toFET/base"
 	"W365toFET/timetable"
 )
 
@@ -36,19 +37,107 @@ the construction of the timetable possible.
 	t.LunchBreak = false
 */
 
+type tConstraintSwitch struct {
+	MinLessonsPerDay bool
+	MaxLessonsPerDay bool
+	MaxAfternoons    bool
+	MaxDays          bool
+	LunchBreak       bool
+	MaxGapsPerDay    bool
+	MaxGapsPerWeek   bool
+}
+
+// Create a new Teacher node, (shallow) copying from the supplied one,
+// which should be from the original data.
+// Select its active constraints from the `selection` argument.
+func set_teacher_constraints(
+	t0 *base.Teacher, selection tConstraintSwitch,
+) *base.Teacher {
+	t := *t0
+	if selection.MinLessonsPerDay {
+		t.MinLessonsPerDay = t0.MinLessonsPerDay
+	} else {
+		t.MinLessonsPerDay = -1 // unconstrained
+	}
+	if selection.MaxLessonsPerDay {
+		t.MaxLessonsPerDay = t0.MaxLessonsPerDay
+	} else {
+		t.MaxLessonsPerDay = -1 // unconstrained
+	}
+	if selection.MaxAfternoons {
+		t.MaxAfternoons = t0.MaxAfternoons
+	} else {
+		t.MaxAfternoons = -1 // unconstrained
+	}
+	if selection.MaxDays {
+		t.MaxDays = t0.MaxDays
+	} else {
+		t.MaxDays = -1 // unconstrained
+	}
+	if selection.LunchBreak {
+		t.LunchBreak = t0.LunchBreak
+	} else {
+		t.LunchBreak = false // not required
+	}
+	if selection.MaxGapsPerDay {
+		t.MaxGapsPerDay = t0.MaxGapsPerDay
+	} else {
+		t.MaxGapsPerDay = -1 // unconstrained
+	}
+	if selection.MaxGapsPerWeek {
+		t.MaxGapsPerWeek = t0.MaxGapsPerWeek
+	} else {
+		t.MaxGapsPerWeek = -1 // unconstrained
+	}
+	return &t
+}
+
+func test_teacher_sequence(
+	instance_0 *timetable.TtInstance) *timetable.TtInstance {
+	// Make a new instane, reinstating all the teacher constraints
+
+	instance := newInstance(instance_0, "TEACHER_ALL_CONSTRAINTS")
+	tt_data := instance.TtData
+	db := tt_data.Db
+
+	// Get original teacher constraints
+	db.Teachers = instance.TtData_0.Db.Teachers
+
+	instance.FailurePath = timetable.TtChainedFunc{
+		Delay: 0, Func: teacher_min_lessons_per_day}
+
+	//TODO
+
+	//instance.SuccessPath = timetable.TtChainedFunc{
+	//	Delay: 0, Func: test_class_constraints}
+
+	//TODO: Set Timeout?
+	//TODO: Enyble gaps only later?
+
+	// Request start of instance
+	instance.NewInstance <- instance
+	return instance
+}
+
+//TODO: It might be better to save the constraint enablements (perhaps
+// with those for individual teachers, too ...) in the instance.
+
 func teacher_min_lessons_per_day(
 	instance_0 *timetable.TtInstance) *timetable.TtInstance {
-	// Add the MinLessonsPerDay constraints
+	// Start with the MinLessonsPerDay constraints
+	cs := tConstraintSwitch{
+		MinLessonsPerDay: true,
+	}
 
 	instance := newInstance(instance_0, "TEACHER_MIN_LESSONS_PER_DAY")
 	tt_data := instance.TtData
 	db := tt_data.Db
 
-	db0 := instance.TtData_0.Db
-	base_teachers := db0.Teachers
-	for i, tp := range db.Teachers {
-		tp.MinLessonsPerDay = base_teachers[i].MinLessonsPerDay
+	tlist := []*base.Teacher{}
+	for _, t := range instance.TtData_0.Db.Teachers {
+		tlist = append(tlist, set_teacher_constraints(t, cs))
 	}
+	db.Teachers = tlist
 
 	//TODO
 
@@ -61,22 +150,26 @@ func teacher_min_lessons_per_day(
 	// Request start of instance
 	instance.NewInstance <- instance
 	return instance
-
 }
 
 func teacher_max_lessons_per_day(
 	instance_0 *timetable.TtInstance) *timetable.TtInstance {
 	// Add the MinLessonsPerDay constraints
+	// Start with the MinLessonsPerDay constraints
+	cs := tConstraintSwitch{
+		MinLessonsPerDay: true,
+		MaxLessonsPerDay: true,
+	}
 
 	instance := newInstance(instance_0, "TEACHER_MAX_LESSONS_PER_DAY")
 	tt_data := instance.TtData
 	db := tt_data.Db
 
-	db0 := instance.TtData_0.Db
-	base_teachers := db0.Teachers
-	for i, tp := range db.Teachers {
-		tp.MaxLessonsPerDay = base_teachers[i].MaxLessonsPerDay
+	tlist := []*base.Teacher{}
+	for _, t := range instance.TtData_0.Db.Teachers {
+		tlist = append(tlist, set_teacher_constraints(t, cs))
 	}
+	db.Teachers = tlist
 
 	//TODO
 

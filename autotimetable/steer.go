@@ -319,7 +319,7 @@ func test_sequence(instance_0 *timetable.TtInstance) *timetable.TtInstance {
 	db.Classes = new_classes
 
 	instance.SuccessPath = timetable.TtChainedFunc{
-		Delay: 0, Func: teacher_min_lessons_per_day}
+		Delay: 0, Func: test_teacher_sequence}
 
 	// Request start of instance
 	instance.NewInstance <- instance
