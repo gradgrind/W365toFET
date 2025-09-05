@@ -4,31 +4,6 @@ import (
 	"W365toFET/timetable"
 )
 
-/*
-The idea is to provide for each constraint type a function to switch the
-constraint on. As it must be possible to combine the switches, the `TtData`
-of the input instance needs to be modified, rather than starting from
-scratch with the `TtData_0`.
-
-A further search, when a constraint type has been identified as potentially
-difficult, would be for individual classes.
-
-Of course, only constraints which are actually specified need to be activated.
-At least at the individual classes level, it might be worth filtering the
-list before starting the binary search.
-
-//TODO: This is a more general comment:
-Although a binary search can be relatively efficient, this efficiency will
-be reduced if more than one of the components is difficult, especially if the
-difficulty arises from the combination, which they mostly do. On the other
-hand, checking all combinations is not feasible (because of the enormous
-number). The hope is that by offering some assistance in narrowing down the
-difficult constraints to particular types, and perhaps individuals within
-those types, that the user can find a way to adjust the constraints to make
-the construction of the timetable possible.
-*/
-
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // These functions enable/disable a particular class constraint
 
 func init() {

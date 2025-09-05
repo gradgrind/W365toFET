@@ -5,21 +5,6 @@ import (
 	"W365toFET/timetable"
 )
 
-/*
-The idea is to provide for each constraint type a function to switch the
-constraint on. As it must be possible to combine the switches, the `TtData`
-of the input instance needs to be modified, rather than starting from
-scratch with the `TtData_0`.
-
-A further search, when a constraint type has been identified as potentially
-difficult, would be for individual teachers.
-
-Of course, only constraints which are actually specified need to be activated.
-At least at the individual teachers level, it might be worth filtering the
-list before starting the binary search.
-*/
-
-//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // These functions enable/disable a particular teacher constraint
 
 func init() {
