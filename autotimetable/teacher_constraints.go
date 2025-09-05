@@ -37,6 +37,118 @@ the construction of the timetable possible.
 	t.LunchBreak = false
 */
 
+//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+// These functions enable/disable a particular teacher constraint
+
+// TODO: This probably needs to encompass ALL constraints ...
+const (
+	MinLessonsPerDay int = iota
+	MaxLessonsPerDay
+	MaxAfternoons
+	MaxDays
+	LunchBreak
+	MaxGapsPerDay
+	MaxGapsPerWeek
+
+	// ...
+
+	LastConstraint // can be used for sizing function map, etc.
+)
+
+var cfmap [LastConstraint]func(*timetable.TtInstance, int, bool)
+
+func init() {
+	cfmap[MinLessonsPerDay] = func(
+		instance *timetable.TtInstance,
+		teacher int,
+		enable bool,
+	) {
+		if enable {
+			instance.TtData.Db.Teachers[teacher].MinLessonsPerDay =
+				instance.TtData_0.Db.Teachers[teacher].MinLessonsPerDay
+		} else {
+			instance.TtData.Db.Teachers[teacher].MinLessonsPerDay = -1
+		}
+	}
+	cfmap[MaxLessonsPerDay] = func(
+		instance *timetable.TtInstance,
+		teacher int,
+		enable bool,
+	) {
+		if enable {
+			instance.TtData.Db.Teachers[teacher].MaxLessonsPerDay =
+				instance.TtData_0.Db.Teachers[teacher].MaxLessonsPerDay
+		} else {
+			instance.TtData.Db.Teachers[teacher].MaxLessonsPerDay = -1
+		}
+	}
+	cfmap[MaxAfternoons] = func(
+		instance *timetable.TtInstance,
+		teacher int,
+		enable bool,
+	) {
+		if enable {
+			instance.TtData.Db.Teachers[teacher].MaxAfternoons =
+				instance.TtData_0.Db.Teachers[teacher].MaxAfternoons
+		} else {
+			instance.TtData.Db.Teachers[teacher].MaxAfternoons = -1
+		}
+	}
+	cfmap[MaxDays] = func(
+		instance *timetable.TtInstance,
+		teacher int,
+		enable bool,
+	) {
+		if enable {
+			instance.TtData.Db.Teachers[teacher].MaxDays =
+				instance.TtData_0.Db.Teachers[teacher].MaxDays
+		} else {
+			instance.TtData.Db.Teachers[teacher].MaxDays = -1
+		}
+	}
+	cfmap[LunchBreak] = func(
+		instance *timetable.TtInstance,
+		teacher int,
+		enable bool,
+	) {
+		if enable {
+			instance.TtData.Db.Teachers[teacher].LunchBreak =
+				instance.TtData_0.Db.Teachers[teacher].LunchBreak
+		} else {
+			instance.TtData.Db.Teachers[teacher].LunchBreak = false
+		}
+	}
+	cfmap[MaxGapsPerDay] = func(
+		instance *timetable.TtInstance,
+		teacher int,
+		enable bool,
+	) {
+		if enable {
+			instance.TtData.Db.Teachers[teacher].MaxGapsPerDay =
+				instance.TtData_0.Db.Teachers[teacher].MaxGapsPerDay
+		} else {
+			instance.TtData.Db.Teachers[teacher].MaxGapsPerDay = -1
+		}
+	}
+	cfmap[MaxGapsPerWeek] = func(
+		instance *timetable.TtInstance,
+		teacher int,
+		enable bool,
+	) {
+		if enable {
+			instance.TtData.Db.Teachers[teacher].MaxGapsPerWeek =
+				instance.TtData_0.Db.Teachers[teacher].MaxGapsPerWeek
+		} else {
+			instance.TtData.Db.Teachers[teacher].MaxGapsPerWeek = -1
+		}
+	}
+
+}
+
+//TODO: Map constraint indexes to constraint names?
+
+//------------------------------------------------------------------
+
 type tConstraintSwitch struct {
 	MinLessonsPerDay bool
 	MaxLessonsPerDay bool
