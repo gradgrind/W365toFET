@@ -62,5 +62,6 @@ func main() {
 	fmt.Printf("Activities: %d\n", len(tt_data.Activities)-1)
 
 	stempath := strings.TrimSuffix(abspath, filepath.Ext(abspath))
-	autotimetable.SteerGeneration(tt_data, stempath)
+	workingdir := stempath + "_fet"
+	autotimetable.StartGeneration(tt_data, workingdir)
 }
