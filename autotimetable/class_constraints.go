@@ -4,7 +4,7 @@ import (
 	"W365toFET/timetable"
 )
 
-// These functions enable/disable a particular class constraint
+// Each of these functions enables/disables a particular class constraint
 
 func init() {
 	cfmap[CMinLessonsPerDay] = func(
@@ -94,4 +94,86 @@ func init() {
 
 }
 
-//TODO: Map constraint indexes to constraint names?
+//------------------------------------------------------------------
+
+func test_class_sequence(
+	instance_0 *timetable.TtInstance) *timetable.TtInstance {
+	// Make a new instance, reinstating all the class constraints
+
+	instance := newInstance(instance_0, "CLASS_ALL_CONSTRAINTS")
+	tt_data := instance.TtData
+	db := tt_data.Db
+
+	// Get original class constraints
+	db.Classes = instance.TtData_0.Db.Classes
+
+	instance.FailurePath = timetable.TtChainedFunc{
+		Delay: 0, Func: classes_find_difficult_constraints}
+
+	instance.SuccessPath = timetable.TtChainedFunc{
+		Delay: 0, Func: test_teacher_sequence}
+
+	//TODO?
+	instance.Timeout = TEST_TIMEOUT
+
+	//TODO: Enable gaps only later?
+
+	// Request start of instance
+	instance.NewInstance <- instance
+	return instance
+}
+
+func classes_find_difficult_constraints(
+	instance_0 *timetable.TtInstance) *timetable.TtInstance {
+	instance := newInstance(instance_0, "CLASS_MIN_LESSONS_PER_DAY")
+
+	disable_class_constraints(instance)
+
+	// Start with the CMinLessonsPerDay constraints
+	n := len(instance.TtData.Db.Classes)
+	f := cfmap[CMinLessonsPerDay]
+	for i := range n {
+		f(instance, i, true)
+	}
+
+	//TODO
+	instance.Timeout = TEST_TIMEOUT
+
+	//instance.FailurePath = timetable.TtChainedFunc{
+	//	Delay: 0, Func: find_class...}
+
+	instance.SuccessPath = timetable.TtChainedFunc{
+		Delay: 0, Func: class_max_lessons_per_day}
+
+	// Request start of instance
+	instance.NewInstance <- instance
+	return instance
+}
+
+// Add the CMaxLessonsPerDay constraints
+func class_max_lessons_per_day(
+	instance_0 *timetable.TtInstance) *timetable.TtInstance {
+
+	instance := newInstance(instance_0, "CLASS_MAX_LESSONS_PER_DAY")
+
+	n := len(instance.TtData.Db.Classes)
+	f := cfmap[CMaxLessonsPerDay]
+	for i := range n {
+		f(instance, i, true)
+	}
+
+	//TODO
+	instance.Timeout = TEST_TIMEOUT
+
+	//instance.FailurePath = timetable.TtChainedFunc{
+	//	Delay: 0, Func: find_class_max_lessons}
+
+	//TODO: Actually it should go to the next class constraint ...
+	instance.SuccessPath = timetable.TtChainedFunc{
+		Delay: 0, Func: test_teacher_sequence}
+
+	// Request start of instance
+	instance.NewInstance <- instance
+	return instance
+
+}

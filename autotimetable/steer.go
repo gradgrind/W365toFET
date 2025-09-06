@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"slices"
 	"time"
 )
 
@@ -43,6 +44,9 @@ var Descriptions map[string]string = map[string]string{
 	"COMPLETE":           "All constraints active",
 	"ONLY_BLOCKED_SLOTS": "All constraints – except blocked slots – disabled",
 }
+
+// TODO?
+var TEST_TIMEOUT = 10 // ticks for quick test functions
 
 func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 
@@ -262,6 +266,37 @@ func newInstance(
 	db := *db0
 	tt_data.Db = &db
 
+	// Make a deeper copy of the constraints so that these can be
+	// switched on or off without affecting those in the original `TtData`
+	// and `DbTopLevel`.
+
+	// Make a copy of the general constraints lists
+	cmap := make(map[string][]any, len(tt_data.Constraints))
+	for k, v := range tt_data.Constraints {
+		cmap[k] = slices.Clone(v)
+	}
+	tt_data.Constraints = cmap
+
+	// ... and of the special ones
+	tt_data.MinDaysBetweenLessons = slices.Clone(tt_data.MinDaysBetweenLessons)
+	tt_data.ParallelLessons = slices.Clone(tt_data.ParallelLessons)
+
+	// Copy the classes and teachers lists
+
+	new_classes := make([]*base.Class, len(db.Classes))
+	for i, c0p := range db.Classes {
+		c := *c0p
+		new_classes[i] = &c
+	}
+	db.Classes = new_classes
+
+	new_teachers := make([]*base.Teacher, len(db.Teachers))
+	for i, t0p := range db.Teachers {
+		t := *t0p
+		new_teachers[i] = &t
+	}
+	db.Teachers = new_teachers
+
 	// Make a new `TtInstance`
 	return &timetable.TtInstance{
 		Description: descriptor,
@@ -271,55 +306,19 @@ func newInstance(
 		TtData:      &tt_data,
 		NewInstance: instance_0.NewInstance,
 		Stop:        instance_0.Stop,
-		//TODO: follow-on paths
 	}
 }
 
 func test_sequence(instance_0 *timetable.TtInstance) *timetable.TtInstance {
 	instance := newInstance(instance_0, "ONLY_BLOCKED_SLOTS")
-	tt_data := instance.TtData
-	db := tt_data.Db
 
 	// Keep only the hard-blocked time slots and the fixed activities.
 
-	// Remove activity constraints
-	tt_data.Constraints = map[string][]any{}
-	tt_data.MinDaysBetweenLessons = nil
-	tt_data.ParallelLessons = nil
-	tt_data.WITHOUT_ROOM_PLACEMENTS = true
-
-	// Regenerate the teachers list without constraints
-	new_teachers := make([]*base.Teacher, len(db.Teachers))
-	for i, t0p := range db.Teachers {
-		t := *t0p
-		t.MinLessonsPerDay = -1 // unconstrained
-		t.MaxLessonsPerDay = -1 // unconstrained
-		t.MaxDays = -1          // unconstrained
-		t.MaxGapsPerDay = -1    // unconstrained
-		t.MaxGapsPerWeek = -1   // unconstrained
-		t.MaxAfternoons = -1    // unconstrained
-		t.LunchBreak = false
-		new_teachers[i] = &t
-	}
-	db.Teachers = new_teachers
-
-	// Regenerate the classes list without constraints
-	new_classes := make([]*base.Class, len(db.Classes))
-	for i, c0p := range db.Classes {
-		c := *c0p
-		c.MinLessonsPerDay = -1 // unconstrained
-		c.MaxLessonsPerDay = -1 // unconstrained
-		c.MaxGapsPerDay = -1    // unconstrained
-		c.MaxGapsPerWeek = -1   // unconstrained
-		c.MaxAfternoons = -1    // unconstrained
-		c.LunchBreak = false
-		c.ForceFirstHour = false
-		new_classes[i] = &c
-	}
-	db.Classes = new_classes
+	// Disable all the classes' and teachers' constraints.
+	disable_all_constraints(instance)
 
 	instance.SuccessPath = timetable.TtChainedFunc{
-		Delay: 0, Func: test_teacher_sequence}
+		Delay: 0, Func: test_class_sequence}
 
 	// Request start of instance
 	instance.NewInstance <- instance
@@ -329,6 +328,12 @@ func test_sequence(instance_0 *timetable.TtInstance) *timetable.TtInstance {
 // This will probably need some tuning. There is probably no such thing as
 // an optimal algorithm, that depends very much on the data.
 func timed_out(instance *timetable.TtInstance) bool {
+	if instance.Timeout < 0 {
+		// This allows a complete override of the timeout feature.
+		// Unlike Timeout = 0 it will not try to catch runs which get
+		// stuck at low completion levels.
+		return false
+	}
 	if instance.Timeout != 0 && instance.Ticks > instance.Timeout {
 		return true
 	}

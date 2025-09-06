@@ -30,6 +30,7 @@ the construction of the timetable possible.
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 // TODO: This probably needs to encompass ALL constraints ...
+// TODO: Map constraint indexes to constraint names?
 const (
 	TMinLessonsPerDay int = iota
 	TMaxLessonsPerDay
@@ -53,3 +54,102 @@ const (
 )
 
 var cfmap [LastConstraint]func(*timetable.TtInstance, int, bool)
+
+func disable_all_constraints(instance *timetable.TtInstance) {
+
+	disable_class_constraints(instance)
+	disable_teacher_constraints(instance)
+
+	tt_data := instance.TtData
+
+	// Remove general constraints
+	for k := range tt_data.Constraints {
+		tt_data.Constraints[k] = nil
+	}
+
+	// ... and special ones
+	tt_data.MinDaysBetweenLessons = nil
+	tt_data.ParallelLessons = nil
+
+	// The room constraints are available in the `timetable.CourseInfo`
+	// items accessible via the `CourseInfo` pointer in the individual
+	// `timetable.Activity` items.
+	tt_data.WITHOUT_ROOM_PLACEMENTS = true
+}
+
+// Disable all class constraints
+func disable_class_constraints(instance *timetable.TtInstance) {
+	n := len(instance.TtData.Db.Classes)
+	for _, ci := range []int{
+		CMinLessonsPerDay,
+		CMaxLessonsPerDay,
+		CMaxAfternoons,
+		CLunchBreak,
+		CForceFirstHour,
+		CMaxGapsPerDay,
+		CMaxGapsPerWeek,
+	} {
+		f := cfmap[ci]
+		for i := range n {
+			f(instance, i, false)
+		}
+	}
+
+}
+
+// Disable all teacher constraints
+func disable_teacher_constraints(instance *timetable.TtInstance) {
+	n := len(instance.TtData.Db.Teachers)
+	for _, ci := range []int{
+		TMinLessonsPerDay,
+		TMaxLessonsPerDay,
+		TMaxAfternoons,
+		TMaxDays,
+		TLunchBreak,
+		TMaxGapsPerDay,
+		TMaxGapsPerWeek,
+	} {
+		f := cfmap[ci]
+		for i := range n {
+			f(instance, i, false)
+		}
+	}
+}
+
+// TODO???
+func binary_filter(
+	instance_0 *timetable.TtInstance,
+	tag string,
+	flist []func(*timetable.TtInstance) *timetable.TtData,
+) {
+	//TODO: It is probably not so good to start follow-ons here until their
+	// path has been confirmed correct.
+
+	//TODO: How to pass the activation lists to follow-ons?! I suppose it has
+	// to be in the TtInstance.
+
+	llen := len(flist)
+	if llen < 3 {
+		// special, linear, treatment
+	} else {
+		h := llen / 2
+
+		inst0 := newInstance(instance_0, tag) // TODO: tag ...
+		for _, f := range flist[:h] {
+			f(inst0)
+		}
+		//TODO: start it ...
+
+		// if fail: split further until succeed (or pass on unchanged)
+
+		// if succeed:
+
+		inst1 := newInstance(instance_0, tag) // TODO: tag ...
+		for _, f := range flist[h:] {
+			f(inst1)
+		}
+		//TODO: start it ...
+
+		// evaluate ...
+	}
+}
