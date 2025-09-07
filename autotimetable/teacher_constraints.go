@@ -176,3 +176,29 @@ func teacher_max_lessons_per_day(
 	instance.NewInstance <- instance
 	return instance
 }
+
+// Search for teachers having difficulties with the given constraint.
+//TODO: How to propagate the search parameters?
+/*
+func find_difficult_teachers(
+	instance_0 *timetable.TtInstance,
+	constraint int,
+) *timetable.TtInstance {
+
+	instance := newInstance(instance_0, "TEACHER__"+xxx)
+	f := cfmap[constraint]
+	n := len(instance.TtData_0.Db.Teachers)
+	if n < 4 {
+		//TODO: a linear test sequence
+	} else {
+		lim := n / 2
+		for i := range lim {
+			f(instance, i, false)
+		}
+	}
+
+	// Request start of instance
+	instance.NewInstance <- instance
+	return instance
+}
+*/

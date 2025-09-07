@@ -1,6 +1,9 @@
 package autotimetable
 
-import "W365toFET/timetable"
+import (
+	"W365toFET/timetable"
+	"slices"
+)
 
 /*
 The idea is for each constraint to have a function to switch the constraint
@@ -116,11 +119,85 @@ func disable_teacher_constraints(instance *timetable.TtInstance) {
 	}
 }
 
-// TODO???
-func binary_filter(
-	instance_0 *timetable.TtInstance,
+//TODO: To assist in reporting the difficult constraints, I suggest
+// maintaining a map (or list) of lists where the activation state of
+// each constraint is registered, once the test for a constraint type
+// are done.
+
+// TODO: Another attempt at binary (?) search patterns ...
+// Return a "working" subset
+func bs2(
+	instance *timetable.TtInstance,
+	constraint int,
+	index0 int,
+	number int,
 	tag string,
-	flist []func(*timetable.TtInstance) *timetable.TtData,
+) *timetable.TtInstance {
+	// Test the first half
+	h := number / 2
+
+	inst := newInstance(instance, tag+"_0")
+
+	inst.SearchInfo = &timetable.SearchInfo{
+		Constraint: constraint,
+		Index0:     index0,
+		Enabled:    slices.Repeat([]bool{true}, h),
+	}
+
+	//TODO ...
+	// run trial, waiting ...
+	// -> completed
+
+	switch inst.State {
+	case 1:
+		//TODO: succeeded: test 2nd half (bs)
+	case 5:
+		//TODO: process cancellation
+	default:
+		// failed, divide first half
+		inst = bs2(instance, constraint, index0, h, inst.Description)
+		//TODO: What about the 2nd half?
+	}
+
+	//TODO: update enabled matrix
+
+	// Second half
+	inst2 := newInstance(inst, instance.Description+"_1")
+	inst2.SearchInfo = &timetable.SearchInfo{
+		Constraint: constraint,
+		Index0:     h,
+		Enabled:    slices.Repeat([]bool{true}, number-h),
+	}
+
+	//TODO ...
+	// run trial, waiting ...
+	// -> completed
+
+	switch inst2.State {
+	case 1:
+		//TODO: succeeded: test 2nd half (bs)
+	case 5:
+		//TODO: process cancellation
+	default:
+		// failed, divide first half
+		inst2 = bs2(inst, constraint, index0, h, inst2.Description)
+		//TODO: What about the 2nd half?
+	}
+
+	//TODO: Set enabled constraints in matrix
+
+	return inst2 //??
+}
+
+// TODO???
+/*
+func search_constraint_difficulties(
+	instance *timetable.TtInstance,
+	constraint int,
+	index0 int,
+	number int,
+
+	//? tag string,
 ) {
 	//TODO: It is probably not so good to start follow-ons here until their
 	// path has been confirmed correct.
@@ -128,17 +205,37 @@ func binary_filter(
 	//TODO: How to pass the activation lists to follow-ons?! I suppose it has
 	// to be in the TtInstance.
 
-	llen := len(flist)
-	if llen < 3 {
+	if number < 4 {
 		// special, linear, treatment
 	} else {
-		h := llen / 2
+		h := number / 2
 
-		inst0 := newInstance(instance_0, tag) // TODO: tag ...
-		for _, f := range flist[:h] {
-			f(inst0)
+		{
+			inst0 := newInstance(instance, tag) // TODO: tag ...
+
+			si := &timetable.SearchInfo{
+				Constraint: constraint, Index0: index0, Enabled: make([]bool, h),
+			}
+			for i := range h {
+				si.Enabled[i] = true
+			}
+			inst0.SearchInfo = si
+
+			//TODO ...
 		}
-		//TODO: start it ...
+		{
+			inst1 := newInstance(instance, tag) // TODO: tag ...
+
+			si := &timetable.SearchInfo{
+				Constraint: constraint, Index0: index0, Enabled: make([]bool, h),
+			}
+			for i := h; i < number; i++ {
+				si.Enabled[i] = true
+			}
+			inst1.SearchInfo = si
+
+			//TODO: start it ...
+		}
 
 		// if fail: split further until succeed (or pass on unchanged)
 
@@ -153,3 +250,29 @@ func binary_filter(
 		// evaluate ...
 	}
 }
+
+func search_instance_succeeded(
+	instance_0 *timetable.TtInstance,
+) *timetable.TtInstance {
+	si := instance_0.SearchInfo
+	i := si.Index0
+	for range len(si.Enabled) {
+		si.Enabled[i] = true
+		i++
+	}
+	si.Done |= si.Part
+	if si.Done == 3 {
+		//TODO: Test together.
+		// There is a problem, though. What if it fails?
+		// Maybe the second half of the test should only be run when the
+		// first half has completed?
+	}
+	return nil
+}
+
+func search_instance_failed(
+	instance_0 *timetable.TtInstance,
+) *timetable.TtInstance {
+
+}
+*/

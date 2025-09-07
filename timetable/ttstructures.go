@@ -139,7 +139,11 @@ type ParallelLessons struct {
 }
 
 // ***********************************************************************
-// Structures and methods used in connection with the timetable "back-end"
+// Structures and methods used in connection with automation of the
+// timetable generation, in package `autotimetable`. Because they may also
+// be imported by the actual timetable "back-end" – which is also imported
+// by package `autotimetable`, they must be defined here (to avoid import
+// loops).
 
 type TtHandler interface {
 	Update(*TtInstance)
@@ -186,6 +190,10 @@ type TtInstance struct {
 	// `LastTime` is the `Ticks` value at which the `Progress` field was
 	// last updated.
 	LastTime int
+	// Record the enablement status of each constraint:
+	ConstraintEnableMatrix [][]bool
+	// Collate intermediate test results:
+	SearchInfo *SearchInfo
 	// `HandlerData` provides a field to be used by the timetable "back-end".
 	HandlerData     any
 	UpdateHandler   func(instance *TtInstance)
@@ -197,4 +205,14 @@ type TtInstance struct {
 	FailureInstance *TtInstance
 	OtherPaths      []TtChainedFunc
 	OtherInstances  []*TtInstance
+}
+
+type SearchInfo struct {
+	// This assumes a contiguous range of constraint indexes (from `index0`).
+	Constraint int
+	Index0     int
+	Enabled    []bool // with an entry for each constraint to be tested
+	Part       int    // 1 or 2
+	Done       int
+	NextPath   TtChainedFunc
 }

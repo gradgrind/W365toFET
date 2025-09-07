@@ -17,6 +17,13 @@ var MAXPROCESSES int = runtime.NumCPU() //TODO: use this?
 // TODO: At present this only supports a FET back-end. Perhaps a choice should
 // be possible ...
 
+//TODO: Suggestion for searches (binary or otherwise) using parallel
+// operations. A structure (with pointer to it in the TtInstance) could
+// contain the information needed to collate the results of a parallel run.
+// Some care may be needed to avoid race conditions – perhaps the updating can
+// be done in the tick handler? The follow-up could be registered for all
+// bracnches, but it would only be called when all the results were.
+
 /*
 A `TtInstance` structure is constructed to manage the data for each
 timetable generation run, each run having its own goroutine.
@@ -299,13 +306,14 @@ func newInstance(
 
 	// Make a new `TtInstance`
 	return &timetable.TtInstance{
-		Description: descriptor,
-		Ticks:       0,
-		WorkingDir:  instance_0.WorkingDir,
-		TtData_0:    instance_0.TtData_0,
-		TtData:      &tt_data,
-		NewInstance: instance_0.NewInstance,
-		Stop:        instance_0.Stop,
+		Description:            descriptor,
+		Ticks:                  0,
+		WorkingDir:             instance_0.WorkingDir,
+		TtData_0:               instance_0.TtData_0,
+		TtData:                 &tt_data,
+		NewInstance:            instance_0.NewInstance,
+		Stop:                   instance_0.Stop,
+		ConstraintEnableMatrix: instance_0.ConstraintEnableMatrix,
 	}
 }
 
