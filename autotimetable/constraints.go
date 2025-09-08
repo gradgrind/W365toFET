@@ -53,7 +53,8 @@ const (
 
 	// ...
 
-	LastConstraint // can be used for sizing function map, etc.
+	LastConstraint // not a real constraint, it can be used as the total
+	// number of constraints.
 )
 
 var cfmap [LastConstraint]func(*timetable.TtInstance, int, bool)
@@ -126,6 +127,7 @@ func disable_teacher_constraints(instance *timetable.TtInstance) {
 
 // TODO: Another attempt at binary (?) search patterns ...
 // Return a "working" subset
+// TODO: Do I still need SearchInfo?
 func bs2(
 	instance *timetable.TtInstance,
 	constraint int,
@@ -133,6 +135,35 @@ func bs2(
 	number int,
 	tag string,
 ) *timetable.TtInstance {
+	f := cfmap[constraint]
+	if number == 1 {
+		inst := newInstance(instance, tag)
+		inst.SearchInfo = &timetable.SearchInfo{
+			Constraint: constraint,
+			Index0:     index0,
+			Enabled:    []bool{true},
+		}
+
+		//??
+		f(inst, index0, true)
+
+		//TODO ...
+		// run trial, waiting ...
+		// -> completed
+
+		switch inst.State {
+		case 1:
+			//TODO: update enabled matrix
+			return inst //???
+		case 5:
+			//TODO: process cancellation
+			return nil //???
+		default:
+			// failed, divide first half
+			return instance //???
+		}
+	}
+
 	// Test the first half
 	h := number / 2
 
@@ -142,6 +173,13 @@ func bs2(
 		Constraint: constraint,
 		Index0:     index0,
 		Enabled:    slices.Repeat([]bool{true}, h),
+	}
+
+	//??
+	i := index0
+	for range h {
+		f(inst, i, true)
+		i++
 	}
 
 	//TODO ...
@@ -167,6 +205,13 @@ func bs2(
 		Constraint: constraint,
 		Index0:     h,
 		Enabled:    slices.Repeat([]bool{true}, number-h),
+	}
+
+	//??
+	i = h //TODO: unnecessary?
+	for range number - h {
+		f(inst, i, true)
+		i++
 	}
 
 	//TODO ...

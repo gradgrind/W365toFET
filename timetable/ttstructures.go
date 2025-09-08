@@ -207,6 +207,7 @@ type TtInstance struct {
 	OtherInstances  []*TtInstance
 }
 
+// TODO: Which bits are still needed?
 type SearchInfo struct {
 	// This assumes a contiguous range of constraint indexes (from `index0`).
 	Constraint int
@@ -214,5 +215,6 @@ type SearchInfo struct {
 	Enabled    []bool // with an entry for each constraint to be tested
 	Part       int    // 1 or 2
 	Done       int
-	NextPath   TtChainedFunc
+	//TODO--?
+	NextPath TtChainedFunc
 }

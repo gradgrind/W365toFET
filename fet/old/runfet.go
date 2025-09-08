@@ -17,7 +17,6 @@ func ttRunAbort(data any) {
 	data.(*fetTtData).cancel()
 }
 
-// This will block when FET runs, so it should be called in its own goroutine.
 func NewFet(instance *timetable.TtInstance) {
 	fname := instance.Description
 	dir_n := filepath.Join(instance.WorkingDir, fname)
@@ -64,6 +63,7 @@ func NewFet(instance *timetable.TtInstance) {
 	os.RemoveAll(odir)
 	logfile := filepath.Join(odir, "logs", "max_placed_activities.txt")
 
+	instance.Abort = ttRunAbort
 	ctx, cancel := context.WithCancel(context.Background())
 	// Note that it should be safe to call `cancel` multiple times.
 	fet_data := &fetTtData{
@@ -74,10 +74,19 @@ func NewFet(instance *timetable.TtInstance) {
 		cancel:     cancel,
 	}
 	instance.HandlerData = fet_data
+	instance.UpdateHandler = ttUpdate
+	go execfet(ctx, fet_data)
+}
 
+func execfet(
+	ctx context.Context,
+	fet_data *fetTtData,
+) {
+	//fmt.Printf("$ IN: %s\n", ifile)
+	//fmt.Printf("$ OUT: %s\n", odir)
 	runCmd := exec.CommandContext(ctx,
 		//runCmd := exec.Command(
-		"fet-cl", "--inputfile="+fetfile,
+		"fet-cl", "--inputfile="+fet_data.ifile,
 		"--writetimetablesstatistics=false",
 		"--writetimetablesdayshorizontal=false",
 		"--writetimetablesdaysvertical=false",
@@ -91,12 +100,8 @@ func NewFet(instance *timetable.TtInstance) {
 		"--writetimetablesbuildings=false",
 		"--writetimetablesrooms=false",
 		"--writetimetablessubjects=false",
-		"--outputdir="+odir,
+		"--outputdir="+fet_data.odir,
 	)
-
-	//TODO: Check for possible race conditions
-	instance.UpdateHandler = ttUpdate
-	instance.Abort = ttRunAbort
 
 	res, err := runCmd.Output()
 	if err == nil {
