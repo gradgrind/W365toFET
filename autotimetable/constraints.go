@@ -2,7 +2,6 @@ package autotimetable
 
 import (
 	"W365toFET/timetable"
-	"slices"
 )
 
 /*
@@ -138,12 +137,6 @@ func bs2(
 	f := cfmap[constraint]
 	if number == 1 {
 		inst := newInstance(instance, tag)
-		inst.SearchInfo = &timetable.SearchInfo{
-			Constraint: constraint,
-			Index0:     index0,
-			Enabled:    []bool{true},
-		}
-
 		//??
 		f(inst, index0, true)
 
@@ -151,12 +144,16 @@ func bs2(
 		// run trial, waiting ...
 		// -> completed
 
+		//TODO: inst.State may be wrong here, because that might be
+		// set later in tick loop ...
+
 		switch inst.State {
 		case 1:
-			//TODO: update enabled matrix
+			// Success: Update "enabled" matrix
+			inst.ConstraintEnableMatrix[constraint][index0] = true
 			return inst //???
 		case 5:
-			//TODO: process cancellation
+			// Process cancelled
 			return nil //???
 		default:
 			// failed, divide first half
@@ -169,13 +166,6 @@ func bs2(
 
 	inst := newInstance(instance, tag+"_0")
 
-	inst.SearchInfo = &timetable.SearchInfo{
-		Constraint: constraint,
-		Index0:     index0,
-		Enabled:    slices.Repeat([]bool{true}, h),
-	}
-
-	//??
 	i := index0
 	for range h {
 		f(inst, i, true)
@@ -188,27 +178,27 @@ func bs2(
 
 	switch inst.State {
 	case 1:
-		//TODO: succeeded: test 2nd half (bs)
+		// Success: Update "enabled" matrix
+		i = index0
+		for range h {
+			inst.ConstraintEnableMatrix[constraint][i] = true
+			i++
+		}
 	case 5:
-		//TODO: process cancellation
+		// Process cancelled
+		return nil //???
 	default:
-		// failed, divide first half
+		// Failed, divide first half
 		inst = bs2(instance, constraint, index0, h, inst.Description)
-		//TODO: What about the 2nd half?
+		if inst == nil {
+			return nil
+		}
 	}
-
-	//TODO: update enabled matrix
 
 	// Second half
 	inst2 := newInstance(inst, instance.Description+"_1")
-	inst2.SearchInfo = &timetable.SearchInfo{
-		Constraint: constraint,
-		Index0:     h,
-		Enabled:    slices.Repeat([]bool{true}, number-h),
-	}
 
-	//??
-	i = h //TODO: unnecessary?
+	i = h
 	for range number - h {
 		f(inst, i, true)
 		i++
@@ -220,16 +210,140 @@ func bs2(
 
 	switch inst2.State {
 	case 1:
-		//TODO: succeeded: test 2nd half (bs)
+		// Success: Update "enabled" matrix
+		i = h
+		for range number - h {
+			inst2.ConstraintEnableMatrix[constraint][i] = true
+			i++
+		}
 	case 5:
-		//TODO: process cancellation
+		// Process cancelled
+		return nil //???
 	default:
-		// failed, divide first half
-		inst2 = bs2(inst, constraint, index0, h, inst2.Description)
-		//TODO: What about the 2nd half?
+		// Failed, divide second half
+		inst2 = bs2(inst, constraint, h, number-h, inst2.Description)
 	}
 
-	//TODO: Set enabled constraints in matrix
+	return inst2 //??
+}
+
+var TIMEOUT_1 int = 30
+var TIMEOUT_2 int = 10
+
+func bs3(
+	instance *timetable.TtInstance,
+	constraint int,
+	index0 int,
+	number int,
+	tag string,
+) *timetable.TtInstance {
+	f := cfmap[constraint]
+
+	// Run with all constraints enabled
+	inst0 := newInstance(instance, tag+"_0")
+	i := index0
+	for range number {
+		f(inst0, i, true)
+		i++
+	}
+	inst0.Timeout = TIMEOUT_1
+	//TODO ...
+	// run trial in goroutine, don't wait here
+	// -> completed
+	// cc = 0 -> success: cancel subroutines? set flags, return inst0
+	// cc = 1 -> failed, do nothing except trigger untriggered fail process
+	// cc = -1 -> cancelled, return nil
+
+	//???
+
+	if number == 1 {
+		inst := newInstance(instance, tag)
+		//??
+		f(inst, index0, true)
+
+		//TODO ...
+		// run trial, waiting ...
+		// -> completed
+
+		//TODO: inst.State may be wrong here, because that might be
+		// set later in tick loop ...
+
+		switch inst.State {
+		case 1:
+			// Success: Update "enabled" matrix
+			inst.ConstraintEnableMatrix[constraint][index0] = true
+			return inst //???
+		case 5:
+			// Process cancelled
+			return nil //???
+		default:
+			// failed, divide first half
+			return instance //???
+		}
+	}
+
+	// Test the first half
+	h := number / 2
+
+	inst := newInstance(instance, tag+"_0")
+
+	i = index0
+	for range h {
+		f(inst, i, true)
+		i++
+	}
+
+	//TODO ...
+	// run trial, waiting ...
+	// -> completed
+
+	switch inst.State {
+	case 1:
+		// Success: Update "enabled" matrix
+		i = index0
+		for range h {
+			inst.ConstraintEnableMatrix[constraint][i] = true
+			i++
+		}
+	case 5:
+		// Process cancelled
+		return nil //???
+	default:
+		// Failed, divide first half
+		inst = bs2(instance, constraint, index0, h, inst.Description)
+		if inst == nil {
+			return nil
+		}
+	}
+
+	// Second half
+	inst2 := newInstance(inst, instance.Description+"_1")
+
+	i = h
+	for range number - h {
+		f(inst, i, true)
+		i++
+	}
+
+	//TODO ...
+	// run trial, waiting ...
+	// -> completed
+
+	switch inst2.State {
+	case 1:
+		// Success: Update "enabled" matrix
+		i = h
+		for range number - h {
+			inst2.ConstraintEnableMatrix[constraint][i] = true
+			i++
+		}
+	case 5:
+		// Process cancelled
+		return nil //???
+	default:
+		// Failed, divide second half
+		inst2 = bs2(inst, constraint, h, number-h, inst2.Description)
+	}
 
 	return inst2 //??
 }

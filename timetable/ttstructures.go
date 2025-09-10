@@ -193,7 +193,7 @@ type TtInstance struct {
 	// Record the enablement status of each constraint:
 	ConstraintEnableMatrix [][]bool
 	// Collate intermediate test results:
-	SearchInfo *SearchInfo
+	//SearchInfo *SearchInfo
 	// `HandlerData` provides a field to be used by the timetable "back-end".
 	HandlerData     any
 	UpdateHandler   func(instance *TtInstance)
