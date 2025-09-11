@@ -2,11 +2,12 @@ package timetable
 
 import (
 	"W365toFET/base"
+	"strings"
 )
 
-const (
-	C_HARD_DAYS_BETWEEN string = "HardDaysBetween"
-	C_SOFT_DAYS_BETWEEN string = "SoftDaysBetween"
+const ( // New, preprocessed constraint types
+	C_GENERAL_DAYS_BETWEEN string = "HardDaysBetween"
+	C_PARALLEL_ACTIVITIES  string = "ParallelActivities"
 )
 
 //TODO: Some more checks on duplicate or inconsistent constraints?
@@ -37,31 +38,20 @@ type TtDaysBetween struct {
 	ConsecutiveIfSameDay bool
 }
 
-func (tt_data *TtData) get_fixeds(cinfo *CourseInfo,
-) ([]ActivityIndex, []ActivityIndex) {
-	//for _, cinfo := range tt_data.CourseInfoList {
-	//cref := cinfo.Id
-	// Used to determine groups of activities to couple:
-	fixeds := []ActivityIndex{}
-	unfixeds := []ActivityIndex{}
-	for i, l := range cinfo.Lessons {
-		if l.Fixed {
-			fixeds = append(fixeds, cinfo.Activities[i])
-		} else {
-			unfixeds = append(unfixeds, cinfo.Activities[i])
-		}
-	}
-	//}
-	return fixeds, unfixeds
+type TtParallelActivities struct {
+	Constraint     string
+	Weight         int
+	Courses        []NodeRef // Courses or SuperCourses
+	ActivityGroups [][]ActivityIndex
 }
 
-func (tt_data *TtData) preprocessDaysBetween() {
+func (tt_data *TtData) preprocessConstraints() {
 	db := tt_data.Db
 
-	// Initialize the `differentDays` structure. If an "AutomaticDifferentDays"
-	// constraint is present (at most one is permitted), the `weight` and
-	// `consecutiveIfSameDay` fields will be set accordingly, otherwise the
-	// default weight (`base.MAXWEIGHT`, i.e. a hard constraint) will be used.
+	// If an "AutomaticDifferentDays" constraint is present (at most one is
+	// permitted), the `auto_weight` and `auto_consec` values will be set
+	// accordingly, otherwise the default weight (`base.MAXWEIGHT`, i.e.
+	// a hard constraint) will be used.
 
 	auto_weight := -1
 	auto_consec := false
@@ -84,21 +74,21 @@ func (tt_data *TtData) preprocessDaysBetween() {
 				continue
 			}
 		}
+
 		{
 			cn, ok := c.(*base.DaysBetween)
 			if ok {
 				for _, cref := range cn.Courses {
 					ddc := &TtDaysBetween{
+						Constraint:           C_GENERAL_DAYS_BETWEEN,
 						Weight:               cn.Weight,
 						Course:               cref,
 						DaysBetween:          cn.DaysBetween,
 						ConsecutiveIfSameDay: cn.ConsecutiveIfSameDay,
 					}
-					if cn.Weight == base.MAXWEIGHT {
-						ddc.Constraint = C_HARD_DAYS_BETWEEN
+					if c.IsHard() {
 						dd_hard = append(dd_hard, ddc)
 					} else {
-						ddc.Constraint = C_SOFT_DAYS_BETWEEN
 						dd_soft = append(dd_soft, ddc)
 					}
 					if cn.DaysBetween == 1 {
@@ -108,6 +98,79 @@ func (tt_data *TtData) preprocessDaysBetween() {
 				}
 				continue
 			}
+		}
+
+		{
+			cn, ok := c.(*base.ParallelCourses)
+			if ok {
+				// The courses must have the same number of lessons and the
+				// lengths of the corresponding lessons must also be the same.
+
+				//TODO: later ...
+				// A constraint is generated for each lesson of the courses.
+
+				// Check lesson lengths
+				footprint := []int{}         // activity durations
+				var alen int = 0             // number of activities in each course
+				var alists [][]ActivityIndex // collect the parallel activities
+				for i, cref := range cn.Courses {
+					cinfo := tt_data.Ref2CourseInfo[cref]
+					if i == 0 {
+						alen = len(cinfo.Activities)
+						alists = make([][]ActivityIndex, alen)
+					} else if len(cinfo.Activities) != alen {
+						//TODO: This is a data error
+						clist := []string{}
+						for _, cr := range cn.Courses {
+							clist = append(clist, string(cr))
+						}
+						base.Error.Fatalf("Parallel courses have different"+
+							" lessons: %s\n",
+							strings.Join(clist, ","))
+					}
+					for j, l := range cinfo.Lessons {
+						if i == 0 {
+							footprint = append(footprint, l.Duration)
+						} else if l.Duration != footprint[j] {
+							//TODO: This is a data error
+							clist := []string{}
+							for _, cr := range cn.Courses {
+								clist = append(clist, string(cr))
+							}
+							base.Error.Fatalf("Parallel courses have lesson"+
+								" mismatch: %s\n",
+								strings.Join(clist, ","))
+						}
+						alists[j] = append(alists[j], cinfo.Activities[j])
+					}
+				}
+				// alists is now a list of lists of parallel activity indexes.
+				cpa := &TtParallelActivities{
+					Constraint:     C_PARALLEL_ACTIVITIES,
+					Weight:         cn.Weight,
+					Courses:        cn.Courses,
+					ActivityGroups: alists,
+				}
+				if c.IsHard() {
+					tt_data.HardConstraints[C_PARALLEL_ACTIVITIES] = append(
+						tt_data.HardConstraints[C_PARALLEL_ACTIVITIES], cpa)
+				} else {
+					tt_data.SoftConstraints[C_PARALLEL_ACTIVITIES] = append(
+						tt_data.SoftConstraints[C_PARALLEL_ACTIVITIES], cpa)
+				}
+				continue
+			}
+		}
+
+		// Collect the other constraints according to type, but unmodified,
+		// separating them into hard and soft constraints,
+		ctype := c.CType()
+		if c.IsHard() {
+			tt_data.HardConstraints[ctype] = append(
+				tt_data.HardConstraints[ctype], c)
+		} else {
+			tt_data.SoftConstraints[ctype] = append(
+				tt_data.SoftConstraints[ctype], c)
 		}
 	}
 	// Add automatic constraints, where implied.
@@ -119,112 +182,37 @@ func (tt_data *TtData) preprocessDaysBetween() {
 
 		if len(cinfo.Lessons) > 1 && !noauto_ddays[cref] {
 			ddc := &TtDaysBetween{
+				Constraint:           C_GENERAL_DAYS_BETWEEN,
 				Weight:               auto_weight,
 				Course:               cref,
 				DaysBetween:          1,
 				ConsecutiveIfSameDay: auto_consec,
 			}
 			if auto_weight == base.MAXWEIGHT {
-				ddc.Constraint = C_HARD_DAYS_BETWEEN
 				dd_hard = append(dd_hard, ddc)
 			} else {
-				ddc.Constraint = C_SOFT_DAYS_BETWEEN
 				dd_soft = append(dd_soft, ddc)
 			}
 		}
 	}
 	// Now add these as new constraints to the constraint map
-	tt_data.Constraints[C_HARD_DAYS_BETWEEN] = dd_hard
-	tt_data.Constraints[C_SOFT_DAYS_BETWEEN] = dd_soft
+	tt_data.HardConstraints[C_GENERAL_DAYS_BETWEEN] = dd_hard
+	tt_data.SoftConstraints[C_GENERAL_DAYS_BETWEEN] = dd_soft
 }
-
-/*TODO Collect the categorized constraints:
-for _, c := range db.Constraints {
-	{
-		cn, ok := c.(*base.DaysBetweenJoin)
-		if ok {
-			c1 := tt_data.Ref2CourseInfo[cn.Course1]
-			c2 := tt_data.Ref2CourseInfo[cn.Course2]
-			for i1, l1 := range c1.Lessons {
-				for i2, l2 := range c2.Lessons {
-					if l1.Fixed && l2.Fixed {
-						// both fixed => no constraint
-						continue
-					}
-					mdba = append(mdba, MinDaysBetweenLessons{
-						Weight:               cn.Weight,
-						ConsecutiveIfSameDay: cn.ConsecutiveIfSameDay,
-						Activities: []ActivityIndex{
-							c1.Activities[i1], c2.Activities[i2]},
-						MinDays: cn.DaysBetween,
-					})
-				}
-			}
-			continue
-		}
-	}
-	{
-		cn, ok := c.(*base.ParallelCourses)
-		if ok {
-			// The courses must have the same number of lessons and the
-			// lengths of the corresponding lessons must also be the same.
-			// A constraint is generated for each lesson of the courses.
-
-			// Check lesson lengths
-			footprint := []int{}         // activity durations
-			var alen int = 0             // number of activities in each course
-			var alists [][]ActivityIndex // collect the parallel activities
-			for i, cref := range cn.Courses {
-				cinfo := tt_data.Ref2CourseInfo[cref]
-				if i == 0 {
-					alen = len(cinfo.Activities)
-					alists = make([][]ActivityIndex, alen)
-				} else if len(cinfo.Activities) != alen {
-					//TODO: This is a data error
-					clist := []string{}
-					for _, cr := range cn.Courses {
-						clist = append(clist, string(cr))
-					}
-					base.Error.Fatalf("Parallel courses have different"+
-						" lessons: %s\n",
-						strings.Join(clist, ","))
-				}
-				for j, l := range cinfo.Lessons {
-					if i == 0 {
-						footprint = append(footprint, l.Duration)
-					} else if l.Duration != footprint[j] {
-						//TODO: This is a data error
-						clist := []string{}
-						for _, cr := range cn.Courses {
-							clist = append(clist, string(cr))
-						}
-						base.Error.Fatalf("Parallel courses have lesson"+
-							" mismatch: %s\n",
-							strings.Join(clist, ","))
-					}
-					alists[j] = append(alists[j], cinfo.Activities[j])
-				}
-			}
-			// llists is now a list of lists of parallel activity indexes.
-			tt_data.ParallelLessons = append(tt_data.ParallelLessons,
-				ParallelLessons{
-					Weight:         cn.Weight,
-					ActivityGroups: alists,
-				})
-			continue
-		}
-	}
-	// Collect the other constraints according to type, but unmodified
-	ctype := c.CType()
-	tt_data.Constraints[ctype] = append(tt_data.Constraints[ctype], c)
-}
-*/
 
 // Convert a `TtDaysBetween` constraint to be based on activities.
 func (tt_data *TtData) days_between_activities(constraint *TtDaysBetween) {
 	cref := constraint.Course
 	cinfo := tt_data.Ref2CourseInfo[cref]
-	fixeds, unfixeds := tt_data.get_fixeds(cinfo)
+	fixeds := []ActivityIndex{}
+	unfixeds := []ActivityIndex{}
+	for i, l := range cinfo.Lessons {
+		if l.Fixed {
+			fixeds = append(fixeds, cinfo.Activities[i])
+		} else {
+			unfixeds = append(unfixeds, cinfo.Activities[i])
+		}
+	}
 
 	if len(unfixeds) == 0 || (len(fixeds) == 0 && len(unfixeds) == 1) {
 		// No constraints necessary
@@ -266,6 +254,30 @@ func (tt_data *TtData) days_between_activities(constraint *TtDaysBetween) {
 					ConsecutiveIfSameDay: constraint.ConsecutiveIfSameDay,
 					Activities:           alist,
 					MinDays:              constraint.DaysBetween,
+				})
+		}
+	}
+}
+
+// Convert a `DaysBetweenJoin` constraint to be based on activities.
+func (tt_data *TtData) days_between_join_activities(
+	constraint *base.DaysBetweenJoin,
+) {
+	c1 := tt_data.Ref2CourseInfo[constraint.Course1]
+	c2 := tt_data.Ref2CourseInfo[constraint.Course2]
+	for i1, l1 := range c1.Lessons {
+		for i2, l2 := range c2.Lessons {
+			if l1.Fixed && l2.Fixed {
+				// both fixed => no constraint
+				continue
+			}
+			tt_data.MinDaysBetweenLessons = append(
+				tt_data.MinDaysBetweenLessons, MinDaysBetweenLessons{
+					Weight:               constraint.Weight,
+					ConsecutiveIfSameDay: constraint.ConsecutiveIfSameDay,
+					Activities: []ActivityIndex{
+						c1.Activities[i1], c2.Activities[i2]},
+					MinDays: constraint.DaysBetween,
 				})
 		}
 	}

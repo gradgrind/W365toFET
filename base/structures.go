@@ -293,6 +293,7 @@ type LessonCourse interface {
 // implementation must have a distinguishing CType.
 type Constraint interface {
 	CType() string
+	IsHard() bool
 }
 
 // There is just one DbTopLevel. It is the root of the database.

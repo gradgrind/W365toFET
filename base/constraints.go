@@ -18,6 +18,10 @@ func (c *LessonsEndDay) CType() string {
 	return c.Constraint
 }
 
+func (c *LessonsEndDay) IsHard() bool {
+	return c.Weight == MAXWEIGHT
+}
+
 func (db *DbTopLevel) NewLessonsEndDay() *LessonsEndDay {
 	c := &LessonsEndDay{Constraint: "LessonsEndDay"}
 	db.addConstraint(c)
@@ -38,6 +42,10 @@ type BeforeAfterHour struct {
 
 func (c *BeforeAfterHour) CType() string {
 	return c.Constraint
+}
+
+func (c *BeforeAfterHour) IsHard() bool {
+	return c.Weight == MAXWEIGHT
 }
 
 func (db *DbTopLevel) NewBeforeAfterHour() *BeforeAfterHour {
@@ -61,6 +69,10 @@ func (c *AutomaticDifferentDays) CType() string {
 	return c.Constraint
 }
 
+func (c *AutomaticDifferentDays) IsHard() bool {
+	return c.Weight == MAXWEIGHT
+}
+
 func (db *DbTopLevel) NewAutomaticDifferentDays() *AutomaticDifferentDays {
 	c := &AutomaticDifferentDays{Constraint: "AutomaticDifferentDays"}
 	db.addConstraint(c)
@@ -82,6 +94,10 @@ type DaysBetween struct {
 
 func (c *DaysBetween) CType() string {
 	return c.Constraint
+}
+
+func (c *DaysBetween) IsHard() bool {
+	return c.Weight == MAXWEIGHT
 }
 
 func (db *DbTopLevel) NewDaysBetween() *DaysBetween {
@@ -109,6 +125,10 @@ func (c *DaysBetweenJoin) CType() string {
 	return c.Constraint
 }
 
+func (c *DaysBetweenJoin) IsHard() bool {
+	return c.Weight == MAXWEIGHT
+}
+
 func (db *DbTopLevel) NewDaysBetweenJoin() *DaysBetweenJoin {
 	c := &DaysBetweenJoin{Constraint: "DaysBetweenJoin"}
 	db.addConstraint(c)
@@ -128,6 +148,10 @@ type ParallelCourses struct {
 
 func (c *ParallelCourses) CType() string {
 	return c.Constraint
+}
+
+func (c *ParallelCourses) IsHard() bool {
+	return c.Weight == MAXWEIGHT
 }
 
 func (db *DbTopLevel) NewParallelCourses() *ParallelCourses {
@@ -151,13 +175,17 @@ func (c *DoubleLessonNotOverBreaks) CType() string {
 	return c.Constraint
 }
 
+func (c *DoubleLessonNotOverBreaks) IsHard() bool {
+	return c.Weight == MAXWEIGHT
+}
+
 func (db *DbTopLevel) NewDoubleLessonNotOverBreaks() *DoubleLessonNotOverBreaks {
 	c := &DoubleLessonNotOverBreaks{Constraint: "DoubleLessonNotOverBreaks"}
 	db.addConstraint(c)
 	return c
 }
 
-//TODO: Is this really useful? The W365 front end doesn't currently support it
+/* TODO: Is this really useful? The W365 front end doesn't currently support it
 // and the MinHoursFollowing may be more useful.
 // ++ NotOnSameDay
 
@@ -176,6 +204,7 @@ func (db *DbTopLevel) NewNotOnSameDay() *NotOnSameDay {
 	db.addConstraint(c)
 	return c
 }
+*/
 
 //TODO ... more?
 
@@ -191,6 +220,10 @@ type MinHoursFollowing struct {
 
 func (c *MinHoursFollowing) CType() string {
 	return c.Constraint
+}
+
+func (c *MinHoursFollowing) IsHard() bool {
+	return c.Weight == MAXWEIGHT
 }
 
 func (db *DbTopLevel) NewMinHoursFollowing() *MinHoursFollowing {

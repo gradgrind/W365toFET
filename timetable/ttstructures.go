@@ -49,10 +49,11 @@ type TtData struct {
 	CourseInfoList []*CourseInfo
 	Ref2CourseInfo map[NodeRef]*CourseInfo
 
-	Constraints map[string][]any
+	HardConstraints map[string][]any
+	SoftConstraints map[string][]any
 
+	// Can be set up, if needed, to unify days-between constraints
 	MinDaysBetweenLessons []MinDaysBetweenLessons
-	ParallelLessons       []ParallelLessons
 
 	WITHOUT_ROOM_PLACEMENTS bool // ignore room allocation constraints
 }
@@ -98,8 +99,9 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 		[]TtSlot{-1},
 		len(tt_data.Activities))
 
-	tt_data.Constraints = map[string][]any{}
-	tt_data.preprocessDaysBetween()
+	tt_data.HardConstraints = map[string][]any{}
+	tt_data.SoftConstraints = map[string][]any{}
+	tt_data.preprocessConstraints()
 
 	//TODO:? tt_data.processConstraints()
 

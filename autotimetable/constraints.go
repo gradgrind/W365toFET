@@ -87,13 +87,12 @@ func disable_all_constraints(instance *timetable.TtInstance) {
 	tt_data := instance.TtData
 
 	// Remove general constraints
-	for k := range tt_data.Constraints {
-		tt_data.Constraints[k] = nil
+	for k := range tt_data.SoftConstraints {
+		tt_data.SoftConstraints[k] = nil
 	}
-
-	// ... and special ones
-	tt_data.MinDaysBetweenLessons = nil
-	tt_data.ParallelLessons = nil
+	for k := range tt_data.HardConstraints {
+		tt_data.HardConstraints[k] = nil
+	}
 
 	// The room constraints are available in the `timetable.CourseInfo`
 	// items accessible via the `CourseInfo` pointer in the individual
