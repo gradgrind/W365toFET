@@ -11,7 +11,11 @@ import (
 	"time"
 )
 
-// TODO: It may well be desirable to be able to override this
+//TODO: Consider starting instances with each (used) constraint type, individually.
+// The first one which completes successfully could be taken as a new basis, to
+// which the next completed ones could be added sequentially ... until no time is left?
+
+// TODO: It may well be desirable to be able to override this – see also GOMAXPROCS
 var MAXPROCESSES int = runtime.NumCPU() //TODO: use this?
 
 // TODO: At present this only supports a FET back-end. Perhaps a choice should
@@ -306,14 +310,30 @@ func newInstance(
 
 	// Make a new `TtInstance`
 	return &timetable.TtInstance{
-		Description:            descriptor,
-		Ticks:                  0,
-		WorkingDir:             instance_0.WorkingDir,
-		TtData_0:               instance_0.TtData_0,
-		TtData:                 &tt_data,
+		Global:      instance_0.Global,
+		Description: descriptor,
+		//Ticks:                  0,
+		WorkingDir: instance_0.WorkingDir,
+		//TtData_0:               instance_0.TtData_0,
+		TtData: &tt_data,
+
 		NewInstance:            instance_0.NewInstance,
 		Stop:                   instance_0.Stop,
 		ConstraintEnableMatrix: instance_0.ConstraintEnableMatrix,
+	}
+}
+
+// TODO: This may need to be via a channel!
+func addInstance(
+	instance *timetable.TtInstance,
+	delay int,
+) {
+	gdata := instance.Global
+	instance.Delay = delay
+	gdata.Instances = append(gdata.Instances, instance)
+	if delay == 0 {
+		instance.Delay--
+		//go fet.RunFet(instance)
 	}
 }
 

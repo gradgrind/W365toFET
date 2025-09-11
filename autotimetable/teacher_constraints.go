@@ -1,6 +1,7 @@
 package autotimetable
 
 import (
+	"W365toFET/base"
 	"W365toFET/timetable"
 )
 
@@ -14,7 +15,7 @@ func init() {
 	) {
 		if enable {
 			instance.TtData.Db.Teachers[teacher].MinLessonsPerDay =
-				instance.TtData_0.Db.Teachers[teacher].MinLessonsPerDay
+				instance.Global.TtData_0.Db.Teachers[teacher].MinLessonsPerDay
 		} else {
 			instance.TtData.Db.Teachers[teacher].MinLessonsPerDay = -1
 		}
@@ -26,7 +27,7 @@ func init() {
 	) {
 		if enable {
 			instance.TtData.Db.Teachers[teacher].MaxLessonsPerDay =
-				instance.TtData_0.Db.Teachers[teacher].MaxLessonsPerDay
+				instance.Global.TtData_0.Db.Teachers[teacher].MaxLessonsPerDay
 		} else {
 			instance.TtData.Db.Teachers[teacher].MaxLessonsPerDay = -1
 		}
@@ -38,7 +39,7 @@ func init() {
 	) {
 		if enable {
 			instance.TtData.Db.Teachers[teacher].MaxAfternoons =
-				instance.TtData_0.Db.Teachers[teacher].MaxAfternoons
+				instance.Global.TtData_0.Db.Teachers[teacher].MaxAfternoons
 		} else {
 			instance.TtData.Db.Teachers[teacher].MaxAfternoons = -1
 		}
@@ -50,7 +51,7 @@ func init() {
 	) {
 		if enable {
 			instance.TtData.Db.Teachers[teacher].MaxDays =
-				instance.TtData_0.Db.Teachers[teacher].MaxDays
+				instance.Global.TtData_0.Db.Teachers[teacher].MaxDays
 		} else {
 			instance.TtData.Db.Teachers[teacher].MaxDays = -1
 		}
@@ -62,7 +63,7 @@ func init() {
 	) {
 		if enable {
 			instance.TtData.Db.Teachers[teacher].LunchBreak =
-				instance.TtData_0.Db.Teachers[teacher].LunchBreak
+				instance.Global.TtData_0.Db.Teachers[teacher].LunchBreak
 		} else {
 			instance.TtData.Db.Teachers[teacher].LunchBreak = false
 		}
@@ -74,7 +75,7 @@ func init() {
 	) {
 		if enable {
 			instance.TtData.Db.Teachers[teacher].MaxGapsPerDay =
-				instance.TtData_0.Db.Teachers[teacher].MaxGapsPerDay
+				instance.Global.TtData_0.Db.Teachers[teacher].MaxGapsPerDay
 		} else {
 			instance.TtData.Db.Teachers[teacher].MaxGapsPerDay = -1
 		}
@@ -86,11 +87,47 @@ func init() {
 	) {
 		if enable {
 			instance.TtData.Db.Teachers[teacher].MaxGapsPerWeek =
-				instance.TtData_0.Db.Teachers[teacher].MaxGapsPerWeek
+				instance.Global.TtData_0.Db.Teachers[teacher].MaxGapsPerWeek
 		} else {
 			instance.TtData.Db.Teachers[teacher].MaxGapsPerWeek = -1
 		}
 	}
+}
+
+// Gather the active teacher constraints, according to type
+func collect_teacher_comnstraints(teachers []*base.Teacher) map[int][]int {
+	t_constraints := map[int][]int{} // constraint -> list of teacher indexes
+	for i, t := range teachers {
+		if t.MinLessonsPerDay != -1 {
+			t_constraints[TMinLessonsPerDay] = append(
+				t_constraints[TMinLessonsPerDay], i)
+		}
+		if t.MaxLessonsPerDay != -1 {
+			t_constraints[TMaxLessonsPerDay] = append(
+				t_constraints[TMaxLessonsPerDay], i)
+		}
+		if t.MaxAfternoons != -1 {
+			t_constraints[TMaxAfternoons] = append(
+				t_constraints[TMaxAfternoons], i)
+		}
+		if t.MaxDays != -1 {
+			t_constraints[TMaxDays] = append(
+				t_constraints[TMaxDays], i)
+		}
+		if t.LunchBreak {
+			t_constraints[TLunchBreak] = append(
+				t_constraints[TLunchBreak], i)
+		}
+		if t.MaxGapsPerDay != -1 {
+			t_constraints[TMaxGapsPerDay] = append(
+				t_constraints[TMaxGapsPerDay], i)
+		}
+		if t.MaxGapsPerWeek != -1 {
+			t_constraints[TMaxGapsPerWeek] = append(
+				t_constraints[TMaxGapsPerWeek], i)
+		}
+	}
+	return t_constraints
 }
 
 //------------------------------------------------------------------

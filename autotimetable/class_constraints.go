@@ -1,6 +1,7 @@
 package autotimetable
 
 import (
+	"W365toFET/base"
 	"W365toFET/timetable"
 )
 
@@ -92,6 +93,42 @@ func init() {
 		}
 	}
 
+}
+
+// Gather the active class constraints, according to type
+func collect_class_comnstraints(classes []*base.Class) map[int][]int {
+	c_constraints := map[int][]int{} // constraint -> list of class indexes
+	for i, c := range classes {
+		if c.MinLessonsPerDay != -1 {
+			c_constraints[CMinLessonsPerDay] = append(
+				c_constraints[CMinLessonsPerDay], i)
+		}
+		if c.MaxLessonsPerDay != -1 {
+			c_constraints[CMaxLessonsPerDay] = append(
+				c_constraints[CMaxLessonsPerDay], i)
+		}
+		if c.MaxAfternoons != -1 {
+			c_constraints[CMaxAfternoons] = append(
+				c_constraints[CMaxAfternoons], i)
+		}
+		if c.ForceFirstHour {
+			c_constraints[CForceFirstHour] = append(
+				c_constraints[CForceFirstHour], i)
+		}
+		if c.LunchBreak {
+			c_constraints[CLunchBreak] = append(
+				c_constraints[CLunchBreak], i)
+		}
+		if c.MaxGapsPerDay != -1 {
+			c_constraints[CMaxGapsPerDay] = append(
+				c_constraints[CMaxGapsPerDay], i)
+		}
+		if c.MaxGapsPerWeek != -1 {
+			c_constraints[CMaxGapsPerWeek] = append(
+				c_constraints[CMaxGapsPerWeek], i)
+		}
+	}
+	return c_constraints
 }
 
 //------------------------------------------------------------------

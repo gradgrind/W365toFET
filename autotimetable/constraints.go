@@ -58,6 +58,27 @@ const (
 
 var cfmap [LastConstraint]func(*timetable.TtInstance, int, bool)
 
+var (
+	DELAY_1 int = 5
+)
+
+// TODO????
+func collect_constraints(tt_data *timetable.TtData) map[int][]any {
+	cmap := map[int][]any{}
+	return cmap
+}
+
+// TODO????
+func start_constraints(instance *timetable.TtInstance) {
+	// `instance` itself should have no constraints enabled
+
+	for k, c := range instance.TtData.Constraints {
+		if len(c) != 0 {
+
+		}
+	}
+}
+
 func disable_all_constraints(instance *timetable.TtInstance) {
 
 	disable_class_constraints(instance)
@@ -87,8 +108,8 @@ func disable_class_constraints(instance *timetable.TtInstance) {
 		CMinLessonsPerDay,
 		CMaxLessonsPerDay,
 		CMaxAfternoons,
-		CLunchBreak,
 		CForceFirstHour,
+		CLunchBreak,
 		CMaxGapsPerDay,
 		CMaxGapsPerWeek,
 	} {
@@ -227,10 +248,13 @@ func bs2(
 	return inst2 //??
 }
 
-var TIMEOUT_1 int = 30
-var TIMEOUT_2 int = 10
+//var TIMEOUT_1 int = 30
+//var TIMEOUT_2 int = 10
 
-func bs3(
+//TODO: Adjust the sub-timeouts to fit in the overall timeout?
+
+// Deal with a range of constraints of one type.
+func binchop2(
 	instance *timetable.TtInstance,
 	constraint int,
 	index0 int,
@@ -239,113 +263,61 @@ func bs3(
 ) *timetable.TtInstance {
 	f := cfmap[constraint]
 
-	// Run with all constraints enabled
-	inst0 := newInstance(instance, tag+"_0")
-	i := index0
-	for range number {
-		f(inst0, i, true)
-		i++
+	if number == 1 {
+		// No split possible
+
+		//TODO ...
+
+		return instance // failed
 	}
-	inst0.Timeout = TIMEOUT_1
-	//TODO ...
-	// run trial in goroutine, don't wait here
-	// -> completed
+
+	// Run with all constraints enabled
+	inst0 := newInstance(instance, tag)
+	for i := index0; i < number; i++ {
+		f(inst0, i, true)
+	}
+
+	// Run immediately: go fet.RunFet(inst0)
+	addInstance(inst0, 0)
+	// -> completed ???
 	// cc = 0 -> success: cancel subroutines? set flags, return inst0
 	// cc = 1 -> failed, do nothing except trigger untriggered fail process
 	// cc = -1 -> cancelled, return nil
 
-	//???
-
-	if number == 1 {
-		inst := newInstance(instance, tag)
-		//??
-		f(inst, index0, true)
-
-		//TODO ...
-		// run trial, waiting ...
-		// -> completed
-
-		//TODO: inst.State may be wrong here, because that might be
-		// set later in tick loop ...
-
-		switch inst.State {
-		case 1:
-			// Success: Update "enabled" matrix
-			inst.ConstraintEnableMatrix[constraint][index0] = true
-			return inst //???
-		case 5:
-			// Process cancelled
-			return nil //???
-		default:
-			// failed, divide first half
-			return instance //???
-		}
-	}
-
-	// Test the first half
+	//TODO: How to run this after a delay, DELAY_1?
+	// Test first half
 	h := number / 2
+	inst1 := binchop2(
+		instance,
+		constraint,
+		index0,
+		h,
+		tag+".0",
+	)
 
-	inst := newInstance(instance, tag+"_0")
+	// Test the second half, starting from the result of the first half,
+	// here no delay
+	inst2 := binchop2(
+		inst1,
+		constraint,
+		h,
+		number-h,
+		tag+".1",
+	)
 
-	i = index0
-	for range h {
-		f(inst, i, true)
-		i++
+	//TODO: Wait for timeout on inst0?
+
+	//TODO ...?
+	if inst0.State == 1 {
+		return inst0
 	}
-
-	//TODO ...
-	// run trial, waiting ...
-	// -> completed
-
-	switch inst.State {
-	case 1:
-		// Success: Update "enabled" matrix
-		i = index0
-		for range h {
-			inst.ConstraintEnableMatrix[constraint][i] = true
-			i++
-		}
-	case 5:
-		// Process cancelled
-		return nil //???
-	default:
-		// Failed, divide first half
-		inst = bs2(instance, constraint, index0, h, inst.Description)
-		if inst == nil {
-			return nil
-		}
+	if inst0.State < 0 { //??
+		return nil
 	}
-
-	// Second half
-	inst2 := newInstance(inst, instance.Description+"_1")
-
-	i = h
-	for range number - h {
-		f(inst, i, true)
-		i++
+	if inst2.State == 1 {
+		return inst2
 	}
-
-	//TODO ...
-	// run trial, waiting ...
-	// -> completed
-
-	switch inst2.State {
-	case 1:
-		// Success: Update "enabled" matrix
-		i = h
-		for range number - h {
-			inst2.ConstraintEnableMatrix[constraint][i] = true
-			i++
-		}
-	case 5:
-		// Process cancelled
-		return nil //???
-	default:
-		// Failed, divide second half
-		inst2 = bs2(inst, constraint, h, number-h, inst2.Description)
-	}
-
-	return inst2 //??
+	return instance
 }
 
 // TODO???

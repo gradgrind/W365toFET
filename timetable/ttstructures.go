@@ -98,7 +98,10 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 		[]TtSlot{-1},
 		len(tt_data.Activities))
 
-	tt_data.processConstraints()
+	tt_data.Constraints = map[string][]any{}
+	tt_data.preprocessDaysBetween()
+
+	//TODO:? tt_data.processConstraints()
 
 	//for _, mdbl := range tt_data.MinDaysBetweenLessons {
 	//	fmt.Printf("§§§ %v\n", mdbl)
@@ -125,6 +128,8 @@ func (tt_data *TtData) RoomResources() {
 	}
 }
 
+// TODO: Perhaps I need intermediate forms for these, so that for the
+// constraint enable switching I still have course-related constraints?
 type MinDaysBetweenLessons struct {
 	// Result of processing constraints DifferentDays and DaysBetween
 	Weight               int
@@ -163,15 +168,22 @@ type NewState struct {
 	Message string
 }
 
+type GlobalData struct {
+	Ticks     int
+	TtData_0  *TtData // original data
+	Instances []*TtInstance
+}
+
 type TtInstance struct {
+	Global *GlobalData
 	//Id    int
 	Description string
-	Ticks       int
-	WorkingDir  string
-	Timeout     int
+	//Ticks       int
+	WorkingDir string
+	Delay      int
+	//Timeout     int
 
-	TtData_0 *TtData // original data
-	TtData   *TtData // current (possibly modified) data
+	TtData *TtData // current (possibly modified) data
 
 	// Communication channels
 	Stop        chan bool
