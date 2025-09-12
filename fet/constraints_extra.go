@@ -78,8 +78,19 @@ func getExtraConstraints(fetinfo *fetInfo) {
 	//	fmt.Printf("CTYPE: %s\n", ctype)
 	//}
 
-	//TODO: When do these get generated?
-	for _, dbc := range fetinfo.tt_data.MinDaysBetweenLessons {
+	for _, dbc := range fetinfo.tt_data.HardMinDaysBetweenLessons {
+		tclist.ConstraintMinDaysBetweenActivities = append(
+			tclist.ConstraintMinDaysBetweenActivities,
+			minDaysBetweenActivities{
+				Weight_Percentage:       weight2fet(dbc.Weight),
+				Consecutive_If_Same_Day: dbc.ConsecutiveIfSameDay,
+				Number_of_Activities:    len(dbc.Activities),
+				Activity_Id:             dbc.Activities,
+				MinDays:                 dbc.MinDays,
+				Active:                  true,
+			})
+	}
+	for _, dbc := range fetinfo.tt_data.SoftMinDaysBetweenLessons {
 		tclist.ConstraintMinDaysBetweenActivities = append(
 			tclist.ConstraintMinDaysBetweenActivities,
 			minDaysBetweenActivities{

@@ -54,8 +54,12 @@ type TtData struct {
 	HardConstraints map[string][]any
 	SoftConstraints map[string][]any
 
-	// Can be set up, if needed, to unify days-between constraints
-	MinDaysBetweenLessons []MinDaysBetweenLessons
+	// Unify days-between constraints, and presents the relationship between
+	// activities rather than courses.
+	// Note that "ConsecutiveIfSameDay" is hard regardless of
+	// the weight.
+	HardMinDaysBetweenLessons []MinDaysBetweenLessons
+	SoftMinDaysBetweenLessons []MinDaysBetweenLessons
 
 	WITHOUT_ROOM_PLACEMENTS bool // ignore room allocation constraints
 }

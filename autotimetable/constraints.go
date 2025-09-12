@@ -3,7 +3,6 @@ package autotimetable
 import (
 	"W365toFET/fet"
 	"W365toFET/timetable"
-	"fmt"
 )
 
 /*
@@ -99,7 +98,7 @@ func start_constraints(instance *TtInstance) {
 
 	// Teacher constraints
 	tcmap := collect_teacher_constraints(db.Teachers)
-	fmt.Printf("§§§tcmap: %v\n", tcmap)
+	//fmt.Printf("§§§tcmap: %v\n", tcmap)
 	for cnx, txlist := range tcmap {
 		inst := newInstance(instance, cnx.String())
 		f := cfmap[cnx]
@@ -111,7 +110,7 @@ func start_constraints(instance *TtInstance) {
 
 	// Class constraints
 	ccmap := collect_class_constraints(db.Classes)
-	fmt.Printf("§§§ccmap: %v\n", ccmap)
+	//fmt.Printf("§§§ccmap: %v\n", ccmap)
 	for cnx, cxlist := range ccmap {
 		inst := newInstance(instance, cnx.String())
 		f := cfmap[cnx]
@@ -138,6 +137,8 @@ func start_constraints(instance *TtInstance) {
 		}
 		start_constraint_trial(inst)
 	}
+
+	//TODO: With rooms? Fixed und choices?
 }
 
 // TODO? A more efficient approach would be to accept a list of indexes ...
@@ -184,8 +185,9 @@ func set_hard_constraint_enable_state(
 	instance.TtData.HardConstraints[ctype] = newlist
 }
 
-// TODO
+// TODO: the daysbetween and daysbetweenjoin conversions!
 func start_constraint_trial(instance *TtInstance) {
+	timetable.PrepareSpecialConstraints(instance.TtData)
 	//fet.RunFet(instance.TtData)
 	go fet.RunFet(instance.TtData)
 	//fmt.Printf(" +++ %s: %v\n", instance.TtData.Description, instance.TtData.HardConstraints)

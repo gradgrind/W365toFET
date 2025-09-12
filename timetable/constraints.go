@@ -38,11 +38,19 @@ type TtDaysBetween struct {
 	ConsecutiveIfSameDay bool
 }
 
+func (c *TtDaysBetween) IsHard() bool {
+	return c.Weight == base.MAXWEIGHT
+}
+
 type TtParallelActivities struct {
 	Constraint     string
 	Weight         int
 	Courses        []NodeRef // Courses or SuperCourses
 	ActivityGroups [][]ActivityIndex
+}
+
+func (c *TtParallelActivities) IsHard() bool {
+	return c.Weight == base.MAXWEIGHT
 }
 
 func (tt_data *TtData) preprocessConstraints() {
@@ -200,8 +208,25 @@ func (tt_data *TtData) preprocessConstraints() {
 	tt_data.SoftConstraints[C_GENERAL_DAYS_BETWEEN] = dd_soft
 }
 
+func PrepareSpecialConstraints(tt_data *TtData) {
+	for _, c := range tt_data.HardConstraints["TtDaysBetween"] {
+		tt_data.days_between_activities(c.(*TtDaysBetween))
+	}
+	for _, c := range tt_data.SoftConstraints["TtDaysBetween"] {
+		tt_data.days_between_activities(c.(*TtDaysBetween))
+	}
+	for _, c := range tt_data.HardConstraints["DaysBetweenJoin"] {
+		tt_data.days_between_join_activities(c.(*base.DaysBetweenJoin))
+	}
+	for _, c := range tt_data.SoftConstraints["DaysBetweenJoin"] {
+		tt_data.days_between_join_activities(c.(*base.DaysBetweenJoin))
+	}
+}
+
 // Convert a `TtDaysBetween` constraint to be based on activities.
-func (tt_data *TtData) days_between_activities(constraint *TtDaysBetween) {
+func (tt_data *TtData) days_between_activities(
+	constraint *TtDaysBetween,
+) {
 	cref := constraint.Course
 	cinfo := tt_data.Ref2CourseInfo[cref]
 	fixeds := []ActivityIndex{}
@@ -248,13 +273,26 @@ func (tt_data *TtData) days_between_activities(constraint *TtDaysBetween) {
 					tt_data.View(cinfo))
 				continue
 			}
-			tt_data.MinDaysBetweenLessons = append(
-				tt_data.MinDaysBetweenLessons, MinDaysBetweenLessons{
-					Weight:               constraint.Weight,
-					ConsecutiveIfSameDay: constraint.ConsecutiveIfSameDay,
-					Activities:           alist,
-					MinDays:              constraint.DaysBetween,
-				})
+			if constraint.ConsecutiveIfSameDay ||
+				constraint.IsHard() {
+				// Note that "ConsecutiveIfSameDay" is hard regardless of
+				// the weight.
+				tt_data.HardMinDaysBetweenLessons = append(
+					tt_data.HardMinDaysBetweenLessons, MinDaysBetweenLessons{
+						Weight:               constraint.Weight,
+						ConsecutiveIfSameDay: constraint.ConsecutiveIfSameDay,
+						Activities:           alist,
+						MinDays:              constraint.DaysBetween,
+					})
+			} else {
+				tt_data.SoftMinDaysBetweenLessons = append(
+					tt_data.SoftMinDaysBetweenLessons, MinDaysBetweenLessons{
+						Weight:               constraint.Weight,
+						ConsecutiveIfSameDay: constraint.ConsecutiveIfSameDay,
+						Activities:           alist,
+						MinDays:              constraint.DaysBetween,
+					})
+			}
 		}
 	}
 }
@@ -271,14 +309,27 @@ func (tt_data *TtData) days_between_join_activities(
 				// both fixed => no constraint
 				continue
 			}
-			tt_data.MinDaysBetweenLessons = append(
-				tt_data.MinDaysBetweenLessons, MinDaysBetweenLessons{
-					Weight:               constraint.Weight,
-					ConsecutiveIfSameDay: constraint.ConsecutiveIfSameDay,
-					Activities: []ActivityIndex{
-						c1.Activities[i1], c2.Activities[i2]},
-					MinDays: constraint.DaysBetween,
-				})
+			if constraint.IsHard() || constraint.ConsecutiveIfSameDay {
+				// Note that "ConsecutiveIfSameDay" is hard regardless of
+				// the weight.
+				tt_data.HardMinDaysBetweenLessons = append(
+					tt_data.HardMinDaysBetweenLessons, MinDaysBetweenLessons{
+						Weight:               constraint.Weight,
+						ConsecutiveIfSameDay: constraint.ConsecutiveIfSameDay,
+						Activities: []ActivityIndex{
+							c1.Activities[i1], c2.Activities[i2]},
+						MinDays: constraint.DaysBetween,
+					})
+			} else {
+				tt_data.SoftMinDaysBetweenLessons = append(
+					tt_data.SoftMinDaysBetweenLessons, MinDaysBetweenLessons{
+						Weight:               constraint.Weight,
+						ConsecutiveIfSameDay: constraint.ConsecutiveIfSameDay,
+						Activities: []ActivityIndex{
+							c1.Activities[i1], c2.Activities[i2]},
+						MinDays: constraint.DaysBetween,
+					})
+			}
 		}
 	}
 }

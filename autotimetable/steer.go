@@ -311,7 +311,10 @@ func newInstance(
 	tt_data.SoftConstraints = scmap
 
 	// ... and of the special ones
-	tt_data.MinDaysBetweenLessons = slices.Clone(tt_data.MinDaysBetweenLessons)
+	tt_data.HardMinDaysBetweenLessons = slices.Clone(
+		tt_data.HardMinDaysBetweenLessons)
+	tt_data.SoftMinDaysBetweenLessons = slices.Clone(
+		tt_data.SoftMinDaysBetweenLessons)
 
 	// Copy the classes and teachers lists
 
