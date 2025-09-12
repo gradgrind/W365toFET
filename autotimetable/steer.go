@@ -2,7 +2,6 @@ package autotimetable
 
 import (
 	"W365toFET/base"
-	"W365toFET/fet"
 	"W365toFET/timetable"
 	"fmt"
 	"os"
@@ -68,7 +67,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 	// Open communication channels
 	stop := make(chan bool)
 	//TODO: Consider buffer size and blocking ...
-	make_instance := make(chan *timetable.TtInstance, 10)
+	make_instance := make(chan *TtInstance, 10)
 
 	{
 		// Provide an empty working directory.
@@ -83,15 +82,19 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 		// If it fails, just this instance should be wound up. Otherwise it
 		// should still be running when the whole process finishes, and would
 		// need stopping.
-		instance := &timetable.TtInstance{
+		instance := &TtInstance{
 			//Id:          0,
+			Global: &GlobalData{
+				Ticks:    0, //TODO?
+				TtData_0: tt_data_0,
+				//Instances: []*TtInstance{},
+			},
 			Description: "COMPLETE",
-			Ticks:       0,
-			WorkingDir:  workingdir,
-			Timeout:     0,
+			//Ticks:       0,
+			WorkingDir: workingdir,
+			//Timeout:     0,
 
-			TtData_0: tt_data_0,
-			TtData:   tt_data_0,
+			TtData: tt_data_0,
 
 			NewInstance: make_instance,
 			Stop:        stop,
@@ -100,12 +103,18 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 			Progress: 0,
 			LastTime: 0,
 
-			FailurePath: timetable.TtChainedFunc{
+			//TODO: Maybe not using these any more ...
+			FailurePath: TtChainedFunc{
 				Delay: 1, Func: test_sequence},
 
-			SuccessPath: timetable.TtChainedFunc{
+			SuccessPath: TtChainedFunc{
 				Delay: 0, Func: full_success},
 		}
+
+		inst := newInstance(instance, "ONLY_BLOCKED_SLOTS")
+		disable_all_constraints(inst)
+		start_constraints(inst)
+		return
 
 		// Request start of instance
 		make_instance <- instance
@@ -122,11 +131,11 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 	 * terminated by a `cancelAll` call will have its state set to -4.
 	 */
 
-	active_instances := map[*timetable.TtInstance]struct{}{}
-	inactive_instances := []*timetable.TtInstance{}
+	active_instances := map[*TtInstance]struct{}{}
+	inactive_instances := []*TtInstance{}
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
-	ended := []*timetable.TtInstance{}
+	ended := []*TtInstance{}
 loop:
 	for {
 		ended = ended[:0]
@@ -137,7 +146,7 @@ loop:
 			return
 		case new_instance := <-make_instance:
 			//TODO: The timetable "engine" should be replaceable.
-			fet.NewFet(new_instance)
+			//fet.NewFet(new_instance)
 			active_instances[new_instance] = struct{}{}
 		case <-ticker.C:
 			if len(active_instances) == 0 && len(inactive_instances) != 0 {
@@ -184,7 +193,7 @@ loop:
 					}
 					continue
 				}
-				inst.Ticks++
+				//inst.Ticks++
 				h := inst.UpdateHandler
 				if h != nil {
 					// The handler should only be set when the the process is
@@ -195,34 +204,39 @@ loop:
 					}
 				}
 
-				// Handle timeout
-				if timed_out(inst) {
-					inst.State = -1
-					inst.Abort(inst.HandlerData)
-					continue
-				}
+				/*
+					// Handle timeout
+					if timed_out(inst) {
+						inst.State = -1
+						//TODO: using an interface?
+						// inst.Abort(inst.HandlerData)
+						continue
+					}
+				*/
 
-				// Handle starting of follow-on paths after their delays
-				if inst.SuccessPath.Delay == inst.Ticks {
-					if inst.SuccessPath.Func != nil {
-						inst.SuccessInstance = inst.SuccessPath.Func(inst)
+				/*
+					// Handle starting of follow-on paths after their delays
+					if inst.SuccessPath.Delay == inst.Ticks {
+						if inst.SuccessPath.Func != nil {
+							inst.SuccessInstance = inst.SuccessPath.Func(inst)
+						}
+						inst.SuccessPath.Delay = -1 // flag already started
 					}
-					inst.SuccessPath.Delay = -1 // flag already started
-				}
-				if inst.FailurePath.Delay == inst.Ticks {
-					if inst.FailurePath.Func != nil {
-						inst.FailureInstance = inst.FailurePath.Func(inst)
+					if inst.FailurePath.Delay == inst.Ticks {
+						if inst.FailurePath.Func != nil {
+							inst.FailureInstance = inst.FailurePath.Func(inst)
+						}
+						inst.FailurePath.Delay = -1 // flag already started
 					}
-					inst.FailurePath.Delay = -1 // flag already started
-				}
-				for _, chfunc := range inst.OtherPaths {
-					if chfunc.Delay == inst.Ticks {
-						inst.OtherInstances = append(inst.OtherInstances,
-							chfunc.Func(inst))
-						//chfunc.Delay = -1
-						//inst.OtherPaths[i] = chfunc
+					for _, chfunc := range inst.OtherPaths {
+						if chfunc.Delay == inst.Ticks {
+							inst.OtherInstances = append(inst.OtherInstances,
+								chfunc.Func(inst))
+							//chfunc.Delay = -1
+							//inst.OtherPaths[i] = chfunc
+						}
 					}
-				}
+				*/
 			}
 			// Remove terminated instances from the active list
 			for _, inst := range ended {
@@ -240,12 +254,12 @@ loop:
 
 // Stop an instance and all of its children. Not only the "success" branch is
 // to be stopped, but also all the others.
-func cancelPath(instance *timetable.TtInstance) {
+func cancelPath(instance *TtInstance) {
 	if instance == nil {
 		return
 	}
 	if instance.State == 0 {
-		instance.Abort(instance.HandlerData)
+		//instance.Abort(instance.HandlerData)
 		instance.State = 5
 	}
 	cancelPath(instance.FailureInstance)
@@ -260,15 +274,15 @@ func cancelPath(instance *timetable.TtInstance) {
 
 // If the run with all constraints enabled succeeds, there is probably
 // no need for further diagnosis, so cancel all other instances.
-func full_success(instance_0 *timetable.TtInstance) *timetable.TtInstance {
+func full_success(instance_0 *TtInstance) *TtInstance {
 	cancelPath(instance_0.FailureInstance)
 	instance_0.FailureInstance = nil
 	return nil
 }
 
 func newInstance(
-	instance_0 *timetable.TtInstance, descriptor string,
-) *timetable.TtInstance {
+	instance_0 *TtInstance, descriptor string,
+) *TtInstance {
 	// Copy original TtData (shallow copy only!)
 	tt_data := *instance_0.TtData
 
@@ -282,15 +296,19 @@ func newInstance(
 	// and `DbTopLevel`.
 
 	// Make a copy of the general constraints lists
-	cmap := make(map[string][]any, len(tt_data.Constraints))
-	for k, v := range tt_data.Constraints {
-		cmap[k] = slices.Clone(v)
+	hcmap := make(map[string][]any, len(tt_data.HardConstraints))
+	for k, v := range tt_data.HardConstraints {
+		hcmap[k] = slices.Clone(v)
 	}
-	tt_data.Constraints = cmap
+	tt_data.HardConstraints = hcmap
+	scmap := make(map[string][]any, len(tt_data.SoftConstraints))
+	for k, v := range tt_data.SoftConstraints {
+		scmap[k] = slices.Clone(v)
+	}
+	tt_data.SoftConstraints = scmap
 
 	// ... and of the special ones
 	tt_data.MinDaysBetweenLessons = slices.Clone(tt_data.MinDaysBetweenLessons)
-	tt_data.ParallelLessons = slices.Clone(tt_data.ParallelLessons)
 
 	// Copy the classes and teachers lists
 
@@ -309,7 +327,7 @@ func newInstance(
 	db.Teachers = new_teachers
 
 	// Make a new `TtInstance`
-	return &timetable.TtInstance{
+	return &TtInstance{
 		Global:      instance_0.Global,
 		Description: descriptor,
 		//Ticks:                  0,
@@ -325,7 +343,7 @@ func newInstance(
 
 // TODO: This may need to be via a channel!
 func addInstance(
-	instance *timetable.TtInstance,
+	instance *TtInstance,
 	delay int,
 ) {
 	gdata := instance.Global
@@ -337,7 +355,7 @@ func addInstance(
 	}
 }
 
-func test_sequence(instance_0 *timetable.TtInstance) *timetable.TtInstance {
+func test_sequence(instance_0 *TtInstance) *TtInstance {
 	instance := newInstance(instance_0, "ONLY_BLOCKED_SLOTS")
 
 	// Keep only the hard-blocked time slots and the fixed activities.
@@ -345,17 +363,18 @@ func test_sequence(instance_0 *timetable.TtInstance) *timetable.TtInstance {
 	// Disable all the classes' and teachers' constraints.
 	disable_all_constraints(instance)
 
-	instance.SuccessPath = timetable.TtChainedFunc{
-		Delay: 0, Func: test_class_sequence}
+	//instance.SuccessPath = timetable.TtChainedFunc{
+	//	Delay: 0, Func: test_class_sequence}
 
 	// Request start of instance
 	instance.NewInstance <- instance
 	return instance
 }
 
+/*
 // This will probably need some tuning. There is probably no such thing as
 // an optimal algorithm, that depends very much on the data.
-func timed_out(instance *timetable.TtInstance) bool {
+func timed_out(instance *TtInstance) bool {
 	if instance.Timeout < 0 {
 		// This allows a complete override of the timeout feature.
 		// Unlike Timeout = 0 it will not try to catch runs which get
@@ -378,6 +397,7 @@ func timed_out(instance *timetable.TtInstance) bool {
 	}
 	return false
 }
+*/
 
 //
 /*

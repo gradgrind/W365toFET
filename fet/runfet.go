@@ -1,5 +1,6 @@
 package fet
 
+/*
 import (
 	"W365toFET/timetable"
 	"bufio"
@@ -205,3 +206,4 @@ exit:
 		instance.Message = data.state.Message
 	}
 }
+*/

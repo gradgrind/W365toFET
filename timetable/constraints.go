@@ -6,8 +6,8 @@ import (
 )
 
 const ( // New, preprocessed constraint types
-	C_GENERAL_DAYS_BETWEEN string = "HardDaysBetween"
-	C_PARALLEL_ACTIVITIES  string = "ParallelActivities"
+	C_GENERAL_DAYS_BETWEEN string = "TtDaysBetween"
+	C_PARALLEL_ACTIVITIES  string = "TtParallelActivities"
 )
 
 //TODO: Some more checks on duplicate or inconsistent constraints?

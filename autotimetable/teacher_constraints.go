@@ -2,14 +2,14 @@ package autotimetable
 
 import (
 	"W365toFET/base"
-	"W365toFET/timetable"
+	//"W365toFET/timetable"
 )
 
 // Each of these functions enables/disables a particular teacher constraint
 
 func init() {
 	cfmap[TMinLessonsPerDay] = func(
-		instance *timetable.TtInstance,
+		instance *TtInstance,
 		teacher int,
 		enable bool,
 	) {
@@ -21,7 +21,7 @@ func init() {
 		}
 	}
 	cfmap[TMaxLessonsPerDay] = func(
-		instance *timetable.TtInstance,
+		instance *TtInstance,
 		teacher int,
 		enable bool,
 	) {
@@ -33,7 +33,7 @@ func init() {
 		}
 	}
 	cfmap[TMaxAfternoons] = func(
-		instance *timetable.TtInstance,
+		instance *TtInstance,
 		teacher int,
 		enable bool,
 	) {
@@ -45,7 +45,7 @@ func init() {
 		}
 	}
 	cfmap[TMaxDays] = func(
-		instance *timetable.TtInstance,
+		instance *TtInstance,
 		teacher int,
 		enable bool,
 	) {
@@ -57,7 +57,7 @@ func init() {
 		}
 	}
 	cfmap[TLunchBreak] = func(
-		instance *timetable.TtInstance,
+		instance *TtInstance,
 		teacher int,
 		enable bool,
 	) {
@@ -69,7 +69,7 @@ func init() {
 		}
 	}
 	cfmap[TMaxGapsPerDay] = func(
-		instance *timetable.TtInstance,
+		instance *TtInstance,
 		teacher int,
 		enable bool,
 	) {
@@ -81,7 +81,7 @@ func init() {
 		}
 	}
 	cfmap[TMaxGapsPerWeek] = func(
-		instance *timetable.TtInstance,
+		instance *TtInstance,
 		teacher int,
 		enable bool,
 	) {
@@ -95,8 +95,11 @@ func init() {
 }
 
 // Gather the active teacher constraints, according to type
-func collect_teacher_comnstraints(teachers []*base.Teacher) map[int][]int {
-	t_constraints := map[int][]int{} // constraint -> list of teacher indexes
+func collect_teacher_constraints(
+	teachers []*base.Teacher,
+) map[ConstraintType][]int {
+	// constraint -> list of teacher indexes
+	t_constraints := map[ConstraintType][]int{}
 	for i, t := range teachers {
 		if t.MinLessonsPerDay != -1 {
 			t_constraints[TMinLessonsPerDay] = append(
@@ -131,9 +134,9 @@ func collect_teacher_comnstraints(teachers []*base.Teacher) map[int][]int {
 }
 
 //------------------------------------------------------------------
-
+/*
 func test_teacher_sequence(
-	instance_0 *timetable.TtInstance) *timetable.TtInstance {
+	instance_0 *TtInstance) *TtInstance {
 	// Make a new instance, reinstating all the teacher constraints
 
 	instance := newInstance(instance_0, "TEACHER_ALL_CONSTRAINTS")
@@ -162,7 +165,7 @@ func test_teacher_sequence(
 }
 
 func teachers_find_difficult_constraints(
-	instance_0 *timetable.TtInstance) *timetable.TtInstance {
+	instance_0 *TtInstance) *TtInstance {
 	instance := newInstance(instance_0, "TEACHER_MIN_LESSONS_PER_DAY")
 
 	disable_teacher_constraints(instance)
@@ -189,7 +192,7 @@ func teachers_find_difficult_constraints(
 }
 
 func teacher_max_lessons_per_day(
-	instance_0 *timetable.TtInstance) *timetable.TtInstance {
+	instance_0 *TtInstance) *TtInstance {
 	// Add the MinLessonsPerDay constraints
 
 	instance := newInstance(instance_0, "TEACHER_MAX_LESSONS_PER_DAY")
@@ -218,9 +221,9 @@ func teacher_max_lessons_per_day(
 //TODO: How to propagate the search parameters?
 /*
 func find_difficult_teachers(
-	instance_0 *timetable.TtInstance,
+	instance_0 *TtInstance,
 	constraint int,
-) *timetable.TtInstance {
+) *TtInstance {
 
 	instance := newInstance(instance_0, "TEACHER__"+xxx)
 	f := cfmap[constraint]

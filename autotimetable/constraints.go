@@ -2,6 +2,7 @@ package autotimetable
 
 import (
 	"W365toFET/timetable"
+	"fmt"
 )
 
 /*
@@ -31,10 +32,10 @@ the construction of the timetable possible.
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-// TODO: This probably needs to encompass ALL constraints ...
-// TODO: Map constraint indexes to constraint names?
+type ConstraintType int
+
 const (
-	TMinLessonsPerDay int = iota
+	TMinLessonsPerDay ConstraintType = iota
 	TMaxLessonsPerDay
 	TMaxAfternoons
 	TMaxDays
@@ -50,13 +51,31 @@ const (
 	CMaxGapsPerDay
 	CMaxGapsPerWeek
 
-	// ...
+	LessonsEndDay
+	BeforeAfterHour
+	DaysBetweenJoin
+	TtDaysBetween
+	ParallelCourses
+	MinHoursFollowing
+
+	DoubleLessonNotOverBreaks //??? This is a one-off, handle specially?
 
 	LastConstraint // not a real constraint, it can be used as the total
 	// number of constraints.
 )
 
-var cfmap [LastConstraint]func(*timetable.TtInstance, int, bool)
+// Associate enable/disable functions with the constraint indexes
+var cfmap [LastConstraint]func(*TtInstance, int, bool)
+
+// Associate constraint names with their indexes
+var cnmap map[string]ConstraintType
+
+func init() {
+	cnmap = make(map[string]ConstraintType, LastConstraint)
+	for cnx := range LastConstraint {
+		cnmap[cnx.String()] = cnx
+	}
+}
 
 var (
 	DELAY_1 int = 5
@@ -68,18 +87,105 @@ func collect_constraints(tt_data *timetable.TtData) map[int][]any {
 	return cmap
 }
 
-// TODO????
-func start_constraints(instance *timetable.TtInstance) {
+// TODO?
+func start_constraints(instance *TtInstance) {
 	// `instance` itself should have no constraints enabled
+	tt_data := instance.Global.TtData_0
+	db := tt_data.Db
 
-	for k, c := range instance.TtData.Constraints {
-		if len(c) != 0 {
-
+	// Teacher constraints
+	tcmap := collect_teacher_constraints(db.Teachers)
+	fmt.Printf("§§§tcmap: %v\n", tcmap)
+	for cnx, txlist := range tcmap {
+		inst := newInstance(instance, cnx.String())
+		f := cfmap[cnx]
+		for _, tx := range txlist {
+			f(inst, tx, true)
 		}
+		start_constraint_trial(inst)
+	}
+
+	// Class constraints
+	ccmap := collect_class_constraints(db.Classes)
+	fmt.Printf("§§§ccmap: %v\n", ccmap)
+	for cnx, cxlist := range ccmap {
+		inst := newInstance(instance, cnx.String())
+		f := cfmap[cnx]
+		for _, cx := range cxlist {
+			f(inst, cx, true)
+		}
+		start_constraint_trial(inst)
+	}
+
+	// Only hard constraints for now ...
+	for k, clist := range tt_data.HardConstraints {
+		if len(clist) == 0 {
+			panic("No constraints of type " + k)
+		}
+		cnx, ok := cnmap[k]
+		if !ok {
+			//TODO: This should just be a warning!
+			panic("(autotimetable) Unknown constraint type: " + k)
+			//continue
+		}
+		inst := newInstance(instance, k)
+		for i := range clist {
+			set_hard_constraint_enable_state(inst, cnx, i, true)
+		}
+		start_constraint_trial(inst)
 	}
 }
 
-func disable_all_constraints(instance *timetable.TtInstance) {
+// TODO? A more efficient approach would be to accept a list of indexes ...
+// ... or a range ...
+func set_hard_constraint_enable_state(
+	instance *TtInstance,
+	constraint_type ConstraintType,
+	index int,
+	enable bool,
+) {
+	if instance.HardConstraintEnabled == nil {
+		if !enable {
+			return
+		}
+		instance.HardConstraintEnabled = map[ConstraintType]map[int]bool{}
+	}
+	cmap, ok := instance.HardConstraintEnabled[constraint_type]
+	if !ok {
+		if !enable {
+			return
+		}
+		cmap = map[int]bool{}
+		instance.HardConstraintEnabled[constraint_type] = cmap
+	}
+	if enable {
+		if cmap[index] {
+			return
+		}
+		cmap[index] = true
+	} else {
+		if !cmap[index] {
+			return
+		}
+		cmap[index] = false
+	}
+	// Reconstruct the constraint list
+	newlist := []any{}
+	ctype := constraint_type.String()
+	for i, c := range instance.Global.TtData_0.HardConstraints[ctype] {
+		if cmap[i] {
+			newlist = append(newlist, c)
+		}
+	}
+	instance.TtData.HardConstraints[ctype] = newlist
+}
+
+// TODO
+func start_constraint_trial(instance *TtInstance) {
+	fmt.Printf(" +++ %s: %v\n", instance.Description, instance.TtData.HardConstraints)
+}
+
+func disable_all_constraints(instance *TtInstance) {
 
 	disable_class_constraints(instance)
 	disable_teacher_constraints(instance)
@@ -101,9 +207,9 @@ func disable_all_constraints(instance *timetable.TtInstance) {
 }
 
 // Disable all class constraints
-func disable_class_constraints(instance *timetable.TtInstance) {
+func disable_class_constraints(instance *TtInstance) {
 	n := len(instance.TtData.Db.Classes)
-	for _, ci := range []int{
+	for _, ci := range []ConstraintType{
 		CMinLessonsPerDay,
 		CMaxLessonsPerDay,
 		CMaxAfternoons,
@@ -121,9 +227,9 @@ func disable_class_constraints(instance *timetable.TtInstance) {
 }
 
 // Disable all teacher constraints
-func disable_teacher_constraints(instance *timetable.TtInstance) {
+func disable_teacher_constraints(instance *TtInstance) {
 	n := len(instance.TtData.Db.Teachers)
-	for _, ci := range []int{
+	for _, ci := range []ConstraintType{
 		TMinLessonsPerDay,
 		TMaxLessonsPerDay,
 		TMaxAfternoons,
@@ -148,12 +254,12 @@ func disable_teacher_constraints(instance *timetable.TtInstance) {
 // Return a "working" subset
 // TODO: Do I still need SearchInfo?
 func bs2(
-	instance *timetable.TtInstance,
+	instance *TtInstance,
 	constraint int,
 	index0 int,
 	number int,
 	tag string,
-) *timetable.TtInstance {
+) *TtInstance {
 	f := cfmap[constraint]
 	if number == 1 {
 		inst := newInstance(instance, tag)
@@ -254,12 +360,12 @@ func bs2(
 
 // Deal with a range of constraints of one type.
 func binchop2(
-	instance *timetable.TtInstance,
+	instance *TtInstance,
 	constraint int,
 	index0 int,
 	number int,
 	tag string,
-) *timetable.TtInstance {
+) *TtInstance {
 	f := cfmap[constraint]
 
 	if number == 1 {
@@ -322,7 +428,7 @@ func binchop2(
 // TODO???
 /*
 func search_constraint_difficulties(
-	instance *timetable.TtInstance,
+	instance *TtInstance,
 	constraint int,
 	index0 int,
 	number int,
@@ -382,8 +488,8 @@ func search_constraint_difficulties(
 }
 
 func search_instance_succeeded(
-	instance_0 *timetable.TtInstance,
-) *timetable.TtInstance {
+	instance_0 *TtInstance,
+) *TtInstance {
 	si := instance_0.SearchInfo
 	i := si.Index0
 	for range len(si.Enabled) {
@@ -401,8 +507,8 @@ func search_instance_succeeded(
 }
 
 func search_instance_failed(
-	instance_0 *timetable.TtInstance,
-) *timetable.TtInstance {
+	instance_0 *TtInstance,
+) *TtInstance {
 
 }
 */

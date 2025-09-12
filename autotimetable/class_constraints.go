@@ -2,92 +2,92 @@ package autotimetable
 
 import (
 	"W365toFET/base"
-	"W365toFET/timetable"
+	//"W365toFET/timetable"
 )
 
 // Each of these functions enables/disables a particular class constraint
 
 func init() {
 	cfmap[CMinLessonsPerDay] = func(
-		instance *timetable.TtInstance,
+		instance *TtInstance,
 		class int,
 		enable bool,
 	) {
 		if enable {
 			instance.TtData.Db.Classes[class].MinLessonsPerDay =
-				instance.TtData_0.Db.Classes[class].MinLessonsPerDay
+				instance.Global.TtData_0.Db.Classes[class].MinLessonsPerDay
 		} else {
 			instance.TtData.Db.Classes[class].MinLessonsPerDay = -1
 		}
 	}
 	cfmap[CMaxLessonsPerDay] = func(
-		instance *timetable.TtInstance,
+		instance *TtInstance,
 		class int,
 		enable bool,
 	) {
 		if enable {
 			instance.TtData.Db.Classes[class].MaxLessonsPerDay =
-				instance.TtData_0.Db.Classes[class].MaxLessonsPerDay
+				instance.Global.TtData_0.Db.Classes[class].MaxLessonsPerDay
 		} else {
 			instance.TtData.Db.Classes[class].MaxLessonsPerDay = -1
 		}
 	}
 	cfmap[CMaxAfternoons] = func(
-		instance *timetable.TtInstance,
+		instance *TtInstance,
 		class int,
 		enable bool,
 	) {
 		if enable {
 			instance.TtData.Db.Classes[class].MaxAfternoons =
-				instance.TtData_0.Db.Classes[class].MaxAfternoons
+				instance.Global.TtData_0.Db.Classes[class].MaxAfternoons
 		} else {
 			instance.TtData.Db.Classes[class].MaxAfternoons = -1
 		}
 	}
 	cfmap[CLunchBreak] = func(
-		instance *timetable.TtInstance,
+		instance *TtInstance,
 		class int,
 		enable bool,
 	) {
 		if enable {
 			instance.TtData.Db.Classes[class].LunchBreak =
-				instance.TtData_0.Db.Classes[class].LunchBreak
+				instance.Global.TtData_0.Db.Classes[class].LunchBreak
 		} else {
 			instance.TtData.Db.Classes[class].LunchBreak = false
 		}
 	}
 	cfmap[CForceFirstHour] = func(
-		instance *timetable.TtInstance,
+		instance *TtInstance,
 		class int,
 		enable bool,
 	) {
 		if enable {
 			instance.TtData.Db.Classes[class].ForceFirstHour =
-				instance.TtData_0.Db.Classes[class].ForceFirstHour
+				instance.Global.TtData_0.Db.Classes[class].ForceFirstHour
 		} else {
 			instance.TtData.Db.Classes[class].ForceFirstHour = false
 		}
 	}
 	cfmap[CMaxGapsPerDay] = func(
-		instance *timetable.TtInstance,
+		instance *TtInstance,
 		class int,
 		enable bool,
 	) {
 		if enable {
 			instance.TtData.Db.Classes[class].MaxGapsPerDay =
-				instance.TtData_0.Db.Classes[class].MaxGapsPerDay
+				instance.Global.TtData_0.Db.Classes[class].MaxGapsPerDay
 		} else {
 			instance.TtData.Db.Classes[class].MaxGapsPerDay = -1
 		}
 	}
 	cfmap[CMaxGapsPerWeek] = func(
-		instance *timetable.TtInstance,
+		instance *TtInstance,
 		class int,
 		enable bool,
 	) {
 		if enable {
 			instance.TtData.Db.Classes[class].MaxGapsPerWeek =
-				instance.TtData_0.Db.Classes[class].MaxGapsPerWeek
+				instance.Global.TtData_0.Db.Classes[class].MaxGapsPerWeek
 		} else {
 			instance.TtData.Db.Classes[class].MaxGapsPerWeek = -1
 		}
@@ -96,8 +96,10 @@ func init() {
 }
 
 // Gather the active class constraints, according to type
-func collect_class_comnstraints(classes []*base.Class) map[int][]int {
-	c_constraints := map[int][]int{} // constraint -> list of class indexes
+func collect_class_constraints(
+	classes []*base.Class,
+) map[ConstraintType][]int {
+	c_constraints := map[ConstraintType][]int{} // constraint -> list of class indexes
 	for i, c := range classes {
 		if c.MinLessonsPerDay != -1 {
 			c_constraints[CMinLessonsPerDay] = append(
@@ -132,9 +134,9 @@ func collect_class_comnstraints(classes []*base.Class) map[int][]int {
 }
 
 //------------------------------------------------------------------
-
+/*
 func test_class_sequence(
-	instance_0 *timetable.TtInstance) *timetable.TtInstance {
+	instance_0 *TtInstance) *TtInstance {
 	// Make a new instance, reinstating all the class constraints
 
 	instance := newInstance(instance_0, "CLASS_ALL_CONSTRAINTS")
@@ -161,7 +163,7 @@ func test_class_sequence(
 }
 
 func classes_find_difficult_constraints(
-	instance_0 *timetable.TtInstance) *timetable.TtInstance {
+	instance_0 *TtInstance) *TtInstance {
 	instance := newInstance(instance_0, "CLASS_MIN_LESSONS_PER_DAY")
 
 	disable_class_constraints(instance)
@@ -189,7 +191,7 @@ func classes_find_difficult_constraints(
 
 // Add the CMaxLessonsPerDay constraints
 func class_max_lessons_per_day(
-	instance_0 *timetable.TtInstance) *timetable.TtInstance {
+	instance_0 *TtInstance) *TtInstance {
 
 	instance := newInstance(instance_0, "CLASS_MAX_LESSONS_PER_DAY")
 
@@ -214,3 +216,4 @@ func class_max_lessons_per_day(
 	return instance
 
 }
+*/
