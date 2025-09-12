@@ -62,6 +62,15 @@ type TtData struct {
 	SoftMinDaysBetweenLessons []MinDaysBetweenLessons
 
 	WITHOUT_ROOM_PLACEMENTS bool // ignore room allocation constraints
+
+	BackEndData any // for use by the timetable generator itself
+	TickHandler func(*TtData)
+	Abort       func(*TtData)
+	State       int
+	Progress    int // percent
+	Ticks       int
+	LastTime    int // ticks at last Progress change
+	Message     string
 }
 
 type ClassDivision struct {

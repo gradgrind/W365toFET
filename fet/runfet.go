@@ -5,17 +5,18 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"strconv"
 )
 
-func ttRunAbort(data any) {
-	data.(*fetTtData).cancel()
+func ttRunAbort(tt_data *timetable.TtData) {
+	tt_data.BackEndData.(*fetTtData).cancel()
 }
 
-// This will block when FET runs, so it should be called in its own goroutine.
 func RunFet(tt_data *timetable.TtData) {
 	fname := tt_data.Description
 	dir_n := filepath.Join(tt_data.WorkingDir, fname)
@@ -68,14 +69,14 @@ func RunFet(tt_data *timetable.TtData) {
 	ctx, cancel := context.WithCancel(context.Background())
 	// Note that it should be safe to call `cancel` multiple times.
 	fet_data := &fetTtData{
+		state:      0,
 		activities: len(tt_data.Activities),
 		ifile:      fetfile,
 		odir:       odir,
 		logfile:    logfile,
 		cancel:     cancel,
 	}
-	//TODO:
-	//instance.HandlerData = fet_data
+	tt_data.BackEndData = fet_data
 
 	runCmd := exec.CommandContext(ctx,
 		//runCmd := exec.Command(
@@ -97,10 +98,14 @@ func RunFet(tt_data *timetable.TtData) {
 	)
 
 	//TODO: Deal with this and check for possible race conditions
-	//instance.UpdateHandler = ttUpdate
-	//instance.Abort = ttRunAbort
+	tt_data.TickHandler = ttTick
+	tt_data.Abort = ttRunAbort
 
-	res, err := runCmd.Output()
+	go run(fet_data, runCmd)
+}
+
+func run(fet_data *fetTtData, cmd *exec.Cmd) {
+	res, err := cmd.Output()
 	if err == nil {
 		fet_data.state = 1
 		fet_data.message = string(res)
@@ -149,12 +154,10 @@ type fetTtData struct {
 	cancel     func()
 }
 
-/*
-// `ttUpdate` runs in the event loop, so it may update the instance data.
-// It is called on every "tick".
-func ttUpdate(instance *timetable.TtInstance) {
-	data := instance.HandlerData.(*fetTtData)
-	finished := data.state.State > 0
+// `ttTick` runs in the "tick" loop.
+func ttTick(tt_data *timetable.TtData) {
+	data := tt_data.BackEndData.(*fetTtData)
+	finished := data.state > 0
 	if data.reader == nil {
 		// Await the existence of the log file
 		file, err := os.Open(data.logfile)
@@ -177,11 +180,11 @@ func ttUpdate(instance *timetable.TtInstance) {
 					count, err := strconv.Atoi(string(l[2]))
 					if err == nil {
 						percent := count * 100 /
-							(len(instance.TtData.Activities) - 1)
-						if percent > instance.Progress {
-							instance.Progress = percent
-							instance.LastTime = instance.Ticks
-							fmt.Println(instance.Description, percent, "@", instance.Ticks)
+							(len(tt_data.Activities) - 1)
+						if percent > tt_data.Progress {
+							tt_data.Progress = percent
+							tt_data.LastTime = tt_data.Ticks
+							fmt.Println(tt_data.Description, percent, "@", tt_data.Ticks)
 						}
 					}
 				}
@@ -195,18 +198,17 @@ exit:
 		if data.rdfile != nil {
 			data.rdfile.Close()
 		}
-		if data.state.State == 1 {
+		tt_data.Message = data.message
+		if data.state == 1 {
 			// cc = 0 does not absolutely guarantee that the timetable is
 			// complete – when fet-cl is interrupted, for example
-			if instance.Progress == 100 {
-				instance.State = 1
+			if tt_data.Progress == 100 {
+				tt_data.State = 1
 			} else {
-				instance.State = 4
+				tt_data.State = 4
 			}
 		} else {
-			instance.State = data.state.State
+			tt_data.State = data.state
 		}
-		instance.Message = data.state.Message
 	}
 }
-*/
