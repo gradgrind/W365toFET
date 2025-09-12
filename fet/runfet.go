@@ -1,17 +1,14 @@
 package fet
 
-/*
 import (
 	"W365toFET/timetable"
 	"bufio"
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
-	"strconv"
 )
 
 func ttRunAbort(data any) {
@@ -19,9 +16,9 @@ func ttRunAbort(data any) {
 }
 
 // This will block when FET runs, so it should be called in its own goroutine.
-func NewFet(instance *timetable.TtInstance) {
-	fname := instance.Description
-	dir_n := filepath.Join(instance.WorkingDir, fname)
+func RunFet(tt_data *timetable.TtData) {
+	fname := tt_data.Description
+	dir_n := filepath.Join(tt_data.WorkingDir, fname)
 
 	//err := os.MkdirAll(newpath, os.ModePerm)
 	err := os.Mkdir(dir_n, 0755)
@@ -33,7 +30,7 @@ func NewFet(instance *timetable.TtInstance) {
 	mapfile := stemfile + ".map"
 
 	// Construct the FET-file
-	xmlitem, lessonIdMap := MakeFetFile(instance.TtData)
+	xmlitem, lessonIdMap := MakeFetFile(tt_data)
 
 	// Write FET file
 	f, err := os.Create(fetfile)
@@ -60,6 +57,9 @@ func NewFet(instance *timetable.TtInstance) {
 	}
 	//fmt.Printf("Id-map written to: %s\n", mapfile)
 
+	//TODO--
+	//return
+
 	cwd := filepath.Dir(fetfile)
 	odir := filepath.Join(cwd, "out")
 	os.RemoveAll(odir)
@@ -68,13 +68,14 @@ func NewFet(instance *timetable.TtInstance) {
 	ctx, cancel := context.WithCancel(context.Background())
 	// Note that it should be safe to call `cancel` multiple times.
 	fet_data := &fetTtData{
-		activities: len(instance.TtData.Activities),
+		activities: len(tt_data.Activities),
 		ifile:      fetfile,
 		odir:       odir,
 		logfile:    logfile,
 		cancel:     cancel,
 	}
-	instance.HandlerData = fet_data
+	//TODO:
+	//instance.HandlerData = fet_data
 
 	runCmd := exec.CommandContext(ctx,
 		//runCmd := exec.Command(
@@ -95,14 +96,14 @@ func NewFet(instance *timetable.TtInstance) {
 		"--outputdir="+odir,
 	)
 
-	//TODO: Check for possible race conditions
-	instance.UpdateHandler = ttUpdate
-	instance.Abort = ttRunAbort
+	//TODO: Deal with this and check for possible race conditions
+	//instance.UpdateHandler = ttUpdate
+	//instance.Abort = ttRunAbort
 
 	res, err := runCmd.Output()
 	if err == nil {
-		fet_data.state = timetable.NewState{
-			State: 1, Message: string(res)}
+		fet_data.state = 1
+		fet_data.message = string(res)
 	} else {
 		switch e := err.(type) {
 		case *exec.Error:
@@ -117,12 +118,12 @@ func NewFet(instance *timetable.TtInstance) {
 				fet_data.ifile, e.ExitCode())
 			if e.ExitCode() < 0 {
 				// aborted
-				fet_data.state = timetable.NewState{
-					State: 3, Message: string(res)}
+				fet_data.state = 3
+				fet_data.message = string(res)
 			} else {
 				// error completion
-				fet_data.state = timetable.NewState{
-					State: 2, Message: string(res)}
+				fet_data.state = 2
+				fet_data.message = string(res)
 			}
 		default:
 			panic(err)
@@ -137,7 +138,8 @@ var pattern = "time (.*), FET reached ([0-9]+)"
 var re *regexp.Regexp = regexp.MustCompile(pattern)
 
 type fetTtData struct {
-	state      timetable.NewState
+	state      int
+	message    string
 	activities int // total number of activities to place
 	ifile      string
 	odir       string
@@ -147,6 +149,7 @@ type fetTtData struct {
 	cancel     func()
 }
 
+/*
 // `ttUpdate` runs in the event loop, so it may update the instance data.
 // It is called on every "tick".
 func ttUpdate(instance *timetable.TtInstance) {

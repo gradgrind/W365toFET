@@ -8,10 +8,8 @@ import "W365toFET/timetable"
 type TtInstance struct {
 	Global *GlobalData
 	//Id    int
-	Description string
 	//Ticks       int
-	WorkingDir string
-	Delay      int
+	Delay int
 	//Timeout     int
 
 	TtData *timetable.TtData // current (possibly modified) data

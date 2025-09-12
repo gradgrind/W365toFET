@@ -16,6 +16,8 @@ type TtSlot int16
 
 // A TtData is the top-level structure for the timetable data.
 type TtData struct {
+	Description  string
+	WorkingDir   string
 	Db           *base.DbTopLevel
 	NDays        int
 	NHours       int

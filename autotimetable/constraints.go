@@ -1,6 +1,7 @@
 package autotimetable
 
 import (
+	"W365toFET/fet"
 	"W365toFET/timetable"
 	"fmt"
 )
@@ -33,6 +34,9 @@ the construction of the timetable possible.
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
 type ConstraintType int
+
+// Run in this directory to generate the String() method:
+// stringer --type ConstraintType
 
 const (
 	TMinLessonsPerDay ConstraintType = iota
@@ -182,7 +186,9 @@ func set_hard_constraint_enable_state(
 
 // TODO
 func start_constraint_trial(instance *TtInstance) {
-	fmt.Printf(" +++ %s: %v\n", instance.Description, instance.TtData.HardConstraints)
+	//fet.RunFet(instance.TtData)
+	go fet.RunFet(instance.TtData)
+	//fmt.Printf(" +++ %s: %v\n", instance.TtData.Description, instance.TtData.HardConstraints)
 }
 
 func disable_all_constraints(instance *TtInstance) {
@@ -315,14 +321,14 @@ func bs2(
 		return nil //???
 	default:
 		// Failed, divide first half
-		inst = bs2(instance, constraint, index0, h, inst.Description)
+		inst = bs2(instance, constraint, index0, h, inst.TtData.Description)
 		if inst == nil {
 			return nil
 		}
 	}
 
 	// Second half
-	inst2 := newInstance(inst, instance.Description+"_1")
+	inst2 := newInstance(inst, instance.TtData.Description+"_1")
 
 	i = h
 	for range number - h {
@@ -347,7 +353,7 @@ func bs2(
 		return nil //???
 	default:
 		// Failed, divide second half
-		inst2 = bs2(inst, constraint, h, number-h, inst2.Description)
+		inst2 = bs2(inst, constraint, h, number-h, inst2.TtData.Description)
 	}
 
 	return inst2 //??

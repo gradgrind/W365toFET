@@ -70,6 +70,9 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 	make_instance := make(chan *TtInstance, 10)
 
 	{
+		tt_data_0.Description = "COMPLETE"
+		tt_data_0.WorkingDir = workingdir
+
 		// Provide an empty working directory.
 		os.RemoveAll(workingdir)
 		err := os.Mkdir(workingdir, 0755)
@@ -89,9 +92,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 				TtData_0: tt_data_0,
 				//Instances: []*TtInstance{},
 			},
-			Description: "COMPLETE",
 			//Ticks:       0,
-			WorkingDir: workingdir,
 			//Timeout:     0,
 
 			TtData: tt_data_0,
@@ -111,9 +112,11 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 				Delay: 0, Func: full_success},
 		}
 
+		//TODO???
 		inst := newInstance(instance, "ONLY_BLOCKED_SLOTS")
 		disable_all_constraints(inst)
 		start_constraints(inst)
+		time.Sleep(20 * time.Second)
 		return
 
 		// Request start of instance
@@ -245,7 +248,7 @@ loop:
 				}
 				delete(active_instances, inst)
 
-				fmt.Println("=== End:", inst.Description, inst.State, inst.Progress)
+				fmt.Println("=== End:", inst.TtData.Description, inst.State, inst.Progress)
 			}
 		}
 	}
@@ -326,12 +329,13 @@ func newInstance(
 	}
 	db.Teachers = new_teachers
 
+	tt_data.Description = descriptor
+
 	// Make a new `TtInstance`
 	return &TtInstance{
-		Global:      instance_0.Global,
-		Description: descriptor,
+		Global: instance_0.Global,
+
 		//Ticks:                  0,
-		WorkingDir: instance_0.WorkingDir,
 		//TtData_0:               instance_0.TtData_0,
 		TtData: &tt_data,
 
