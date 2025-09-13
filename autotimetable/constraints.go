@@ -172,7 +172,7 @@ func set_hard_constraint_enable_state(
 
 func start_constraint_trial(instance *TtInstance) {
 	timetable.PrepareSpecialConstraints(instance.TtData)
-	TtGenerate(instance.TtData)
+	instance.NewInstance <- instance // register with tick loop
 	//fmt.Printf(" +++ %s: %v\n", instance.TtData.Description, instance.TtData.HardConstraints)
 }
 

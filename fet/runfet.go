@@ -11,13 +11,14 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"sync"
 )
 
 func ttRunAbort(tt_data *timetable.TtData) {
 	tt_data.BackEndData.(*fetTtData).cancel()
 }
 
-func RunFet(tt_data *timetable.TtData) {
+func RunFet(tt_data *timetable.TtData, waitgroup *sync.WaitGroup) {
 	fname := tt_data.Description
 	dir_n := filepath.Join(tt_data.WorkingDir, fname)
 
@@ -101,14 +102,22 @@ func RunFet(tt_data *timetable.TtData) {
 	tt_data.TickHandler = ttTick
 	tt_data.Abort = ttRunAbort
 
-	go run(fet_data, runCmd)
+	waitgroup.Add(1)
+	go func() {
+		defer waitgroup.Done()
+		run(fet_data, runCmd)
+	}()
+
+	//go run(fet_data, waitgroup, runCmd)
 }
 
+// The last item to be changed must be `fet_data.state`, to avoid slightly
+// possible race conditions.
 func run(fet_data *fetTtData, cmd *exec.Cmd) {
 	res, err := cmd.Output()
 	if err == nil {
-		fet_data.state = 1
 		fet_data.message = string(res)
+		fet_data.state = 1
 	} else {
 		switch e := err.(type) {
 		case *exec.Error:
@@ -123,12 +132,12 @@ func run(fet_data *fetTtData, cmd *exec.Cmd) {
 				fet_data.ifile, e.ExitCode())
 			if e.ExitCode() < 0 {
 				// aborted
-				fet_data.state = 3
 				fet_data.message = string(res)
+				fet_data.state = 3
 			} else {
 				// error completion
-				fet_data.state = 2
 				fet_data.message = string(res)
+				fet_data.state = 2
 			}
 		default:
 			panic(err)

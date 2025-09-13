@@ -5,8 +5,11 @@ import (
 	"W365toFET/timetable"
 	"fmt"
 	"os"
+	"os/signal"
 	"runtime"
 	"slices"
+	"sync"
+	"syscall"
 	"time"
 )
 
@@ -58,18 +61,27 @@ var Descriptions map[string]string = map[string]string{
 // TODO?
 var TEST_TIMEOUT = 10 // ticks for quick test functions
 
-var TtGenerate func(*timetable.TtData)
+var TtGenerate func(*timetable.TtData, *sync.WaitGroup)
 
 func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
+
+	// Catch termination signal
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+
+	// Wait group to ensure all goroutines finish before exiting
+	var wg sync.WaitGroup
 
 	// `workingdir` provides the path to a working directory which can be used
 	// freely during processing. It may or may not already exist, existing
 	// contents need not be preserved during processing.
 
+	//TODO? stop still needed?
 	// Open communication channels
 	stop := make(chan bool)
+
 	//TODO: Consider buffer size and blocking ...
-	make_instance := make(chan *TtInstance, 10)
+	add_instance := make(chan *TtInstance, 10)
 
 	{
 		tt_data_0.Description = "COMPLETE"
@@ -94,35 +106,45 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 				TtData_0: tt_data_0,
 				//Instances: []*TtInstance{},
 			},
+			Delay: 0,
 			//Ticks:       0,
 			//Timeout:     0,
 
 			TtData: tt_data_0,
 
-			NewInstance: make_instance,
-			Stop:        stop,
+			NewInstance: add_instance,
+			//Stop:        stop,
+			WaitGroup: &wg,
 
-			State:    0,
-			Progress: 0,
-			LastTime: 0,
+			//State:    0,
+			//Progress: 0,
+			//LastTime: 0,
 
 			//TODO: Maybe not using these any more ...
-			FailurePath: TtChainedFunc{
-				Delay: 1, Func: test_sequence},
+			//FailurePath: TtChainedFunc{
+			//	Delay: 1, Func: test_sequence},
 
-			SuccessPath: TtChainedFunc{
-				Delay: 0, Func: full_success},
+			//SuccessPath: TtChainedFunc{
+			//	Delay: 0, Func: full_success},
 		}
+		// Request start of full instance
+		add_instance <- instance
 
-		//TODO???
+		// Unconstrained instance
 		inst := newInstance(instance, "ONLY_BLOCKED_SLOTS")
 		disable_all_constraints(inst)
-		start_constraints(inst)
-		time.Sleep(20 * time.Second)
-		return
+		// Request start
+		add_instance <- instance
 
-		// Request start of instance
-		make_instance <- instance
+		// Request start of instances with individually enabled constraint
+		// types (in goroutine to avoid blocking main goroutine here)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			start_constraints(inst)
+		}()
+
+		//go start_constraints(inst)
 	}
 
 	// *** Channel reader loop ***
@@ -145,13 +167,16 @@ loop:
 	for {
 		ended = ended[:0]
 		select {
+		case ossig := <-sigChan:
+			//TODO
+			fmt.Printf("*** SIGNAL *** %+v", ossig)
+			return
 		case <-stop:
 			//fmt.Println("checkProgress done!")
 			//TODO: tidying up? This channel is currently unused!
 			return
-		case new_instance := <-make_instance:
-			//TODO: The timetable "engine" should be replaceable.
-			//fet.NewFet(new_instance)
+		case new_instance := <-add_instance:
+			// Queue start of generator back-end
 			active_instances[new_instance] = struct{}{}
 		case <-ticker.C:
 			if len(active_instances) == 0 && len(inactive_instances) != 0 {
@@ -170,14 +195,24 @@ loop:
 				// the goroutine finishes, but a cancellation is more drastic,
 				// all trace of the instance can be removed.
 
-				if inst.State > 0 {
+				if inst.Delay >= 0 {
+					inst.Delay--
+					if inst.Delay < 0 {
+						// Start generator back-end
+						TtGenerate(inst.TtData, &wg)
+					}
+					continue
+				}
+				tt_data := inst.TtData
+				if tt_data.State > 0 {
 					// The goroutine has finished – or was cancelled,
 					// mark the instance for removal from the active list.
 					ended = append(ended, inst)
+					//TODO ...
 					// If appropriate, activate follow-on processes.
-					if inst.State == 1 {
+					if tt_data.State == 1 {
 						// succeeded ...
-						cancelPath(inst.FailureInstance)
+						/*cancelPath(inst.FailureInstance)
 						inst.FailureInstance = nil
 						if inst.SuccessPath.Delay >= 0 {
 							if inst.SuccessPath.Func != nil {
@@ -185,9 +220,10 @@ loop:
 							}
 							inst.SuccessPath.Delay = -1
 						}
-					} else if inst.State != 5 {
+						*/
+					} else if tt_data.State != 5 {
 						// failed ...
-						cancelPath(inst.SuccessInstance)
+						/*cancelPath(inst.SuccessInstance)
 						inst.SuccessInstance = nil
 						if inst.FailurePath.Delay >= 0 {
 							if inst.FailurePath.Func != nil {
@@ -195,28 +231,29 @@ loop:
 							}
 							inst.FailurePath.Delay = -1
 						}
+						*/
 					}
 					continue
 				}
-				//inst.Ticks++
-				h := inst.UpdateHandler
+				tt_data.Ticks++
+				h := tt_data.TickHandler
 				if h != nil {
 					// The handler should only be set when the the process is
 					// fully running
-					h(inst)
-					if inst.State != 0 {
+					h(tt_data)
+					if tt_data.State != 0 {
 						continue
 					}
 				}
 
-				/*
-					// Handle timeout
-					if timed_out(inst) {
-						inst.State = -1
-						//TODO: using an interface?
-						// inst.Abort(inst.HandlerData)
-						continue
-					}
+				/*TODO?
+				// Handle timeout
+				if timed_out(inst) {
+					inst.State = -1
+					//TODO: using an interface?
+					// inst.Abort(inst.HandlerData)
+					continue
+				}
 				*/
 
 				/*
@@ -245,19 +282,21 @@ loop:
 			}
 			// Remove terminated instances from the active list
 			for _, inst := range ended {
-				if inst.State != 5 {
+				tt_data := inst.TtData
+				if tt_data.State != 5 {
 					inactive_instances = append(inactive_instances, inst)
 				}
 				delete(active_instances, inst)
 
-				fmt.Println("=== End:", inst.TtData.Description, inst.State, inst.Progress)
+				fmt.Println("=== End:", inst.TtData.Description, tt_data.State, tt_data.Progress)
 			}
 		}
 	}
+	wg.Wait()
 	// All instances have completed.
 }
 
-// Stop an instance and all of its children. Not only the "success" branch is
+/*TODO? Stop an instance and all of its children. Not only the "success" branch is
 // to be stopped, but also all the others.
 func cancelPath(instance *TtInstance) {
 	if instance == nil {
@@ -276,14 +315,16 @@ func cancelPath(instance *TtInstance) {
 		instance.OtherInstances[i] = nil
 	}
 }
+*/
 
-// If the run with all constraints enabled succeeds, there is probably
+/*TODO-- If the run with all constraints enabled succeeds, there is probably
 // no need for further diagnosis, so cancel all other instances.
 func full_success(instance_0 *TtInstance) *TtInstance {
 	cancelPath(instance_0.FailureInstance)
 	instance_0.FailureInstance = nil
 	return nil
 }
+*/
 
 func newInstance(
 	instance_0 *TtInstance, descriptor string,
@@ -337,20 +378,12 @@ func newInstance(
 	tt_data.Description = descriptor
 
 	// Make a new `TtInstance`
-	return &TtInstance{
-		Global: instance_0.Global,
-
-		//Ticks:                  0,
-		//TtData_0:               instance_0.TtData_0,
-		TtData: &tt_data,
-
-		NewInstance:            instance_0.NewInstance,
-		Stop:                   instance_0.Stop,
-		ConstraintEnableMatrix: instance_0.ConstraintEnableMatrix,
-	}
+	instance := *instance_0
+	instance.TtData = &tt_data
+	return &instance
 }
 
-// TODO: This may need to be via a channel!
+/* TODO-- ... This may need to be via a channel!
 func addInstance(
 	instance *TtInstance,
 	delay int,
@@ -360,9 +393,10 @@ func addInstance(
 	gdata.Instances = append(gdata.Instances, instance)
 	if delay == 0 {
 		instance.Delay--
-		//go fet.RunFet(instance)
+		//TtGenerate(instance.TtData, instance.WaitGroup)
 	}
 }
+*/
 
 func test_sequence(instance_0 *TtInstance) *TtInstance {
 	instance := newInstance(instance_0, "ONLY_BLOCKED_SLOTS")

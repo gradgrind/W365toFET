@@ -1,6 +1,6 @@
 package autotimetable
 
-//TODO: These are just sketches ... not used yet.
+/*TODO: These are just sketches ... not used yet.
 
 //TODO: To assist in reporting the difficult constraints, I suggest
 // maintaining a map (or list) of lists where the activation state of
@@ -181,6 +181,7 @@ func binchop2(
 	}
 	return instance
 }
+*/
 
 // TODO???
 /*

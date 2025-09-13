@@ -1,6 +1,9 @@
 package autotimetable
 
-import "W365toFET/timetable"
+import (
+	"W365toFET/timetable"
+	"sync"
+)
 
 // Structures and methods used in connection with automation of the
 // timetable generation.
@@ -9,14 +12,15 @@ type TtInstance struct {
 	Global *GlobalData
 	//Id    int
 	//Ticks       int
-	Delay int
+	Delay int // ticks
 	//Timeout     int
 
 	TtData *timetable.TtData // current (possibly modified) data
 
 	// Communication channels
-	Stop        chan bool
-	NewInstance chan *TtInstance
+	//Stop        chan bool
+	NewInstance chan *TtInstance // send here to start run
+	WaitGroup   *sync.WaitGroup
 
 	// `State` values:
 	//		 0: running
@@ -26,11 +30,11 @@ type TtInstance struct {
 	//       4: other incomplete termination
 	//		 5: cancelled by `cancelAll`
 	//		-1: timeout (awaiting completion)
-	State    int
-	Progress int // percentage of activities which have been placed
+	//State    int
+	//Progress int // percentage of activities which have been placed
 	// `LastTime` is the `Ticks` value at which the `Progress` field was
 	// last updated.
-	LastTime int
+	//LastTime int
 	// Record the enablement status of each constraint:
 	ConstraintEnableMatrix [][]bool
 	//
@@ -41,7 +45,7 @@ type TtInstance struct {
 	// `HandlerData` provides a field to be used by the timetable "back-end".
 	//HandlerData     any ... TODO: move to TtData?
 
-	//TODO???
+	/*TODO???
 	UpdateHandler func(instance *TtInstance)
 
 	Message string // completion information
@@ -54,6 +58,7 @@ type TtInstance struct {
 	FailureInstance *TtInstance
 	OtherPaths      []TtChainedFunc
 	OtherInstances  []*TtInstance
+	*/
 }
 
 type GlobalData struct {
