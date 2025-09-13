@@ -58,6 +58,8 @@ var Descriptions map[string]string = map[string]string{
 // TODO?
 var TEST_TIMEOUT = 10 // ticks for quick test functions
 
+var TtGenerate func(*timetable.TtData)
+
 func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 
 	// `workingdir` provides the path to a working directory which can be used

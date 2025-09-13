@@ -3,6 +3,7 @@ package main
 import (
 	"W365toFET/autotimetable"
 	"W365toFET/base"
+	"W365toFET/fet"
 	"W365toFET/readxml"
 	"W365toFET/timetable"
 	"flag"
@@ -14,8 +15,8 @@ import (
 )
 
 //Input files:
-//	"../../_testdata_N1/Demo1/Demo1.xml"
-//	"../../_testdata_N1/x01/x01.xml"
+//  "../../_testdata_N1/Demo1/Demo1.xml"
+//  "../../_testdata_N1/x01/x01.xml"
 
 func main() {
 	flag.Parse()
@@ -54,6 +55,9 @@ func main() {
 		return
 	}
 
+	// This allows for an option to select different generator back-ends
+	autotimetable.TtGenerate = fet.RunFet
+
 	db := cdata.Db()
 	db.PrepareDb()
 
@@ -62,6 +66,9 @@ func main() {
 	fmt.Printf("Activities: %d\n", len(tt_data.Activities)-1)
 
 	stempath := strings.TrimSuffix(abspath, filepath.Ext(abspath))
+
+	// May want to change this with a different back-end ...
 	workingdir := stempath + "_fet"
+
 	autotimetable.StartGeneration(tt_data, workingdir)
 }

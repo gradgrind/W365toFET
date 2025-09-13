@@ -53,6 +53,7 @@ package main
 import (
 	"W365toFET/autotimetable"
 	"W365toFET/base"
+	"W365toFET/fet"
 	"W365toFET/timetable"
 	"W365toFET/w365tt"
 	"flag"
@@ -77,6 +78,9 @@ func main() {
 		log.Fatalf("*ERROR* Couldn't resolve file path: %s\n", args[0])
 	}
 
+	// This allows for an option to select different generator back-ends
+	autotimetable.TtGenerate = fet.RunFet
+
 	stempath := strings.TrimSuffix(abspath, filepath.Ext(abspath))
 	logpath := stempath + ".log"
 	base.OpenLog(logpath)
@@ -94,7 +98,9 @@ func main() {
 
 	//db.SaveDb(stempath + "_DB1.json")
 
+	// May want to change this with a different back-end ...
 	workingdir := stempath + "_fet"
+
 	autotimetable.StartGeneration(tt_data, workingdir)
 
 	//db.SaveDb(stempath + "_DB2.json")
