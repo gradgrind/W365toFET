@@ -107,16 +107,16 @@ type Class struct {
 	ForceFirstHour   bool
 }
 
-func (t *Class) UnmarshalJSON(data []byte) error {
-	// Customize defaults for Teacher
-	t.MinLessonsPerDay = -1
-	t.MaxLessonsPerDay = -1
-	t.MaxGapsPerDay = -1
-	t.MaxGapsPerWeek = -1
-	t.MaxAfternoons = -1
+func (c *Class) UnmarshalJSON(data []byte) error {
+	// Customize defaults for Class
+	c.MinLessonsPerDay = -1
+	c.MaxLessonsPerDay = -1
+	c.MaxGapsPerDay = -1
+	c.MaxGapsPerWeek = -1
+	c.MaxAfternoons = -1
 
-	type tempT Class
-	return json.Unmarshal(data, (*tempT)(t))
+	type tempC Class
+	return json.Unmarshal(data, (*tempC)(c))
 }
 
 type Group struct {

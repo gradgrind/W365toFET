@@ -5,20 +5,20 @@ import (
 )
 
 /*
-The idea is for each constraint to have a function to switch the constraint
-on/off. The constraint type is indexed, the individual instances of a
-constraint type also have indexes, so two indexes are needed to refer to
-a single constraint.
+Each constraint type has a function to switch the constraint on/off.
+For the class and teacher functions these are special functions for each
+type, for the general constraints, there is a single function, which has
+the constraint type as parameter. The individual constraints of a given
+type are also indexed, this being a parameter to the switch function.
 
 The cumulative effects of the constraint switches are to be found in the
 `TtData` supplied in the current `TtInstance`, which is used as the base
 upon which the switch functions work.
 
 Of course, only constraints which are actually specified in the source data
-need to be tested. So it might be worth filtering the lists before starting
-the test sequences (which may use a binary search method).
+need to be tested, so the lists are filtered before starting the test
+sequences (which may use a binary search method).
 
-//TODO: This is a more general comment:
 Although a binary search can be relatively efficient, this efficiency will
 be reduced if more than one of the components is difficult, especially if the
 difficulty arises from the combination, which they mostly do. On the other

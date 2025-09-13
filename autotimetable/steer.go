@@ -102,7 +102,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 		instance := &TtInstance{
 			//Id:          0,
 			Global: &GlobalData{
-				Ticks:    0, //TODO?
+				Ticks:    0,
 				TtData_0: tt_data_0,
 				//Instances: []*TtInstance{},
 			},
@@ -127,6 +127,11 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 			//SuccessPath: TtChainedFunc{
 			//	Delay: 0, Func: full_success},
 		}
+
+		//for _, c := range tt_data_0.Db.Classes {
+		//	fmt.Printf("??? %+v\n", c)
+		//}
+
 		// Request start of full instance
 		add_instance <- instance
 
@@ -134,7 +139,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 		inst := newInstance(instance, "ONLY_BLOCKED_SLOTS")
 		disable_all_constraints(inst)
 		// Request start
-		add_instance <- instance
+		add_instance <- inst
 
 		// Request start of instances with individually enabled constraint
 		// types (in goroutine to avoid blocking main goroutine here)
@@ -143,8 +148,6 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 			defer wg.Done()
 			start_constraints(inst)
 		}()
-
-		//go start_constraints(inst)
 	}
 
 	// *** Channel reader loop ***
