@@ -122,8 +122,14 @@ func (c *TtParallelActivities) IsHard() bool {
  * Some of the constraints are "preprocessed" to produce a more convenient
  * structure for their implementation.
  */
+//TODO: rooms, fixed and choices
 func (tt_data *TtData) preprocessConstraints() {
 	db := tt_data.Db
+
+	// Add active teacher and class constraints to the
+	// `TtData.HardConstraints` structure.
+	tt_data.collect_teacher_constraints()
+	tt_data.collect_class_constraints()
 
 	// If an "AutomaticDifferentDays" constraint is present (at most one is
 	// permitted), the `auto_weight` and `auto_consec` variables will be set

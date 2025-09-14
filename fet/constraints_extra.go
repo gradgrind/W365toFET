@@ -78,6 +78,9 @@ func getExtraConstraints(fetinfo *fetInfo) {
 	//	fmt.Printf("CTYPE: %s\n", ctype)
 	//}
 
+	fetinfo.handle_teacher_constraints()
+	fetinfo.handle_class_constraints()
+
 	//TODO: Specification pending
 	var doubleBlocked []bool
 
