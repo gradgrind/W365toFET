@@ -58,8 +58,8 @@ type TtData struct {
 	// activities rather than courses.
 	// Note that "ConsecutiveIfSameDay" is hard regardless of
 	// the weight.
-	HardMinDaysBetweenLessons []MinDaysBetweenLessons
-	SoftMinDaysBetweenLessons []MinDaysBetweenLessons
+	HardMinDaysBetweenActivities []MinDaysBetweenActivities
+	SoftMinDaysBetweenActivities []MinDaysBetweenActivities
 
 	WITHOUT_ROOM_PLACEMENTS bool // ignore room allocation constraints
 
@@ -117,13 +117,6 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 	tt_data.HardConstraints = map[string][]any{}
 	tt_data.SoftConstraints = map[string][]any{}
 	tt_data.preprocessConstraints()
-
-	//TODO:? tt_data.processConstraints()
-
-	//for _, mdbl := range tt_data.MinDaysBetweenLessons {
-	//	fmt.Printf("§§§ %v\n", mdbl)
-	//}
-
 	return tt_data
 }
 
@@ -145,9 +138,7 @@ func (tt_data *TtData) RoomResources() {
 	}
 }
 
-// TODO: Perhaps I need intermediate forms for these, so that for the
-// constraint enable switching I still have course-related constraints?
-type MinDaysBetweenLessons struct {
+type MinDaysBetweenActivities struct {
 	// Result of processing constraints DifferentDays and DaysBetween
 	Weight               int
 	ConsecutiveIfSameDay bool

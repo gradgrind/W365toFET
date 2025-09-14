@@ -85,7 +85,8 @@ func start_constraints(instance *TtInstance) {
 	db := tt_data.Db
 
 	// Teacher constraints
-	tcmap := collect_teacher_constraints(db.Teachers)
+	tcmap := collect_teacher_constraints(
+		db.Teachers, tt_data.NDays, tt_data.NHours)
 	//fmt.Printf("§§§tcmap: %v\n", tcmap)
 	for cnx, txlist := range tcmap {
 		inst := newInstance(instance, cnx.String())
@@ -97,9 +98,13 @@ func start_constraints(instance *TtInstance) {
 	}
 
 	// Class constraints
-	ccmap := collect_class_constraints(db.Classes)
+	ccmap := collect_class_constraints(
+		db.Classes, tt_data.NDays, tt_data.NHours)
 	//fmt.Printf("§§§ccmap: %v\n", ccmap)
 	for cnx, cxlist := range ccmap {
+		if len(cxlist) == 0 {
+			continue
+		}
 		inst := newInstance(instance, cnx.String())
 		f := cfmap[cnx]
 		for _, cx := range cxlist {
@@ -124,7 +129,7 @@ func start_constraints(instance *TtInstance) {
 		// Get all list indexes
 		cilist := make([]int, n)
 		for i := range n {
-			cilist[i] = n
+			cilist[i] = i
 		}
 		set_hard_constraint_enable_state(inst, cnx, cilist, true)
 		start_constraint_trial(inst)

@@ -97,7 +97,7 @@ func init() {
 
 // Gather the active class constraints, according to type
 func collect_class_constraints(
-	classes []*base.Class,
+	classes []*base.Class, nDays int, nHours int,
 ) map[ConstraintType][]int {
 	c_constraints := map[ConstraintType][]int{} // constraint -> list of class indexes
 	for i, c := range classes {
@@ -105,11 +105,11 @@ func collect_class_constraints(
 			c_constraints[CMinLessonsPerDay] = append(
 				c_constraints[CMinLessonsPerDay], i)
 		}
-		if c.MaxLessonsPerDay != -1 {
+		if c.MaxLessonsPerDay != -1 && c.MaxLessonsPerDay < nHours {
 			c_constraints[CMaxLessonsPerDay] = append(
 				c_constraints[CMaxLessonsPerDay], i)
 		}
-		if c.MaxAfternoons != -1 {
+		if c.MaxAfternoons != -1 && c.MaxAfternoons < nDays {
 			c_constraints[CMaxAfternoons] = append(
 				c_constraints[CMaxAfternoons], i)
 		}

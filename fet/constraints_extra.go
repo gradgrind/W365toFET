@@ -78,7 +78,7 @@ func getExtraConstraints(fetinfo *fetInfo) {
 	//	fmt.Printf("CTYPE: %s\n", ctype)
 	//}
 
-	for _, dbc := range fetinfo.tt_data.HardMinDaysBetweenLessons {
+	for _, dbc := range fetinfo.tt_data.HardMinDaysBetweenActivities {
 		tclist.ConstraintMinDaysBetweenActivities = append(
 			tclist.ConstraintMinDaysBetweenActivities,
 			minDaysBetweenActivities{
@@ -90,7 +90,7 @@ func getExtraConstraints(fetinfo *fetInfo) {
 				Active:                  true,
 			})
 	}
-	for _, dbc := range fetinfo.tt_data.SoftMinDaysBetweenLessons {
+	for _, dbc := range fetinfo.tt_data.SoftMinDaysBetweenActivities {
 		tclist.ConstraintMinDaysBetweenActivities = append(
 			tclist.ConstraintMinDaysBetweenActivities,
 			minDaysBetweenActivities{

@@ -133,13 +133,13 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 		//}
 
 		// Request start of full instance
-		add_instance <- instance
+		start_constraint_trial(instance)
 
 		// Unconstrained instance
 		inst := newInstance(instance, "ONLY_BLOCKED_SLOTS")
 		disable_all_constraints(inst)
 		// Request start
-		add_instance <- inst
+		start_constraint_trial(inst)
 
 		// Request start of instances with individually enabled constraint
 		// types (in goroutine to avoid blocking main goroutine here)
@@ -356,11 +356,10 @@ func newInstance(
 	}
 	tt_data.SoftConstraints = scmap
 
-	// ... and of the special ones
-	tt_data.HardMinDaysBetweenLessons = slices.Clone(
-		tt_data.HardMinDaysBetweenLessons)
-	tt_data.SoftMinDaysBetweenLessons = slices.Clone(
-		tt_data.SoftMinDaysBetweenLessons)
+	// Clear the special ones, these are regenerated from the actual
+	// constraints before running the back-end.
+	tt_data.HardMinDaysBetweenActivities = nil
+	tt_data.SoftMinDaysBetweenActivities = nil
 
 	// Copy the classes and teachers lists
 

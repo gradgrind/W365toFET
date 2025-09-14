@@ -96,24 +96,24 @@ func init() {
 
 // Gather the active teacher constraints, according to type
 func collect_teacher_constraints(
-	teachers []*base.Teacher,
+	teachers []*base.Teacher, nDays int, nHours int,
 ) map[ConstraintType][]int {
 	// constraint -> list of teacher indexes
 	t_constraints := map[ConstraintType][]int{}
 	for i, t := range teachers {
-		if t.MinLessonsPerDay != -1 {
+		if t.MinLessonsPerDay > 0 {
 			t_constraints[TMinLessonsPerDay] = append(
 				t_constraints[TMinLessonsPerDay], i)
 		}
-		if t.MaxLessonsPerDay != -1 {
+		if t.MaxLessonsPerDay != -1 && t.MaxLessonsPerDay < nHours {
 			t_constraints[TMaxLessonsPerDay] = append(
 				t_constraints[TMaxLessonsPerDay], i)
 		}
-		if t.MaxAfternoons != -1 {
+		if t.MaxAfternoons != -1 && t.MaxAfternoons < nDays {
 			t_constraints[TMaxAfternoons] = append(
 				t_constraints[TMaxAfternoons], i)
 		}
-		if t.MaxDays != -1 {
+		if t.MaxDays != -1 && t.MaxDays < nDays {
 			t_constraints[TMaxDays] = append(
 				t_constraints[TMaxDays], i)
 		}

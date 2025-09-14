@@ -21,9 +21,10 @@ const ( // New, preprocessed constraint types
  * "preprocesses" some of the constraints where this can produce a more
  * convenient structure for their implementation:
  *
- * The constraints AutomaticDifferentDays, DaysBetween and DaysBetweenJoin are
- * processed and combined to be replaced by MinDaysBetweenLessons constraints,
- * which are then available directly as a field in the `TtData` structure.
+ * The constraints AutomaticDifferentDays, DaysBetween and DaysBetweenJoin
+ * are processed and combined to be replaced by MinDaysBetweenActivities
+ * constraints, which are then available directly as a field in the `TtData`
+ * structure.
  *
  * The ParallelCourses constraints are transformed to ParalllelLessons
  * constraints, which are also available directly as a field in the `TtData`
@@ -208,6 +209,10 @@ func (tt_data *TtData) preprocessConstraints() {
 	tt_data.SoftConstraints[C_GENERAL_DAYS_BETWEEN] = dd_soft
 }
 
+// Called before running the generator back-end to perform constraint
+// conversions which have to be done after the constraint selection.
+// Currently that is just the generation of the "MinDaysBetweenActivities"
+// constraints from the "TtDaysBetween" and the "DaysBetweenJoin" types.
 func PrepareSpecialConstraints(tt_data *TtData) {
 	for _, c := range tt_data.HardConstraints["TtDaysBetween"] {
 		tt_data.days_between_activities(c.(*TtDaysBetween))
@@ -262,7 +267,7 @@ func (tt_data *TtData) days_between_activities(
 			aidlists = append(aidlists, unfixeds)
 		}
 	}
-	// Add the constraints as `MinDaysBetweenLessons`
+	// Add the constraints as `MinDaysBetweenActivities`
 	if constraint.Weight != 0 || constraint.ConsecutiveIfSameDay {
 		// Add constraint
 		for _, alist := range aidlists {
@@ -277,16 +282,16 @@ func (tt_data *TtData) days_between_activities(
 				constraint.IsHard() {
 				// Note that "ConsecutiveIfSameDay" is hard regardless of
 				// the weight.
-				tt_data.HardMinDaysBetweenLessons = append(
-					tt_data.HardMinDaysBetweenLessons, MinDaysBetweenLessons{
+				tt_data.HardMinDaysBetweenActivities = append(
+					tt_data.HardMinDaysBetweenActivities, MinDaysBetweenActivities{
 						Weight:               constraint.Weight,
 						ConsecutiveIfSameDay: constraint.ConsecutiveIfSameDay,
 						Activities:           alist,
 						MinDays:              constraint.DaysBetween,
 					})
 			} else {
-				tt_data.SoftMinDaysBetweenLessons = append(
-					tt_data.SoftMinDaysBetweenLessons, MinDaysBetweenLessons{
+				tt_data.SoftMinDaysBetweenActivities = append(
+					tt_data.SoftMinDaysBetweenActivities, MinDaysBetweenActivities{
 						Weight:               constraint.Weight,
 						ConsecutiveIfSameDay: constraint.ConsecutiveIfSameDay,
 						Activities:           alist,
@@ -312,8 +317,8 @@ func (tt_data *TtData) days_between_join_activities(
 			if constraint.IsHard() || constraint.ConsecutiveIfSameDay {
 				// Note that "ConsecutiveIfSameDay" is hard regardless of
 				// the weight.
-				tt_data.HardMinDaysBetweenLessons = append(
-					tt_data.HardMinDaysBetweenLessons, MinDaysBetweenLessons{
+				tt_data.HardMinDaysBetweenActivities = append(
+					tt_data.HardMinDaysBetweenActivities, MinDaysBetweenActivities{
 						Weight:               constraint.Weight,
 						ConsecutiveIfSameDay: constraint.ConsecutiveIfSameDay,
 						Activities: []ActivityIndex{
@@ -321,8 +326,8 @@ func (tt_data *TtData) days_between_join_activities(
 						MinDays: constraint.DaysBetween,
 					})
 			} else {
-				tt_data.SoftMinDaysBetweenLessons = append(
-					tt_data.SoftMinDaysBetweenLessons, MinDaysBetweenLessons{
+				tt_data.SoftMinDaysBetweenActivities = append(
+					tt_data.SoftMinDaysBetweenActivities, MinDaysBetweenActivities{
 						Weight:               constraint.Weight,
 						ConsecutiveIfSameDay: constraint.ConsecutiveIfSameDay,
 						Activities: []ActivityIndex{
