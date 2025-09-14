@@ -345,21 +345,18 @@ func newInstance(
 	// and `DbTopLevel`.
 
 	// Make a copy of the general constraints lists
-	hcmap := make(map[string][]any, len(tt_data.HardConstraints))
+	hcmap := make(map[timetable.ConstraintType][]any,
+		len(tt_data.HardConstraints))
 	for k, v := range tt_data.HardConstraints {
 		hcmap[k] = slices.Clone(v)
 	}
 	tt_data.HardConstraints = hcmap
-	scmap := make(map[string][]any, len(tt_data.SoftConstraints))
+	scmap := make(map[timetable.ConstraintType][]any,
+		len(tt_data.SoftConstraints))
 	for k, v := range tt_data.SoftConstraints {
 		scmap[k] = slices.Clone(v)
 	}
 	tt_data.SoftConstraints = scmap
-
-	// Clear the special ones, these are regenerated from the actual
-	// constraints before running the back-end.
-	tt_data.HardMinDaysBetweenActivities = nil
-	tt_data.SoftMinDaysBetweenActivities = nil
 
 	// Copy the classes and teachers lists
 

@@ -78,39 +78,46 @@ func getExtraConstraints(fetinfo *fetInfo) {
 	//	fmt.Printf("CTYPE: %s\n", ctype)
 	//}
 
-	for _, dbc := range fetinfo.tt_data.HardMinDaysBetweenActivities {
-		tclist.ConstraintMinDaysBetweenActivities = append(
-			tclist.ConstraintMinDaysBetweenActivities,
-			minDaysBetweenActivities{
-				Weight_Percentage:       weight2fet(dbc.Weight),
-				Consecutive_If_Same_Day: dbc.ConsecutiveIfSameDay,
-				Number_of_Activities:    len(dbc.Activities),
-				Activity_Id:             dbc.Activities,
-				MinDays:                 dbc.MinDays,
-				Active:                  true,
-			})
-	}
-	for _, dbc := range fetinfo.tt_data.SoftMinDaysBetweenActivities {
-		tclist.ConstraintMinDaysBetweenActivities = append(
-			tclist.ConstraintMinDaysBetweenActivities,
-			minDaysBetweenActivities{
-				Weight_Percentage:       weight2fet(dbc.Weight),
-				Consecutive_If_Same_Day: dbc.ConsecutiveIfSameDay,
-				Number_of_Activities:    len(dbc.Activities),
-				Activity_Id:             dbc.Activities,
-				MinDays:                 dbc.MinDays,
-				Active:                  true,
-			})
-	}
-
 	//TODO: Specification pending
 	var doubleBlocked []bool
 
-	for _, clist := range []map[string][]any{
+	for _, clist := range []map[timetable.ConstraintType][]any{
 		tt_data.HardConstraints,
 		tt_data.SoftConstraints,
 	} {
-		for _, c := range clist["TtParallelActivities"] {
+		for _, c := range clist[timetable.MinDaysBetween] {
+			cn := c.(*timetable.TtDaysBetween)
+			for _, alist := range cn.ActivityLists {
+				tclist.ConstraintMinDaysBetweenActivities = append(
+					tclist.ConstraintMinDaysBetweenActivities,
+					minDaysBetweenActivities{
+						Weight_Percentage:       weight2fet(cn.Weight),
+						Consecutive_If_Same_Day: cn.ConsecutiveIfSameDay,
+						Number_of_Activities:    len(alist),
+						Activity_Id:             alist,
+						MinDays:                 cn.DaysBetween,
+						Active:                  true,
+					})
+			}
+		}
+
+		for _, c := range clist[timetable.DaysBetweenJoin] {
+			cn := c.(*timetable.TtDaysBetweenJoin)
+			for _, alist := range cn.ActivityLists {
+				tclist.ConstraintMinDaysBetweenActivities = append(
+					tclist.ConstraintMinDaysBetweenActivities,
+					minDaysBetweenActivities{
+						Weight_Percentage:       weight2fet(cn.Weight),
+						Consecutive_If_Same_Day: cn.ConsecutiveIfSameDay,
+						Number_of_Activities:    len(alist),
+						Activity_Id:             alist,
+						MinDays:                 cn.DaysBetween,
+						Active:                  true,
+					})
+			}
+		}
+
+		for _, c := range clist[timetable.ParallelCourses] {
 			cn := c.(*timetable.TtParallelActivities)
 			for _, alist := range cn.ActivityGroups {
 				tclist.ConstraintActivitiesSameStartingTime = append(
@@ -124,7 +131,7 @@ func getExtraConstraints(fetinfo *fetInfo) {
 			}
 		}
 
-		for _, c := range clist["LessonsEndDay"] {
+		for _, c := range clist[timetable.ActivitiesEndDay] {
 			cn := c.(*base.LessonsEndDay)
 			cinfo := tt_data.Ref2CourseInfo[cn.Course]
 			for _, aid := range cinfo.Activities {
@@ -138,11 +145,11 @@ func getExtraConstraints(fetinfo *fetInfo) {
 			}
 		}
 
-		for _, c := range clist["DoubleLessonNotOverBreaks"] {
+		for _, c := range clist[timetable.DoubleActivityNotOverBreaks] {
 			cn := c.(*base.DoubleLessonNotOverBreaks)
 
 			if len(doubleBlocked) != 0 {
-				base.Error.Fatalln("Constraint DoubleLessonNotOverBreaks" +
+				base.Error.Fatalln("Constraint DoubleActivityNotOverBreaks" +
 					" specified more than once")
 			}
 
@@ -174,7 +181,7 @@ func getExtraConstraints(fetinfo *fetInfo) {
 				})
 		}
 
-		for _, c := range clist["BeforeAfterHour"] {
+		for _, c := range clist[timetable.BeforeAfterHour] {
 			cn := c.(*base.BeforeAfterHour)
 			timeslots := []preferredTime{}
 			if cn.After {

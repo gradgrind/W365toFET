@@ -38,7 +38,7 @@ type TtInstance struct {
 	// Record the enablement status of each constraint:
 	ConstraintEnableMatrix [][]bool
 	//
-	HardConstraintEnabled map[ConstraintType]map[int]bool
+	HardConstraintEnabled map[timetable.ConstraintType]map[int]bool
 
 	// Collate intermediate test results:
 	//SearchInfo *SearchInfo

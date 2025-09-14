@@ -5,44 +5,103 @@ import (
 	"strings"
 )
 
-const ( // New, preprocessed constraint types
-	C_GENERAL_DAYS_BETWEEN string = "TtDaysBetween"
-	C_PARALLEL_ACTIVITIES  string = "TtParallelActivities"
+// These are the constraint types known to the "timetable" package. Some of
+// them correspond directly to the constraint in the "base" package, others
+// are modified to better suit the needs of the timetable generator.
+// For some of them the timetable generator back-end may need a form which is
+// more difficult to relate to the original data (such as constraints
+// connecting activities rather than courses). For such constraints there
+// are functions to perform conversions.
+type ConstraintType int
+
+// Run in this directory to generate the String() method:
+// stringer --type ConstraintType
+
+const (
+	TeacherMinLessonsPerDay ConstraintType = iota
+	TeacherMaxLessonsPerDay
+	TeacherMaxAfternoons
+	TeacherMaxDays
+	TeacherLunchBreak
+	TeacherMaxGapsPerDay
+	TeacherMaxGapsPerWeek
+
+	ClassMinLessonsPerDay
+	ClassMaxLessonsPerDay
+	ClassMaxAfternoons
+	ClassLunchBreak
+	ClassForceFirstHour
+	ClassMaxGapsPerDay
+	ClassMaxGapsPerWeek
+
+	ActivitiesEndDay
+	BeforeAfterHour
+	DaysBetweenJoin
+	MinDaysBetween
+	ParallelCourses
+	MinHoursFollowing
+
+	DoubleActivityNotOverBreaks //??? This is a one-off, handle specially?
+
+	LastConstraint // not a real constraint, it can be used as the total
+	// number of constraints.
 )
+
+// TODO? Associate constraint names with their indexes
+var cnmap map[string]ConstraintType
+
+func init() {
+	cnmap = make(map[string]ConstraintType, LastConstraint)
+	for cnx := range LastConstraint {
+		cnmap[cnx.String()] = cnx
+	}
+}
+
+const C_GENERAL_DAYS_BETWEEN string = "TtDaysBetween"
 
 //TODO: Some more checks on duplicate or inconsistent constraints?
 
-/* `processConstraints` transforms the constraint list from the database
- * into a more convenient form for the timetable at `tt_data.Constraints`.
- *
- * In the basic data the constraints handled here are simply represented
- * as a list of constraint nodes. This function collates them to produce a
- * map of constraint types to a list of those constraint nodes. It also
- * "preprocesses" some of the constraints where this can produce a more
- * convenient structure for their implementation:
- *
- * The constraints AutomaticDifferentDays, DaysBetween and DaysBetweenJoin
- * are processed and combined to be replaced by MinDaysBetweenActivities
- * constraints, which are then available directly as a field in the `TtData`
- * structure.
- *
- * The ParallelCourses constraints are transformed to ParalllelLessons
- * constraints, which are also available directly as a field in the `TtData`
- * structure.
+/* The constraints AutomaticDifferentDays, DaysBetween are processed and
+ * combined to be replaced by TtDaysBetween constraints. These also gain
+ * activity lists to assist in the implementation of the constraint.
  */
-
 type TtDaysBetween struct {
 	Constraint           string
 	Weight               int
 	Course               NodeRef // Course or SuperCourse
 	DaysBetween          int
 	ConsecutiveIfSameDay bool
+	ActivityLists        [][]ActivityIndex
 }
 
 func (c *TtDaysBetween) IsHard() bool {
-	return c.Weight == base.MAXWEIGHT
+	// Note that "ConsecutiveIfSameDay" is hard regardless of
+	// the weight.
+	return c.Weight == base.MAXWEIGHT || c.ConsecutiveIfSameDay
 }
 
+/* The DaysBetweenJoin constraints are converted to TtDaysBetweenJoin and
+ * gain activity lists to assist in the implementation of the constraint.
+ */
+type TtDaysBetweenJoin struct {
+	Constraint           string
+	Weight               int
+	Course1              NodeRef // Course or SuperCourse
+	Course2              NodeRef // Course or SuperCourse
+	DaysBetween          int
+	ConsecutiveIfSameDay bool
+	ActivityLists        [][]ActivityIndex
+}
+
+func (c *TtDaysBetweenJoin) IsHard() bool {
+	// Note that "ConsecutiveIfSameDay" is hard regardless of
+	// the weight.
+	return c.Weight == base.MAXWEIGHT || c.ConsecutiveIfSameDay
+}
+
+/* The ParallelCourses constraints are transformed to TtParallelActivities
+ * constraints.
+ */
 type TtParallelActivities struct {
 	Constraint     string
 	Weight         int
@@ -54,11 +113,20 @@ func (c *TtParallelActivities) IsHard() bool {
 	return c.Weight == base.MAXWEIGHT
 }
 
+/* `preprocessConstraints` transforms the constraint list from the the
+ * "base" data into a more convenient form for the timetable at
+ * `tt_data.Constraints`.
+ *
+ * The result is a map, constraint-type -> list of constraints.
+ *
+ * Some of the constraints are "preprocessed" to produce a more convenient
+ * structure for their implementation.
+ */
 func (tt_data *TtData) preprocessConstraints() {
 	db := tt_data.Db
 
 	// If an "AutomaticDifferentDays" constraint is present (at most one is
-	// permitted), the `auto_weight` and `auto_consec` values will be set
+	// permitted), the `auto_weight` and `auto_consec` variables will be set
 	// accordingly, otherwise the default weight (`base.MAXWEIGHT`, i.e.
 	// a hard constraint) will be used.
 
@@ -88,22 +156,48 @@ func (tt_data *TtData) preprocessConstraints() {
 			cn, ok := c.(*base.DaysBetween)
 			if ok {
 				for _, cref := range cn.Courses {
-					ddc := &TtDaysBetween{
+					cn1 := &TtDaysBetween{
 						Constraint:           C_GENERAL_DAYS_BETWEEN,
 						Weight:               cn.Weight,
 						Course:               cref,
 						DaysBetween:          cn.DaysBetween,
 						ConsecutiveIfSameDay: cn.ConsecutiveIfSameDay,
 					}
+					cn1.ActivityLists = tt_data.days_between_activities(cn1)
 					if c.IsHard() {
-						dd_hard = append(dd_hard, ddc)
+						dd_hard = append(dd_hard, cn1)
 					} else {
-						dd_soft = append(dd_soft, ddc)
+						dd_soft = append(dd_soft, cn1)
 					}
 					if cn.DaysBetween == 1 {
 						// Override default constraint
 						noauto_ddays[cref] = true
 					}
+				}
+				continue
+			}
+		}
+
+		{
+			cn, ok := c.(*base.DaysBetweenJoin)
+			if ok {
+				cn1 := &TtDaysBetweenJoin{
+					Constraint:           cn.Constraint,
+					Weight:               cn.Weight,
+					Course1:              cn.Course1,
+					Course2:              cn.Course2,
+					DaysBetween:          cn.DaysBetween,
+					ConsecutiveIfSameDay: cn.ConsecutiveIfSameDay,
+					ActivityLists:        tt_data.days_between_join_activities(cn),
+				}
+				// Note that "ConsecutiveIfSameDay" is hard regardless of
+				// the weight.
+				if cn1.IsHard() {
+					tt_data.HardConstraints[DaysBetweenJoin] = append(
+						tt_data.HardConstraints[DaysBetweenJoin], cn1)
+				} else {
+					tt_data.SoftConstraints[DaysBetweenJoin] = append(
+						tt_data.SoftConstraints[DaysBetweenJoin], cn1)
 				}
 				continue
 			}
@@ -155,17 +249,17 @@ func (tt_data *TtData) preprocessConstraints() {
 				}
 				// alists is now a list of lists of parallel activity indexes.
 				cpa := &TtParallelActivities{
-					Constraint:     C_PARALLEL_ACTIVITIES,
+					Constraint:     cn.Constraint,
 					Weight:         cn.Weight,
 					Courses:        cn.Courses,
 					ActivityGroups: alists,
 				}
 				if c.IsHard() {
-					tt_data.HardConstraints[C_PARALLEL_ACTIVITIES] = append(
-						tt_data.HardConstraints[C_PARALLEL_ACTIVITIES], cpa)
+					tt_data.HardConstraints[ParallelCourses] = append(
+						tt_data.HardConstraints[ParallelCourses], cpa)
 				} else {
-					tt_data.SoftConstraints[C_PARALLEL_ACTIVITIES] = append(
-						tt_data.SoftConstraints[C_PARALLEL_ACTIVITIES], cpa)
+					tt_data.SoftConstraints[ParallelCourses] = append(
+						tt_data.SoftConstraints[ParallelCourses], cpa)
 				}
 				continue
 			}
@@ -173,7 +267,12 @@ func (tt_data *TtData) preprocessConstraints() {
 
 		// Collect the other constraints according to type, but unmodified,
 		// separating them into hard and soft constraints,
-		ctype := c.CType()
+		cname := c.CType()
+		ctype, ok := cnmap[cname]
+		if !ok {
+			//TODO?
+			panic("Unknown constraint type: " + cname)
+		}
 		if c.IsHard() {
 			tt_data.HardConstraints[ctype] = append(
 				tt_data.HardConstraints[ctype], c)
@@ -190,48 +289,31 @@ func (tt_data *TtData) preprocessConstraints() {
 		cref := cinfo.Id
 
 		if len(cinfo.Lessons) > 1 && !noauto_ddays[cref] {
-			ddc := &TtDaysBetween{
+			cn := &TtDaysBetween{
 				Constraint:           C_GENERAL_DAYS_BETWEEN,
 				Weight:               auto_weight,
 				Course:               cref,
 				DaysBetween:          1,
 				ConsecutiveIfSameDay: auto_consec,
 			}
-			if auto_weight == base.MAXWEIGHT {
-				dd_hard = append(dd_hard, ddc)
+			cn.ActivityLists = tt_data.days_between_activities(cn)
+			if auto_weight == base.MAXWEIGHT || auto_consec {
+				dd_hard = append(dd_hard, cn)
 			} else {
-				dd_soft = append(dd_soft, ddc)
+				dd_soft = append(dd_soft, cn)
 			}
 		}
 	}
 	// Now add these as new constraints to the constraint map
-	tt_data.HardConstraints[C_GENERAL_DAYS_BETWEEN] = dd_hard
-	tt_data.SoftConstraints[C_GENERAL_DAYS_BETWEEN] = dd_soft
-}
-
-// Called before running the generator back-end to perform constraint
-// conversions which have to be done after the constraint selection.
-// Currently that is just the generation of the "MinDaysBetweenActivities"
-// constraints from the "TtDaysBetween" and the "DaysBetweenJoin" types.
-func PrepareSpecialConstraints(tt_data *TtData) {
-	for _, c := range tt_data.HardConstraints["TtDaysBetween"] {
-		tt_data.days_between_activities(c.(*TtDaysBetween))
-	}
-	for _, c := range tt_data.SoftConstraints["TtDaysBetween"] {
-		tt_data.days_between_activities(c.(*TtDaysBetween))
-	}
-	for _, c := range tt_data.HardConstraints["DaysBetweenJoin"] {
-		tt_data.days_between_join_activities(c.(*base.DaysBetweenJoin))
-	}
-	for _, c := range tt_data.SoftConstraints["DaysBetweenJoin"] {
-		tt_data.days_between_join_activities(c.(*base.DaysBetweenJoin))
-	}
+	tt_data.HardConstraints[MinDaysBetween] = dd_hard
+	tt_data.SoftConstraints[MinDaysBetween] = dd_soft
 }
 
 // Convert a `TtDaysBetween` constraint to be based on activities.
 func (tt_data *TtData) days_between_activities(
 	constraint *TtDaysBetween,
-) {
+) [][]ActivityIndex {
+	allist := [][]ActivityIndex{}
 	cref := constraint.Course
 	cinfo := tt_data.Ref2CourseInfo[cref]
 	fixeds := []ActivityIndex{}
@@ -247,9 +329,9 @@ func (tt_data *TtData) days_between_activities(
 	if len(unfixeds) == 0 || (len(fixeds) == 0 && len(unfixeds) == 1) {
 		// No constraints necessary
 		//TODO
-		base.Warning.Printf("Superfluous DaysBetween constraint on"+
+		base.Warning.Printf("Ignoring superfluous DaysBetween constraint on"+
 			" course:\n  -- %s", tt_data.View(cinfo))
-		return
+		return allist
 	}
 	// Collect the activity groups to which the constraint is to be applied
 	aidlists := [][]ActivityIndex{}
@@ -278,63 +360,28 @@ func (tt_data *TtData) days_between_activities(
 					tt_data.View(cinfo))
 				continue
 			}
-			if constraint.ConsecutiveIfSameDay ||
-				constraint.IsHard() {
-				// Note that "ConsecutiveIfSameDay" is hard regardless of
-				// the weight.
-				tt_data.HardMinDaysBetweenActivities = append(
-					tt_data.HardMinDaysBetweenActivities, MinDaysBetweenActivities{
-						Weight:               constraint.Weight,
-						ConsecutiveIfSameDay: constraint.ConsecutiveIfSameDay,
-						Activities:           alist,
-						MinDays:              constraint.DaysBetween,
-					})
-			} else {
-				tt_data.SoftMinDaysBetweenActivities = append(
-					tt_data.SoftMinDaysBetweenActivities, MinDaysBetweenActivities{
-						Weight:               constraint.Weight,
-						ConsecutiveIfSameDay: constraint.ConsecutiveIfSameDay,
-						Activities:           alist,
-						MinDays:              constraint.DaysBetween,
-					})
-			}
+			allist = append(allist, alist)
 		}
 	}
+	return allist
 }
 
-// Convert a `DaysBetweenJoin` constraint to be based on activities.
+// Construct the activity relationships for a `DaysBetweenJoin` constraint.
 func (tt_data *TtData) days_between_join_activities(
 	constraint *base.DaysBetweenJoin,
-) {
+) [][]ActivityIndex {
 	c1 := tt_data.Ref2CourseInfo[constraint.Course1]
 	c2 := tt_data.Ref2CourseInfo[constraint.Course2]
+	allist := [][]ActivityIndex{}
 	for i1, l1 := range c1.Lessons {
 		for i2, l2 := range c2.Lessons {
 			if l1.Fixed && l2.Fixed {
 				// both fixed => no constraint
 				continue
 			}
-			if constraint.IsHard() || constraint.ConsecutiveIfSameDay {
-				// Note that "ConsecutiveIfSameDay" is hard regardless of
-				// the weight.
-				tt_data.HardMinDaysBetweenActivities = append(
-					tt_data.HardMinDaysBetweenActivities, MinDaysBetweenActivities{
-						Weight:               constraint.Weight,
-						ConsecutiveIfSameDay: constraint.ConsecutiveIfSameDay,
-						Activities: []ActivityIndex{
-							c1.Activities[i1], c2.Activities[i2]},
-						MinDays: constraint.DaysBetween,
-					})
-			} else {
-				tt_data.SoftMinDaysBetweenActivities = append(
-					tt_data.SoftMinDaysBetweenActivities, MinDaysBetweenActivities{
-						Weight:               constraint.Weight,
-						ConsecutiveIfSameDay: constraint.ConsecutiveIfSameDay,
-						Activities: []ActivityIndex{
-							c1.Activities[i1], c2.Activities[i2]},
-						MinDays: constraint.DaysBetween,
-					})
-			}
+			allist = append(allist, []ActivityIndex{
+				c1.Activities[i1], c2.Activities[i2]})
 		}
 	}
+	return allist
 }

@@ -51,15 +51,8 @@ type TtData struct {
 	CourseInfoList []*CourseInfo
 	Ref2CourseInfo map[NodeRef]*CourseInfo
 
-	HardConstraints map[string][]any
-	SoftConstraints map[string][]any
-
-	// Unify days-between constraints, and presents the relationship between
-	// activities rather than courses.
-	// Note that "ConsecutiveIfSameDay" is hard regardless of
-	// the weight.
-	HardMinDaysBetweenActivities []MinDaysBetweenActivities
-	SoftMinDaysBetweenActivities []MinDaysBetweenActivities
+	HardConstraints map[ConstraintType][]any
+	SoftConstraints map[ConstraintType][]any
 
 	WITHOUT_ROOM_PLACEMENTS bool // ignore room allocation constraints
 
@@ -114,8 +107,8 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 		[]TtSlot{-1},
 		len(tt_data.Activities))
 
-	tt_data.HardConstraints = map[string][]any{}
-	tt_data.SoftConstraints = map[string][]any{}
+	tt_data.HardConstraints = map[ConstraintType][]any{}
+	tt_data.SoftConstraints = map[ConstraintType][]any{}
 	tt_data.preprocessConstraints()
 	return tt_data
 }

@@ -31,53 +31,8 @@ the construction of the timetable possible.
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-type ConstraintType int
-
-// Run in this directory to generate the String() method:
-// stringer --type ConstraintType
-
-const (
-	TMinLessonsPerDay ConstraintType = iota
-	TMaxLessonsPerDay
-	TMaxAfternoons
-	TMaxDays
-	TLunchBreak
-	TMaxGapsPerDay
-	TMaxGapsPerWeek
-
-	CMinLessonsPerDay
-	CMaxLessonsPerDay
-	CMaxAfternoons
-	CLunchBreak
-	CForceFirstHour
-	CMaxGapsPerDay
-	CMaxGapsPerWeek
-
-	LessonsEndDay
-	BeforeAfterHour
-	DaysBetweenJoin
-	TtDaysBetween
-	ParallelCourses
-	MinHoursFollowing
-
-	DoubleLessonNotOverBreaks //??? This is a one-off, handle specially?
-
-	LastConstraint // not a real constraint, it can be used as the total
-	// number of constraints.
-)
-
 // Associate enable/disable functions with the constraint indexes
-var cfmap [LastConstraint]func(*TtInstance, int, bool)
-
-// Associate constraint names with their indexes
-var cnmap map[string]ConstraintType
-
-func init() {
-	cnmap = make(map[string]ConstraintType, LastConstraint)
-	for cnx := range LastConstraint {
-		cnmap[cnx.String()] = cnx
-	}
-}
+var cfmap [timetable.LastConstraint]func(*TtInstance, int, bool)
 
 func start_constraints(instance *TtInstance) {
 	// `instance` itself should have no constraints enabled
@@ -117,21 +72,16 @@ func start_constraints(instance *TtInstance) {
 	for k, clist := range tt_data.HardConstraints {
 		n := len(clist)
 		if n == 0 {
-			panic("No constraints of type " + k)
+			//TODO: Bug?
+			panic("No constraints of type " + k.String())
 		}
-		cnx, ok := cnmap[k]
-		if !ok {
-			//TODO: This should just be a warning!
-			panic("(autotimetable) Unknown constraint type: " + k)
-			//continue
-		}
-		inst := newInstance(instance, k)
+		inst := newInstance(instance, k.String())
 		// Get all list indexes
 		cilist := make([]int, n)
 		for i := range n {
 			cilist[i] = i
 		}
-		set_hard_constraint_enable_state(inst, cnx, cilist, true)
+		set_hard_constraint_enable_state(inst, k, cilist, true)
 		start_constraint_trial(inst)
 	}
 
@@ -143,7 +93,7 @@ func start_constraints(instance *TtInstance) {
 // `HardConstraintEnabled` accordingly.
 func set_hard_constraint_enable_state(
 	instance *TtInstance,
-	constraint_type ConstraintType,
+	constraint_type timetable.ConstraintType,
 	indexes []int,
 	enable bool,
 ) {
@@ -151,7 +101,8 @@ func set_hard_constraint_enable_state(
 		if !enable {
 			return
 		}
-		instance.HardConstraintEnabled = map[ConstraintType]map[int]bool{}
+		instance.HardConstraintEnabled =
+			map[timetable.ConstraintType]map[int]bool{}
 	}
 	cmap, ok := instance.HardConstraintEnabled[constraint_type]
 	if !ok {
@@ -166,17 +117,15 @@ func set_hard_constraint_enable_state(
 	}
 	// Reconstruct the constraint list
 	newlist := []any{}
-	ctype := constraint_type.String()
-	for i, c := range instance.Global.TtData_0.HardConstraints[ctype] {
+	for i, c := range instance.Global.TtData_0.HardConstraints[constraint_type] {
 		if cmap[i] {
 			newlist = append(newlist, c)
 		}
 	}
-	instance.TtData.HardConstraints[ctype] = newlist
+	instance.TtData.HardConstraints[constraint_type] = newlist
 }
 
 func start_constraint_trial(instance *TtInstance) {
-	timetable.PrepareSpecialConstraints(instance.TtData)
 	instance.NewInstance <- instance // register with tick loop
 	//fmt.Printf(" +++ %s: %v\n", instance.TtData.Description, instance.TtData.HardConstraints)
 }
@@ -205,14 +154,14 @@ func disable_all_constraints(instance *TtInstance) {
 // Disable all class constraints
 func disable_class_constraints(instance *TtInstance) {
 	n := len(instance.TtData.Db.Classes)
-	for _, ci := range []ConstraintType{
-		CMinLessonsPerDay,
-		CMaxLessonsPerDay,
-		CMaxAfternoons,
-		CForceFirstHour,
-		CLunchBreak,
-		CMaxGapsPerDay,
-		CMaxGapsPerWeek,
+	for _, ci := range []timetable.ConstraintType{
+		timetable.ClassMinLessonsPerDay,
+		timetable.ClassMaxLessonsPerDay,
+		timetable.ClassMaxAfternoons,
+		timetable.ClassForceFirstHour,
+		timetable.ClassLunchBreak,
+		timetable.ClassMaxGapsPerDay,
+		timetable.ClassMaxGapsPerWeek,
 	} {
 		f := cfmap[ci]
 		for i := range n {
@@ -225,14 +174,14 @@ func disable_class_constraints(instance *TtInstance) {
 // Disable all teacher constraints
 func disable_teacher_constraints(instance *TtInstance) {
 	n := len(instance.TtData.Db.Teachers)
-	for _, ci := range []ConstraintType{
-		TMinLessonsPerDay,
-		TMaxLessonsPerDay,
-		TMaxAfternoons,
-		TMaxDays,
-		TLunchBreak,
-		TMaxGapsPerDay,
-		TMaxGapsPerWeek,
+	for _, ci := range []timetable.ConstraintType{
+		timetable.TeacherMinLessonsPerDay,
+		timetable.TeacherMaxLessonsPerDay,
+		timetable.TeacherMaxAfternoons,
+		timetable.TeacherMaxDays,
+		timetable.TeacherLunchBreak,
+		timetable.TeacherMaxGapsPerDay,
+		timetable.TeacherMaxGapsPerWeek,
 	} {
 		f := cfmap[ci]
 		for i := range n {

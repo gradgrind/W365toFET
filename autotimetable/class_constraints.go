@@ -2,13 +2,13 @@ package autotimetable
 
 import (
 	"W365toFET/base"
-	//"W365toFET/timetable"
+	"W365toFET/timetable"
 )
 
 // Each of these functions enables/disables a particular class constraint
 
 func init() {
-	cfmap[CMinLessonsPerDay] = func(
+	cfmap[timetable.ClassMinLessonsPerDay] = func(
 		instance *TtInstance,
 		class int,
 		enable bool,
@@ -20,7 +20,7 @@ func init() {
 			instance.TtData.Db.Classes[class].MinLessonsPerDay = -1
 		}
 	}
-	cfmap[CMaxLessonsPerDay] = func(
+	cfmap[timetable.ClassMaxLessonsPerDay] = func(
 		instance *TtInstance,
 		class int,
 		enable bool,
@@ -32,7 +32,7 @@ func init() {
 			instance.TtData.Db.Classes[class].MaxLessonsPerDay = -1
 		}
 	}
-	cfmap[CMaxAfternoons] = func(
+	cfmap[timetable.ClassMaxAfternoons] = func(
 		instance *TtInstance,
 		class int,
 		enable bool,
@@ -44,7 +44,7 @@ func init() {
 			instance.TtData.Db.Classes[class].MaxAfternoons = -1
 		}
 	}
-	cfmap[CLunchBreak] = func(
+	cfmap[timetable.ClassLunchBreak] = func(
 		instance *TtInstance,
 		class int,
 		enable bool,
@@ -56,7 +56,7 @@ func init() {
 			instance.TtData.Db.Classes[class].LunchBreak = false
 		}
 	}
-	cfmap[CForceFirstHour] = func(
+	cfmap[timetable.ClassForceFirstHour] = func(
 		instance *TtInstance,
 		class int,
 		enable bool,
@@ -68,7 +68,7 @@ func init() {
 			instance.TtData.Db.Classes[class].ForceFirstHour = false
 		}
 	}
-	cfmap[CMaxGapsPerDay] = func(
+	cfmap[timetable.ClassMaxGapsPerDay] = func(
 		instance *TtInstance,
 		class int,
 		enable bool,
@@ -80,7 +80,7 @@ func init() {
 			instance.TtData.Db.Classes[class].MaxGapsPerDay = -1
 		}
 	}
-	cfmap[CMaxGapsPerWeek] = func(
+	cfmap[timetable.ClassMaxGapsPerWeek] = func(
 		instance *TtInstance,
 		class int,
 		enable bool,
@@ -98,36 +98,37 @@ func init() {
 // Gather the active class constraints, according to type
 func collect_class_constraints(
 	classes []*base.Class, nDays int, nHours int,
-) map[ConstraintType][]int {
-	c_constraints := map[ConstraintType][]int{} // constraint -> list of class indexes
+) map[timetable.ConstraintType][]int {
+	// constraint -> list of class indexes
+	c_constraints := map[timetable.ConstraintType][]int{}
 	for i, c := range classes {
 		if c.MinLessonsPerDay != -1 {
-			c_constraints[CMinLessonsPerDay] = append(
-				c_constraints[CMinLessonsPerDay], i)
+			c_constraints[timetable.ClassMinLessonsPerDay] = append(
+				c_constraints[timetable.ClassMinLessonsPerDay], i)
 		}
 		if c.MaxLessonsPerDay != -1 && c.MaxLessonsPerDay < nHours {
-			c_constraints[CMaxLessonsPerDay] = append(
-				c_constraints[CMaxLessonsPerDay], i)
+			c_constraints[timetable.ClassMaxLessonsPerDay] = append(
+				c_constraints[timetable.ClassMaxLessonsPerDay], i)
 		}
 		if c.MaxAfternoons != -1 && c.MaxAfternoons < nDays {
-			c_constraints[CMaxAfternoons] = append(
-				c_constraints[CMaxAfternoons], i)
+			c_constraints[timetable.ClassMaxAfternoons] = append(
+				c_constraints[timetable.ClassMaxAfternoons], i)
 		}
 		if c.ForceFirstHour {
-			c_constraints[CForceFirstHour] = append(
-				c_constraints[CForceFirstHour], i)
+			c_constraints[timetable.ClassForceFirstHour] = append(
+				c_constraints[timetable.ClassForceFirstHour], i)
 		}
 		if c.LunchBreak {
-			c_constraints[CLunchBreak] = append(
-				c_constraints[CLunchBreak], i)
+			c_constraints[timetable.ClassLunchBreak] = append(
+				c_constraints[timetable.ClassLunchBreak], i)
 		}
 		if c.MaxGapsPerDay != -1 {
-			c_constraints[CMaxGapsPerDay] = append(
-				c_constraints[CMaxGapsPerDay], i)
+			c_constraints[timetable.ClassMaxGapsPerDay] = append(
+				c_constraints[timetable.ClassMaxGapsPerDay], i)
 		}
 		if c.MaxGapsPerWeek != -1 {
-			c_constraints[CMaxGapsPerWeek] = append(
-				c_constraints[CMaxGapsPerWeek], i)
+			c_constraints[timetable.ClassMaxGapsPerWeek] = append(
+				c_constraints[timetable.ClassMaxGapsPerWeek], i)
 		}
 	}
 	return c_constraints
