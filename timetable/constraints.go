@@ -18,7 +18,8 @@ type ConstraintType int
 // stringer --type ConstraintType
 
 const (
-	TeacherMinLessonsPerDay ConstraintType = iota
+	TeacherNotAvailable ConstraintType = iota
+	TeacherMinLessonsPerDay
 	TeacherMaxLessonsPerDay
 	TeacherMaxAfternoons
 	TeacherMaxDays
@@ -26,6 +27,7 @@ const (
 	TeacherMaxGapsPerDay
 	TeacherMaxGapsPerWeek
 
+	ClassNotAvailable
 	ClassMinLessonsPerDay
 	ClassMaxLessonsPerDay
 	ClassMaxAfternoons
@@ -33,6 +35,8 @@ const (
 	ClassForceFirstHour
 	ClassMaxGapsPerDay
 	ClassMaxGapsPerWeek
+
+	RoomNotAvailable
 
 	ActivitiesEndDay
 	BeforeAfterHour
