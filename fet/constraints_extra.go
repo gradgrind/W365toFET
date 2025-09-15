@@ -80,6 +80,7 @@ func getExtraConstraints(fetinfo *fetInfo) {
 
 	fetinfo.handle_teacher_constraints()
 	fetinfo.handle_class_constraints()
+	fetinfo.handle_room_constraints()
 
 	//TODO: Specification pending
 	var doubleBlocked []bool

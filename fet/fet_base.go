@@ -190,9 +190,9 @@ func MakeFetFile(tt_data *timetable.TtData) (string, string) {
 	getClasses(&fetinfo)
 	lessonIdMap := getActivities(&fetinfo)
 
-	addTeacherConstraints(&fetinfo)
-	addClassConstraints(&fetinfo)
-	addRoomConstraints(&fetinfo)
+	//addTeacherConstraints(&fetinfo)
+	//addClassConstraints(&fetinfo)
+	//addRoomConstraints(&fetinfo)
 	getExtraConstraints(&fetinfo)
 
 	// Convert lessonIdMap to string

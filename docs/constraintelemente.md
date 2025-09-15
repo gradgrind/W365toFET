@@ -88,7 +88,8 @@ Die Lessons der Kurse sollen gleichzeitig stattfinden. Die Anzahl und Länge der
 	"Constraint":           "PARALLEL_COURSES",
 	"Weight":               100,
 	"Courses":              [
-        "2edfe663-c62b-4d05-ace2-0bedb0f4b672"
+        "2edfe663-c62b-4d05-ace2-0bedb0f4b672",
+	    "5fda67de-bbb3-48a2-a098-d957796b7743"
     ],
 }
 ```

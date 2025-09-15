@@ -1,9 +1,5 @@
 package timetable
 
-import (
-	"slices"
-)
-
 type SpecialConstraint struct {
 	Item  int
 	Value any
@@ -19,7 +15,10 @@ func (tt_data *TtData) collect_teacher_constraints() {
 	for i, t := range tt_data.Db.Teachers {
 		// Every teacher has a blocked-slots matrix. They are ordered, so
 		// they can be easily accessed.
-		blocked_slots := slices.Repeat([][]bool{make([]bool, nhours)}, ndays)
+		blocked_slots := make([][]bool, ndays)
+		for d := range ndays {
+			blocked_slots[d] = make([]bool, nhours)
+		}
 		for _, dh := range t.NotAvailable {
 			if dh.Day < ndays && dh.Hour < nhours {
 				blocked_slots[dh.Day][dh.Hour] = true
@@ -50,7 +49,7 @@ func (tt_data *TtData) collect_teacher_constraints() {
 		if t.LunchBreak {
 			tt_data.HardConstraints[TeacherLunchBreak] = append(
 				tt_data.HardConstraints[TeacherLunchBreak],
-				SpecialConstraint{i, TeacherLunchBreak})
+				SpecialConstraint{i, t.LunchBreak})
 		}
 		if t.MaxGapsPerDay != -1 {
 			tt_data.HardConstraints[TeacherMaxGapsPerDay] = append(
@@ -75,7 +74,10 @@ func (tt_data *TtData) collect_class_constraints() {
 	for i, c := range tt_data.Db.Classes {
 		// Every class has a blocked-slots matrix. They are ordered, so
 		// they can be easily accessed.
-		blocked_slots := slices.Repeat([][]bool{make([]bool, nhours)}, ndays)
+		blocked_slots := make([][]bool, ndays)
+		for d := range ndays {
+			blocked_slots[d] = make([]bool, nhours)
+		}
 		for _, dh := range c.NotAvailable {
 			if dh.Day < ndays && dh.Hour < nhours {
 				blocked_slots[dh.Day][dh.Hour] = true
@@ -131,7 +133,10 @@ func (tt_data *TtData) collect_room_constraints() {
 	for i, c := range tt_data.Db.Rooms {
 		// Every room has a blocked-slots matrix. They are ordered, so
 		// they can be easily accessed.
-		blocked_slots := slices.Repeat([][]bool{make([]bool, nhours)}, ndays)
+		blocked_slots := make([][]bool, ndays)
+		for d := range ndays {
+			blocked_slots[d] = make([]bool, nhours)
+		}
 		for _, dh := range c.NotAvailable {
 			if dh.Day < ndays && dh.Hour < nhours {
 				blocked_slots[dh.Day][dh.Hour] = true

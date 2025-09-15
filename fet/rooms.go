@@ -4,7 +4,6 @@ import (
 	"W365toFET/timetable"
 	"encoding/xml"
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -73,35 +72,6 @@ func getRooms(fetinfo *fetInfo) {
 	fetinfo.fetdata.Rooms_List = fetRoomsList{
 		Room: rooms,
 	}
-}
-
-func addRoomConstraints(fetinfo *fetInfo) {
-	natimes := []roomNotAvailable{}
-	tt_data := fetinfo.tt_data
-	db := tt_data.Db
-
-	for _, r := range db.Rooms {
-		// "Not available" times
-		nats := []notAvailableTime{}
-		for _, dh := range r.NotAvailable {
-			nats = append(nats,
-				notAvailableTime{
-					Day:  strconv.Itoa(dh.Day),
-					Hour: strconv.Itoa(dh.Hour)})
-		}
-		if len(nats) > 0 {
-			natimes = append(natimes,
-				roomNotAvailable{
-					Weight_Percentage:             100,
-					Room:                          r.Tag,
-					Number_of_Not_Available_Times: len(nats),
-					Not_Available_Time:            nats,
-					Active:                        true,
-				})
-		}
-	}
-	fetinfo.fetdata.Space_Constraints_List.
-		ConstraintRoomNotAvailableTimes = natimes
 }
 
 func (fetinfo *fetInfo) getFetRooms(cinfo *timetable.CourseInfo) []string {
