@@ -9,14 +9,13 @@ type SpecialConstraint struct {
 	Value any
 }
 
-// TODO: Move this to a more general file
-type TtNotAvailable [][]bool // days of hours, true => blocked
-
 // Gather the active teacher constraints, according to type, adding them
-// to the `TtData.HardConstraints` structure.
+// to the `TtData.HardConstraints` structure. The "NotAvailable" constraints
+// are a special case.
 func (tt_data *TtData) collect_teacher_constraints() {
 	ndays := tt_data.NDays
 	nhours := tt_data.NHours
+	tt_data.TeacherNotAvailable = make([][][]bool, len(tt_data.Db.Teachers))
 	for i, t := range tt_data.Db.Teachers {
 		// Every teacher has a blocked-slots matrix. They are ordered, so
 		// they can be easily accessed.
@@ -26,9 +25,7 @@ func (tt_data *TtData) collect_teacher_constraints() {
 				blocked_slots[dh.Day][dh.Hour] = true
 			}
 		}
-		tt_data.HardConstraints[TeacherNotAvailable] = append(
-			tt_data.HardConstraints[TeacherNotAvailable],
-			SpecialConstraint{i, blocked_slots})
+		tt_data.TeacherNotAvailable[i] = blocked_slots
 
 		if t.MinLessonsPerDay > 0 {
 			tt_data.HardConstraints[TeacherMinLessonsPerDay] = append(
@@ -69,10 +66,12 @@ func (tt_data *TtData) collect_teacher_constraints() {
 }
 
 // Gather the active class constraints, according to type, adding them
-// to the `TtData.HardConstraints` structure.
+// to the `TtData.HardConstraints` structure. The "NotAvailable" constraints
+// are a special case.
 func (tt_data *TtData) collect_class_constraints() {
 	ndays := tt_data.NDays
 	nhours := tt_data.NHours
+	tt_data.ClassNotAvailable = make([][][]bool, len(tt_data.Db.Classes))
 	for i, c := range tt_data.Db.Classes {
 		// Every class has a blocked-slots matrix. They are ordered, so
 		// they can be easily accessed.
@@ -82,9 +81,7 @@ func (tt_data *TtData) collect_class_constraints() {
 				blocked_slots[dh.Day][dh.Hour] = true
 			}
 		}
-		tt_data.HardConstraints[ClassNotAvailable] = append(
-			tt_data.HardConstraints[ClassNotAvailable],
-			SpecialConstraint{i, blocked_slots})
+		tt_data.ClassNotAvailable[i] = blocked_slots
 
 		if c.MinLessonsPerDay != -1 {
 			tt_data.HardConstraints[ClassMinLessonsPerDay] = append(
@@ -121,5 +118,25 @@ func (tt_data *TtData) collect_class_constraints() {
 				tt_data.HardConstraints[ClassMaxGapsPerWeek],
 				SpecialConstraint{i, c.MaxGapsPerWeek})
 		}
+	}
+}
+
+// Gather the active room constraints, according to type, adding them
+// to the `TtData.HardConstraints` structure. The "NotAvailable" constraints
+// are a special case.
+func (tt_data *TtData) collect_room_constraints() {
+	ndays := tt_data.NDays
+	nhours := tt_data.NHours
+	tt_data.RoomNotAvailable = make([][][]bool, len(tt_data.Db.Rooms))
+	for i, c := range tt_data.Db.Rooms {
+		// Every room has a blocked-slots matrix. They are ordered, so
+		// they can be easily accessed.
+		blocked_slots := slices.Repeat([][]bool{make([]bool, nhours)}, ndays)
+		for _, dh := range c.NotAvailable {
+			if dh.Day < ndays && dh.Hour < nhours {
+				blocked_slots[dh.Day][dh.Hour] = true
+			}
+		}
+		tt_data.RoomNotAvailable[i] = blocked_slots
 	}
 }

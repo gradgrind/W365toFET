@@ -8,36 +8,33 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[TeacherNotAvailable-0]
-	_ = x[TeacherMinLessonsPerDay-1]
-	_ = x[TeacherMaxLessonsPerDay-2]
-	_ = x[TeacherMaxAfternoons-3]
-	_ = x[TeacherMaxDays-4]
-	_ = x[TeacherLunchBreak-5]
-	_ = x[TeacherMaxGapsPerDay-6]
-	_ = x[TeacherMaxGapsPerWeek-7]
-	_ = x[ClassNotAvailable-8]
-	_ = x[ClassMinLessonsPerDay-9]
-	_ = x[ClassMaxLessonsPerDay-10]
-	_ = x[ClassMaxAfternoons-11]
-	_ = x[ClassLunchBreak-12]
-	_ = x[ClassForceFirstHour-13]
-	_ = x[ClassMaxGapsPerDay-14]
-	_ = x[ClassMaxGapsPerWeek-15]
-	_ = x[RoomNotAvailable-16]
-	_ = x[ActivitiesEndDay-17]
-	_ = x[BeforeAfterHour-18]
-	_ = x[DaysBetweenJoin-19]
-	_ = x[MinDaysBetween-20]
-	_ = x[ParallelCourses-21]
-	_ = x[MinHoursFollowing-22]
-	_ = x[DoubleActivityNotOverBreaks-23]
-	_ = x[LastConstraint-24]
+	_ = x[TeacherMinLessonsPerDay-0]
+	_ = x[TeacherMaxLessonsPerDay-1]
+	_ = x[TeacherMaxAfternoons-2]
+	_ = x[TeacherMaxDays-3]
+	_ = x[TeacherLunchBreak-4]
+	_ = x[TeacherMaxGapsPerDay-5]
+	_ = x[TeacherMaxGapsPerWeek-6]
+	_ = x[ClassMinLessonsPerDay-7]
+	_ = x[ClassMaxLessonsPerDay-8]
+	_ = x[ClassMaxAfternoons-9]
+	_ = x[ClassLunchBreak-10]
+	_ = x[ClassForceFirstHour-11]
+	_ = x[ClassMaxGapsPerDay-12]
+	_ = x[ClassMaxGapsPerWeek-13]
+	_ = x[ActivitiesEndDay-14]
+	_ = x[BeforeAfterHour-15]
+	_ = x[DaysBetweenJoin-16]
+	_ = x[MinDaysBetween-17]
+	_ = x[ParallelCourses-18]
+	_ = x[MinHoursFollowing-19]
+	_ = x[DoubleActivityNotOverBreaks-20]
+	_ = x[LastConstraint-21]
 }
 
-const _ConstraintType_name = "TeacherNotAvailableTeacherMinLessonsPerDayTeacherMaxLessonsPerDayTeacherMaxAfternoonsTeacherMaxDaysTeacherLunchBreakTeacherMaxGapsPerDayTeacherMaxGapsPerWeekClassNotAvailableClassMinLessonsPerDayClassMaxLessonsPerDayClassMaxAfternoonsClassLunchBreakClassForceFirstHourClassMaxGapsPerDayClassMaxGapsPerWeekRoomNotAvailableActivitiesEndDayBeforeAfterHourDaysBetweenJoinMinDaysBetweenParallelCoursesMinHoursFollowingDoubleActivityNotOverBreaksLastConstraint"
+const _ConstraintType_name = "TeacherMinLessonsPerDayTeacherMaxLessonsPerDayTeacherMaxAfternoonsTeacherMaxDaysTeacherLunchBreakTeacherMaxGapsPerDayTeacherMaxGapsPerWeekClassMinLessonsPerDayClassMaxLessonsPerDayClassMaxAfternoonsClassLunchBreakClassForceFirstHourClassMaxGapsPerDayClassMaxGapsPerWeekActivitiesEndDayBeforeAfterHourDaysBetweenJoinMinDaysBetweenParallelCoursesMinHoursFollowingDoubleActivityNotOverBreaksLastConstraint"
 
-var _ConstraintType_index = [...]uint16{0, 19, 42, 65, 85, 99, 116, 136, 157, 174, 195, 216, 234, 249, 268, 286, 305, 321, 337, 352, 367, 381, 396, 413, 440, 454}
+var _ConstraintType_index = [...]uint16{0, 23, 46, 66, 80, 97, 117, 138, 159, 180, 198, 213, 232, 250, 269, 285, 300, 315, 329, 344, 361, 388, 402}
 
 func (i ConstraintType) String() string {
 	if i < 0 || i >= ConstraintType(len(_ConstraintType_index)-1) {

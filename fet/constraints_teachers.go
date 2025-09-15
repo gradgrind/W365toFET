@@ -2,7 +2,6 @@ package fet
 
 import (
 	"W365toFET/timetable"
-	"slices"
 	"strconv"
 )
 
@@ -21,16 +20,7 @@ func (fetinfo *fetInfo) handle_teacher_constraints() {
 	nhours := tt_data.NHours
 	cmap := tt_data.HardConstraints
 
-	//TODO: If I don't need the teacher index or Db, it might be
-	// better to put a pointer to the Teacher in Item ... and
-	// maybe have separate types of SpecialConstraint fot teacher
-	// and class.
-
-	for _, c := range cmap[timetable.TeacherNotAvailable] {
-		cn := c.(*timetable.SpecialConstraint)
-		t := db.Teachers[cn.Item]
-		matrix := cn.Value.([][]bool)
-		// "Not available" times
+	for tix, matrix := range tt_data.TeacherNotAvailable {
 		nats := []notAvailableTime{}
 		for d, hlist := range matrix {
 			for h, blocked := range hlist {
@@ -43,6 +33,7 @@ func (fetinfo *fetInfo) handle_teacher_constraints() {
 			}
 		}
 		if len(nats) > 0 {
+			t := db.Teachers[tix]
 			natimes = append(natimes,
 				teacherNotAvailable{
 					Weight_Percentage:             100,
@@ -55,9 +46,9 @@ func (fetinfo *fetInfo) handle_teacher_constraints() {
 
 		for _, c := range cmap[timetable.TeacherMaxDays] {
 			cn := c.(*timetable.SpecialConstraint)
-			t := db.Teachers[cn.Item]
 			n := cn.Value.(int)
 			if n >= 0 && n < ndays {
+				t := db.Teachers[cn.Item]
 				tmaxdpw = append(tmaxdpw, maxDaysT{
 					Weight_Percentage: 100,
 					Teacher:           t.Tag,
@@ -66,11 +57,12 @@ func (fetinfo *fetInfo) handle_teacher_constraints() {
 				})
 			}
 		}
+
 		for _, c := range cmap[timetable.TeacherMinLessonsPerDay] {
 			cn := c.(*timetable.SpecialConstraint)
-			t := db.Teachers[cn.Item]
 			n := cn.Value.(int)
 			if n >= 2 && n <= nhours {
+				t := db.Teachers[cn.Item]
 				tminlpd = append(tminlpd, minLessonsPerDayT{
 					Weight_Percentage:   100,
 					Teacher:             t.Tag,
@@ -80,11 +72,12 @@ func (fetinfo *fetInfo) handle_teacher_constraints() {
 				})
 			}
 		}
+
 		for _, c := range cmap[timetable.TeacherMaxLessonsPerDay] {
 			cn := c.(*timetable.SpecialConstraint)
-			t := db.Teachers[cn.Item]
 			n := cn.Value.(int)
 			if n >= 0 && n < nhours {
+				t := db.Teachers[cn.Item]
 				tmaxlpd = append(tmaxlpd, maxLessonsPerDayT{
 					Weight_Percentage:   100,
 					Teacher:             t.Tag,
@@ -93,56 +86,52 @@ func (fetinfo *fetInfo) handle_teacher_constraints() {
 				})
 			}
 		}
+
+		// Gather the max afternoons constraints as they may influence the
+		// max-gaps constraints.
+		//    teacher index -> max number of afternoons
+		pmmap := map[int]int{}
 		for _, c := range cmap[timetable.TeacherMaxAfternoons] {
 			cn := c.(*timetable.SpecialConstraint)
-			t := db.Teachers[cn.Item]
+			n := cn.Value.(int)
 			i := db.Info.FirstAfternoonHour
-			maxpm := t.MaxAfternoons
-			if maxpm >= 0 && i > 0 {
+			if i > 0 {
+				t := db.Teachers[cn.Item]
 				tmaxaft = append(tmaxaft, maxDaysinIntervalPerWeekT{
 					Weight_Percentage:   100,
 					Teacher:             t.Tag,
 					Interval_Start_Hour: strconv.Itoa(i),
 					Interval_End_Hour:   "", // end of day
-					Max_Days_Per_Week:   maxpm,
+					Max_Days_Per_Week:   n,
 					Active:              true,
 				})
+				pmmap[cn.Item] = n
 			}
 		}
 
-		//TODO...
-
-		// The lunch-break constraint may require adjustment of these:
-		//   t.MaxGapsPerDay
-		//   t.MaxGapsPerWeek
-		// So keep a record of the lunch-break constraints. Actually, that
-		// could be done by having a value for every teacher, ordered, like
-		// the blocked slots.
-
+		// Gather the lunch-break constraints as they may influence the
+		// max-gaps constraints.
+		//    teacher index -> number of days with lunch break
+		lbmap := map[int]int{}
 		if mbhours := db.Info.MiddayBreak; len(mbhours) != 0 {
-			not_availables := cmap[timetable.TeacherNotAvailable]
 			for _, c := range cmap[timetable.TeacherLunchBreak] {
 				cn := c.(*timetable.SpecialConstraint)
-				t := db.Teachers[cn.Item]
 				if cn.Value.(bool) {
-					nat := not_availables[cn.Item].(*timetable.SpecialConstraint).
-						Value.([][]bool)
-
-					// Generate the constraint unless all days have a blocked lesson
-					// at lunchtime.
+					// Generate the constraint unless all days have a blocked
+					// lesson at lunchtime.
+					nat := tt_data.TeacherNotAvailable[cn.Item]
 					lbdays := ndays
-					d := 0
-					for _, ts := range t.NotAvailable {
-						if ts.Day < d {
-							continue
-						}
-						if slices.Contains(mbhours, ts.Hour) {
-							lbdays--
-							d = ts.Day + 1
+					for d := range ndays {
+						for _, h := range mbhours {
+							if nat[d][h] {
+								lbdays--
+								break
+							}
 						}
 					}
 					if lbdays != 0 {
 						// Add a lunch-break constraint.
+						t := db.Teachers[cn.Item]
 						tlblist = append(tlblist, lunchBreakT{
 							Weight_Percentage:   100,
 							Teacher:             t.Tag,
@@ -151,39 +140,61 @@ func (fetinfo *fetInfo) handle_teacher_constraints() {
 							Maximum_Hours_Daily: len(mbhours) - 1,
 							Active:              true,
 						})
-						// Adjust gaps
-						if maxpm < lbdays {
-							lbdays = maxpm
-						}
-						if mgpday == 0 {
-							mgpday = 1
-						}
-						if mgpweek >= 0 {
-							mgpweek += lbdays
-						}
+						lbmap[cn.Item] = lbdays
 					}
 				}
 			}
 		}
 
-		if mgpday >= 0 {
-			tmaxgpd = append(tmaxgpd, maxGapsPerDayT{
-				Weight_Percentage: 100,
-				Teacher:           t.Tag,
-				Max_Gaps:          mgpday,
-				Active:            true,
-			})
+		for _, c := range cmap[timetable.TeacherMaxGapsPerDay] {
+			cn := c.(*timetable.SpecialConstraint)
+			n := cn.Value.(int)
+			// Ensure that a gap is allowed if there are lunch breaks.
+			if n == 0 {
+				_, ok := lbmap[cn.Item]
+				if ok {
+					// lbdays > 0
+					maxpm, ok := pmmap[cn.Item]
+					if !ok || maxpm != 0 {
+						n = 1
+					}
+				}
+			}
+			if n >= 0 {
+				t := db.Teachers[cn.Item]
+				tmaxgpd = append(tmaxgpd, maxGapsPerDayT{
+					Weight_Percentage: 100,
+					Teacher:           t.Tag,
+					Max_Gaps:          n,
+					Active:            true,
+				})
+			}
+
 		}
 
-		if mgpweek >= 0 {
-			tmaxgpw = append(tmaxgpw, maxGapsPerWeekT{
-				Weight_Percentage: 100,
-				Teacher:           t.Tag,
-				Max_Gaps:          mgpweek,
-				Active:            true,
-			})
+		for _, c := range cmap[timetable.TeacherMaxGapsPerWeek] {
+			cn := c.(*timetable.SpecialConstraint)
+			n := cn.Value.(int)
+			if n >= 0 {
+				// Adjust to accommodate lunch breaks
+				lbdays, ok := lbmap[cn.Item]
+				if ok {
+					// lbdays > 0
+					maxpm, ok := pmmap[cn.Item]
+					if ok && maxpm < lbdays {
+						lbdays = maxpm
+					}
+					n += lbdays
+				}
+				t := db.Teachers[cn.Item]
+				tmaxgpw = append(tmaxgpw, maxGapsPerWeekT{
+					Weight_Percentage: 100,
+					Teacher:           t.Tag,
+					Max_Gaps:          n,
+					Active:            true,
+				})
+			}
 		}
-
 	}
 	fetinfo.fetdata.Time_Constraints_List.
 		ConstraintTeacherNotAvailableTimes = natimes
@@ -201,5 +212,4 @@ func (fetinfo *fetInfo) handle_teacher_constraints() {
 		ConstraintTeacherIntervalMaxDaysPerWeek = tmaxaft
 	fetinfo.fetdata.Time_Constraints_List.
 		ConstraintTeacherMaxHoursDailyInInterval = tlblist
-
 }

@@ -51,6 +51,12 @@ type TtData struct {
 	CourseInfoList []*CourseInfo
 	Ref2CourseInfo map[NodeRef]*CourseInfo
 
+	// Each teacher, class and room has a matrix of days * hours cells
+	// containing true in blocked slots, indexing: [item-index][day][hour].
+	TeacherNotAvailable [][][]bool
+	ClassNotAvailable   [][][]bool
+	RoomNotAvailable    [][][]bool
+
 	HardConstraints map[ConstraintType][]any
 	SoftConstraints map[ConstraintType][]any
 

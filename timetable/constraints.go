@@ -18,8 +18,7 @@ type ConstraintType int
 // stringer --type ConstraintType
 
 const (
-	TeacherNotAvailable ConstraintType = iota
-	TeacherMinLessonsPerDay
+	TeacherMinLessonsPerDay ConstraintType = iota
 	TeacherMaxLessonsPerDay
 	TeacherMaxAfternoons
 	TeacherMaxDays
@@ -27,7 +26,6 @@ const (
 	TeacherMaxGapsPerDay
 	TeacherMaxGapsPerWeek
 
-	ClassNotAvailable
 	ClassMinLessonsPerDay
 	ClassMaxLessonsPerDay
 	ClassMaxAfternoons
@@ -35,8 +33,6 @@ const (
 	ClassForceFirstHour
 	ClassMaxGapsPerDay
 	ClassMaxGapsPerWeek
-
-	RoomNotAvailable
 
 	ActivitiesEndDay
 	BeforeAfterHour
@@ -134,6 +130,7 @@ func (tt_data *TtData) preprocessConstraints() {
 	// `TtData.HardConstraints` structure.
 	tt_data.collect_teacher_constraints()
 	tt_data.collect_class_constraints()
+	tt_data.collect_room_constraints()
 
 	// If an "AutomaticDifferentDays" constraint is present (at most one is
 	// permitted), the `auto_weight` and `auto_consec` variables will be set
