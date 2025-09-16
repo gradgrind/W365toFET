@@ -71,5 +71,6 @@ func main() {
 	// May want to change this with a different back-end ...
 	workingdir := stempath + "_fet"
 
-	autotimetable.StartGeneration(tt_data, workingdir)
+	timeout := 200 // seconds
+	autotimetable.StartGeneration(tt_data, workingdir, timeout)
 }

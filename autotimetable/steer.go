@@ -1,7 +1,6 @@
 package autotimetable
 
 import (
-	"W365toFET/base"
 	"W365toFET/timetable"
 	"fmt"
 	"os"
@@ -34,6 +33,7 @@ var MAXPROCESSES int = runtime.NumCPU() //TODO: use this?
 A `TtInstance` structure is constructed to manage the data for each
 timetable generation run, each run having its own goroutine.
 
+//TODO: no longer appropriate ...
 Each instance can be given a set of "child" functions determining how the
 tests proceed. For each of these functions a start-delay can be specified.
 It is also possible to specify a function to be called on "success" of the
@@ -59,11 +59,16 @@ var Descriptions map[string]string = map[string]string{
 }
 
 // TODO?
-var TEST_TIMEOUT = 10 // ticks for quick test functions
+var TIMEOUT_1 = 10 // ticks for quick test functions
 
+// Function to generate timetable from the given data
 var TtGenerate func(*timetable.TtData, *sync.WaitGroup)
 
-func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
+func StartGeneration(
+	tt_data_0 *timetable.TtData,
+	workingdir string,
+	TIMEOUT int,
+) {
 
 	// Catch termination signal
 	sigChan := make(chan os.Signal, 1)
@@ -78,15 +83,17 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 
 	//TODO? stop still needed?
 	// Open communication channels
-	stop := make(chan bool)
+	//stop := make(chan bool)
 
 	//TODO: Consider buffer size and blocking ...
 	add_instance := make(chan *TtInstance, 10)
+	instance_done := make(chan *TtInstance, 10)
 
 	global_data := GlobalData{
 		Ticks:    0,
 		TtData_0: tt_data_0,
 		//Instances: []*TtInstance{},
+		NewInstance: add_instance,
 	}
 
 	{
@@ -110,11 +117,10 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 			Global: &global_data,
 			Delay:  0,
 			//Ticks:       0,
-			//Timeout:     0,
+			Timeout: TIMEOUT,
 
 			TtData: tt_data_0,
 
-			NewInstance: add_instance,
 			//Stop:        stop,
 			WaitGroup: &wg,
 
@@ -148,7 +154,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			start_constraints(inst)
+			start_constraints(inst, instance_done)
 		}()
 	}
 
@@ -175,10 +181,10 @@ loop:
 			//TODO
 			fmt.Printf("*** SIGNAL *** %+v", ossig)
 			return
-		case <-stop:
-			//fmt.Println("checkProgress done!")
-			//TODO: tidying up? This channel is currently unused!
-			return
+		//case <-stop:
+		//fmt.Println("checkProgress done!")
+		//TODO: tidying up? This channel is currently unused!
+		//return
 		case new_instance := <-add_instance:
 			// Queue start of generator back-end
 
@@ -204,6 +210,14 @@ loop:
 				// In the case of a timeout, processing can continue until
 				// the goroutine finishes, but a cancellation is more drastic,
 				// all trace of the instance can be removed.
+
+				//TODO: timeout – consider interaction with delay, etc.
+				if inst.Timeout >= 0 {
+					inst.Timeout--
+					if inst.Timeout == 0 {
+						inst.TtData.Abort(inst.TtData)
+					}
+				}
 
 				if inst.Delay >= 0 {
 					inst.Delay--
@@ -305,6 +319,7 @@ loop:
 					fmt.Printf("--- End: %s cc=%d (%d) @ %d\n",
 						inst.TtData.Description, tt_data.State,
 						tt_data.Progress, global_data.Ticks)
+					instance_done <- inst
 				}
 				fmt.Printf("§§§ Before: %d %d\n", len(active_instances), len(ended))
 				active_instances = slices.DeleteFunc(active_instances,
@@ -316,6 +331,7 @@ loop:
 			}
 		}
 	}
+	instance_done <- nil
 	wg.Wait()
 	// All instances have completed.
 }
@@ -365,7 +381,7 @@ func newInstance(
 	// switched on or off without affecting those in the original `TtData`
 	// and `DbTopLevel`.
 
-	// Make a copy of the general constraints lists
+	// Make a copy of the constraints lists
 	hcmap := make(map[timetable.ConstraintType][]any,
 		len(tt_data.HardConstraints))
 	for k, v := range tt_data.HardConstraints {
@@ -379,7 +395,7 @@ func newInstance(
 	}
 	tt_data.SoftConstraints = scmap
 
-	// Copy the classes and teachers lists
+	/* Copy the classes and teachers lists
 
 	new_classes := make([]*base.Class, len(db.Classes))
 	for i, c0p := range db.Classes {
@@ -395,43 +411,15 @@ func newInstance(
 	}
 	db.Teachers = new_teachers
 
+	*/
+
 	tt_data.Description = descriptor
 
 	// Make a new `TtInstance`
 	instance := *instance_0
 	instance.TtData = &tt_data
+	instance.Timeout = TIMEOUT_1 // default timeout ticks
 	return &instance
-}
-
-/* TODO-- ... This may need to be via a channel!
-func addInstance(
-	instance *TtInstance,
-	delay int,
-) {
-	gdata := instance.Global
-	instance.Delay = delay
-	gdata.Instances = append(gdata.Instances, instance)
-	if delay == 0 {
-		instance.Delay--
-		//TtGenerate(instance.TtData, instance.WaitGroup)
-	}
-}
-*/
-
-func test_sequence(instance_0 *TtInstance) *TtInstance {
-	instance := newInstance(instance_0, "ONLY_BLOCKED_SLOTS")
-
-	// Keep only the hard-blocked time slots and the fixed activities.
-
-	// Disable all the classes' and teachers' constraints.
-	disable_all_constraints(instance)
-
-	//instance.SuccessPath = timetable.TtChainedFunc{
-	//	Delay: 0, Func: test_class_sequence}
-
-	// Request start of instance
-	instance.NewInstance <- instance
-	return instance
 }
 
 /*

@@ -12,15 +12,14 @@ type TtInstance struct {
 	Global *GlobalData
 	//Id    int
 	//Ticks       int
-	Delay int // ticks
-	//Timeout     int
+	Delay   int // ticks
+	Timeout int // ticks
 
 	TtData *timetable.TtData // current (possibly modified) data
 
 	// Communication channels
 	//Stop        chan bool
-	NewInstance chan *TtInstance // send here to start run
-	WaitGroup   *sync.WaitGroup
+	WaitGroup *sync.WaitGroup
 
 	// `State` values:
 	//		 0: running
@@ -36,7 +35,7 @@ type TtInstance struct {
 	// last updated.
 	//LastTime int
 	// Record the enablement status of each constraint:
-	ConstraintEnableMatrix [][]bool
+	//ConstraintEnableMatrix [][]bool
 	//
 	HardConstraintEnabled map[timetable.ConstraintType]map[int]bool
 
@@ -62,9 +61,10 @@ type TtInstance struct {
 }
 
 type GlobalData struct {
-	Ticks     int
-	TtData_0  *timetable.TtData // original data
-	Instances []*TtInstance
+	Ticks       int
+	TtData_0    *timetable.TtData // original data
+	Instances   []*TtInstance
+	NewInstance chan *TtInstance // send here to request run start
 }
 
 // ?

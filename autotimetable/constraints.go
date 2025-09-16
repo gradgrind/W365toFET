@@ -2,18 +2,20 @@ package autotimetable
 
 import (
 	"W365toFET/timetable"
+	"fmt"
 )
 
 /*
-Each constraint type has a function to switch the constraint on/off.
-For the class and teacher functions these are special functions for each
-type, for the general constraints, there is a single function, which has
-the constraint type as parameter. The individual constraints of a given
-type are also indexed, this being a parameter to the switch function.
+Function `set_hard_constraint_enable_state` activates or deactivates a list
+of individual constraints of a given type. The individual constraints are
+indexed, the index being in a range determined by the enabled constraints
+of that type in the original data.
 
 The cumulative effects of the constraint switches are to be found in the
 `TtData` supplied in the current `TtInstance`, which is used as the base
-upon which the switch functions work.
+upon which the switch functions work. The current state of all constraints
+of the original data is available as a boolean matrix, field
+`ConstraintEnableMatrix` of the instance.
 
 Of course, only constraints which are actually specified in the source data
 need to be tested, so the lists are filtered before starting the test
@@ -34,7 +36,10 @@ the construction of the timetable possible.
 // Associate enable/disable functions with the constraint indexes
 var cfmap [timetable.LastConstraint]func(*TtInstance, int, bool)
 
-func start_constraints(instance *TtInstance) {
+func start_constraints(
+	instance *TtInstance,
+	instance_done chan *TtInstance,
+) {
 	// `instance` itself should have no constraints enabled
 	tt_data := instance.Global.TtData_0
 
@@ -62,6 +67,31 @@ func start_constraints(instance *TtInstance) {
 	}
 
 	//TODO: With rooms? Fixed und choices? soft constraints?
+
+	// Gather completed instances
+	//TODO: Find a better way to exit this loop?
+	var finished *TtInstance
+	level1 := []*TtInstance{} // collect successful runs
+	level2 := []*TtInstance{} // collect unsuccessful runs
+	for {
+		select {
+		case finished = <-instance_done:
+			break
+		}
+		if finished == nil {
+			fmt.Printf("§ level 1: %d, level 2: %d\n", len(level1), len(level2))
+			break
+		}
+		//TODO: Actually I should only collect the individual-constraint instances ...
+		fmt.Printf("§FINISHED: %s\n", finished.TtData.Description)
+		if finished.TtData.State == 1 {
+			level1 = append(level1, finished)
+		} else if finished.TtData.State != 5 {
+			// state 5 means abandoned
+			//TODO: perhaps state 5 instances shouldn't get here at all?
+			level2 = append(level2, finished)
+		}
+	}
 }
 
 // Enable or disable a list of indexed constraints for a particular
@@ -102,7 +132,7 @@ func set_hard_constraint_enable_state(
 }
 
 func start_constraint_trial(instance *TtInstance) {
-	instance.NewInstance <- instance // register with tick loop
+	instance.Global.NewInstance <- instance // register with tick loop
 	//fmt.Printf(" >>>>>> %s\n", instance.TtData.Description)
 }
 
