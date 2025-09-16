@@ -14,6 +14,7 @@ type TtInstance struct {
 	//Ticks       int
 	Delay   int // ticks
 	Timeout int // ticks
+	Level   int
 
 	TtData *timetable.TtData // current (possibly modified) data
 

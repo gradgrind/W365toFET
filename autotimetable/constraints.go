@@ -45,6 +45,7 @@ func start_constraints(
 
 	// Start the individual constraints in the order given by the
 	// ConstraintType indexes.
+	counter := 0
 	for k := range timetable.LastConstraint {
 		// Only hard constraints for now ...
 		clist, ok := tt_data.HardConstraints[k]
@@ -57,6 +58,8 @@ func start_constraints(
 			panic("No constraints of type " + k.String())
 		}
 		inst := newInstance(instance, k.String())
+		inst.Level = 1
+		counter++
 		// Get all list indexes
 		cilist := make([]int, n)
 		for i := range n {
@@ -71,8 +74,9 @@ func start_constraints(
 	// Gather completed instances
 	//TODO: Find a better way to exit this loop?
 	var finished *TtInstance
-	level1 := []*TtInstance{} // collect successful runs
-	level2 := []*TtInstance{} // collect unsuccessful runs
+	var current *TtInstance = nil
+	levelok := []*TtInstance{}   // collect successful runs
+	levelfail := []*TtInstance{} // collect unsuccessful runs
 	for {
 		select {
 		case finished = <-instance_done:
@@ -82,15 +86,34 @@ func start_constraints(
 			fmt.Printf("§ level 1: %d, level 2: %d\n", len(level1), len(level2))
 			break
 		}
-		//TODO: Actually I should only collect the individual-constraint instances ...
-		fmt.Printf("§FINISHED: %s\n", finished.TtData.Description)
+		// Collect only the instances with Level > 0.
+		//TODO: Only instances with Level > 0 arrive here.
+		fmt.Printf("§FINISHED: %s %d\n",
+			finished.TtData.Description, finished.TtData.State)
+
+		// Don't use failed instances until it is clear that there are no ok
+		// instances available.
+		counter--
 		if finished.TtData.State == 1 {
-			level1 = append(level1, finished)
+
+			//TODO: if finished is a "COMPLETE" instance {
+			//   end all other instances, making this the result,
+			//   by sending on stop channel to steering? }
+
+			levelok = append(levelok, finished)
 		} else if finished.TtData.State != 5 {
 			// state 5 means abandoned
 			//TODO: perhaps state 5 instances shouldn't get here at all?
-			level2 = append(level2, finished)
+			levelfail = append(levelfail, finished)
 		}
+
+		// Start next level
+		if current == nil {
+
+		} else if current.TtData.State != 0 {
+			// Can this fail? Or rather, what would that mean?
+		}
+
 	}
 }
 
