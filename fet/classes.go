@@ -114,21 +114,3 @@ func fetGroupTag(g *base.Group) string {
 	}
 	return gt
 }
-
-/* Lunch-breaks
-
-Lunch-breaks can be done using max-hours-in-interval constraint, but that
-makes specification of max-gaps more difficult (becuase the lunch breaks
-count as gaps).
-
-The alternative is to add dummy lessons, clamped to the midday-break hours,
-on the days where none of the midday-break hours are blocked. However, this
-can also cause problems with gaps – the dummy lesson can itself create gaps,
-for example when a class only has lessons earlier in the day.
-
-Tests with the dummy lessons approach suggest that it is difficult to get the
-number of these lessons and their placement on the correct days right.
-
-This is an attempt with the max-hours-in-interval constraint.
-
-*/

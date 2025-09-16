@@ -5,6 +5,27 @@ import (
 	"strconv"
 )
 
+/* Lunch-breaks
+
+Lunch-breaks can be done using max-hours-in-interval constraint, but that
+makes specification of max-gaps more difficult (because the lunch breaks
+count as gaps).
+
+The alternative is to add dummy lessons, clamped to the midday-break hours,
+on the days where none of the midday-break hours are blocked. However, this
+can also cause problems with gaps – the dummy lesson can itself create gaps,
+for example when a class only has lessons earlier in the day.
+
+Tests with the dummy lessons approach suggest that it is difficult to get the
+number of these lessons and their placement on the correct days right.
+
+The code here uses max-hours-in-interval constraints and tries to compensate
+for the gaps that are thus created by adjusting the max-gaps constraints.
+
+*/
+
+// ------------------------------------------------------------------------
+
 func (fetinfo *fetInfo) handle_class_constraints() {
 	tt_data := fetinfo.tt_data
 	ndays := tt_data.NDays

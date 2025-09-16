@@ -83,6 +83,12 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 	//TODO: Consider buffer size and blocking ...
 	add_instance := make(chan *TtInstance, 10)
 
+	global_data := GlobalData{
+		Ticks:    0,
+		TtData_0: tt_data_0,
+		//Instances: []*TtInstance{},
+	}
+
 	{
 		tt_data_0.Description = "COMPLETE"
 		tt_data_0.WorkingDir = workingdir
@@ -101,12 +107,8 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 		// need stopping.
 		instance := &TtInstance{
 			//Id:          0,
-			Global: &GlobalData{
-				Ticks:    0,
-				TtData_0: tt_data_0,
-				//Instances: []*TtInstance{},
-			},
-			Delay: 0,
+			Global: &global_data,
+			Delay:  0,
 			//Ticks:       0,
 			//Timeout:     0,
 
@@ -161,14 +163,13 @@ func StartGeneration(tt_data_0 *timetable.TtData, workingdir string) {
 	 * terminated by a `cancelAll` call will have its state set to -4.
 	 */
 
-	active_instances := map[*TtInstance]struct{}{}
+	active_instances := []*TtInstance{}
 	inactive_instances := []*TtInstance{}
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	ended := []*TtInstance{}
 loop:
 	for {
-		ended = ended[:0]
 		select {
 		case ossig := <-sigChan:
 			//TODO
@@ -180,15 +181,21 @@ loop:
 			return
 		case new_instance := <-add_instance:
 			// Queue start of generator back-end
-			active_instances[new_instance] = struct{}{}
+
+			fmt.Printf("+++ Add: %s @ %d\n",
+				new_instance.TtData.Description, global_data.Ticks)
+
+			active_instances = append(active_instances, new_instance)
 		case <-ticker.C:
 			if len(active_instances) == 0 && len(inactive_instances) != 0 {
 				break loop
 			}
+			global_data.Ticks++
+
 			// Update the progress records of the currently active
 			// subprocesses, handle tick-related events.
-			for inst := range active_instances {
-				// Once the instance goroutine has finished, `inst.State` > 0.
+			for _, inst := range active_instances {
+				// Once the instance goroutine has finished, `tt_data.State` > 0.
 				// There are two kinds of "external" termination:
 				//  - a timeout, which works like a pre-empted failure, and
 				//  - a cancelling, which is used to terminate a sequence of
@@ -202,6 +209,10 @@ loop:
 					inst.Delay--
 					if inst.Delay < 0 {
 						// Start generator back-end
+
+						fmt.Printf("*** Start: %s @ %d\n",
+							inst.TtData.Description, global_data.Ticks)
+
 						TtGenerate(inst.TtData, &wg)
 					}
 					continue
@@ -284,14 +295,24 @@ loop:
 				*/
 			}
 			// Remove terminated instances from the active list
-			for _, inst := range ended {
-				tt_data := inst.TtData
-				if tt_data.State != 5 {
-					inactive_instances = append(inactive_instances, inst)
-				}
-				delete(active_instances, inst)
+			if len(ended) != 0 {
+				for _, inst := range ended {
+					tt_data := inst.TtData
+					if tt_data.State != 5 {
+						inactive_instances = append(inactive_instances, inst)
+					}
 
-				fmt.Println("=== End:", inst.TtData.Description, tt_data.State, tt_data.Progress)
+					fmt.Printf("--- End: %s cc=%d (%d) @ %d\n",
+						inst.TtData.Description, tt_data.State,
+						tt_data.Progress, global_data.Ticks)
+				}
+				fmt.Printf("§§§ Before: %d %d\n", len(active_instances), len(ended))
+				active_instances = slices.DeleteFunc(active_instances,
+					func(tti *TtInstance) bool {
+						return slices.Contains(ended, tti)
+					})
+				fmt.Printf("§§§ After: %d\n", len(active_instances))
+				ended = ended[:0]
 			}
 		}
 	}

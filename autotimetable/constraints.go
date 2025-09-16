@@ -37,36 +37,10 @@ var cfmap [timetable.LastConstraint]func(*TtInstance, int, bool)
 func start_constraints(instance *TtInstance) {
 	// `instance` itself should have no constraints enabled
 	tt_data := instance.Global.TtData_0
-	db := tt_data.Db
 
-	// Teacher constraints
-	tcmap := collect_teacher_constraints(
-		db.Teachers, tt_data.NDays, tt_data.NHours)
-	//fmt.Printf("§§§tcmap: %v\n", tcmap)
-	for cnx, txlist := range tcmap {
-		inst := newInstance(instance, cnx.String())
-		f := cfmap[cnx]
-		for _, tx := range txlist {
-			f(inst, tx, true)
-		}
-		start_constraint_trial(inst)
-	}
-
-	// Class constraints
-	ccmap := collect_class_constraints(
-		db.Classes, tt_data.NDays, tt_data.NHours)
-	//fmt.Printf("§§§ccmap: %v\n", ccmap)
-	for cnx, cxlist := range ccmap {
-		if len(cxlist) == 0 {
-			continue
-		}
-		inst := newInstance(instance, cnx.String())
-		f := cfmap[cnx]
-		for _, cx := range cxlist {
-			f(inst, cx, true)
-		}
-		start_constraint_trial(inst)
-	}
+	//TODO: It might be helpful to be able to set the starting order
+	// of the constraints, which is at present fairly random because
+	// of the HardConstraints map.
 
 	// Only hard constraints for now ...
 	for k, clist := range tt_data.HardConstraints {
@@ -127,7 +101,7 @@ func set_hard_constraint_enable_state(
 
 func start_constraint_trial(instance *TtInstance) {
 	instance.NewInstance <- instance // register with tick loop
-	//fmt.Printf(" +++ %s: %v\n", instance.TtData.Description, instance.TtData.HardConstraints)
+	//fmt.Printf(" >>>>>> %s\n", instance.TtData.Description)
 }
 
 func disable_all_constraints(instance *TtInstance) {
