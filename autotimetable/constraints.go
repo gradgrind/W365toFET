@@ -38,12 +38,14 @@ func start_constraints(instance *TtInstance) {
 	// `instance` itself should have no constraints enabled
 	tt_data := instance.Global.TtData_0
 
-	//TODO: It might be helpful to be able to set the starting order
-	// of the constraints, which is at present fairly random because
-	// of the HardConstraints map.
-
-	// Only hard constraints for now ...
-	for k, clist := range tt_data.HardConstraints {
+	// Start the individual constraints in the order given by the
+	// ConstraintType indexes.
+	for k := range timetable.LastConstraint {
+		// Only hard constraints for now ...
+		clist, ok := tt_data.HardConstraints[k]
+		if !ok {
+			continue
+		}
 		n := len(clist)
 		if n == 0 {
 			//TODO: Bug?
@@ -59,7 +61,7 @@ func start_constraints(instance *TtInstance) {
 		start_constraint_trial(inst)
 	}
 
-	//TODO: With rooms? Fixed und choices?
+	//TODO: With rooms? Fixed und choices? soft constraints?
 }
 
 // Enable or disable a list of indexed constraints for a particular
