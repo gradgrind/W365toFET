@@ -10,11 +10,11 @@ import (
 
 type TtInstance struct {
 	Global *GlobalData
-	//Id    int
+	Id     int
 	//Ticks       int
-	Delay   int // ticks
-	Timeout int // ticks
-	Level   int
+	Delay     int // ticks
+	Timeout   int // ticks
+	Cancelled bool
 
 	TtData *timetable.TtData // current (possibly modified) data
 
@@ -22,6 +22,7 @@ type TtInstance struct {
 	//Stop        chan bool
 	WaitGroup *sync.WaitGroup
 
+	//TODO: clarify, see tick loop!
 	// `State` values:
 	//		 0: running
 	//     	 1: finished successfully

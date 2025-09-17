@@ -111,12 +111,22 @@ func RunFet(tt_data *timetable.TtData, waitgroup *sync.WaitGroup) {
 	//go run(fet_data, waitgroup, runCmd)
 }
 
+//TODO: fet-cl places any messages in the log directory, as result.txt
+// (which is probably not so interesting), warnings.txt (which might
+// possibly containt something of diagnostic interest) and errors.txt
+// (which may well contain diagnostic information that should ideally
+// have been caught earlier ...). The warnings.txt and errors.txt
+// files may not be present. If there is an errors.txt, it should
+// certainly be reported somehow (in fet_data.message?).
+
 // The last item to be changed must be `fet_data.state`, to avoid slightly
 // possible race conditions.
 func run(fet_data *fetTtData, cmd *exec.Cmd) {
-	res, err := cmd.Output()
+	_, err := cmd.CombinedOutput()
 	if err == nil {
-		fet_data.message = string(res)
+		// Apparently this can happen even if the generation is not
+		// complete, so the handler (`ttTick`, see below) in the tick-loop
+		// should check for completion.
 		fet_data.state = 1
 	} else {
 		switch e := err.(type) {
@@ -125,18 +135,17 @@ func run(fet_data *fetTtData, cmd *exec.Cmd) {
 				">>> !!! Failed running FET on %s:\n  %s\n",
 				fet_data.ifile, err))
 		case *exec.ExitError:
-			// If FET aborts because of a data error, this case will be run
-			// Is the exit code then always 1?
-			// If killed the exit code seems to be -1.
+			// If FET fails because of a data error, this case will be run,
+			// apparently with exit code = 1 (not sure if this is always
+			// the case).
+			// If terminated by a timeout the exit code seems to be -1.
 			fmt.Printf(">>> !!! FET cc on %s = %d\n",
 				fet_data.ifile, e.ExitCode())
 			if e.ExitCode() < 0 {
 				// aborted
-				fet_data.message = string(res)
 				fet_data.state = 3
 			} else {
 				// error completion
-				fet_data.message = string(res)
 				fet_data.state = 2
 			}
 		default:

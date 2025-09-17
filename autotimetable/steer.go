@@ -58,6 +58,8 @@ var Descriptions map[string]string = map[string]string{
 	"ONLY_BLOCKED_SLOTS": "All constraints – except blocked slots – disabled",
 }
 
+const ID_BLOCKED_SLOTS int = -100
+
 // TODO?
 var TIMEOUT_1 = 10 // ticks for quick test functions
 
@@ -113,7 +115,7 @@ func StartGeneration(
 		// should still be running when the whole process finishes, and would
 		// need stopping.
 		instance := &TtInstance{
-			//Id:          0,
+			Id:     -1,
 			Global: &global_data,
 			Delay:  0,
 			//Ticks:       0,
@@ -144,7 +146,7 @@ func StartGeneration(
 		start_constraint_trial(instance)
 
 		// Unconstrained instance
-		inst := newInstance(instance, "ONLY_BLOCKED_SLOTS")
+		inst := newInstance(instance, "ONLY_BLOCKED_SLOTS", ID_BLOCKED_SLOTS)
 		disable_all_constraints(inst)
 		// Request start
 		start_constraint_trial(inst)
@@ -174,6 +176,7 @@ func StartGeneration(
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	ended := []*TtInstance{}
+	var result *TtInstance
 loop:
 	for {
 		select {
@@ -201,15 +204,18 @@ loop:
 			// Update the progress records of the currently active
 			// subprocesses, handle tick-related events.
 			for _, inst := range active_instances {
-				// Once the instance goroutine has finished, `tt_data.State` > 0.
+				// Once the instance goroutine has finished, `tt_data.State`
+				// is > 0.
+				// If the state is 1, the instance completed successfully.
+				// If the state is 2, the instance failed (somehow the data
+				// was discovered to be insoluble).
 				// There are two kinds of "external" termination:
 				//  - a timeout, which works like a pre-empted failure, and
-				//  - a cancelling, which is used to terminate a sequence of
-				//    tests which (with hindsight) should not have been
-				//    started in the first place.
-				// In the case of a timeout, processing can continue until
-				// the goroutine finishes, but a cancellation is more drastic,
-				// all trace of the instance can be removed.
+				//    is indicated by state 3;
+				//  - a cancellation, which can be used to terminate a
+				//    an instance which (with hindsight) should not have been
+				//    started in the first place. This is indicated by
+				//    `inst.Cancelled` being `true`.
 
 				//TODO: timeout – consider interaction with delay, etc.
 				if inst.Timeout >= 0 {
@@ -319,7 +325,27 @@ loop:
 					fmt.Printf("--- End: %s cc=%d (%d) @ %d\n",
 						inst.TtData.Description, tt_data.State,
 						tt_data.Progress, global_data.Ticks)
-					instance_done <- inst
+
+					if inst.Id >= 0 {
+						instance_done <- inst
+					} else {
+						if inst.Id <= ID_BLOCKED_SLOTS {
+							if tt_data.State != 1 {
+
+								//TODO: cancel running instances,
+								// start testing individual classes
+
+							}
+						} else {
+							// A "complete" instance has succeeded.
+
+							//TODO: cancel running instances, wind everything up.
+
+							result = inst
+
+						}
+					}
+
 				}
 				fmt.Printf("§§§ Before: %d %d\n", len(active_instances), len(ended))
 				active_instances = slices.DeleteFunc(active_instances,
@@ -328,6 +354,9 @@ loop:
 					})
 				fmt.Printf("§§§ After: %d\n", len(active_instances))
 				ended = ended[:0]
+
+				//
+
 			}
 		}
 	}
@@ -367,7 +396,7 @@ func full_success(instance_0 *TtInstance) *TtInstance {
 */
 
 func newInstance(
-	instance_0 *TtInstance, descriptor string,
+	instance_0 *TtInstance, descriptor string, tag int,
 ) *TtInstance {
 	// Copy original TtData (shallow copy only!)
 	tt_data := *instance_0.TtData
@@ -418,6 +447,7 @@ func newInstance(
 	// Make a new `TtInstance`
 	instance := *instance_0
 	instance.TtData = &tt_data
+	instance.Id = tag
 	instance.Timeout = TIMEOUT_1 // default timeout ticks
 	return &instance
 }

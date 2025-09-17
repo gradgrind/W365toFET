@@ -57,8 +57,7 @@ func start_constraints(
 			//TODO: Bug?
 			panic("No constraints of type " + k.String())
 		}
-		inst := newInstance(instance, k.String())
-		inst.Level = 1
+		inst := newInstance(instance, k.String(), int(k))
 		counter++
 		// Get all list indexes
 		cilist := make([]int, n)
@@ -71,7 +70,7 @@ func start_constraints(
 
 	//TODO: With rooms? Fixed und choices? soft constraints?
 
-	// Gather completed instances
+	// Gather the completed instances with single constraint types
 	//TODO: Find a better way to exit this loop?
 	var finished *TtInstance
 	var current *TtInstance = nil
@@ -83,11 +82,10 @@ func start_constraints(
 			break
 		}
 		if finished == nil {
-			fmt.Printf("§ level 1: %d, level 2: %d\n", len(level1), len(level2))
+			fmt.Printf("§ level 1: %d, level 2: %d\n", len(levelok), len(levelfail))
 			break
 		}
-		// Collect only the instances with Level > 0.
-		//TODO: Only instances with Level > 0 arrive here.
+
 		fmt.Printf("§FINISHED: %s %d\n",
 			finished.TtData.Description, finished.TtData.State)
 
