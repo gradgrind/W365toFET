@@ -52,7 +52,7 @@ func ReadPlacements(
 
 	// Need mapping for the Rooms
 	rmap := map[string]Ref{}
-	for _, r := range tt_data.Db.Rooms {
+	for _, r := range tt_data.SharedData.Db.Rooms {
 		rmap[r.Tag] = r.Id
 	}
 

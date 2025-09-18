@@ -20,6 +20,9 @@ type TtSharedData struct {
 	NHours       int
 	HoursPerWeek int
 
+	// Directory which can be freely used by the timetable generator back-end
+	WorkingDir string
+
 	// `Resources` is an array mapping resource indexes to their corresponding
 	// atomic group, teacher or room nodes (it contains pointers).
 	Resources    []base.Resource //TODO: or any?
@@ -46,7 +49,6 @@ type TtSharedData struct {
 // A TtData is the top-level structure for the timetable data.
 type TtData struct {
 	Description string
-	WorkingDir  string
 
 	SharedData *TtSharedData
 
@@ -96,7 +98,7 @@ type ClassDivision struct {
 
 // BasicSetup performs the initialization of a TtData structure, collecting
 // "resources" (atomic student groups, teachers and rooms) and "activities".
-func BasicSetup(db *base.DbTopLevel) *TtData {
+func BasicSetup(db *base.DbTopLevel, workingdir string) *TtData {
 	days := len(db.Days)
 	hours := len(db.Hours)
 	tt_shared_data := &TtSharedData{
@@ -104,6 +106,7 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 		NDays:        days,
 		NHours:       hours,
 		HoursPerWeek: days * hours,
+		WorkingDir:   workingdir,
 	}
 	tt_data := &TtData{
 		SharedData: tt_shared_data,

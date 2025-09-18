@@ -64,13 +64,13 @@ func main() {
 	stempath := strings.TrimSuffix(abspath, filepath.Ext(abspath))
 	db.SaveDb(stempath + "_DB.json")
 
-	tt_data := timetable.BasicSetup(db)
-	fmt.Printf("Resources: %d\n", len(tt_data.Resources))
-	fmt.Printf("Activities: %d\n", len(tt_data.Activities)-1)
-
 	// May want to change this with a different back-end ...
 	workingdir := stempath + "_fet"
 
+	tt_data := timetable.BasicSetup(db, workingdir)
+	fmt.Printf("Resources: %d\n", len(tt_data.SharedData.Resources))
+	fmt.Printf("Activities: %d\n", len(tt_data.SharedData.Activities)-1)
+
 	timeout := 200 // seconds
-	autotimetable.StartGeneration(tt_data, workingdir, timeout)
+	autotimetable.StartGeneration(tt_data, timeout)
 }

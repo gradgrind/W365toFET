@@ -46,9 +46,10 @@ type fetStudentsList struct {
 
 func getClasses(fetinfo *fetInfo) {
 	tt_data := fetinfo.tt_data
-	db := tt_data.Db
+	shared_data := tt_data.SharedData
+	db := shared_data.Db
 	items := []fetClass{}
-	for _, cdiv := range tt_data.ClassDivisions {
+	for _, cdiv := range shared_data.ClassDivisions {
 		cl := cdiv.Class
 		cname := cl.Tag
 		// Skip "special" classes.
@@ -66,11 +67,11 @@ func getClasses(fetinfo *fetInfo) {
 				g := fetGroupTag(db.Elements[gref].(*base.Group))
 
 				subgroups := []fetSubgroup{}
-				ags := tt_data.AtomicGroups[gref]
+				ags := shared_data.AtomicGroups[gref]
 				for _, ag := range ags {
 					subgroups = append(subgroups,
 						fetSubgroup{
-							Name: tt_data.Resources[ag].GetResourceTag()},
+							Name: shared_data.Resources[ag].GetResourceTag()},
 					)
 				}
 				groups = append(groups, fetGroup{

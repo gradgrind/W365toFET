@@ -60,7 +60,7 @@ type roomNotAvailable struct {
 // Generate the fet entries for the basic ("real") rooms.
 func getRooms(fetinfo *fetInfo) {
 	rooms := []fetRoom{}
-	for _, n := range fetinfo.tt_data.Db.Rooms {
+	for _, n := range fetinfo.tt_data.SharedData.Db.Rooms {
 		rooms = append(rooms, fetRoom{
 			Name:      n.Tag,
 			Long_Name: n.Name,
@@ -82,13 +82,15 @@ func (fetinfo *fetInfo) getFetRooms(cinfo *timetable.CourseInfo) []string {
 	// First get the Element Tags for FET.
 	rtags := []string{}
 	for _, rr := range cinfo.FixedRooms {
-		rtags = append(rtags, tt_data.Resources[rr].GetResourceTag())
+		rtags = append(rtags,
+			tt_data.SharedData.Resources[rr].GetResourceTag())
 	}
 	rctags := [][]string{}
 	for _, rc := range cinfo.RoomChoices {
 		rcl := []string{}
 		for _, rr := range rc {
-			rcl = append(rcl, tt_data.Resources[rr].GetResourceTag())
+			rcl = append(rcl,
+				tt_data.SharedData.Resources[rr].GetResourceTag())
 		}
 		rctags = append(rctags, rcl)
 	}

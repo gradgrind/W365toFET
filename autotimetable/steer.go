@@ -66,11 +66,8 @@ var TIMEOUT_1 = 10 // ticks for quick test functions
 // Function to generate timetable from the given data
 var TtGenerate func(*timetable.TtData, *sync.WaitGroup)
 
-func StartGeneration(
-	tt_data_0 *timetable.TtData,
-	workingdir string,
-	TIMEOUT int,
-) {
+func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
+	tt_shared_data := tt_data_0.SharedData
 
 	// Catch termination signal
 	sigChan := make(chan os.Signal, 1)
@@ -100,7 +97,7 @@ func StartGeneration(
 
 	{
 		tt_data_0.Description = "COMPLETE"
-		tt_data_0.WorkingDir = workingdir
+		workingdir := tt_shared_data.WorkingDir
 
 		// Provide an empty working directory.
 		os.RemoveAll(workingdir)
@@ -176,7 +173,10 @@ func StartGeneration(
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	ended := []*TtInstance{}
-	var result *TtInstance
+
+	//TODO
+	//var result *TtInstance
+
 loop:
 	for {
 		select {
@@ -221,7 +221,7 @@ loop:
 				if inst.Timeout >= 0 {
 					inst.Timeout--
 					if inst.Timeout == 0 {
-						inst.TtData.Abort(inst.TtData)
+						tt_shared_data.Abort(inst.TtData)
 					}
 				}
 
@@ -270,7 +270,7 @@ loop:
 					continue
 				}
 				tt_data.Ticks++
-				h := tt_data.TickHandler
+				h := tt_shared_data.TickHandler
 				if h != nil {
 					// The handler should only be set when the the process is
 					// fully running
@@ -341,7 +341,7 @@ loop:
 
 							//TODO: cancel running instances, wind everything up.
 
-							result = inst
+							//TODO: result = inst
 
 						}
 					}
@@ -398,13 +398,15 @@ func full_success(instance_0 *TtInstance) *TtInstance {
 func newInstance(
 	instance_0 *TtInstance, descriptor string, tag int,
 ) *TtInstance {
+	tt_data_0 := instance_0.TtData
+	tt_shared_data := tt_data_0.SharedData
 	// Copy original TtData (shallow copy only!)
-	tt_data := *instance_0.TtData
-
-	// Copy original DbTopLevel (shallow copy only!)
-	db0 := tt_data.Db
-	db := *db0
-	tt_data.Db = &db
+	//TODO: Probably better to start with an empty one!
+	tt_data := timetable.TtData{
+		Description:             descriptor,
+		SharedData:              tt_shared_data,
+		WITHOUT_ROOM_PLACEMENTS: tt_data_0.WITHOUT_ROOM_PLACEMENTS,
+	}
 
 	// Make a deeper copy of the constraints so that these can be
 	// switched on or off without affecting those in the original `TtData`
@@ -412,14 +414,14 @@ func newInstance(
 
 	// Make a copy of the constraints lists
 	hcmap := make(map[timetable.ConstraintType][]any,
-		len(tt_data.HardConstraints))
-	for k, v := range tt_data.HardConstraints {
+		len(tt_data_0.HardConstraints))
+	for k, v := range tt_data_0.HardConstraints {
 		hcmap[k] = slices.Clone(v)
 	}
 	tt_data.HardConstraints = hcmap
 	scmap := make(map[timetable.ConstraintType][]any,
-		len(tt_data.SoftConstraints))
-	for k, v := range tt_data.SoftConstraints {
+		len(tt_data_0.SoftConstraints))
+	for k, v := range tt_data_0.SoftConstraints {
 		scmap[k] = slices.Clone(v)
 	}
 	tt_data.SoftConstraints = scmap

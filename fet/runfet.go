@@ -19,8 +19,9 @@ func ttRunAbort(tt_data *timetable.TtData) {
 }
 
 func RunFet(tt_data *timetable.TtData, waitgroup *sync.WaitGroup) {
+	shared_data := tt_data.SharedData
 	fname := tt_data.Description
-	dir_n := filepath.Join(tt_data.WorkingDir, fname)
+	dir_n := filepath.Join(shared_data.WorkingDir, fname)
 
 	//err := os.MkdirAll(newpath, os.ModePerm)
 	err := os.Mkdir(dir_n, 0755)
@@ -71,7 +72,7 @@ func RunFet(tt_data *timetable.TtData, waitgroup *sync.WaitGroup) {
 	// Note that it should be safe to call `cancel` multiple times.
 	fet_data := &fetTtData{
 		state:      0,
-		activities: len(tt_data.Activities),
+		activities: len(shared_data.Activities),
 		ifile:      fetfile,
 		odir:       odir,
 		logfile:    logfile,
@@ -98,9 +99,10 @@ func RunFet(tt_data *timetable.TtData, waitgroup *sync.WaitGroup) {
 		"--outputdir="+odir,
 	)
 
+	//TODO: These only need to be done once, before any calls to RunFet
 	//TODO: Deal with this and check for possible race conditions
-	tt_data.TickHandler = ttTick
-	tt_data.Abort = ttRunAbort
+	shared_data.TickHandler = ttTick
+	shared_data.Abort = ttRunAbort
 
 	waitgroup.Add(1)
 	go func() {
@@ -159,7 +161,6 @@ var re *regexp.Regexp = regexp.MustCompile(pattern)
 
 type fetTtData struct {
 	state      int
-	message    string
 	activities int // total number of activities to place
 	ifile      string
 	odir       string
@@ -196,7 +197,7 @@ func ttTick(tt_data *timetable.TtData) {
 					count, err := strconv.Atoi(string(l[2]))
 					if err == nil {
 						percent := count * 100 /
-							(len(tt_data.Activities) - 1)
+							(len(tt_data.SharedData.Activities) - 1)
 						if percent > tt_data.Progress {
 							tt_data.Progress = percent
 							tt_data.LastTime = tt_data.Ticks

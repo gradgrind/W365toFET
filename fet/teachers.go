@@ -19,7 +19,7 @@ type fetTeachersList struct {
 
 func getTeachers(fetinfo *fetInfo) {
 	items := []fetTeacher{}
-	for _, n := range fetinfo.tt_data.Db.Teachers {
+	for _, n := range fetinfo.tt_data.SharedData.Db.Teachers {
 		items = append(items, fetTeacher{
 			Name: n.Tag,
 			Long_Name: fmt.Sprintf("%s %s",

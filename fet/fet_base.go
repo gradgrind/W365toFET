@@ -134,7 +134,7 @@ type basicSpaceConstraint struct {
 }
 
 func MakeFetFile(tt_data *timetable.TtData) (string, string) {
-	dbdata := tt_data.Db
+	dbdata := tt_data.SharedData.Db
 
 	// Build ref-index -> fet-key mapping. This is needed for the class
 	// divisions in the student group definitions.

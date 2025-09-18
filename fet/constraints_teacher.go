@@ -26,9 +26,10 @@ thus created by adjusting the max-gaps constraints.
 
 func (fetinfo *fetInfo) handle_teacher_constraints() {
 	tt_data := fetinfo.tt_data
-	db := tt_data.Db
-	ndays := tt_data.NDays
-	nhours := tt_data.NHours
+	shared_data := tt_data.SharedData
+	db := shared_data.Db
+	ndays := shared_data.NDays
+	nhours := shared_data.NHours
 	cmap := tt_data.HardConstraints
 
 	natimes := []teacherNotAvailable{}

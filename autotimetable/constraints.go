@@ -33,9 +33,6 @@ the construction of the timetable possible.
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-// Associate enable/disable functions with the constraint indexes
-var cfmap [timetable.LastConstraint]func(*TtInstance, int, bool)
-
 func start_constraints(
 	instance *TtInstance,
 	instance_done chan *TtInstance,
@@ -158,10 +155,6 @@ func start_constraint_trial(instance *TtInstance) {
 }
 
 func disable_all_constraints(instance *TtInstance) {
-
-	disable_class_constraints(instance)
-	disable_teacher_constraints(instance)
-
 	tt_data := instance.TtData
 
 	// Remove general constraints
@@ -176,43 +169,4 @@ func disable_all_constraints(instance *TtInstance) {
 	// items accessible via the `CourseInfo` pointer in the individual
 	// `timetable.Activity` items.
 	tt_data.WITHOUT_ROOM_PLACEMENTS = true
-}
-
-// Disable all class constraints
-func disable_class_constraints(instance *TtInstance) {
-	n := len(instance.TtData.Db.Classes)
-	for _, ci := range []timetable.ConstraintType{
-		timetable.ClassMinLessonsPerDay,
-		timetable.ClassMaxLessonsPerDay,
-		timetable.ClassMaxAfternoons,
-		timetable.ClassForceFirstHour,
-		timetable.ClassLunchBreak,
-		timetable.ClassMaxGapsPerDay,
-		timetable.ClassMaxGapsPerWeek,
-	} {
-		f := cfmap[ci]
-		for i := range n {
-			f(instance, i, false)
-		}
-	}
-
-}
-
-// Disable all teacher constraints
-func disable_teacher_constraints(instance *TtInstance) {
-	n := len(instance.TtData.Db.Teachers)
-	for _, ci := range []timetable.ConstraintType{
-		timetable.TeacherMinLessonsPerDay,
-		timetable.TeacherMaxLessonsPerDay,
-		timetable.TeacherMaxAfternoons,
-		timetable.TeacherMaxDays,
-		timetable.TeacherLunchBreak,
-		timetable.TeacherMaxGapsPerDay,
-		timetable.TeacherMaxGapsPerWeek,
-	} {
-		f := cfmap[ci]
-		for i := range n {
-			f(instance, i, false)
-		}
-	}
 }

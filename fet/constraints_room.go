@@ -4,7 +4,7 @@ import "strconv"
 
 func (fetinfo *fetInfo) handle_room_constraints() {
 	tt_data := fetinfo.tt_data
-	db := tt_data.Db
+	db := tt_data.SharedData.Db
 
 	natimes := []roomNotAvailable{}
 	for rix, matrix := range tt_data.RoomNotAvailable {

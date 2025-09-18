@@ -40,6 +40,7 @@ type fetActivityTags struct {
 // Generate the fet activties.
 func getActivities(fetinfo *fetInfo) []idMap {
 	tt_data := fetinfo.tt_data
+	shared_data := tt_data.SharedData
 
 	// ************* Start with the activity tags
 	tags := []fetActivityTag{}
@@ -59,11 +60,11 @@ func getActivities(fetinfo *fetInfo) []idMap {
 
 	// ************* Now the activities
 	activities := []fetActivity{}
-	for _, cinfo := range tt_data.CourseInfoList {
+	for _, cinfo := range shared_data.CourseInfoList {
 		// Teachers
 		tlist := []string{}
 		for _, ti := range cinfo.Teachers {
-			tlist = append(tlist, tt_data.Resources[ti].GetResourceTag())
+			tlist = append(tlist, shared_data.Resources[ti].GetResourceTag())
 		}
 		slices.Sort(tlist)
 		// Groups
@@ -130,7 +131,7 @@ func getActivities(fetinfo *fetInfo) []idMap {
 
 func addPlacementConstraints(fetinfo *fetInfo) {
 	tt_data := fetinfo.tt_data
-	for _, cinfo := range tt_data.CourseInfoList {
+	for _, cinfo := range tt_data.SharedData.CourseInfoList {
 		var rooms []string
 		// Set "preferred" rooms, if not blocked.
 		if !tt_data.WITHOUT_ROOM_PLACEMENTS {
