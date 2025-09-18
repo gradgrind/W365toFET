@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-/*
+/* TODO?
 Function `set_hard_constraint_enable_state` activates or deactivates a list
 of individual constraints of a given type. The individual constraints are
 indexed, the index being in a range determined by the enabled constraints
@@ -61,7 +61,7 @@ func start_constraints(
 		for i := range n {
 			cilist[i] = i
 		}
-		set_hard_constraint_enable_state(inst, k, cilist, true)
+		//TODO? set_hard_constraint_enable_state(inst, k, cilist, true)
 		start_constraint_trial(inst)
 	}
 
@@ -112,6 +112,7 @@ func start_constraints(
 	}
 }
 
+/*TODO?
 // Enable or disable a list of indexed constraints for a particular
 // constraint type in the `HardConstraints` collection, changing also
 // `HardConstraintEnabled` accordingly.
@@ -148,6 +149,7 @@ func set_hard_constraint_enable_state(
 	}
 	instance.TtData.HardConstraints[constraint_type] = newlist
 }
+*/
 
 func start_constraint_trial(instance *TtInstance) {
 	instance.Global.NewInstance <- instance // register with tick loop

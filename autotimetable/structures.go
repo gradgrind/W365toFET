@@ -9,9 +9,8 @@ import (
 // timetable generation.
 
 type TtInstance struct {
-	Global *GlobalData
-	Id     int
-	//Ticks       int
+	Global  *GlobalData
+	Id      int
 	Delay   int // ticks
 	Timeout int // ticks
 
@@ -22,48 +21,9 @@ type TtInstance struct {
 
 	TtData *timetable.TtData // current (possibly modified) data
 
-	// Communication channels
-	//Stop        chan bool
-	WaitGroup *sync.WaitGroup
+	WaitGroup *sync.WaitGroup // for waiting until all goroutines finish
 
-	//TODO: clarify, see tick loop!
-	// `State` values:
-	//		 0: running
-	//     	 1: finished successfully
-	//		 2: failed
-	//		 3: process aborted
-	//       4: other incomplete termination
-	//		 5: cancelled by `cancelAll`
-	//		-1: timeout (awaiting completion)
-	//State    int
-	//Progress int // percentage of activities which have been placed
-	// `LastTime` is the `Ticks` value at which the `Progress` field was
-	// last updated.
-	//LastTime int
-	// Record the enablement status of each constraint:
-	//ConstraintEnableMatrix [][]bool
-	//
-	HardConstraintEnabled map[timetable.ConstraintType]map[int]bool
-
-	// Collate intermediate test results:
-	//SearchInfo *SearchInfo
-	// `HandlerData` provides a field to be used by the timetable "back-end".
-	//HandlerData     any ... TODO: move to TtData?
-
-	/*TODO???
-	UpdateHandler func(instance *TtInstance)
-
-	Message string // completion information
-
-	Abort func(any) // pass HandlerData
-
-	SuccessPath     TtChainedFunc
-	SuccessInstance *TtInstance
-	FailurePath     TtChainedFunc
-	FailureInstance *TtInstance
-	OtherPaths      []TtChainedFunc
-	OtherInstances  []*TtInstance
-	*/
+	//? HardConstraintEnabled map[timetable.ConstraintType]map[int]bool
 }
 
 type GlobalData struct {
@@ -73,12 +33,13 @@ type GlobalData struct {
 	NewInstance chan *TtInstance // send here to request run start
 }
 
-// ?
+/* TODO?
 type TtHandler interface {
 	Update(*TtInstance)
 }
+*/
 
-// ?
+/* TODO?
 type TtChainedFunc struct {
 	// `Delay` specifies the number of ticks after which the function should
 	// be called. 0 specifies an infinite delay (i.e. the function must be
@@ -104,3 +65,4 @@ type SearchInfo struct {
 	//TODO--?
 	NextPath TtChainedFunc
 }
+*/

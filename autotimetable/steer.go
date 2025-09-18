@@ -405,6 +405,9 @@ func newInstance(
 	tt_data := timetable.TtData{
 		Description:             descriptor,
 		SharedData:              tt_shared_data,
+		TeacherNotAvailable:     tt_data_0.TeacherNotAvailable,
+		ClassNotAvailable:       tt_data_0.ClassNotAvailable,
+		RoomNotAvailable:        tt_data_0.RoomNotAvailable,
 		WITHOUT_ROOM_PLACEMENTS: tt_data_0.WITHOUT_ROOM_PLACEMENTS,
 	}
 
