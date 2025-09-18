@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func (tt_data *TtData) roomChoiceFilter(cinfo *CourseInfo) {
+func (tt_shared_data *TtSharedData) roomChoiceFilter(cinfo *CourseInfo) {
 	delta := 0
 
 	necessary := slices.Clone(cinfo.FixedRooms)
@@ -51,7 +51,7 @@ stage1:
 			if delta < 0 {
 				// Report error and try to recover by using current `necessary`
 				// and dropping choice lists
-				tt_data.errorRCG(cinfo, rc0)
+				tt_shared_data.errorRCG(cinfo, rc0)
 				cinfo.RoomChoices = nil
 				slices.Sort(necessary)
 				cinfo.FixedRooms = necessary
@@ -92,7 +92,7 @@ stage1:
 		if len(newcp) == 0 {
 			// Report error and try to recover by using current `necessary`
 			// and dropping choice lists
-			tt_data.errorRCG(cinfo, rc)
+			tt_shared_data.errorRCG(cinfo, rc)
 			cinfo.RoomChoices = nil
 			slices.Sort(necessary)
 			cinfo.FixedRooms = necessary
@@ -139,11 +139,11 @@ func init() {
 		"Course %s: Invalid room-choice-group with %s"
 }
 
-func (tt_data *TtData) errorRCG(cinfo *CourseInfo, rooms []ResourceIndex) {
+func (tt_shared_data *TtSharedData) errorRCG(cinfo *CourseInfo, rooms []ResourceIndex) {
 	rlist := []string{}
 	for _, r := range rooms {
-		rlist = append(rlist, tt_data.Resources[r].GetResourceTag())
+		rlist = append(rlist, tt_shared_data.Resources[r].GetResourceTag())
 	}
 	base.ERROR("timetable__errorRCG__INVALID_ROOM_CHOICE_GROUPS",
-		tt_data.View(cinfo), strings.Join(rlist, ", "))
+		tt_shared_data.View(cinfo), strings.Join(rlist, ", "))
 }

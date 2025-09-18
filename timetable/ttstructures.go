@@ -14,23 +14,11 @@ type ActivityIndex int16
 type ResourceIndex = int
 type TtSlot int16
 
-// A TtData is the top-level structure for the timetable data.
-type TtData struct {
-	Description  string
-	WorkingDir   string
+type TtSharedData struct {
 	Db           *base.DbTopLevel
 	NDays        int
 	NHours       int
 	HoursPerWeek int
-	// `ActivitySlots` is an array of activities + 1 entries, each entry being
-	// the time slot in which the corresponding activity has been placed, or
-	// -1 if unplaced. There is no activity with index 0.
-	ActivitySlots []TtSlot
-	// `ResourceWeeks` contains the allocations of the "resources" (atomic
-	// groups, teachers, rooms) to activities (indexes). This is organized
-	// as an array of "week-chunks" (`HoursPerWeek` entries), one for each
-	// resource in the `Resources array`.
-	ResourceWeeks []ActivityIndex
 
 	// `Resources` is an array mapping resource indexes to their corresponding
 	// atomic group, teacher or room nodes (it contains pointers).
@@ -46,11 +34,23 @@ type TtData struct {
 	ClassDivisions []ClassDivision
 
 	// Set up by `MakeActivities`
-	Activities []*Activity
-	//?? ActivityCourses []*TtCourseInfo
+	Activities     []*Activity
 	CourseInfoList []*CourseInfo
 	Ref2CourseInfo map[NodeRef]*CourseInfo
 
+	// For
+	TickHandler func(*TtData)
+	Abort       func(*TtData)
+}
+
+// A TtData is the top-level structure for the timetable data.
+type TtData struct {
+	Description string
+	WorkingDir  string
+
+	SharedData *TtSharedData
+
+	//TODO: In SharedData? Probably only if these are really not changed.
 	// Each teacher, class and room has a matrix of days * hours cells
 	// containing true in blocked slots, indexing: [item-index][day][hour].
 	TeacherNotAvailable [][][]bool
@@ -62,14 +62,31 @@ type TtData struct {
 
 	WITHOUT_ROOM_PLACEMENTS bool // ignore room allocation constraints
 
+	// `State` values:
+	//		 0: running
+	//     	 1: finished successfully
+	//		 2: failed
+	//		 3: process aborted
+	State    int
+	Progress int // percent
+	Ticks    int
+	LastTime int // ticks at last Progress change
+	Message  string
+
 	BackEndData any // for use by the timetable generator itself
-	TickHandler func(*TtData)
-	Abort       func(*TtData)
-	State       int
-	Progress    int // percent
-	Ticks       int
-	LastTime    int // ticks at last Progress change
-	Message     string
+
+	//TODO: These are not currently used? They are intended for keeping
+	// an internal record of activity placements.
+
+	// `ActivitySlots` is an array of activities + 1 entries, each entry being
+	// the time slot in which the corresponding activity has been placed, or
+	// -1 if unplaced. There is no activity with index 0.
+	ActivitySlots []TtSlot
+	// `ResourceWeeks` contains the allocations of the "resources" (atomic
+	// groups, teachers, rooms) to activities (indexes). This is organized
+	// as an array of "week-chunks" (`HoursPerWeek` entries), one for each
+	// resource in the `Resources array`.
+	ResourceWeeks []ActivityIndex
 }
 
 type ClassDivision struct {
@@ -82,36 +99,39 @@ type ClassDivision struct {
 func BasicSetup(db *base.DbTopLevel) *TtData {
 	days := len(db.Days)
 	hours := len(db.Hours)
-	tt_data := &TtData{
+	tt_shared_data := &TtSharedData{
 		Db:           db,
 		NDays:        days,
 		NHours:       hours,
 		HoursPerWeek: days * hours,
 	}
+	tt_data := &TtData{
+		SharedData: tt_shared_data,
+	}
 
 	// Collect ClassDivisions
-	tt_data.FilterDivisions()
+	tt_shared_data.FilterDivisions()
 
 	// Atomic groups: an atomic group is a "resource", it is an ordered list
 	// of single groups, one from each division.
 	// The atomic groups take the lowest resource indexes (starting at 0).
 	// `AtomicGroups` maps the classes and groups to a list of their resource
 	// indexes.
-	tt_data.MakeAtomicGroups()
+	tt_shared_data.MakeAtomicGroups()
 
 	// Add teachers and rooms to resource array
-	tt_data.TeacherResources()
-	tt_data.RoomResources()
+	tt_shared_data.TeacherResources()
+	tt_shared_data.RoomResources()
 	tt_data.ResourceWeeks = make([]ActivityIndex,
-		(len(tt_data.Resources))*days*hours)
+		(len(tt_shared_data.Resources))*days*hours)
 
 	// Get the courses (-> CourseInfo) and activities for the timetable
-	tt_data.CollectCourses()
+	tt_shared_data.CollectCourses()
 
 	// ... initially all activities unplaced
 	tt_data.ActivitySlots = slices.Repeat(
 		[]TtSlot{-1},
-		len(tt_data.Activities))
+		len(tt_shared_data.Activities))
 
 	tt_data.HardConstraints = map[ConstraintType][]any{}
 	tt_data.SoftConstraints = map[ConstraintType][]any{}
@@ -119,21 +139,21 @@ func BasicSetup(db *base.DbTopLevel) *TtData {
 	return tt_data
 }
 
-func (tt_data *TtData) TeacherResources() {
-	tt_data.TeacherIndex = map[NodeRef]ResourceIndex{}
-	for _, t := range tt_data.Db.Teachers {
-		i := len(tt_data.Resources)
-		tt_data.TeacherIndex[t.Id] = i
-		tt_data.Resources = append(tt_data.Resources, t)
+func (tt_shared_data *TtSharedData) TeacherResources() {
+	tt_shared_data.TeacherIndex = map[NodeRef]ResourceIndex{}
+	for _, t := range tt_shared_data.Db.Teachers {
+		i := len(tt_shared_data.Resources)
+		tt_shared_data.TeacherIndex[t.Id] = i
+		tt_shared_data.Resources = append(tt_shared_data.Resources, t)
 	}
 }
 
-func (tt_data *TtData) RoomResources() {
-	tt_data.RoomIndex = map[NodeRef]ResourceIndex{}
-	for _, r := range tt_data.Db.Rooms {
-		i := len(tt_data.Resources)
-		tt_data.RoomIndex[r.Id] = i
-		tt_data.Resources = append(tt_data.Resources, r)
+func (tt_shared_data *TtSharedData) RoomResources() {
+	tt_shared_data.RoomIndex = map[NodeRef]ResourceIndex{}
+	for _, r := range tt_shared_data.Db.Rooms {
+		i := len(tt_shared_data.Resources)
+		tt_shared_data.RoomIndex[r.Id] = i
+		tt_shared_data.Resources = append(tt_shared_data.Resources, r)
 	}
 }
 

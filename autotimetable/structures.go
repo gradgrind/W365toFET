@@ -12,9 +12,13 @@ type TtInstance struct {
 	Global *GlobalData
 	Id     int
 	//Ticks       int
-	Delay     int // ticks
-	Timeout   int // ticks
-	Cancelled bool
+	Delay   int // ticks
+	Timeout int // ticks
+
+	// `Termination` is normally 0 (not terminated "internally", i.e. from
+	// the tick-loop). Before a timeout is sent, this value is set to 1.
+	// Before a deletion is sent, this value is set to -1.
+	Termination int
 
 	TtData *timetable.TtData // current (possibly modified) data
 

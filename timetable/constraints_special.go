@@ -9,10 +9,12 @@ type SpecialConstraint struct {
 // to the `TtData.HardConstraints` structure. The "NotAvailable" constraints
 // are a special case.
 func (tt_data *TtData) collect_teacher_constraints() {
-	ndays := tt_data.NDays
-	nhours := tt_data.NHours
-	tt_data.TeacherNotAvailable = make([][][]bool, len(tt_data.Db.Teachers))
-	for i, t := range tt_data.Db.Teachers {
+	tt_shared_data := tt_data.SharedData
+	ndays := tt_shared_data.NDays
+	nhours := tt_shared_data.NHours
+	tt_data.TeacherNotAvailable = make([][][]bool,
+		len(tt_shared_data.Db.Teachers))
+	for i, t := range tt_shared_data.Db.Teachers {
 		// Every teacher has a blocked-slots matrix. They are ordered, so
 		// they can be easily accessed.
 		blocked_slots := make([][]bool, ndays)
@@ -68,10 +70,11 @@ func (tt_data *TtData) collect_teacher_constraints() {
 // to the `TtData.HardConstraints` structure. The "NotAvailable" constraints
 // are a special case.
 func (tt_data *TtData) collect_class_constraints() {
-	ndays := tt_data.NDays
-	nhours := tt_data.NHours
-	tt_data.ClassNotAvailable = make([][][]bool, len(tt_data.Db.Classes))
-	for i, c := range tt_data.Db.Classes {
+	tt_shared_data := tt_data.SharedData
+	ndays := tt_shared_data.NDays
+	nhours := tt_shared_data.NHours
+	tt_data.ClassNotAvailable = make([][][]bool, len(tt_shared_data.Db.Classes))
+	for i, c := range tt_shared_data.Db.Classes {
 		// Every class has a blocked-slots matrix. They are ordered, so
 		// they can be easily accessed.
 		blocked_slots := make([][]bool, ndays)
@@ -127,10 +130,11 @@ func (tt_data *TtData) collect_class_constraints() {
 // to the `TtData.HardConstraints` structure. The "NotAvailable" constraints
 // are a special case.
 func (tt_data *TtData) collect_room_constraints() {
-	ndays := tt_data.NDays
-	nhours := tt_data.NHours
-	tt_data.RoomNotAvailable = make([][][]bool, len(tt_data.Db.Rooms))
-	for i, c := range tt_data.Db.Rooms {
+	tt_shared_data := tt_data.SharedData
+	ndays := tt_shared_data.NDays
+	nhours := tt_shared_data.NHours
+	tt_data.RoomNotAvailable = make([][][]bool, len(tt_shared_data.Db.Rooms))
+	for i, c := range tt_shared_data.Db.Rooms {
 		// Every room has a blocked-slots matrix. They are ordered, so
 		// they can be easily accessed.
 		blocked_slots := make([][]bool, ndays)

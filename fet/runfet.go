@@ -154,9 +154,6 @@ func run(fet_data *fetTtData, cmd *exec.Cmd) {
 	}
 }
 
-// Rather like a "tail" function, this can read the FET progress
-// from its log file. It simply polls for new lines.
-
 var pattern = "time (.*), FET reached ([0-9]+)"
 var re *regexp.Regexp = regexp.MustCompile(pattern)
 
@@ -172,7 +169,8 @@ type fetTtData struct {
 	cancel     func()
 }
 
-// `ttTick` runs in the "tick" loop.
+// `ttTick` runs in the "tick" loop. Rather like a "tail" function it reads
+// the FET progress from its log file, by simply polling for new lines.
 func ttTick(tt_data *timetable.TtData) {
 	data := tt_data.BackEndData.(*fetTtData)
 	finished := data.state > 0
@@ -202,6 +200,8 @@ func ttTick(tt_data *timetable.TtData) {
 						if percent > tt_data.Progress {
 							tt_data.Progress = percent
 							tt_data.LastTime = tt_data.Ticks
+
+							//TODO
 							fmt.Println(tt_data.Description, percent, "@", tt_data.Ticks)
 						}
 					}
@@ -216,7 +216,6 @@ exit:
 		if data.rdfile != nil {
 			data.rdfile.Close()
 		}
-		tt_data.Message = data.message
 		if data.state == 1 {
 			// cc = 0 does not absolutely guarantee that the timetable is
 			// complete – when fet-cl is interrupted, for example
@@ -227,6 +226,11 @@ exit:
 			}
 		} else {
 			tt_data.State = data.state
+		}
+
+		efile, err := os.ReadFile(filepath.Join(data.odir, "logs", "errors.txt"))
+		if err != nil {
+			tt_data.Message = string(efile)
 		}
 	}
 }
