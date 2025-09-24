@@ -123,6 +123,9 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 			//Stop:        stop,
 			WaitGroup: &wg,
 
+			HardConstraintEnabled: setup_hard_constraint_map(
+				tt_data_0.HardConstraints),
+
 			//State:    0,
 			//Progress: 0,
 			//LastTime: 0,
@@ -217,14 +220,6 @@ loop:
 				//    started in the first place. This is indicated by
 				//    `inst.Cancelled` being `true`.
 
-				//TODO: timeout – consider interaction with delay, etc.
-				if inst.Timeout >= 0 {
-					inst.Timeout--
-					if inst.Timeout == 0 {
-						tt_shared_data.Abort(inst.TtData)
-					}
-				}
-
 				if inst.Delay >= 0 {
 					inst.Delay--
 					if inst.Delay < 0 {
@@ -237,12 +232,24 @@ loop:
 					}
 					continue
 				}
+
+				//TODO: timeout – consider interaction with delay, etc.
+				if inst.Timeout >= 0 {
+					inst.Timeout--
+					if inst.Timeout == 0 {
+						inst.Termination = 1
+						tt_shared_data.Abort(inst.TtData)
+					}
+				}
+
 				tt_data := inst.TtData
 				if tt_data.State > 0 {
 					// The goroutine has finished – or was cancelled,
 					// mark the instance for removal from the active list.
 					ended = append(ended, inst)
+
 					//TODO ...
+
 					// If appropriate, activate follow-on processes.
 					if tt_data.State == 1 {
 						// succeeded ...
@@ -399,12 +406,10 @@ func newInstance(
 	instance_0 *TtInstance, descriptor string, tag int,
 ) *TtInstance {
 	tt_data_0 := instance_0.TtData
-	tt_shared_data := tt_data_0.SharedData
 	// Copy original TtData (shallow copy only!)
-	//TODO: Probably better to start with an empty one!
 	tt_data := timetable.TtData{
 		Description:             descriptor,
-		SharedData:              tt_shared_data,
+		SharedData:              tt_data_0.SharedData,
 		TeacherNotAvailable:     tt_data_0.TeacherNotAvailable,
 		ClassNotAvailable:       tt_data_0.ClassNotAvailable,
 		RoomNotAvailable:        tt_data_0.RoomNotAvailable,
@@ -422,30 +427,13 @@ func newInstance(
 		hcmap[k] = slices.Clone(v)
 	}
 	tt_data.HardConstraints = hcmap
+
 	scmap := make(map[timetable.ConstraintType][]any,
 		len(tt_data_0.SoftConstraints))
 	for k, v := range tt_data_0.SoftConstraints {
 		scmap[k] = slices.Clone(v)
 	}
 	tt_data.SoftConstraints = scmap
-
-	/* Copy the classes and teachers lists
-
-	new_classes := make([]*base.Class, len(db.Classes))
-	for i, c0p := range db.Classes {
-		c := *c0p
-		new_classes[i] = &c
-	}
-	db.Classes = new_classes
-
-	new_teachers := make([]*base.Teacher, len(db.Teachers))
-	for i, t0p := range db.Teachers {
-		t := *t0p
-		new_teachers[i] = &t
-	}
-	db.Teachers = new_teachers
-
-	*/
 
 	tt_data.Description = descriptor
 
@@ -454,6 +442,12 @@ func newInstance(
 	instance.TtData = &tt_data
 	instance.Id = tag
 	instance.Timeout = TIMEOUT_1 // default timeout ticks
+	// Make a deep copy of the hard constraint matrix
+	hcmat := instance_0.HardConstraintEnabled
+	instance.HardConstraintEnabled = make([][]bool, len(hcmat))
+	for i, c := range hcmat {
+		instance.HardConstraintEnabled[i] = slices.Clone(c)
+	}
 	return &instance
 }
 

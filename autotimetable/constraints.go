@@ -33,6 +33,22 @@ the construction of the timetable possible.
 
 //++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
+// Set up the `TtInstance.HardConstraintEnabled` matrix based on the initial
+// hard constraint map. Initially all constraints are disabled in this map.
+func setup_hard_constraint_map(
+	constraints map[timetable.ConstraintType][]any,
+) [][]bool {
+	cmap := make([][]bool, timetable.LastConstraint)
+	for cx, clist := range constraints {
+		l := len(clist)
+		if l == 0 {
+			panic("Bug: Empty constraint list")
+		}
+		cmap[cx] = make([]bool, l) // default: all entries false
+	}
+	return cmap
+}
+
 func start_constraints(
 	instance *TtInstance,
 	instance_done chan *TtInstance,
@@ -62,6 +78,7 @@ func start_constraints(
 			cilist[i] = i
 		}
 		//TODO? set_hard_constraint_enable_state(inst, k, cilist, true)
+		enable_hard_constraints(inst, k, cilist)
 		start_constraint_trial(inst)
 	}
 
@@ -112,33 +129,21 @@ func start_constraints(
 	}
 }
 
-/*TODO?
 // Enable or disable a list of indexed constraints for a particular
-// constraint type in the `HardConstraints` collection, changing also
-// `HardConstraintEnabled` accordingly.
-func set_hard_constraint_enable_state(
+// constraint type in the `TtData.HardConstraints` collection, changing also
+// `TtInstance.HardConstraintEnabled` accordingly. The constraints are kept
+// in the original order.
+func enable_hard_constraints(
 	instance *TtInstance,
 	constraint_type timetable.ConstraintType,
 	indexes []int,
-	enable bool,
 ) {
-	if instance.HardConstraintEnabled == nil {
-		if !enable {
-			return
-		}
-		instance.HardConstraintEnabled =
-			map[timetable.ConstraintType]map[int]bool{}
-	}
-	cmap, ok := instance.HardConstraintEnabled[constraint_type]
-	if !ok {
-		if !enable {
-			return
-		}
-		cmap = map[int]bool{}
-		instance.HardConstraintEnabled[constraint_type] = cmap
-	}
+	//fmt.Printf("§ENABLE %s: %v\n", constraint_type.String(), indexes)
+
+	// Mark the constraints in the matrix
+	cmap := instance.HardConstraintEnabled[constraint_type]
 	for _, i := range indexes {
-		cmap[i] = enable
+		cmap[i] = true
 	}
 	// Reconstruct the constraint list
 	newlist := []any{}
@@ -149,7 +154,6 @@ func set_hard_constraint_enable_state(
 	}
 	instance.TtData.HardConstraints[constraint_type] = newlist
 }
-*/
 
 func start_constraint_trial(instance *TtInstance) {
 	instance.Global.NewInstance <- instance // register with tick loop
