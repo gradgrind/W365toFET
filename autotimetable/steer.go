@@ -12,6 +12,13 @@ import (
 	"time"
 )
 
+// TODO: How to set this up?
+var NULL_TIMEOUT int = 10 // timeout ticks for unconstrained trial
+var TIMEOUT_1 int = 10    // ticks for single constraint type test functions
+var TIMEOUT_2 int = 10    // ticks for added constraint type test functions
+//TODO: TIMEOUT_2 is used for adding constraints to an already somewhat
+// constraint data set. Should later additions get more time?
+
 //TODO: Consider starting instances with each (used) constraint type, individually.
 // The first one which completes successfully could be taken as a new basis, to
 // which the next completed ones could be added sequentially ... until no time is left?
@@ -60,9 +67,6 @@ var Descriptions map[string]string = map[string]string{
 
 const ID_BLOCKED_SLOTS int = -100
 
-// TODO?
-var TIMEOUT_1 = 10 // ticks for quick test functions
-
 // Function to generate timetable from the given data
 var TtGenerate func(*timetable.TtData, *sync.WaitGroup)
 
@@ -85,72 +89,93 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	//stop := make(chan bool)
 
 	//TODO: Consider buffer size and blocking ...
-	add_instance := make(chan *TtInstance, 10)
-	instance_done := make(chan *TtInstance, 10)
+	//add_instance := make(chan *TtInstance, 10)
+	//instance_done := make(chan *TtInstance, 10)
 
-	global_data := GlobalData{
-		Ticks:    0,
-		TtData_0: tt_data_0,
-		//Instances: []*TtInstance{},
-		NewInstance: add_instance,
+	/*
+		global_data := GlobalData{
+			Ticks:    0,
+			TtData_0: tt_data_0,
+			//Instances: []*TtInstance{},
+			//NewInstance: add_instance,
+		}
+	*/
+
+	tt_data_0.Description = "COMPLETE"
+	workingdir := tt_shared_data.WorkingDir
+
+	// Provide an empty working directory.
+	os.RemoveAll(workingdir)
+	err := os.Mkdir(workingdir, 0755)
+	if err != nil && !os.IsExist(err) {
+		panic(err)
 	}
 
-	{
-		tt_data_0.Description = "COMPLETE"
-		workingdir := tt_shared_data.WorkingDir
+	// First run: all constraints enabled
+	//TODO: On successful completion, all other instances should be stopped.
+	// If it fails, just this instance should be wound up. Otherwise it
+	// should still be running when the whole process finishes, and would
+	// need stopping.
+	full_instance := &TtInstance{
+		//Id:     -1,
+		TtData_0: tt_data_0,
+		Delay:    -1,
+		//Ticks:       0,
+		//Timeout: TIMEOUT,
 
-		// Provide an empty working directory.
-		os.RemoveAll(workingdir)
-		err := os.Mkdir(workingdir, 0755)
-		if err != nil && !os.IsExist(err) {
-			panic(err)
-		}
+		TtData: tt_data_0,
 
-		// First run: all constraints enabled, no timeout
-		//TODO: On successful completion, all other instances should be stopped.
-		// If it fails, just this instance should be wound up. Otherwise it
-		// should still be running when the whole process finishes, and would
-		// need stopping.
-		instance := &TtInstance{
-			Id:     -1,
-			Global: &global_data,
-			Delay:  0,
-			//Ticks:       0,
-			Timeout: TIMEOUT,
+		//Stop:        stop,
+		//WaitGroup: &wg,
 
-			TtData: tt_data_0,
+		//HardConstraintEnabled: setup_hard_constraint_map(
+		//	tt_data_0.HardConstraints),
 
-			//Stop:        stop,
-			WaitGroup: &wg,
+		//State:    0,
+		//Progress: 0,
+		//LastTime: 0,
 
-			HardConstraintEnabled: setup_hard_constraint_map(
-				tt_data_0.HardConstraints),
+		//TODO: Maybe not using these any more ...
+		//FailurePath: TtChainedFunc{
+		//	Delay: 1, Func: test_sequence},
 
-			//State:    0,
-			//Progress: 0,
-			//LastTime: 0,
+		//SuccessPath: TtChainedFunc{
+		//	Delay: 0, Func: full_success},
+	}
 
-			//TODO: Maybe not using these any more ...
-			//FailurePath: TtChainedFunc{
-			//	Delay: 1, Func: test_sequence},
+	//for _, c := range tt_data_0.Db.Classes {
+	//	fmt.Printf("??? %+v\n", c)
+	//}
 
-			//SuccessPath: TtChainedFunc{
-			//	Delay: 0, Func: full_success},
-		}
+	//TODO ...
 
-		//for _, c := range tt_data_0.Db.Classes {
-		//	fmt.Printf("??? %+v\n", c)
-		//}
+	// Request start of full instance
+	//start_constraint_trial(instance)
 
-		// Request start of full instance
-		start_constraint_trial(instance)
+	// Start run
+	TtGenerate(tt_data_0, &wg)
 
-		// Unconstrained instance
-		inst := newInstance(instance, "ONLY_BLOCKED_SLOTS", ID_BLOCKED_SLOTS)
-		disable_all_constraints(inst)
-		// Request start
-		start_constraint_trial(inst)
+	// Unconstrained instance
+	null_instance := &TtInstance{
+		//Id:     -1,
+		//Global: &global_data,
+		TtData_0: tt_data_0,
+		Delay:    -1,
+		//Ticks:       0,
+		//Timeout: TIMEOUT,
 
+		TtData: new_ttdata(tt_data_0, "ONLY_BLOCKED_SLOTS"),
+		HardConstraintEnabled: setup_hard_constraint_map(
+			tt_data_0.HardConstraints),
+	}
+	disable_all_constraints(null_instance.TtData)
+	// Start run
+	TtGenerate(null_instance.TtData, &wg)
+
+	// Request start
+	//start_constraint_trial(inst)
+
+	/*
 		// Request start of instances with individually enabled constraint
 		// types (in goroutine to avoid blocking main goroutine here)
 		wg.Add(1)
@@ -158,9 +183,129 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 			defer wg.Done()
 			start_constraints(inst, instance_done)
 		}()
+	*/
+
+	// *** Ticker loop ***
+	ticks := 0
+	null_timeout := NULL_TIMEOUT
+	stage := 0
+	next_step := 0
+	var basic_constraints []*TtInstance
+	var current_instance *TtInstance
+	steps := []*TtInstance{}
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+
+tickloop:
+	for {
+		select {
+
+		case ossig := <-sigChan:
+			//TODO
+			fmt.Printf("*** SIGNAL *** %+v", ossig)
+			return
+
+		case <-ticker.C:
+			ticks++
+
+			//TODO?
+			TIMEOUT--
+			if TIMEOUT == 0 {
+				// Cancel all runs and return the "best" instance so far.
+
+				//TODO ...
+
+			}
+
+			if full_instance.TtData.State == 1 {
+				// Cancel all other runs and return this as the result.
+
+				//TODO ...
+
+				current_instance = full_instance
+				break tickloop
+			}
+
+			if stage == 0 {
+				if null_timeout >= 0 {
+					if null_instance.TtData.State == 1 {
+						current_instance = null_instance
+
+						//TODO: Start trials ...
+						basic_constraints = start_basic_constraints(
+							null_instance, &wg)
+						stage = 1
+						continue
+					}
+					null_timeout--
+					if null_timeout < 0 {
+						// The null instance took "too long".
+						stage = -1
+
+						//TODO: Seek problems in the unconstrained data.
+					}
+				}
+				continue
+			}
+
+			if stage == 1 {
+				// Awaiting completion of the single-constraint instances,
+				// check their status
+				newlist := []*TtInstance{}
+				for _, bc := range basic_constraints {
+					//TODO? This assumes the basic constraints are handled as
+					// full steps, always returning a usable result.
+					if bc.Result == nil {
+						newlist = append(newlist, bc)
+					} else {
+						steps = append(steps, bc.Result)
+
+						//TODO: At this stage, it might be possible to set
+						// `current_instance` and add the other constraints
+						// step by step ...
+
+					}
+				}
+				basic_constraints = newlist
+				if len(basic_constraints) == 0 {
+					stage = 2 // all basic constraint tests completed
+				}
+				if len(steps) != 0 {
+					if next_step == 0 {
+						// Start adding constraint types
+						current_instance = steps[0]
+						next_step = 1
+					}
+				}
+			}
+
+			if current_instance.Result != nil {
+				if next_step < len(steps) {
+					// Add next constraint type
+					st1 := steps[next_step]
+					desc := current_instance.TtData.Description + "*" +
+						st1.TtData.Description
+					current_instance = new_instance(
+						current_instance,
+						desc,
+						st1.ConstraintType,
+						st1.Constraints,
+						TIMEOUT_2)
+					next_step++
+				} else if stage == 2 {
+					// No more constraint types => finished ...
+					if full_instance.TtData.State == 0 {
+						// Cancel full_instance
+						full_instance.TtData.SharedData.Abort(full_instance.TtData)
+					}
+					break tickloop
+				}
+			}
+		}
 	}
 
-	// *** Channel reader loop ***
+	//TODO: Consider also the possibility that there may be no (or only one)
+	// basic constraint types.
 
 	/*
 	 * Terminating an instance can lead to various completion state values.
@@ -173,8 +318,6 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 
 	active_instances := []*TtInstance{}
 	inactive_instances := []*TtInstance{}
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
 	ended := []*TtInstance{}
 
 	//TODO
@@ -183,21 +326,26 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 loop:
 	for {
 		select {
+
 		case ossig := <-sigChan:
 			//TODO
 			fmt.Printf("*** SIGNAL *** %+v", ossig)
 			return
+
 		//case <-stop:
 		//fmt.Println("checkProgress done!")
 		//TODO: tidying up? This channel is currently unused!
 		//return
+
 		case new_instance := <-add_instance:
+			//TODO--?
 			// Queue start of generator back-end
 
 			fmt.Printf("+++ Add: %s @ %d\n",
 				new_instance.TtData.Description, global_data.Ticks)
 
 			active_instances = append(active_instances, new_instance)
+
 		case <-ticker.C:
 			if len(active_instances) == 0 && len(inactive_instances) != 0 {
 				break loop
@@ -212,6 +360,9 @@ loop:
 				// If the state is 1, the instance completed successfully.
 				// If the state is 2, the instance failed (somehow the data
 				// was discovered to be insoluble).
+				// If the state is 3, the run was stopped.
+
+				//TODO--
 				// There are two kinds of "external" termination:
 				//  - a timeout, which works like a pre-empted failure, and
 				//    is indicated by state 3;
@@ -372,6 +523,83 @@ loop:
 	// All instances have completed.
 }
 
+func new_ttdata(
+	ttdata_0 *timetable.TtData,
+	descriptor string,
+) *timetable.TtData {
+	ttdata := &timetable.TtData{
+		Description:             descriptor,
+		SharedData:              ttdata_0.SharedData,
+		TeacherNotAvailable:     ttdata_0.TeacherNotAvailable,
+		ClassNotAvailable:       ttdata_0.ClassNotAvailable,
+		RoomNotAvailable:        ttdata_0.RoomNotAvailable,
+		WITHOUT_ROOM_PLACEMENTS: ttdata_0.WITHOUT_ROOM_PLACEMENTS,
+	}
+
+	// Make a deeper copy of the constraints so that these can be
+	// switched on or off without affecting those in the original `TtData`.
+
+	// Make a copy of the constraints lists
+	hcmap := make(map[timetable.ConstraintType][]any,
+		len(ttdata_0.HardConstraints))
+	for k, v := range ttdata_0.HardConstraints {
+		hcmap[k] = slices.Clone(v)
+	}
+	ttdata.HardConstraints = hcmap
+
+	scmap := make(map[timetable.ConstraintType][]any,
+		len(ttdata_0.SoftConstraints))
+	for k, v := range ttdata_0.SoftConstraints {
+		scmap[k] = slices.Clone(v)
+	}
+	ttdata.SoftConstraints = scmap
+	return ttdata
+}
+
+func new_instance(
+	instance_0 *TtInstance,
+	descriptor string,
+	constraint_type timetable.ConstraintType,
+	constraint_indexes []int,
+	division_delay int,
+) *TtInstance {
+	// Copy original TtData (shallow copy only!)
+	ttdata := new_ttdata(instance_0.TtData, descriptor)
+
+	// Make a deep copy of the hard constraint matrix
+	hcmat0 := instance_0.HardConstraintEnabled
+	hcmat := make([][]bool, len(hcmat0))
+	for i, c := range hcmat0 {
+		hcmat[i] = slices.Clone(c)
+	}
+
+	// Make a new `TtInstance`
+	instance := &TtInstance{
+		//Id: ???,
+		Global: instance_0.Global,
+		Delay:  division_delay,
+		//Timeout: ???,
+		Termination: 0,
+		TtData:      ttdata,
+		//? WaitGroup:             instance_0.WaitGroup,
+		HardConstraintEnabled: hcmat,
+
+		// Base data for this instance:
+		BaseInstance:   instance_0,
+		ConstraintType: constraint_type,
+		Constraints:    constraint_indexes,
+
+		// Run time
+		Instance0: nil,
+		Instance1: nil,
+	}
+
+	// Enable the constraints in `ttdata` and `hcmat`
+	enable_hard_constraints(instance, constraint_type, constraint_indexes)
+
+	return instance
+}
+
 /*TODO? Stop an instance and all of its children. Not only the "success" branch is
 // to be stopped, but also all the others.
 func cancelPath(instance *TtInstance) {
@@ -402,6 +630,7 @@ func full_success(instance_0 *TtInstance) *TtInstance {
 }
 */
 
+/*
 func newInstance(
 	instance_0 *TtInstance, descriptor string, tag int,
 ) *TtInstance {
@@ -450,6 +679,7 @@ func newInstance(
 	}
 	return &instance
 }
+*/
 
 /*
 // This will probably need some tuning. There is probably no such thing as

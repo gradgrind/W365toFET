@@ -2,7 +2,7 @@ package autotimetable
 
 import (
 	"W365toFET/timetable"
-	"fmt"
+	"sync"
 )
 
 /* TODO?
@@ -49,6 +49,94 @@ func setup_hard_constraint_map(
 	return cmap
 }
 
+func start_basic_constraints(
+	null_instance *TtInstance,
+	wait_group *sync.WaitGroup,
+) []*TtInstance {
+	// `null_instance` itself should have no constraints enabled
+	tt_data := null_instance.TtData_0
+
+	// Start the individual constraints in the order given by the
+	// ConstraintType indexes.
+	instances := []*TtInstance{}
+	counter := 0
+	for k := range timetable.LastConstraint {
+		// Only hard constraints for now ...
+		clist, ok := tt_data.HardConstraints[k]
+		if !ok {
+			continue
+		}
+		n := len(clist)
+		if n == 0 {
+			//TODO: Bug?
+			panic("No constraints of type " + k.String())
+		}
+		counter++
+		// Get all list indexes
+		cilist := make([]int, n)
+		for i := range n {
+			cilist[i] = i
+		}
+		instance := new_instance(null_instance, k.String(), k, cilist, TIMEOUT_1)
+		enable_hard_constraints(instance, k, cilist)
+		// Start run
+		TtGenerate(instance.TtData, wait_group)
+		instances = append(instances, instance)
+	}
+
+	//TODO: With rooms? Fixed und choices? soft constraints?
+
+	return instances
+}
+
+/* TODO -> tick loop
+	// Gather the completed instances with single constraint types
+	//TODO: Find a better way to exit this loop?
+	var finished *TtInstance
+	var current *TtInstance = nil
+	levelok := []*TtInstance{}   // collect successful runs
+	levelfail := []*TtInstance{} // collect unsuccessful runs
+	for {
+		select {
+		case finished = <-instance_done:
+			break
+		}
+		if finished == nil {
+			fmt.Printf("§ level 1: %d, level 2: %d\n", len(levelok), len(levelfail))
+			break
+		}
+
+		fmt.Printf("§FINISHED: %s %d\n",
+			finished.TtData.Description, finished.TtData.State)
+
+		// Don't use failed instances until it is clear that there are no ok
+		// instances available.
+		counter--
+		if finished.TtData.State == 1 {
+
+			//TODO: if finished is a "COMPLETE" instance {
+			//   end all other instances, making this the result,
+			//   by sending on stop channel to steering? }
+
+			levelok = append(levelok, finished)
+		} else if finished.TtData.State != 5 {
+			// state 5 means abandoned
+			//TODO: perhaps state 5 instances shouldn't get here at all?
+			levelfail = append(levelfail, finished)
+		}
+
+		// Start next level
+		if current == nil {
+
+		} else if current.TtData.State != 0 {
+			// Can this fail? Or rather, what would that mean?
+		}
+
+	}
+}
+*/
+
+/*
 func start_constraints(
 	instance *TtInstance,
 	instance_done chan *TtInstance,
@@ -128,6 +216,7 @@ func start_constraints(
 
 	}
 }
+*/
 
 // Enable or disable a list of indexed constraints for a particular
 // constraint type in the `TtData.HardConstraints` collection, changing also
@@ -147,7 +236,7 @@ func enable_hard_constraints(
 	}
 	// Reconstruct the constraint list
 	newlist := []any{}
-	for i, c := range instance.Global.TtData_0.HardConstraints[constraint_type] {
+	for i, c := range instance.TtData_0.HardConstraints[constraint_type] {
 		if cmap[i] {
 			newlist = append(newlist, c)
 		}
@@ -155,24 +244,24 @@ func enable_hard_constraints(
 	instance.TtData.HardConstraints[constraint_type] = newlist
 }
 
+/*
 func start_constraint_trial(instance *TtInstance) {
 	instance.Global.NewInstance <- instance // register with tick loop
 	//fmt.Printf(" >>>>>> %s\n", instance.TtData.Description)
 }
+*/
 
-func disable_all_constraints(instance *TtInstance) {
-	tt_data := instance.TtData
-
+func disable_all_constraints(ttdata *timetable.TtData) {
 	// Remove general constraints
-	for k := range tt_data.SoftConstraints {
-		tt_data.SoftConstraints[k] = nil
+	for k := range ttdata.SoftConstraints {
+		ttdata.SoftConstraints[k] = nil
 	}
-	for k := range tt_data.HardConstraints {
-		tt_data.HardConstraints[k] = nil
+	for k := range ttdata.HardConstraints {
+		ttdata.HardConstraints[k] = nil
 	}
 
 	// The room constraints are available in the `timetable.CourseInfo`
 	// items accessible via the `CourseInfo` pointer in the individual
 	// `timetable.Activity` items.
-	tt_data.WITHOUT_ROOM_PLACEMENTS = true
+	ttdata.WITHOUT_ROOM_PLACEMENTS = true
 }

@@ -9,10 +9,11 @@ import (
 // timetable generation.
 
 type TtInstance struct {
-	Global  *GlobalData
-	Id      int
-	Delay   int // ticks
-	Timeout int // ticks
+	//Global  *GlobalData
+	//Id      int
+	TtData_0 *timetable.TtData // the original data
+	Delay    int               // ticks
+	//Timeout int // ticks
 
 	// `Termination` is normally 0 (not terminated "internally", i.e. from
 	// the tick-loop). Before a timeout is sent, this value is set to 1.
@@ -25,13 +26,16 @@ type TtInstance struct {
 
 	HardConstraintEnabled [][]bool // [type][index] -> enabled
 
-	// To be added in this instance:
+	// Base data for this instance:
+	BaseInstance   *TtInstance
 	ConstraintType timetable.ConstraintType
 	Constraints    []int // individual constraint indexes
 
 	// Run time
 	Instance0 *TtInstance
 	Instance1 *TtInstance
+
+	Result *TtInstance
 }
 
 type GlobalData struct {
