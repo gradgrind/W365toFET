@@ -24,6 +24,14 @@ type TtInstance struct {
 	WaitGroup *sync.WaitGroup // for waiting until all goroutines finish
 
 	HardConstraintEnabled [][]bool // [type][index] -> enabled
+
+	// To be added in this instance:
+	ConstraintType timetable.ConstraintType
+	Constraints    []int // individual constraint indexes
+
+	// Run time
+	Instance0 *TtInstance
+	Instance1 *TtInstance
 }
 
 type GlobalData struct {
