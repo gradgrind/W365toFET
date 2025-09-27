@@ -79,7 +79,7 @@ func main() {
 	}
 
 	// This allows for an option to select different generator back-ends
-	autotimetable.TtGenerate = fet.RunFet
+	fet.Setup()
 
 	stempath := strings.TrimSuffix(abspath, filepath.Ext(abspath))
 	logpath := stempath + ".log"

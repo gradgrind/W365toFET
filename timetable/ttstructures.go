@@ -14,6 +14,14 @@ type ActivityIndex int16
 type ResourceIndex = int
 type TtSlot int16
 
+type TtBackend struct {
+	Run   func(tt_data *TtData)
+	Abort func(tt_data *TtData)
+	Tick  func(tt_data *TtData)
+}
+
+var BACKEND TtBackend
+
 type TtSharedData struct {
 	Db           *base.DbTopLevel
 	NDays        int
@@ -40,10 +48,6 @@ type TtSharedData struct {
 	Activities     []*Activity
 	CourseInfoList []*CourseInfo
 	Ref2CourseInfo map[NodeRef]*CourseInfo
-
-	// For
-	TickHandler func(*TtData)
-	Abort       func(*TtData)
 }
 
 // A TtData is the top-level structure for the timetable data.
@@ -65,6 +69,7 @@ type TtData struct {
 	WITHOUT_ROOM_PLACEMENTS bool // ignore room allocation constraints
 
 	// `State` values:
+	//		-1: not started (yet)
 	//		 0: running
 	//     	 1: finished successfully
 	//		 2: failed

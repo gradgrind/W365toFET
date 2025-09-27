@@ -11,14 +11,21 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
-	"sync"
 )
+
+func Setup() {
+	timetable.BACKEND = timetable.TtBackend{
+		Run:   runFet,
+		Abort: ttRunAbort,
+		Tick:  ttTick,
+	}
+}
 
 func ttRunAbort(tt_data *timetable.TtData) {
 	tt_data.BackEndData.(*fetTtData).cancel()
 }
 
-func RunFet(tt_data *timetable.TtData, waitgroup *sync.WaitGroup) {
+func runFet(tt_data *timetable.TtData) {
 	shared_data := tt_data.SharedData
 	fname := tt_data.Description
 	dir_n := filepath.Join(shared_data.WorkingDir, fname)
@@ -99,18 +106,7 @@ func RunFet(tt_data *timetable.TtData, waitgroup *sync.WaitGroup) {
 		"--outputdir="+odir,
 	)
 
-	//TODO: These only need to be done once, before any calls to RunFet
-	//TODO: Deal with this and check for possible race conditions
-	shared_data.TickHandler = ttTick
-	shared_data.Abort = ttRunAbort
-
-	waitgroup.Add(1)
-	go func() {
-		defer waitgroup.Done()
-		run(fet_data, runCmd)
-	}()
-
-	//go run(fet_data, waitgroup, runCmd)
+	go run(fet_data, runCmd)
 }
 
 //TODO: fet-cl places any messages in the log directory, as result.txt
@@ -173,6 +169,7 @@ type fetTtData struct {
 // `ttTick` runs in the "tick" loop. Rather like a "tail" function it reads
 // the FET progress from its log file, by simply polling for new lines.
 func ttTick(tt_data *timetable.TtData) {
+	tt_data.Ticks++
 	data := tt_data.BackEndData.(*fetTtData)
 	finished := data.state > 0
 	if data.reader == nil {

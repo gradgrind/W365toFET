@@ -9,16 +9,17 @@ import (
 // timetable generation.
 
 type TtInstance struct {
-	//Global  *GlobalData
+	Global *GlobalData
 	//Id      int
-	TtData_0 *timetable.TtData // the original data
-	Delay    int               // ticks
-	//Timeout int // ticks
+	//TtData_0 *timetable.TtData // the original data
+	Delay   int // ticks, counts down
+	Timeout int // ticks, counts down
 
+	//TODO--?
 	// `Termination` is normally 0 (not terminated "internally", i.e. from
 	// the tick-loop). Before a timeout is sent, this value is set to 1.
 	// Before a deletion is sent, this value is set to -1.
-	Termination int
+	//Termination int
 
 	TtData *timetable.TtData // current (possibly modified) data
 
@@ -32,6 +33,7 @@ type TtInstance struct {
 	Constraints    []int // individual constraint indexes
 
 	// Run time
+	//LastProgress int // in percent
 	Instance0 *TtInstance
 	Instance1 *TtInstance
 
@@ -39,10 +41,10 @@ type TtInstance struct {
 }
 
 type GlobalData struct {
-	Ticks       int
-	TtData_0    *timetable.TtData // original data
-	Instances   []*TtInstance
-	NewInstance chan *TtInstance // send here to request run start
+	Ticks    int
+	TtData_0 *timetable.TtData // original data
+	//Instances   []*TtInstance
+	//NewInstance chan *TtInstance // send here to request run start
 }
 
 /* TODO?

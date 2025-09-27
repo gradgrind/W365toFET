@@ -56,7 +56,7 @@ func main() {
 	}
 
 	// This allows for an option to select different generator back-ends
-	autotimetable.TtGenerate = fet.RunFet
+	fet.Setup()
 
 	db := cdata.Db()
 	db.PrepareDb()
