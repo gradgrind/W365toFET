@@ -12,8 +12,7 @@ type TtInstance struct {
 	Global *GlobalData
 	//Id      int
 	//TtData_0 *timetable.TtData // the original data
-	Delay   int // ticks, counts down
-	Timeout int // ticks, counts down
+	Delay int // ticks, counts down
 
 	//TODO--?
 	// `Termination` is normally 0 (not terminated "internally", i.e. from

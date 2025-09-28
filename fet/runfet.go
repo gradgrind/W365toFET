@@ -231,4 +231,7 @@ exit:
 			tt_data.Message = string(efile)
 		}
 	}
+
+	fmt.Printf("??? %s %d @ %d\n", tt_data.Description, tt_data.State, tt_data.Ticks)
+
 }

@@ -1,11 +1,11 @@
 package autotimetable
 
 import (
+	"W365toFET/base"
 	"W365toFET/timetable"
 	"fmt"
 	"os"
 	"os/signal"
-	"runtime"
 	"slices"
 	"syscall"
 	"time"
@@ -13,8 +13,10 @@ import (
 
 // TODO: How to set this up?
 var UNCONSTRAINED_TIMEOUT int = 10 // timeout ticks for unconstrained trial
-var TIMEOUT_1 int = 10             // ticks for single constraint type test functions
-var TIMEOUT_2 int = 10             // ticks for added constraint type test functions
+var DELAY_BINARY_CHOP int = 10
+
+var TIMEOUT_1 int = 10 // ticks for single constraint type test functions
+var TIMEOUT_2 int = 10 // ticks for added constraint type test functions
 //TODO: TIMEOUT_2 is used for adding constraints to an already somewhat
 // constraint data set. Should later additions get more time?
 
@@ -23,7 +25,8 @@ var TIMEOUT_2 int = 10             // ticks for added constraint type test funct
 // which the next completed ones could be added sequentially ... until no time is left?
 
 // TODO: It may well be desirable to be able to override this – see also GOMAXPROCS
-var MAXPROCESSES int = runtime.NumCPU() //TODO: use this?
+// var MAXPROCESSES int = runtime.NumCPU() //TODO: use this?
+var MAXPROCESSES int = 100
 
 // TODO: At present this only supports a FET back-end. Perhaps a choice should
 // be possible ...
@@ -79,7 +82,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	runqueue := RunQueue{
 		Queue:      nil,
 		Running:    map[*TtInstance]struct{}{},
-		MaxRunning: MAXPROCESSES - 2, //TODO????
+		MaxRunning: MAXPROCESSES, //TODO????
 		Next:       0,
 	}
 
@@ -118,10 +121,9 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	// instances should be stopped and the "best" solution at this point
 	// chosen.
 	full_instance := &TtInstance{
-		Global:  global_data,
-		Delay:   -1,
-		Timeout: TIMEOUT,
-		TtData:  tt_data_0,
+		Global: global_data,
+		Delay:  TIMEOUT,
+		TtData: tt_data_0,
 	}
 
 	//for _, c := range tt_data_0.Db.Classes {
@@ -135,9 +137,8 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 
 	// Unconstrained instance
 	null_instance := &TtInstance{
-		Global:  global_data,
-		Delay:   -1,
-		Timeout: UNCONSTRAINED_TIMEOUT,
+		Global: global_data,
+		Delay:  UNCONSTRAINED_TIMEOUT,
 
 		TtData: new_ttdata(tt_data_0, "ONLY_BLOCKED_SLOTS"),
 		HardConstraintEnabled: setup_hard_constraint_map(
@@ -150,10 +151,11 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	// *** Ticker loop ***
 	stage := 0
 	next_step := 0
-	var basic_constraints []*TtInstance
+	var basic_constraints map[*TtInstance]struct{}
 	var current_instance *TtInstance
 	steps := []*TtInstance{}
 	ticker := time.NewTicker(time.Second)
+	runqueue.Update()
 	defer ticker.Stop()
 
 tickloop:
@@ -170,133 +172,127 @@ tickloop:
 
 			if full_instance.TtData.State == 1 {
 				// Cancel all other runs and return this as the result.
+				runqueue.Disable()
 				stop_instance(null_instance)
 				stop_instance(current_instance)
 				current_instance = full_instance
 				break tickloop
 			} else if full_instance.TtData.State == 0 {
-				full_instance.Timeout--
-				if full_instance.Timeout == 0 {
-					stop_instance(full_instance)
-					stop_instance(null_instance)
-					stop_instance(current_instance)
+				if full_instance.Delay >= 0 {
+					if full_instance.Delay == 0 {
+						runqueue.Disable()
+						stop_instance(full_instance)
+						stop_instance(null_instance)
+						if current_instance.Result == nil {
+							stop_instance(current_instance)
 
-					//TODO
-					panic("TODO: Seek best result so far")
+							//TODO
+							panic("TODO: Seek best result so far")
 
-					break tickloop
+						}
+						break tickloop
+					}
+					full_instance.Delay--
 				}
+				timetable.BACKEND.Tick(full_instance.TtData)
 			}
 
 			//TODO: Special treatment if there are no constraints to add?
 
-			if stage == 0 {
-				if null_instance.Timeout >= 0 {
-					if null_instance.TtData.State == 1 {
-						current_instance = null_instance
+			//TODO: The time taken to complete the unconstrained instance
+			// should be taken into account when setting up delay/timeout
+			// for the constrained versions.
 
-						//TODO: Start trials ...
+			if stage == 0 {
+				// During stage 0 only `full_instance` and `null_instance`
+				// are running.
+				if null_instance.TtData.State != 0 {
+					if null_instance.TtData.State == 1 {
+						// The null instance completed successfully.
+						current_instance = null_instance
+						// Start trials
 						basic_constraints = start_basic_constraints(
-							null_instance, runqueue)
+							null_instance, &runqueue)
 						stage = 1
-						continue
-					}
-					null_instance.Timeout--
-					if null_instance.Timeout < 0 {
-						// The null instance took "too long".
+					} else {
+						// The null instance failed.
 						stage = -1
+						base.Message.Println("(TODO) Unconstrained instance failed")
 
 						//TODO: Seek problems in the unconstrained data.
+
+					}
+				} else if null_instance.Delay == 0 {
+					stop_instance(null_instance)
+				} else {
+					timetable.BACKEND.Tick(null_instance.TtData)
+					if null_instance.Delay > 0 {
+						null_instance.Delay--
 					}
 				}
-				continue
+				goto tickloop_end
 			}
 
 			if stage == 1 {
-				// Awaiting completion of the single-constraint instances,
-				// check their status
-				newlist := []*TtInstance{}
-				for _, bc := range basic_constraints {
+				// During stage 1 we are awaiting completion of the single-
+				// constraint instances: check their status.
+				for bc := range basic_constraints {
 					//TODO? This assumes the basic constraints are handled as
 					// full steps, always returning a usable result.
-					if bc.Result == nil {
-						newlist = append(newlist, bc)
-					} else {
+					tick_instance(&runqueue, bc)
+					if bc.Result != nil {
 						steps = append(steps, bc.Result)
+						delete(basic_constraints, bc)
 					}
 				}
-				basic_constraints = newlist
 				if len(basic_constraints) == 0 {
-					stage = 2 // all basic constraint tests completed
+					stage = 2 // all basic-constraint trials completed
 				}
-				if len(steps) != 0 {
-					if next_step == 0 {
-						// Start adding constraint types
-						current_instance = steps[0]
-						next_step = 1
-					}
+				if next_step == 0 && len(steps) != 0 {
+					// Start adding constraint types
+					current_instance = steps[0]
+					next_step = 1
 				}
+
+				fmt.Printf("STAGE1: %d %d %d\n", stage, next_step, len(steps))
 			}
 
-			if current_instance.Result != nil {
-				if next_step < len(steps) {
-					// Add next constraint type
-					st1 := steps[next_step]
-					desc := current_instance.TtData.Description + "*" +
-						st1.TtData.Description
-					current_instance = new_instance(
-						current_instance,
-						desc,
-						st1.ConstraintType,
-						st1.Constraints,
-						TIMEOUT_2)
-					next_step++
-				} else if stage == 2 {
-					// No more constraint types => finished ...
-					// Cancel full_instance
-					//TODO: but only if timeout reached?
-					stop_instance(full_instance)
-					break tickloop
-				}
-			}
-
-			//TODO: handle the active instances ...
-
-			// Try to handle a single instance, the others are linked from it.
-			// It probably needs to be recursive ...
-
-			// func handle_instance()
-			{
-				var instance *TtInstance
-				ttdata := instance.TtData
-				switch ttdata.State {
-				case 0:
-					// Still running
-					timetable.BACKEND.Tick(ttdata)
-
-				case 1:
-					// Completed successfully
-					instance.Result = instance
-					// Stop subsidiary instances
-					if instance.Instance0 != nil &&
-						instance.Instance0.TtData.State == 0 {
-
+			// Handle the active instances (recursively)
+			if current_instance != nil {
+				tick_instance(&runqueue, current_instance)
+				if current_instance.Result != nil {
+					if next_step < len(steps) {
+						// Add next constraint type
+						st1 := steps[next_step]
+						desc := current_instance.TtData.Description + "*" +
+							st1.TtData.Description
+						current_instance = new_instance(
+							current_instance,
+							desc,
+							st1.ConstraintType,
+							st1.Constraints,
+							TIMEOUT_2)
+						next_step++
+					} else if stage == 2 {
+						// No more constraint types => finished ...
+						// Cancel full_instance
+						//TODO: but only if timeout reached?
+						stop_instance(full_instance)
+						break tickloop
 					}
-					if instance.Instance1 != nil &&
-						instance.Instance1.TtData.State == 0 {
-
-					}
-
-				default:
-					// Failed
-
 				}
 			}
 		}
-	}
+	tickloop_end:
+		runqueue.Update()
+	} // tickloop: end
 
 	//TODO: Consider also the possibility that there may be no (or only one)
 	// basic constraint types.
+
+	// The result is in `current_instance`.
+	//TODO
+	fmt.Printf("RESULT: %s\n", current_instance.TtData.Description)
 }
 
 type RunQueue struct {
@@ -308,21 +304,42 @@ type RunQueue struct {
 
 func (rq *RunQueue) Add(instance *TtInstance) {
 	rq.Queue = append(rq.Queue, instance)
-	if len(rq.Running) < rq.MaxRunning {
-		irun := rq.Queue[rq.Next]
-		rq.Next++
-		irun.TtData.State = 0 // indicate started
-		timetable.BACKEND.Run(irun.TtData)
-	}
+	base.Message.Printf("(TODO) [%d] Queue %s\n",
+		instance.Global.Ticks, instance.TtData.Description)
 }
 
-func tick_instance(instance *TtInstance) {
+func (rq *RunQueue) Update() {
+	for instance := range rq.Running {
+		if instance.TtData.State != 0 {
+			base.Message.Printf("(TODO) [%d] Done %s\n",
+				instance.Global.Ticks, instance.TtData.Description)
+			delete(rq.Running, instance)
+		}
+	}
+	for rq.Next < len(rq.Queue) && len(rq.Running) < rq.MaxRunning {
+		instance := rq.Queue[rq.Next]
+		rq.Next++
+		instance.TtData.State = 0 // indicate started
+		rq.Running[instance] = struct{}{}
+		base.Message.Printf("(TODO) [%d] Start %s\n",
+			instance.Global.Ticks, instance.TtData.Description)
+		timetable.BACKEND.Run(instance.TtData)
+	}
+	//TODO--
+	fmt.Printf("$Running instances: %d\n", len(rq.Running))
+}
+
+func (rq *RunQueue) Disable() {
+	rq.MaxRunning = 0 // no new starts possible
+}
+
+func tick_instance(runqueue *RunQueue, instance *TtInstance) {
 	ttdata := instance.TtData
 	if ttdata.State == 0 {
 		// Still running
 		timetable.BACKEND.Tick(ttdata)
+		/*TODO: Test whether "stuck".
 		if ttdata.State == 0 {
-			//TODO: Test whether "stuck".
 			step := ttdata.Progress - instance.LastProgress
 			if step != 0 {
 				instance.LastStep = step
@@ -334,6 +351,7 @@ func tick_instance(instance *TtInstance) {
 
 			remaining := 100 - ttdata.Progress
 		}
+		*/
 	}
 	if ttdata.State == 1 {
 		// Completed successfully
@@ -344,17 +362,97 @@ func tick_instance(instance *TtInstance) {
 		return
 	}
 	if instance.Delay >= 0 {
+		if instance.Delay == 0 {
+			// Start subsidiary activities, if any
+			if len(instance.Constraints) == 1 {
+				// No subsidiary activities: quit, returning base instance
+				stop_instance(instance)
+				instance.Result = instance.BaseInstance
+			} else {
+				// Divide constraints into two lists
+				half := len(instance.Constraints) / 2
+				i0 := new_instance(
+					instance.BaseInstance,
+					instance.TtData.Description+"*0",
+					instance.ConstraintType,
+					instance.Constraints[:half],
+					DELAY_BINARY_CHOP,
+				)
+				i1 := new_instance(
+					instance.BaseInstance,
+					instance.TtData.Description+"*1",
+					instance.ConstraintType,
+					instance.Constraints[half:],
+					DELAY_BINARY_CHOP,
+				)
+				instance.Instance0 = i0
+				instance.Instance1 = i1
+				runqueue.Add(i0)
+				runqueue.Add(i1)
+			}
+		} else {
+		}
 		instance.Delay--
-		if instance.Delay >= 0 {
+
+	} else {
+		// If there are subsidiary instances, they have already started.
+
+		//TODO?
+		if instance.Instance0 == nil {
+			// No subsidiary instances
 			return
 		}
-		//TODO: Start subsidiary activities
-		if len(instance.Constraints) < 2 {
+		tick_instance(runqueue, instance.Instance0)
+		if instance.Instance1 == nil {
+			// Running the combined instance
+			if instance.Instance0.Result != nil {
+				// The combined instance is finished, take this as result
+				// and stop the primary instance.
 
+				//TODO
+				if ttdata.State == 0 {
+					stop_instance(instance)
+					instance.Result = instance.Instance0.Result
+				}
+			}
+
+		} else {
+			tick_instance(runqueue, instance.Instance1)
+			i0 := instance.Instance0.Result
+			i1 := instance.Instance1.Result
+			if i0 != nil {
+				if i1 != nil {
+					//Combine the results
+					if i0 == instance.BaseInstance {
+						instance.Result = i1
+					} else if i1 == instance.BaseInstance {
+						instance.Result = i0
+					} else {
+						// Use `i0` as base and try to add the constraints from `i1`.
+
+						//TODO
+						// Get the constraints from `i1`.
+						i1clist := []int{}
+						for c, ok := range i1.HardConstraintEnabled[i1.ConstraintType] {
+							if ok {
+								i1clist = append(i1clist, c)
+							}
+						}
+						i2 := new_instance(
+							i0,
+							instance.TtData.Description+"*2",
+							instance.ConstraintType,
+							i1clist,
+							DELAY_BINARY_CHOP,
+						)
+						instance.Instance0 = i2
+						instance.Instance1 = nil
+						runqueue.Add(i2)
+					}
+				}
+			}
 		}
-
 	}
-
 }
 
 func stop_instance(instance *TtInstance) {
@@ -411,223 +509,6 @@ func new_instance(
 	enable_hard_constraints(instance, constraint_type, constraint_indexes)
 
 	return instance
-}
-
-func xxx() {
-	/*
-	 * Terminating an instance can lead to various completion state values.
-	 * If the state is set in its own goroutine, the value can be -1 if
-	 * the run failed for some reason within the data, or 5 if the run
-	 * was terminated externally. However, if the termination is due to a
-	 * timeout, the value will be set to -3 in the tick-loop. Any instance
-	 * terminated by a `cancelAll` call will have its state set to -4.
-	 */
-
-	active_instances := []*TtInstance{}
-	inactive_instances := []*TtInstance{}
-	ended := []*TtInstance{}
-
-	//TODO
-	//var result *TtInstance
-
-loop:
-	for {
-		select {
-
-		case ossig := <-sigChan:
-			//TODO
-			fmt.Printf("*** SIGNAL *** %+v", ossig)
-			return
-
-		//case <-stop:
-		//fmt.Println("checkProgress done!")
-		//TODO: tidying up? This channel is currently unused!
-		//return
-
-		case new_instance := <-add_instance:
-			//TODO--?
-			// Queue start of generator back-end
-
-			fmt.Printf("+++ Add: %s @ %d\n",
-				new_instance.TtData.Description, global_data.Ticks)
-
-			active_instances = append(active_instances, new_instance)
-
-		case <-ticker.C:
-			if len(active_instances) == 0 && len(inactive_instances) != 0 {
-				break loop
-			}
-			global_data.Ticks++
-
-			// Update the progress records of the currently active
-			// subprocesses, handle tick-related events.
-			for _, inst := range active_instances {
-				// Once the instance goroutine has finished, `tt_data.State`
-				// is > 0.
-				// If the state is 1, the instance completed successfully.
-				// If the state is 2, the instance failed (somehow the data
-				// was discovered to be insoluble).
-				// If the state is 3, the run was stopped.
-
-				//TODO--
-				// There are two kinds of "external" termination:
-				//  - a timeout, which works like a pre-empted failure, and
-				//    is indicated by state 3;
-				//  - a cancellation, which can be used to terminate a
-				//    an instance which (with hindsight) should not have been
-				//    started in the first place. This is indicated by
-				//    `inst.Cancelled` being `true`.
-
-				if inst.Delay >= 0 {
-					inst.Delay--
-					if inst.Delay < 0 {
-						// Start generator back-end
-
-						fmt.Printf("*** Start: %s @ %d\n",
-							inst.TtData.Description, global_data.Ticks)
-
-						timetable.BACKEND.Run(inst.TtData, &wg)
-					}
-					continue
-				}
-
-				//TODO: timeout – consider interaction with delay, etc.
-				if inst.Timeout >= 0 {
-					inst.Timeout--
-					if inst.Timeout == 0 {
-						inst.Termination = 1
-						tt_shared_data.Abort(inst.TtData)
-					}
-				}
-
-				tt_data := inst.TtData
-				if tt_data.State > 0 {
-					// The goroutine has finished – or was cancelled,
-					// mark the instance for removal from the active list.
-					ended = append(ended, inst)
-
-					//TODO ...
-
-					// If appropriate, activate follow-on processes.
-					if tt_data.State == 1 {
-						// succeeded ...
-						/*cancelPath(inst.FailureInstance)
-						inst.FailureInstance = nil
-						if inst.SuccessPath.Delay >= 0 {
-							if inst.SuccessPath.Func != nil {
-								inst.SuccessInstance = inst.SuccessPath.Func(inst)
-							}
-							inst.SuccessPath.Delay = -1
-						}
-						*/
-					} else if tt_data.State != 5 {
-						// failed ...
-						/*cancelPath(inst.SuccessInstance)
-						inst.SuccessInstance = nil
-						if inst.FailurePath.Delay >= 0 {
-							if inst.FailurePath.Func != nil {
-								inst.FailureInstance = inst.FailurePath.Func(inst)
-							}
-							inst.FailurePath.Delay = -1
-						}
-						*/
-					}
-					continue
-				}
-				tt_data.Ticks++
-				h := tt_shared_data.TickHandler
-				if h != nil {
-					// The handler should only be set when the the process is
-					// fully running
-					h(tt_data)
-					if tt_data.State != 0 {
-						continue
-					}
-				}
-
-				/*TODO?
-				// Handle timeout
-				if timed_out(inst) {
-					inst.State = -1
-					//TODO: using an interface?
-					// inst.Abort(inst.HandlerData)
-					continue
-				}
-				*/
-
-				/*
-					// Handle starting of follow-on paths after their delays
-					if inst.SuccessPath.Delay == inst.Ticks {
-						if inst.SuccessPath.Func != nil {
-							inst.SuccessInstance = inst.SuccessPath.Func(inst)
-						}
-						inst.SuccessPath.Delay = -1 // flag already started
-					}
-					if inst.FailurePath.Delay == inst.Ticks {
-						if inst.FailurePath.Func != nil {
-							inst.FailureInstance = inst.FailurePath.Func(inst)
-						}
-						inst.FailurePath.Delay = -1 // flag already started
-					}
-					for _, chfunc := range inst.OtherPaths {
-						if chfunc.Delay == inst.Ticks {
-							inst.OtherInstances = append(inst.OtherInstances,
-								chfunc.Func(inst))
-							//chfunc.Delay = -1
-							//inst.OtherPaths[i] = chfunc
-						}
-					}
-				*/
-			}
-			// Remove terminated instances from the active list
-			if len(ended) != 0 {
-				for _, inst := range ended {
-					tt_data := inst.TtData
-					if tt_data.State != 5 {
-						inactive_instances = append(inactive_instances, inst)
-					}
-
-					fmt.Printf("--- End: %s cc=%d (%d) @ %d\n",
-						inst.TtData.Description, tt_data.State,
-						tt_data.Progress, global_data.Ticks)
-
-					if inst.Id >= 0 {
-						instance_done <- inst
-					} else {
-						if inst.Id <= ID_BLOCKED_SLOTS {
-							if tt_data.State != 1 {
-
-								//TODO: cancel running instances,
-								// start testing individual classes
-
-							}
-						} else {
-							// A "complete" instance has succeeded.
-
-							//TODO: cancel running instances, wind everything up.
-
-							//TODO: result = inst
-
-						}
-					}
-
-				}
-				fmt.Printf("§§§ Before: %d %d\n", len(active_instances), len(ended))
-				active_instances = slices.DeleteFunc(active_instances,
-					func(tti *TtInstance) bool {
-						return slices.Contains(ended, tti)
-					})
-				fmt.Printf("§§§ After: %d\n", len(active_instances))
-				ended = ended[:0]
-
-				//
-
-			}
-		}
-	}
-	instance_done <- nil
-	wg.Wait()
-	// All instances have completed.
 }
 
 func new_ttdata(

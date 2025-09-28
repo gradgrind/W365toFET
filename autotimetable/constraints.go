@@ -2,7 +2,6 @@ package autotimetable
 
 import (
 	"W365toFET/timetable"
-	"sync"
 )
 
 /* TODO?
@@ -51,14 +50,14 @@ func setup_hard_constraint_map(
 
 func start_basic_constraints(
 	null_instance *TtInstance,
-	wait_group *sync.WaitGroup,
-) []*TtInstance {
+	runqueue *RunQueue,
+) map[*TtInstance]struct{} {
 	// `null_instance` itself should have no constraints enabled
-	tt_data := null_instance.TtData_0
+	tt_data := null_instance.Global.TtData_0
 
 	// Start the individual constraints in the order given by the
 	// ConstraintType indexes.
-	instances := []*TtInstance{}
+	instances := map[*TtInstance]struct{}{}
 	counter := 0
 	for k := range timetable.LastConstraint {
 		// Only hard constraints for now ...
@@ -79,9 +78,9 @@ func start_basic_constraints(
 		}
 		instance := new_instance(null_instance, k.String(), k, cilist, TIMEOUT_1)
 		enable_hard_constraints(instance, k, cilist)
-		// Start run
-		TtGenerate(instance.TtData, wait_group)
-		instances = append(instances, instance)
+		// Queue instance for running
+		runqueue.Add(instance)
+		instances[instance] = struct{}{}
 	}
 
 	//TODO: With rooms? Fixed und choices? soft constraints?
@@ -236,7 +235,7 @@ func enable_hard_constraints(
 	}
 	// Reconstruct the constraint list
 	newlist := []any{}
-	for i, c := range instance.TtData_0.HardConstraints[constraint_type] {
+	for i, c := range instance.Global.TtData_0.HardConstraints[constraint_type] {
 		if cmap[i] {
 			newlist = append(newlist, c)
 		}
