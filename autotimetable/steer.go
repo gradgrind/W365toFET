@@ -13,7 +13,7 @@ import (
 
 // TODO: How to set this up?
 var UNCONSTRAINED_TIMEOUT int = 10 // timeout ticks for unconstrained trial
-var DELAY_BINARY_CHOP int = 10
+var DELAY_BINARY_CHOP int = 3
 
 var TIMEOUT_1 int = 10 // ticks for single constraint type test functions
 var TIMEOUT_2 int = 10 // ticks for added constraint type test functions
@@ -214,6 +214,7 @@ tickloop:
 						basic_constraints = start_basic_constraints(
 							null_instance, &runqueue)
 						stage = 1
+						runqueue.Update()
 					} else {
 						// The null instance failed.
 						stage = -1
@@ -222,15 +223,17 @@ tickloop:
 						//TODO: Seek problems in the unconstrained data.
 
 					}
-				} else if null_instance.Delay == 0 {
-					stop_instance(null_instance)
 				} else {
-					timetable.BACKEND.Tick(null_instance.TtData)
-					if null_instance.Delay > 0 {
-						null_instance.Delay--
+					if null_instance.Delay == 0 {
+						stop_instance(null_instance)
+					} else {
+						timetable.BACKEND.Tick(null_instance.TtData)
+						if null_instance.Delay > 0 {
+							null_instance.Delay--
+						}
 					}
+					goto tickloop_end
 				}
-				goto tickloop_end
 			}
 
 			if stage == 1 {
@@ -251,6 +254,8 @@ tickloop:
 				if next_step == 0 && len(steps) != 0 {
 					// Start adding constraint types
 					current_instance = steps[0]
+					base.Message.Printf("(TODO) First constraint: %s\n",
+						current_instance.TtData.Description)
 					next_step = 1
 				}
 
@@ -259,13 +264,14 @@ tickloop:
 
 			// Handle the active instances (recursively)
 			if current_instance != nil {
-				tick_instance(&runqueue, current_instance)
-				if current_instance.Result != nil {
+				if current_instance.Result == nil {
+					tick_instance(&runqueue, current_instance)
+				} else {
 					if next_step < len(steps) {
 						// Add next constraint type
 						st1 := steps[next_step]
-						desc := current_instance.TtData.Description + "*" +
-							st1.TtData.Description
+						desc := fmt.Sprintf("C%02d~%s",
+							next_step, st1.TtData.Description)
 						current_instance = new_instance(
 							current_instance,
 							desc,
@@ -273,6 +279,7 @@ tickloop:
 							st1.Constraints,
 							TIMEOUT_2)
 						next_step++
+						runqueue.Add(current_instance)
 					} else if stage == 2 {
 						// No more constraint types => finished ...
 						// Cancel full_instance
@@ -373,14 +380,14 @@ func tick_instance(runqueue *RunQueue, instance *TtInstance) {
 				half := len(instance.Constraints) / 2
 				i0 := new_instance(
 					instance.BaseInstance,
-					instance.TtData.Description+"*0",
+					instance.TtData.Description+"~0",
 					instance.ConstraintType,
 					instance.Constraints[:half],
 					DELAY_BINARY_CHOP,
 				)
 				i1 := new_instance(
 					instance.BaseInstance,
-					instance.TtData.Description+"*1",
+					instance.TtData.Description+"~1",
 					instance.ConstraintType,
 					instance.Constraints[half:],
 					DELAY_BINARY_CHOP,
@@ -440,7 +447,7 @@ func tick_instance(runqueue *RunQueue, instance *TtInstance) {
 						}
 						i2 := new_instance(
 							i0,
-							instance.TtData.Description+"*2",
+							instance.TtData.Description+"~2",
 							instance.ConstraintType,
 							i1clist,
 							DELAY_BINARY_CHOP,
