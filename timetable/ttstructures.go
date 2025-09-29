@@ -72,8 +72,7 @@ type TtData struct {
 	//		-1: not started (yet)
 	//		 0: running
 	//     	 1: finished successfully
-	//		 2: failed
-	//		 3: process aborted
+	//		 2: failed (with errors or aborted)
 	State    int
 	Progress int // percent
 	Ticks    int

@@ -155,11 +155,11 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	var current_instance *TtInstance
 	steps := []*TtInstance{}
 	ticker := time.NewTicker(time.Second)
-	runqueue.Update()
-	defer ticker.Stop()
+	defer tidy(runqueue, ticker)
 
 tickloop:
 	for {
+		runqueue.Update()
 		select {
 
 		case ossig := <-sigChan:
@@ -232,7 +232,7 @@ tickloop:
 							null_instance.Delay--
 						}
 					}
-					goto tickloop_end
+					continue
 				}
 			}
 
@@ -290,8 +290,6 @@ tickloop:
 				}
 			}
 		}
-	tickloop_end:
-		runqueue.Update()
 	} // tickloop: end
 
 	//TODO: Consider also the possibility that there may be no (or only one)
@@ -307,6 +305,29 @@ type RunQueue struct {
 	Running    map[*TtInstance]struct{}
 	MaxRunning int
 	Next       int
+}
+
+func tidy(rq RunQueue, ticker *time.Ticker) {
+	fmt.Printf("TIDY %d\n", len(rq.Running))
+	base.Message.Printf("TIDY %d\n", len(rq.Running))
+	//TODO: Could the ticker be used here instead of sleep?
+	ticker.Stop()
+
+	for len(rq.Running) != 0 {
+		for instance := range rq.Running {
+			timetable.BACKEND.Tick(instance.TtData)
+			if instance.TtData.State != 0 {
+				base.Message.Printf("(TODO) Finished %s %d\n",
+					instance.TtData.Description, instance.TtData.State)
+				delete(rq.Running, instance)
+			} else {
+				base.Message.Printf("(TODO) Waiting? %s %d\n",
+					instance.TtData.Description, instance.TtData.State)
+			}
+		}
+		fmt.Println("Sleeping")
+		time.Sleep(1 * time.Second)
+	}
 }
 
 func (rq *RunQueue) Add(instance *TtInstance) {

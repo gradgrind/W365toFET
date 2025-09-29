@@ -78,7 +78,7 @@ func runFet(tt_data *timetable.TtData) {
 	ctx, cancel := context.WithCancel(context.Background())
 	// Note that it should be safe to call `cancel` multiple times.
 	fet_data := &fetTtData{
-		state:      0,
+		finished:   false,
 		activities: len(shared_data.Activities),
 		ifile:      fetfile,
 		odir:       odir,
@@ -109,54 +109,32 @@ func runFet(tt_data *timetable.TtData) {
 	go run(fet_data, runCmd)
 }
 
-//TODO: fet-cl places any messages in the log directory, as result.txt
-// (which is probably not so interesting), warnings.txt (which might
-// possibly containt something of diagnostic interest) and errors.txt
+// The executable, `fet-cl`, places any messages in the `log` directory, as
+// `result.txt` (which is probably not so interesting), `warnings.txt` (which
+// might possibly containt something of diagnostic interest) and `errors.txt`
 // (which may well contain diagnostic information that should ideally
-// have been caught earlier ...). The warnings.txt and errors.txt
-// files may not be present. If there is an errors.txt, it should
-// certainly be reported somehow (in fet_data.message?).
+// have been caught earlier ...). The `warnings.txt` and `errors.txt`
+// files are present only if there is something to report. If there is an
+// `errors.txt`, it should certainly be reported (in `fet_data.message`).
 
-// The last item to be changed must be `fet_data.state`, to avoid slightly
-// possible race conditions.
+// The completion code of `fet-cl` is not particularly helpful, so the
+// success of the run is determined by checking the number of placed
+// activities and the existence of an `errors.txt` file.
+
+// `run` is a goroutine. The last item to be changed must be `fet_data.state`,
+// to avoid potential race conditions.
 func run(fet_data *fetTtData, cmd *exec.Cmd) {
-	_, err := cmd.CombinedOutput()
-	if err == nil {
-		// Apparently this can happen even if the generation is not
-		// complete, so the handler (`ttTick`, see below) in the tick-loop
-		// should check for completion.
-		fet_data.state = 1
-	} else {
-		switch e := err.(type) {
-		case *exec.Error:
-			panic(fmt.Sprintf(
-				">>> !!! Failed running FET on %s:\n  %s\n",
-				fet_data.ifile, err))
-		case *exec.ExitError:
-			// If FET fails because of a data error, this case will be run,
-			// apparently with exit code = 1 (not sure if this is always
-			// the case).
-			// If terminated by a timeout the exit code seems to be -1.
-			fmt.Printf(">>> !!! FET cc on %s = %d\n",
-				fet_data.ifile, e.ExitCode())
-			if e.ExitCode() < 0 {
-				// aborted
-				fet_data.state = 3
-			} else {
-				// error completion
-				fet_data.state = 2
-			}
-		default:
-			panic(err)
-		}
-	}
+	cmd.CombinedOutput()
+	fet_data.finished = true
+
+	//TODO--
+	fmt.Printf(" --->>> %s\n", filepath.Base(fet_data.ifile))
 }
 
 var pattern = "time (.*), FET reached ([0-9]+)"
 var re *regexp.Regexp = regexp.MustCompile(pattern)
 
 type fetTtData struct {
-	state      int
 	activities int // total number of activities to place
 	ifile      string
 	odir       string
@@ -164,14 +142,14 @@ type fetTtData struct {
 	rdfile     *os.File // this must be closed when the subprocess finishes
 	reader     *bufio.Reader
 	cancel     func()
+	finished   bool
 }
 
 // `ttTick` runs in the "tick" loop. Rather like a "tail" function it reads
 // the FET progress from its log file, by simply polling for new lines.
 func ttTick(tt_data *timetable.TtData) {
 	tt_data.Ticks++
-	data := tt_data.BackEndData.(*fetTtData)
-	finished := data.state > 0
+	data := *tt_data.BackEndData.(*fetTtData)
 	if data.reader == nil {
 		// Await the existence of the log file
 		file, err := os.Open(data.logfile)
@@ -210,22 +188,15 @@ func ttTick(tt_data *timetable.TtData) {
 		}
 	}
 exit:
-	if finished {
+	if data.finished {
 		if data.rdfile != nil {
 			data.rdfile.Close()
 		}
-		if data.state == 1 {
-			// cc = 0 does not absolutely guarantee that the timetable is
-			// complete – when fet-cl is interrupted, for example
-			if tt_data.Progress == 100 {
-				tt_data.State = 1
-			} else {
-				tt_data.State = 4
-			}
+		if tt_data.Progress == 100 {
+			tt_data.State = 1
 		} else {
-			tt_data.State = data.state
+			tt_data.State = 2
 		}
-
 		efile, err := os.ReadFile(filepath.Join(data.odir, "logs", "errors.txt"))
 		if err != nil {
 			tt_data.Message = string(efile)

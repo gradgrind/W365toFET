@@ -10,14 +10,23 @@ import (
 
 type TtInstance struct {
 	Global *GlobalData
+	//TODO: `Status` records the processing progress of the instance:
+	//    0: just created, not ready for processing
+	//    1: awaiting start
+	//    2: started
+	//    3: interrupted, awaiting completion
+	//    4: cancelled, awaiting completion
+	//   10: stopped after normal successful completion
+	//   11: stopped after interrupt
+	//   12: stopped after failure
+	Status int
 	//Id      int
 	//TtData_0 *timetable.TtData // the original data
 	Delay int // ticks, counts down
 
-	//TODO--?
+	//TODO--
 	// `Termination` is normally 0 (not terminated "internally", i.e. from
-	// the tick-loop). Before a timeout is sent, this value is set to 1.
-	// Before a deletion is sent, this value is set to -1.
+	// the tick-loop). Before Abort is called, this value is set to 1.
 	//Termination int
 
 	TtData *timetable.TtData // current (possibly modified) data
@@ -37,6 +46,11 @@ type TtInstance struct {
 	Instance1 *TtInstance
 
 	Result *TtInstance
+}
+
+type ManageRun struct {
+	Instance *TtInstance
+	Status   int
 }
 
 type GlobalData struct {
