@@ -10,16 +10,6 @@ import (
 
 type TtInstance struct {
 	Global *GlobalData
-	//TODO: `Status` records the processing progress of the instance:
-	//    0: just created, not ready for processing
-	//    1: awaiting start
-	//    2: started
-	//    3: interrupted, awaiting completion
-	//    4: cancelled, awaiting completion
-	//   10: stopped after normal successful completion
-	//   11: stopped after interrupt
-	//   12: stopped after failure
-	Status int
 	//Id      int
 	//TtData_0 *timetable.TtData // the original data
 	Delay int // ticks, counts down
