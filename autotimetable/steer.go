@@ -26,7 +26,7 @@ var TIMEOUT_2 int = 10 // ticks for added constraint type test functions
 
 // TODO: It may well be desirable to be able to override this – see also GOMAXPROCS
 // var MAXPROCESSES int = runtime.NumCPU() //TODO: use this?
-var MAXPROCESSES int = 100
+var MAXPROCESSES int = 8
 
 // TODO: At present this only supports a FET back-end. Perhaps a choice should
 // be possible ...
@@ -194,7 +194,6 @@ tickloop:
 					}
 					full_instance.Delay--
 				}
-				timetable.BACKEND.Tick(full_instance.TtData)
 			}
 
 			//TODO: Special treatment if there are no constraints to add?
@@ -226,11 +225,8 @@ tickloop:
 				} else {
 					if null_instance.Delay == 0 {
 						stop_instance(null_instance)
-					} else {
-						timetable.BACKEND.Tick(null_instance.TtData)
-						if null_instance.Delay > 0 {
-							null_instance.Delay--
-						}
+					} else if null_instance.Delay > 0 {
+						null_instance.Delay--
 					}
 					continue
 				}
@@ -338,20 +334,29 @@ func (rq *RunQueue) Add(instance *TtInstance) {
 
 func (rq *RunQueue) Update() {
 	for instance := range rq.Running {
-		if instance.TtData.State != 0 {
-			base.Message.Printf("(TODO) [%d] Done %s\n",
-				instance.Global.Ticks, instance.TtData.Description)
+		// Update state
+		ttdata := instance.TtData
+		if ttdata.State == 0 {
+			// Running
+			timetable.BACKEND.Tick(ttdata)
+		}
+		// Handle completion
+		if ttdata.State != 0 {
+			base.Message.Printf("(TODO) [%d] Done %s @ %d\n",
+				instance.Global.Ticks, ttdata.Description, ttdata.Ticks)
 			delete(rq.Running, instance)
 		}
 	}
+	// Try to start queued instances
 	for rq.Next < len(rq.Queue) && len(rq.Running) < rq.MaxRunning {
 		instance := rq.Queue[rq.Next]
 		rq.Next++
-		instance.TtData.State = 0 // indicate started
+		ttdata := instance.TtData
+		ttdata.State = 0 // indicate started
 		rq.Running[instance] = struct{}{}
 		base.Message.Printf("(TODO) [%d] Start %s\n",
-			instance.Global.Ticks, instance.TtData.Description)
-		timetable.BACKEND.Run(instance.TtData)
+			instance.Global.Ticks, ttdata.Description)
+		timetable.BACKEND.Run(ttdata)
 	}
 	//TODO--
 	fmt.Printf("$Running instances: %d\n", len(rq.Running))
@@ -489,6 +494,8 @@ func stop_instance(instance *TtInstance) {
 	}
 	if instance.TtData.State == 0 {
 		timetable.BACKEND.Abort(instance.TtData)
+	} else if instance.TtData.State < 0 {
+		instance.TtData.State = 2
 	}
 	// Stop subsidiary instances
 	stop_instance(instance.Instance0)
