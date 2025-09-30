@@ -148,7 +148,6 @@ type fetTtData struct {
 // `ttTick` runs in the "tick" loop. Rather like a "tail" function it reads
 // the FET progress from its log file, by simply polling for new lines.
 func ttTick(tt_data *timetable.TtData) {
-	tt_data.Ticks++
 	data := *tt_data.BackEndData.(*fetTtData)
 	if data.reader == nil {
 		// Await the existence of the log file

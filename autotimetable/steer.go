@@ -276,7 +276,7 @@ tickloop:
 			// added step by step.
 			// The `next_step != 0` test is to exclude the unconstrained
 
-			Check the Result field of null_instance!
+			//TODOTODOTODO!!! Check the Result field of null_instance!
 
 			// instance (TODO: maybe it always has no `Result` value anyway?). But
 			// if all the single constraints have failed (very unlikely!) it
@@ -358,7 +358,14 @@ func (rq *RunQueue) Update() {
 		ttdata := instance.TtData
 		if ttdata.State == 0 {
 			// Still running
+			ttdata.Ticks++
 			timetable.BACKEND.Tick(ttdata)
+			if ttdata.State == 0 && instance.Timeout == ttdata.Ticks {
+				base.Message.Printf("TIMEOUT [%d] %s\n",
+					instance.Global.Ticks, ttdata.Description)
+				stop_instance(instance)
+				continue
+			}
 		}
 		rq.tick_instance(instance)
 		// Handle completion
@@ -403,38 +410,77 @@ func (rq *RunQueue) tick_instance(instance *TtInstance) {
 			return
 		}
 	}
-	if instance.Delay >= 0 {
-		if instance.Delay == 0 {
-			// Start subsidiary activities, if any
-			if len(instance.Constraints) == 1 {
-				// No subsidiary activities: quit, returning base instance
+
+	//TODO
+
+	if instance.Timeout == ttdata.Ticks {
+		// Start subsidiary activities, if any
+		nc := len(instance.Constraints)
+
+		//TODO: For small numbers of constraints, add them one after
+		// another, with an appropriate timeout.
+
+		timeout := 10
+
+		if nc < 2 {
+			// No subsidiary instances, the primary instance should be
+			// stopped.
+			stop_instance(instance)
+
+			//TODO? Will this be handled later?
+			instance.Result = instance.BaseInstance
+
+		} else if nc < 4 {
+
+			//TODO: ???
+			if instance.Next == nc {
+				// No (remaining) subsidiary activities:
+				// Stop processing this instance, returning "best" result
+				// so far.
 				stop_instance(instance)
+				//TODO
 				instance.Result = instance.BaseInstance
+
 			} else {
-				// Divide constraints into two lists
-				half := len(instance.Constraints) / 2
-				i0 := new_instance(
+				instance.SubInstance = new_instance(
 					instance.BaseInstance,
-					instance.TtData.Description+"~0",
+					fmt.Sprintf("%s+%d", instance.TtData.Description, i),
 					instance.ConstraintType,
-					instance.Constraints[:half],
-					DELAY_BINARY_CHOP,
+					instance.Constraints[instance.Next:instance.Next+1],
+					timeout,
 				)
-				i1 := new_instance(
-					instance.BaseInstance,
-					instance.TtData.Description+"~1",
-					instance.ConstraintType,
-					instance.Constraints[half:],
-					DELAY_BINARY_CHOP,
-				)
-				instance.Instance0 = i0
-				instance.Instance1 = i1
-				rq.Add(i0)
-				rq.Add(i1)
+				instance.Next++
 			}
-		} else {
 		}
-		instance.Delay--
+
+		//
+
+		if len(instance.Constraints) == 1 {
+			// No subsidiary activities: quit, returning base instance
+			stop_instance(instance)
+			instance.Result = instance.BaseInstance
+		} else {
+			// Divide constraints into two lists
+			half := len(instance.Constraints) / 2
+			i0 := new_instance(
+				instance.BaseInstance,
+				instance.TtData.Description+"~0",
+				instance.ConstraintType,
+				instance.Constraints[:half],
+				DELAY_BINARY_CHOP,
+			)
+			i1 := new_instance(
+				instance.BaseInstance,
+				instance.TtData.Description+"~1",
+				instance.ConstraintType,
+				instance.Constraints[half:],
+				DELAY_BINARY_CHOP,
+			)
+			instance.Instance0 = i0
+			instance.Instance1 = i1
+			rq.Add(i0)
+			rq.Add(i1)
+		}
 
 	} else {
 		// If there are subsidiary instances, they have already started.
@@ -498,9 +544,10 @@ func (rq *RunQueue) tick_instance(instance *TtInstance) {
 }
 
 func stop_instance(instance *TtInstance) {
-	if instance == nil || instance.Result != nil {
+	if instance == nil || instance.Stopped || instance.Result != nil {
 		return
 	}
+	instance.Stopped = true
 	if instance.TtData.State == 0 {
 		timetable.BACKEND.Abort(instance.TtData)
 	} else if instance.TtData.State < 0 {

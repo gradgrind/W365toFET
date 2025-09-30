@@ -9,10 +9,13 @@ import (
 // timetable generation.
 
 type TtInstance struct {
+	// The instance tick counter is in `TtData` because it may be needed
+	// by the back-end.
 	Global *GlobalData
 	//Id      int
 	//TtData_0 *timetable.TtData // the original data
-	Delay int // ticks, counts down
+	Timeout int // ticks
+	//Delay   int // ticks before subsidiary instances are started
 
 	//TODO--
 	// `Termination` is normally 0 (not terminated "internally", i.e. from
@@ -31,9 +34,14 @@ type TtInstance struct {
 	Constraints    []int // individual constraint indexes
 
 	// Run time
+	Stopped     bool // `stop_instance()` has been called on this instance
+	SubInstance *TtInstance
+	Next        int // counter for constraints
+
 	//LastProgress int // in percent
-	Instance0 *TtInstance
-	Instance1 *TtInstance
+
+	//Instance0 *TtInstance
+	//Instance1 *TtInstance
 
 	Result *TtInstance
 }

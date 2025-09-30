@@ -51,7 +51,7 @@ func setup_hard_constraint_map(
 func start_basic_constraints(
 	null_instance *TtInstance,
 	runqueue *RunQueue,
-	unconstrained_time int, TODO: use this
+	unconstrained_time int,
 ) map[*TtInstance]struct{} {
 	// `null_instance` itself should have no constraints enabled
 	tt_data := null_instance.Global.TtData_0
@@ -77,7 +77,8 @@ func start_basic_constraints(
 		for i := range n {
 			cilist[i] = i
 		}
-		instance := new_instance(null_instance, k.String(), k, cilist, TIMEOUT_1)
+		instance := new_instance(
+			null_instance, k.String(), k, cilist, unconstrained_time)
 		enable_hard_constraints(instance, k, cilist)
 		// Queue instance for running
 		runqueue.Add(instance)
