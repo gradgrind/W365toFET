@@ -8,21 +8,14 @@ import (
 // Structures and methods used in connection with automation of the
 // timetable generation.
 
+var Ticks int // global time ticker
+// The instance tick counter is in `TtData` because it may be needed
+// by the back-end.
+var TtData_0 *timetable.TtData // the original data
+
 type TtInstance struct {
-	// The instance tick counter is in `TtData` because it may be needed
-	// by the back-end.
-	Global *GlobalData
-	//Id      int
-	//TtData_0 *timetable.TtData // the original data
-	Timeout int // ticks
-	//Delay   int // ticks before subsidiary instances are started
-
-	//TODO--
-	// `Termination` is normally 0 (not terminated "internally", i.e. from
-	// the tick-loop). Before Abort is called, this value is set to 1.
-	//Termination int
-
-	TtData *timetable.TtData // current (possibly modified) data
+	Timeout int               // ticks
+	TtData  *timetable.TtData // current (possibly modified) data
 
 	WaitGroup *sync.WaitGroup // for waiting until all goroutines finish
 

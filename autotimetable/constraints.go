@@ -54,7 +54,7 @@ func start_basic_constraints(
 	unconstrained_time int,
 ) map[*TtInstance]struct{} {
 	// `null_instance` itself should have no constraints enabled
-	tt_data := null_instance.Global.TtData_0
+	tt_data := TtData_0
 
 	// Start the individual constraints in the order given by the
 	// ConstraintType indexes.
@@ -237,7 +237,7 @@ func enable_hard_constraints(
 	}
 	// Reconstruct the constraint list
 	newlist := []any{}
-	for i, c := range instance.Global.TtData_0.HardConstraints[constraint_type] {
+	for i, c := range TtData_0.HardConstraints[constraint_type] {
 		if cmap[i] {
 			newlist = append(newlist, c)
 		}
