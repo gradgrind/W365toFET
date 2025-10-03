@@ -226,7 +226,7 @@ tickloop:
 					// The null instance completed successfully.
 					current_instance = null_instance
 					unconstrained_time = null_instance.TtData.Ticks
-					base.Message.Printf("(TODO) [d] UNCONSTRAINED TIME: %d\n",
+					base.Message.Printf("(TODO) [%d] UNCONSTRAINED TIME: %d\n",
 						Ticks, unconstrained_time)
 					// Start trials of single constraint types.
 					basic_constraints = start_basic_constraints(
@@ -307,12 +307,6 @@ tickloop:
 			//TODO: A "stuck" analysis on running instances might help to
 			// reduce processing time?
 
-			if current_instance.ProcessingState != 0 {
-				if current_instance.ProcessingState == 1 {
-
-				}
-			}
-
 			if next_step < len(steps) {
 				// Add next constraint type
 				st1 := steps[next_step]
@@ -329,10 +323,11 @@ tickloop:
 				runqueue.add(current_instance)
 			} else if stage == 2 {
 				// No more constraint types => finished ...
-				// Cancel full_instance
-				//TODO: but only if timeout reached?
-				stop_instance(full_instance)
-				break tickloop
+				if full_instance.ProcessingState != 0 {
+					//TODO? && hard_only_instance != 0
+					// Nothing left to wait for
+					break tickloop
+				}
 			}
 
 		}
@@ -392,7 +387,7 @@ func (rq *RunQueue) updateInstances() {
 		if ttdata.State != 0 {
 			// This should only be possible after the call to
 			// `timetable.BACKEND.Tick` below.
-			panic("Bug")
+			panic(fmt.Sprintf("Bug, State = %d", ttdata.State))
 		}
 		ttdata.Ticks++
 		// Among other things, update the state:
