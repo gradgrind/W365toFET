@@ -2,7 +2,6 @@ package autotimetable
 
 import (
 	"W365toFET/timetable"
-	"sync"
 )
 
 // Structures and methods used in connection with automation of the
@@ -17,8 +16,6 @@ type TtInstance struct {
 	Timeout int               // ticks
 	TtData  *timetable.TtData // current (possibly modified) data
 
-	WaitGroup *sync.WaitGroup // for waiting until all goroutines finish
-
 	HardConstraintEnabled [][]bool // [type][index] -> enabled
 
 	// Base data for this instance:
@@ -27,14 +24,12 @@ type TtInstance struct {
 	Constraints    []int // individual constraint indexes
 
 	// Run time
-	Stopped     bool // `stop_instance()` has been called on this instance
-	SubInstance *TtInstance
-	Next        int // counter for constraints
+	Stopped         bool // `abort_instance()` has been called on this instance
+	ProcessingState int  // -1: queued, 0: running, 1: success, 2: failure,
+	// there is also 3: cancelled before starting
 
-	//LastProgress int // in percent
-
-	//Instance0 *TtInstance
-	//Instance1 *TtInstance
+	Instance1 *TtInstance
+	Instance2 *TtInstance
 
 	Result *TtInstance
 }
