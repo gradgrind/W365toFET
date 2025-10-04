@@ -339,9 +339,15 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	//TODO: Consider also the possibility that there may be no (or only one)
 	// basic constraint types.
 
-	// The result is in `current_instance`.
+	var result *TtInstance
+	if full_instance.Result != nil {
+		result = full_instance.Result
+	} else {
+		result = preempt_result(current_instance)
+	}
+
 	//TODO
-	base.Message.Printf("RESULT: %s\n", current_instance.TtData.Description)
+	base.Message.Printf("RESULT: %s\n", result.TtData.Description)
 }
 
 type RunQueue struct {
@@ -349,6 +355,25 @@ type RunQueue struct {
 	Active     map[*TtInstance]struct{}
 	MaxRunning int
 	Next       int
+}
+
+// TODO?
+func preempt_result(instance *TtInstance) *TtInstance {
+	if instance == nil {
+		return nil
+	}
+	if instance.Result != nil {
+		return instance.Result
+	}
+	r := preempt_result(instance.Instance1)
+	if r != nil {
+		return r
+	}
+	r = preempt_result(instance.Instance2)
+	if r != nil {
+		return r
+	}
+	return instance.BaseInstance
 }
 
 // TODO?
