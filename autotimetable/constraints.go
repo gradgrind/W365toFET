@@ -84,6 +84,7 @@ func start_basic_constraints(
 			max(unconstrained_time*NEXT_STAGE_TIMEOUT_FACTOR,
 				NEXT_STAGE_TIMEOUT_MIN))
 		// Queue instance for running
+		instance.Tagged = true
 		runqueue.add(instance)
 		instances[instance] = struct{}{}
 	}

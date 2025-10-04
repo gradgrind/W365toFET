@@ -13,6 +13,7 @@ var Ticks int // global time ticker
 var TtData_0 *timetable.TtData // the original data
 
 type TtInstance struct {
+	Tagged  bool              // to identify primary instances
 	Timeout int               // ticks
 	TtData  *timetable.TtData // current (possibly modified) data
 

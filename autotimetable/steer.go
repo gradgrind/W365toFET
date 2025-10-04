@@ -98,7 +98,6 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	//instance_done := make(chan *TtInstance, 10)
 
 	tt_data_0.Description = "COMPLETE"
-	tt_data_0.State = -1 // not started yet
 	workingdir := tt_shared_data.WorkingDir
 
 	// Provide an empty working directory.
@@ -119,6 +118,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	// instances should be stopped and the "best" solution at this point
 	// chosen.
 	full_instance := &TtInstance{
+		Tagged:  true,
 		Timeout: TIMEOUT,
 		TtData:  tt_data_0,
 	}
@@ -129,10 +129,13 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	//TODO: Instance without soft constraints (if any)?
 
 	// Unconstrained instance
+	tt_data := new_ttdata(tt_data_0, "ONLY_BLOCKED_SLOTS")
 	null_instance := &TtInstance{
+		Tagged: true,
+
 		Timeout: max(TIMEOUT/UNCONSTRAINED_TIMEOUT_FRACTION, 10), //TODO??
 
-		TtData: new_ttdata(tt_data_0, "ONLY_BLOCKED_SLOTS"),
+		TtData: tt_data,
 		HardConstraintEnabled: setup_hard_constraint_map(
 			tt_data_0.HardConstraints),
 	}
@@ -142,7 +145,6 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 
 	// Start stage 0
 	stage := 0
-	runqueue.updateQueue()
 
 	// *** Ticker loop ***
 	next_step := 0
@@ -156,6 +158,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 
 tickloop:
 	for {
+		runqueue.updateQueue()
 		runqueue.updateInstances()
 		select {
 
@@ -218,11 +221,12 @@ tickloop:
 			if stage == 0 {
 				// During stage 0 only `full_instance` and `null_instance`
 				// (and perhaps hard_only_instance) are running.
-				if null_instance.ProcessingState == 0 {
+				switch null_instance.ProcessingState {
+				case 0:
 					if null_instance.TtData.Ticks == null_instance.Timeout {
 						abort_instance(null_instance)
 					}
-				} else if null_instance.ProcessingState == 1 {
+				case 1:
 					// The null instance completed successfully.
 					current_instance = null_instance
 					unconstrained_time = null_instance.TtData.Ticks
@@ -232,11 +236,11 @@ tickloop:
 					basic_constraints = start_basic_constraints(
 						null_instance, &runqueue, unconstrained_time)
 					stage = 1
-				} else {
+				default:
 					// The null instance failed.
 					stage = -1
 					base.Message.Printf(
-						"(TODO) [d] Unconstrained instance failed", Ticks)
+						"(TODO) [%d] Unconstrained instance failed", Ticks)
 
 					//TODO: Seek problems in the unconstrained data.
 					panic("TODO")
@@ -252,7 +256,7 @@ tickloop:
 				// constraint instances: check their states.
 				for bc := range basic_constraints {
 					// Handle completed instance.
-					if bc.ProcessingState != 0 {
+					if bc.ProcessingState > 0 {
 						if bc.ProcessingState == 1 {
 							steps = append(steps, bc)
 							if next_step == 0 {
@@ -286,7 +290,8 @@ tickloop:
 				}
 
 				//TODO--
-				base.Message.Printf("STAGE: %d @ %d steps: %d\n", stage, next_step, len(steps))
+				base.Message.Printf("$ [%d] STAGE: %d @ %d steps: %d\n",
+					Ticks, stage, next_step, len(steps))
 			}
 
 			// This bit handles the phase where constraint types are being
@@ -307,26 +312,31 @@ tickloop:
 			//TODO: A "stuck" analysis on running instances might help to
 			// reduce processing time?
 
-			if next_step < len(steps) {
-				// Add next constraint type
-				st1 := steps[next_step]
-				desc := fmt.Sprintf("C%02d~%s",
-					next_step, st1.TtData.Description)
-				current_instance = new_instance(
-					current_instance,
-					desc,
-					st1.ConstraintType,
-					st1.Constraints,
-					max(current_instance.TtData.Ticks*NEXT_STAGE_TIMEOUT_FACTOR,
-						NEXT_STAGE_TIMEOUT_MIN))
-				next_step++
-				runqueue.add(current_instance)
-			} else if stage == 2 {
-				// No more constraint types => finished ...
-				if full_instance.ProcessingState != 0 {
-					//TODO? && hard_only_instance != 0
-					// Nothing left to wait for
-					break tickloop
+			if current_instance.Result != nil {
+				fmt.Printf("??? %d @ %d: %d %d\n",
+					current_instance.ProcessingState, stage, next_step, len(steps))
+				if next_step < len(steps) {
+					// Add next constraint type
+					st1 := steps[next_step]
+					desc := fmt.Sprintf("C%02d~%s",
+						next_step, st1.TtData.Description)
+					current_instance = new_instance(
+						current_instance,
+						desc,
+						st1.ConstraintType,
+						st1.Constraints,
+						max(current_instance.TtData.Ticks*NEXT_STAGE_TIMEOUT_FACTOR,
+							NEXT_STAGE_TIMEOUT_MIN))
+					next_step++
+					current_instance.Tagged = true
+					runqueue.add(current_instance)
+				} else if stage == 2 {
+					// No more constraint types => finished ...
+					if full_instance.ProcessingState != 0 {
+						//TODO? && hard_only_instance != 0
+						// Nothing left to wait for
+						break tickloop
+					}
 				}
 			}
 
@@ -353,6 +363,9 @@ type RunQueue struct {
 func tidy(rq RunQueue, ticker *time.Ticker) {
 	fmt.Printf("TIDY %d\n", len(rq.Active))
 	base.Message.Printf("TIDY %d\n", len(rq.Active))
+
+	panic("TRACE")
+
 	//TODO: Could the ticker be used here instead of sleep?
 	ticker.Stop()
 
@@ -381,10 +394,19 @@ func (rq *RunQueue) add(instance *TtInstance) {
 		Ticks, instance.TtData.Description)
 }
 
+func (rq *RunQueue) add_front(instance *TtInstance) {
+	instance.ProcessingState = -1 // not started yet
+	rq.Queue = slices.Insert(rq.Queue, rq.Next, instance)
+	base.Message.Printf("(TODO) [%d] Queue Front %s\n",
+		Ticks, instance.TtData.Description)
+}
+
 func (rq *RunQueue) updateInstances() {
 	for instance := range rq.Active {
 		ttdata := instance.TtData
-		if ttdata.State != 0 {
+		base.Message.Printf("(TODO) [%d] ? ACTIVE (%d): %s\n",
+			Ticks, ttdata.State, ttdata.Description)
+		if ttdata.State != 0 && instance.ProcessingState != 2 {
 			// This should only be possible after the call to
 			// `timetable.BACKEND.Tick` below.
 			panic(fmt.Sprintf("Bug, State = %d", ttdata.State))
@@ -403,8 +425,13 @@ func (rq *RunQueue) updateInstances() {
 			}
 
 		case 1: // completed successfully
-			base.Message.Printf("(TODO) [%d] Done %s @ %d\n",
-				Ticks, ttdata.Description, ttdata.Ticks)
+			if instance.Tagged {
+				base.Message.Printf("(TODO) [%d] <<+ %s @ %d\n",
+					Ticks, ttdata.Description, ttdata.Ticks)
+			} else {
+				base.Message.Printf("(TODO) [%d] Done %s @ %d\n",
+					Ticks, ttdata.Description, ttdata.Ticks)
+			}
 			// Cancel subsidiary instances
 			cancel_instance(instance.Instance1)
 			cancel_instance(instance.Instance2)
@@ -415,8 +442,13 @@ func (rq *RunQueue) updateInstances() {
 
 		default: // completed unsuccessfully
 			if instance.ProcessingState != 2 {
-				base.Message.Printf("(TODO) [%d] Failed %s @ %d (%d)\n",
-					Ticks, ttdata.Description, ttdata.Ticks, ttdata.State)
+				if instance.Tagged {
+					base.Message.Printf("(TODO) [%d] <<- %s @ %d\n",
+						Ticks, ttdata.Description, ttdata.Ticks)
+				} else {
+					base.Message.Printf("(TODO) [%d] Failed %s @ %d (%d)\n",
+						Ticks, ttdata.Description, ttdata.Ticks, ttdata.State)
+				}
 				rq.Running--
 				instance.ProcessingState = 2
 			}
@@ -475,11 +507,7 @@ func (rq *RunQueue) updateInstances() {
 								instance.Timeout)
 							instance.Instance2 = next_instance
 							instance.Instance1 = nil
-
-							//TODO: Can this get blocked by other queued instances?
-							// If so, that would be a bit awkward ...
-
-							rq.add(next_instance)
+							rq.add_front(next_instance)
 						}
 					}
 				}
@@ -528,13 +556,20 @@ func (rq *RunQueue) updateQueue() {
 			rq.add(instance.Instance2)
 		}
 
-		base.Message.Printf("(TODO) [%d] Start %s\n",
-			Ticks, ttdata.Description)
+		if instance.Tagged {
+			base.Message.Printf("(TODO) [%d] >> %s\n",
+				Ticks, ttdata.Description)
+		} else {
+			base.Message.Printf("(TODO) [%d] Start %s\n",
+				Ticks, ttdata.Description)
+		}
 		timetable.BACKEND.Run(ttdata)
 	}
 	//TODO--
-	fmt.Printf("$Running/Active instances: %d/%d\n", rq.Running, len(rq.Active))
-	base.Message.Printf("$Running/Active instances: %d/%d\n", rq.Running, len(rq.Active))
+	fmt.Printf("$ [%d] Running/Active instances: %d/%d\n",
+		Ticks, rq.Running, len(rq.Active))
+	base.Message.Printf("$ [%d] Running/Active instances: %d/%d\n",
+		Ticks, rq.Running, len(rq.Active))
 }
 
 func (rq *RunQueue) disable() {
@@ -628,7 +663,7 @@ func new_ttdata(
 		ClassNotAvailable:       ttdata_0.ClassNotAvailable,
 		RoomNotAvailable:        ttdata_0.RoomNotAvailable,
 		WITHOUT_ROOM_PLACEMENTS: ttdata_0.WITHOUT_ROOM_PLACEMENTS,
-		State:                   -1, // not started
+		State:                   0,
 	}
 
 	// Make a deeper copy of the constraints so that these can be
