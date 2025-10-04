@@ -153,56 +153,51 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	steps := []*TtInstance{}
 	long_steps := []*TtInstance{}
 	ticker := time.NewTicker(time.Second)
-	defer tidy(runqueue, ticker)
+	//TODO? defer tidy(runqueue, ticker)
+	defer ticker.Stop()
 	unconstrained_time := 0
 
-tickloop:
-	for {
-		runqueue.update_queue()
+	//tickloop:
+	for runqueue.update_queue() != 0 {
 		select {
 
 		case ossig := <-sigChan:
 			//TODO: seek the best solution so far?
 			base.Message.Printf("*** SIGNAL *** %+v", ossig)
+			runqueue.disable()
 			cancel_instance(full_instance)
 			//cancel_instance(hard_only_instance)
 			cancel_instance(null_instance)
 			cancel_instance(current_instance)
-
-			//TODO?
-			return
+			continue
 
 		case <-ticker.C:
 			Ticks++
 			runqueue.update_instances()
 
 			if Ticks == TIMEOUT {
+				runqueue.disable()
 				if full_instance.ProcessingState == 0 {
 					base.Message.Printf(
 						"(TODO) [%d] TIMEOUT\n", Ticks)
-					runqueue.disable()
 					cancel_instance(full_instance)
-					//cancel_instance(hard_only_instance)
-					cancel_instance(null_instance)
-
-					//TODO: Can current_instance be nil here?
-
-					if current_instance.Result == nil {
-						//TODO--
-						fmt.Println("!!! No result")
-
-						cancel_instance(current_instance)
-
-						//TODO
-						panic("TODO: Seek best result so far")
-
-					}
-					break tickloop
 				}
 				//cancel_instance(hard_only_instance)
+				cancel_instance(null_instance)
 
-				//TODO: stop current instance ...
+				//TODO: Can current_instance be nil here?
 
+				if current_instance.Result == nil {
+					//TODO--
+					fmt.Println("!!! No result")
+
+					cancel_instance(current_instance)
+
+					//TODO
+					//panic("TODO: Seek best result so far")
+
+				}
+				continue
 			}
 
 			if full_instance.ProcessingState == 1 {
@@ -213,7 +208,7 @@ tickloop:
 				cancel_instance(current_instance)
 				full_instance.Result = full_instance
 				current_instance = full_instance
-				break tickloop
+				continue
 			}
 
 			//TODO: Special treatment if there are no constraints to add?
@@ -335,11 +330,9 @@ tickloop:
 					if full_instance.ProcessingState != 0 {
 						//TODO? && hard_only_instance != 0
 						// Nothing left to wait for
-						break tickloop
 					}
 				}
 			}
-
 		}
 	} // tickloop: end
 
@@ -354,7 +347,6 @@ tickloop:
 type RunQueue struct {
 	Queue      []*TtInstance
 	Active     map[*TtInstance]struct{}
-	Running    int
 	MaxRunning int
 	Next       int
 }
@@ -406,7 +398,7 @@ func (rq *RunQueue) update_instances() {
 		ttdata := instance.TtData
 		base.Message.Printf("(TODO) [%d] ? ACTIVE (%d): %s\n",
 			Ticks, ttdata.State, ttdata.Description)
-		if ttdata.State != 0 && instance.ProcessingState != 2 {
+		if ttdata.State != 0 && instance.ProcessingState < 2 {
 			// This should only be possible after the call to
 			// `timetable.BACKEND.Tick` below.
 			panic(fmt.Sprintf("Bug, State = %d", ttdata.State))
@@ -518,16 +510,22 @@ func (rq *RunQueue) update_instances() {
 	}
 }
 
-func (rq *RunQueue) update_queue() {
+func (rq *RunQueue) update_queue() int {
 	// Try to start queued instances
-	for rq.Next < len(rq.Queue) && rq.Running < rq.MaxRunning {
+	running := 0
+	for i := range rq.Active {
+		if i.ProcessingState == 0 || i.ProcessingState == 3 {
+			running++
+		}
+	}
+	for rq.Next < len(rq.Queue) && running < rq.MaxRunning {
 		instance := rq.Queue[rq.Next]
 		rq.Next++
 
 		if instance.ProcessingState < 0 {
 			instance.ProcessingState = 0 // indicate started/running
 			rq.Active[instance] = struct{}{}
-			rq.Running++
+			running++
 		} else {
 			if instance.ProcessingState != 3 {
 				panic("Bug")
@@ -569,9 +567,10 @@ func (rq *RunQueue) update_queue() {
 	}
 	//TODO--
 	fmt.Printf("$ [%d] Running/Active instances: %d/%d\n",
-		Ticks, rq.Running, len(rq.Active))
+		Ticks, running, len(rq.Active))
 	base.Message.Printf("$ [%d] Running/Active instances: %d/%d\n",
-		Ticks, rq.Running, len(rq.Active))
+		Ticks, running, len(rq.Active))
+	return running
 }
 
 func (rq *RunQueue) disable() {
@@ -583,21 +582,22 @@ func (rq *RunQueue) instance_completed(instance *TtInstance, state int) {
 	if state != 2 {
 		rq.instance_deactivate(instance)
 	}
-	rq.Running--
 }
 
 func (rq *RunQueue) instance_deactivate(instance *TtInstance) {
 	delete(rq.Active, instance)
 }
 
+// Cancelling an instance will abort it if it is running.
+// The `ProcessingState` is set to 3 to indicate that a queued instance
+// is not to be started. A cancelled instance is not needed, so no
+// result is expected and its data can be removed.
 func cancel_instance(instance *TtInstance) {
 	if instance != nil {
 		if instance.ProcessingState == 0 {
 			abort_instance(instance)
-		} else if instance.ProcessingState < 0 {
-			// Disable starting of process
-			instance.ProcessingState = 3
 		}
+		instance.ProcessingState = 3
 		// Cancel subsidiary instances
 		cancel_instance(instance.Instance1)
 		cancel_instance(instance.Instance2)
