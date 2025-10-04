@@ -158,8 +158,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 
 tickloop:
 	for {
-		runqueue.updateQueue()
-		runqueue.updateInstances()
+		runqueue.update_queue()
 		select {
 
 		case ossig := <-sigChan:
@@ -175,6 +174,7 @@ tickloop:
 
 		case <-ticker.C:
 			Ticks++
+			runqueue.update_instances()
 
 			if Ticks == TIMEOUT {
 				if full_instance.ProcessingState == 0 {
@@ -375,7 +375,7 @@ func tidy(rq RunQueue, ticker *time.Ticker) {
 			if instance.TtData.State != 0 {
 				base.Message.Printf("(TODO) Finished %s %d\n",
 					instance.TtData.Description, instance.TtData.State)
-				delete(rq.Active, instance)
+				rq.instance_deactivate(instance)
 			} else {
 				base.Message.Printf("(TODO) Waiting? %s %d\n",
 					instance.TtData.Description, instance.TtData.State)
@@ -401,7 +401,7 @@ func (rq *RunQueue) add_front(instance *TtInstance) {
 		Ticks, instance.TtData.Description)
 }
 
-func (rq *RunQueue) updateInstances() {
+func (rq *RunQueue) update_instances() {
 	for instance := range rq.Active {
 		ttdata := instance.TtData
 		base.Message.Printf("(TODO) [%d] ? ACTIVE (%d): %s\n",
@@ -436,12 +436,14 @@ func (rq *RunQueue) updateInstances() {
 			cancel_instance(instance.Instance1)
 			cancel_instance(instance.Instance2)
 			instance.Result = instance
-			instance.ProcessingState = 1
-			delete(rq.Active, instance)
-			rq.Running--
+			rq.instance_completed(instance, 1)
 
 		default: // completed unsuccessfully
 			if instance.ProcessingState != 2 {
+				// This is done only the first time round for this instance.
+				// Some instances remain active after the primary run has
+				// completed, so for subsequent loops this block should be
+				// skipped.
 				if instance.Tagged {
 					base.Message.Printf("(TODO) [%d] <<- %s @ %d\n",
 						Ticks, ttdata.Description, ttdata.Ticks)
@@ -449,8 +451,8 @@ func (rq *RunQueue) updateInstances() {
 					base.Message.Printf("(TODO) [%d] Failed %s @ %d (%d)\n",
 						Ticks, ttdata.Description, ttdata.Ticks, ttdata.State)
 				}
-				rq.Running--
-				instance.ProcessingState = 2
+				// This doesn't deactivate the instance (for state = 2):
+				rq.instance_completed(instance, 2)
 			}
 
 			//TODO: If it is an actual error, the halves should perhaps still
@@ -460,13 +462,13 @@ func (rq *RunQueue) updateInstances() {
 				if instance.Instance2 == nil {
 					// No halves
 					instance.Result = instance.BaseInstance
-					delete(rq.Active, instance)
+					rq.instance_deactivate(instance)
 				} else {
 					// The 1st half has completed, the 2nd half is now
 					// building, possibly based on the result of the 1st half.
 					if instance.Instance2.Result != nil {
 						instance.Result = instance.Instance2.Result
-						delete(rq.Active, instance)
+						rq.instance_deactivate(instance)
 					}
 					// Otherwise the instance remains active (though not
 					// running).
@@ -497,7 +499,7 @@ func (rq *RunQueue) updateInstances() {
 						if i2 == instance.BaseInstance {
 							// 2nd half: no constraints added
 							instance.Result = instance.Instance1.Result
-							delete(rq.Active, instance)
+							rq.instance_deactivate(instance)
 						} else {
 							next_instance := new_instance(
 								instance.Instance1,
@@ -516,7 +518,7 @@ func (rq *RunQueue) updateInstances() {
 	}
 }
 
-func (rq *RunQueue) updateQueue() {
+func (rq *RunQueue) update_queue() {
 	// Try to start queued instances
 	for rq.Next < len(rq.Queue) && rq.Running < rq.MaxRunning {
 		instance := rq.Queue[rq.Next]
@@ -574,6 +576,18 @@ func (rq *RunQueue) updateQueue() {
 
 func (rq *RunQueue) disable() {
 	rq.MaxRunning = 0 // no new starts possible
+}
+
+func (rq *RunQueue) instance_completed(instance *TtInstance, state int) {
+	instance.ProcessingState = state
+	if state != 2 {
+		rq.instance_deactivate(instance)
+	}
+	rq.Running--
+}
+
+func (rq *RunQueue) instance_deactivate(instance *TtInstance) {
+	delete(rq.Active, instance)
 }
 
 func cancel_instance(instance *TtInstance) {
