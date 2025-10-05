@@ -18,6 +18,7 @@ type TtBackend struct {
 	Run   func(tt_data *TtData)
 	Abort func(tt_data *TtData)
 	Tick  func(tt_data *TtData)
+	Clear func(tt_data *TtData)
 }
 
 var BACKEND TtBackend

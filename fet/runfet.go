@@ -1,6 +1,7 @@
 package fet
 
 import (
+	"W365toFET/base"
 	"W365toFET/timetable"
 	"bufio"
 	"context"
@@ -18,11 +19,22 @@ func Setup() {
 		Run:   runFet,
 		Abort: ttRunAbort,
 		Tick:  ttTick,
+		Clear: ttRunClear,
 	}
 }
 
 func ttRunAbort(tt_data *timetable.TtData) {
 	tt_data.BackEndData.(*fetTtData).cancel()
+}
+
+func ttRunClear(tt_data *timetable.TtData) {
+	fttd, ok := tt_data.BackEndData.(*fetTtData)
+	if ok {
+		base.Message.Printf("### Remove %s\n", fttd.workingdir)
+		os.RemoveAll(fttd.workingdir)
+	} else {
+		base.Message.Printf("### No TtData: %s\n", tt_data.Description)
+	}
 }
 
 func runFet(tt_data *timetable.TtData) {
@@ -81,6 +93,7 @@ func runFet(tt_data *timetable.TtData) {
 		finished:   false,
 		activities: len(shared_data.Activities),
 		ifile:      fetfile,
+		workingdir: cwd,
 		odir:       odir,
 		logfile:    logfile,
 		cancel:     cancel,
@@ -137,6 +150,7 @@ var re *regexp.Regexp = regexp.MustCompile(pattern)
 type fetTtData struct {
 	activities int // total number of activities to place
 	ifile      string
+	workingdir string
 	odir       string
 	logfile    string
 	rdfile     *os.File // this must be closed when the subprocess finishes

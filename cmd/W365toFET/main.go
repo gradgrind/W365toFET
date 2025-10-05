@@ -101,7 +101,7 @@ func main() {
 
 	//db.SaveDb(stempath + "_DB1.json")
 
-	timeout := 200 // seconds
+	timeout := 30 // seconds
 	autotimetable.StartGeneration(tt_data, timeout)
 
 	//db.SaveDb(stempath + "_DB2.json")

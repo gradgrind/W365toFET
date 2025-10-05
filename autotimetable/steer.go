@@ -16,54 +16,110 @@ import (
 // TODO: How to set this up?
 var (
 	UNCONSTRAINED_TIMEOUT_FRACTION = 10
-	NEXT_STAGE_TIMEOUT_FACTOR      = 2
-	NEXT_STAGE_TIMEOUT_MIN         = 20
+	MIN_UNCONSTRAINED_TIMEOUT      = 10
+	// Below this time a basic constraint type is considered "fast" and need
+	// not be sorted for the constraint type accumulation:
+	QUICK_BASIC_TIME          = 5
+	NEXT_STAGE_TIMEOUT_FACTOR = 2
+	NEXT_STAGE_TIMEOUT_MIN    = 20
 )
-
-//TODO: comment -> further below ...
-// Consider starting instances with each (used) constraint type, individually.
-// The first one which completes successfully could be taken as a new basis, to
-// which the next completed ones could be added sequentially ... until no time is left?
 
 var MAXPROCESSES int
 
-//TODO: Suggestion for searches (binary or otherwise) using parallel
-// operations. A structure (with pointer to it in the TtInstance) could
-// contain the information needed to collate the results of a parallel run.
-// Some care may be needed to avoid race conditions – perhaps the updating can
-// be done in the tick handler? The follow-up could be registered for all
-// bracnches, but it would only be called when all the results were.
-
 /*
-A `TtInstance` structure is constructed to manage the data for each
-timetable generation run, each run having its own goroutine.
+Various strategies are used to try to achieve a – possibly imperfect –
+timetable within a specified time. It is impossible to guarantee that all
+constraints will be satisfied within a given time, so in order to place
+all the activities within this time it may be necessary to drop some of
+the constraints.
 
-//TODO: no longer appropriate ...
-Each instance can be given a set of "child" functions determining how the
-tests proceed. For each of these functions a start-delay can be specified.
-It is also possible to specify a function to be called on "success" of the
-parent function, and one for failure. These can also be started pre-emptively
-by specifying a delay.
-
-A timetable instance can be cancelled, including all child instances. When
-an instance finishes, any pre-emptively started child instances on the
-branch which is now known to be wrong (success or failure) will be cancelled
-automatically, including all their children. Because a run can continue
-for a long time with no result, there is also a timeout function which can
-stop the instance and take the "failure" branch.
+A certain degree of parallel processing is assumed – less than four processor
+cores is likely to result in a very significant slowdown.
 
 The main function (`StartGeneration`) starts a run with the fully constrained
-data and then enters a "tick-loop" which is triggered every second. This
-monitors the progress of each active instance and handles the actions
-resulting from the specified delays.
+data and a second run with all the "non-basic" constraints removed. Fixed
+activity placements and blocked time-slots (for teachers, classes, and rooms)
+are regarded as basic, non-negotiable.
+
+TODO: If there are soft constraints, it may make sense to start a further run
+with just the hard constraints enabled. The current state of development is
+that soft constraints are completely ignored, though they are included in the
+fully constrained run.
+
+A `TtInstance` structure is constructed to manage the data for each
+timetable generation run, each run having its own goroutine. Each instance
+has its own individual timeout to stop it running forever.
+
+Once these initial instances have been started, a "tick-loop" (which is
+triggered every second) is entered. This monitors the progress of each active
+instance and handles the actions resulting from their completion, whether
+successful or not.
+
+Should the fully constrained instance complete successfully within the
+allotted time, all other instances are terminated and the result will be as
+if only this instance had run.
+
+When the unconstrained instance completes successfully, a series of further
+instances is queued for running, each specifying the addition of a list of
+(hard) constraints of a single type. Thus for each type of constraint an
+instance is constructed. Using timeouts and binary divisions of these lists
+an attempt is made to find individual "difficult" constraints, which can then
+be disabled in order to get full activity placement within a reasonable time.
+Parallel processing can be of some assistance here.
+
+TODO: Should the unconstrained instance fail to complete successfully within
+its allotted time, further steps may be taken to trace difficulties within the
+activity collection, perhaps identifying "difficult" classes or teachers.
+
+Once the single-constraint-type instances start delivering results, the next
+stage can be started, in which the constraint types are added one after the
+other to the gradually expanding base. The constraint types are added in order
+of their completion in the single-constraint-type trials, so that the less
+"difficult" constraints are added first.
+
+Using parallel processing, it is possible that instances will be started
+"preemptively", but then turn out to be irrelevant. To handle this, it is
+possible to "cancel" an instance, including any instances that have been
+started as a consequence. For example, when an instance with a list of
+constraints is started, it queues (to be started later, when processors
+become available) two further instances, one for each half of the list. If
+the instance completes successfully before its timeout is reached, these
+subsidiary instances become redundant and can be cancelled.
+
+If the overall timeout is reached (i.e. if the fully constrained instance
+has not completed successfuly yet), the "best solution so far" is sought:
+
+If there is an all-hard-constraints-only instance and that has completed
+successfuly, its result will be used (the single-constraint accumulation
+processes can be cancelled in this case as they are then superfluous).
+
+Otherwise, if the single-constraint accumulation has completed, its result
+can be used. If it has not completed, the result will be the last successfully
+completed instance. Diagnostic information will also be available (at least
+an indication of which constraints were dropped).
+
+If the single-constraint accumulation completes well before the overall
+timeout, it may be a sign that its internal timeouts could be lengthened to
+(possibly) obtain a result with fewer constraints disabled. Alternatively,
+a shorter overall timeout might be considered.
+
+If the single-constraint accumulation doesn't complete before the overall
+timeout, that may indicate that a shortening of its internal timeouts
+could produce a better result (testing more constraints). Alternatively,
+a longer overall timeout might be considered.
+
+There is probably no general "optimum" value for the various timeouts, that
+is likely to depend on the data. But perhaps values can be found which are
+frequently useful. It might be helpful to use shorter overall timeouts during
+the initial phases of testing the data, to identify potential problem areas
+without long processing delays. For later phases longer times may be
+necessary (depending on the difficulty of the data).
 */
 
 var Descriptions map[string]string = map[string]string{
 	"COMPLETE":           "All constraints active",
 	"ONLY_BLOCKED_SLOTS": "All constraints – except blocked slots – disabled",
 }
-
-//TODO--? const ID_BLOCKED_SLOTS int = -100
 
 func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	// This approach relies on parallel processing. If there are too few real
@@ -88,17 +144,9 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	// `workingdir` provides the path to a working directory which can be used
 	// freely during processing. It may or may not already exist, existing
 	// contents need not be preserved during processing.
-
-	//TODO--
-	// Open communication channels
-	//stop := make(chan bool)
-
-	//TODO-- Consider buffer size and blocking ...
-	//add_instance := make(chan *TtInstance, 10)
-	//instance_done := make(chan *TtInstance, 10)
+	workingdir := tt_shared_data.WorkingDir
 
 	tt_data_0.Description = "COMPLETE"
-	workingdir := tt_shared_data.WorkingDir
 
 	// Provide an empty working directory.
 	os.RemoveAll(workingdir)
@@ -133,7 +181,8 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	null_instance := &TtInstance{
 		Tagged: true,
 
-		Timeout: max(TIMEOUT/UNCONSTRAINED_TIMEOUT_FRACTION, 10), //TODO??
+		Timeout: max(TIMEOUT/UNCONSTRAINED_TIMEOUT_FRACTION,
+			MIN_UNCONSTRAINED_TIMEOUT),
 
 		TtData: tt_data,
 		HardConstraintEnabled: setup_hard_constraint_map(
@@ -169,17 +218,21 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 			//cancel_instance(hard_only_instance)
 			cancel_instance(null_instance)
 			cancel_instance(current_instance)
+			stage = -1
 			continue
 
 		case <-ticker.C:
 			Ticks++
 			runqueue.update_instances()
+			if stage == -1 {
+				continue
+			}
 
 			if Ticks == TIMEOUT {
 				runqueue.disable()
+				base.Message.Printf(
+					"(TODO) [%d] TIMEOUT\n", Ticks)
 				if full_instance.ProcessingState == 0 {
-					base.Message.Printf(
-						"(TODO) [%d] TIMEOUT\n", Ticks)
 					cancel_instance(full_instance)
 				}
 				//cancel_instance(hard_only_instance)
@@ -192,11 +245,8 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 					fmt.Println("!!! No result")
 
 					cancel_instance(current_instance)
-
-					//TODO
-					//panic("TODO: Seek best result so far")
-
 				}
+				stage = -1
 				continue
 			}
 
@@ -208,6 +258,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 				cancel_instance(current_instance)
 				full_instance.Result = full_instance
 				current_instance = full_instance
+				stage = -1
 				continue
 			}
 
@@ -233,7 +284,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 					stage = 1
 				default:
 					// The null instance failed.
-					stage = -1
+					stage = 10
 					base.Message.Printf(
 						"(TODO) [%d] Unconstrained instance failed", Ticks)
 
@@ -251,8 +302,8 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 				// constraint instances: check their states.
 				for bc := range basic_constraints {
 					// Handle completed instance.
-					if bc.ProcessingState > 0 {
-						if bc.ProcessingState == 1 {
+					if bc.Result != nil {
+						if bc.TtData.Ticks < QUICK_BASIC_TIME {
 							steps = append(steps, bc)
 							if next_step == 0 {
 								current_instance = bc
@@ -273,11 +324,11 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 						//TODO
 						panic("No successful basic constraint trials")
 					}
-					// Sort `long_steps` according to progress (highest
-					// percentages first) and append them to `steps`.
+					// Sort `long_steps` according to completion time (fastest
+					// first) and append them to `steps`.
 					if len(long_steps) > 1 {
 						slices.SortFunc(long_steps, func(a, b *TtInstance) int {
-							return cmp.Compare(b.TtData.Progress, a.TtData.Progress)
+							return cmp.Compare(a.TtData.Ticks, b.TtData.Ticks)
 						})
 					}
 					steps = append(steps, long_steps...)
@@ -339,15 +390,18 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	//TODO: Consider also the possibility that there may be no (or only one)
 	// basic constraint types.
 
-	var result *TtInstance
-	if full_instance.Result != nil {
-		result = full_instance.Result
-	} else {
-		result = preempt_result(current_instance)
+	ttdata := current_instance.Result.TtData
+
+	// Remove temporary data for all instances except the result
+	for i := 0; i < runqueue.Next; i++ {
+		ttd := runqueue.Queue[i].TtData
+		if ttd != ttdata {
+			timetable.BACKEND.Clear(ttd)
+		}
 	}
 
 	//TODO
-	base.Message.Printf("RESULT: %s\n", result.TtData.Description)
+	base.Message.Printf("RESULT: %s\n", ttdata.Description)
 }
 
 type RunQueue struct {
@@ -355,53 +409,6 @@ type RunQueue struct {
 	Active     map[*TtInstance]struct{}
 	MaxRunning int
 	Next       int
-}
-
-// TODO?
-func preempt_result(instance *TtInstance) *TtInstance {
-	if instance == nil {
-		return nil
-	}
-	if instance.Result != nil {
-		return instance.Result
-	}
-	r := preempt_result(instance.Instance1)
-	if r != nil {
-		return r
-	}
-	r = preempt_result(instance.Instance2)
-	if r != nil {
-		return r
-	}
-	return instance.BaseInstance
-}
-
-// TODO?
-func tidy(rq RunQueue, ticker *time.Ticker) {
-	fmt.Printf("TIDY %d\n", len(rq.Active))
-	base.Message.Printf("TIDY %d\n", len(rq.Active))
-
-	panic("TRACE")
-
-	//TODO: Could the ticker be used here instead of sleep?
-	ticker.Stop()
-
-	for len(rq.Active) != 0 {
-		for instance := range rq.Active {
-			timetable.BACKEND.Tick(instance.TtData)
-			if instance.TtData.State != 0 {
-				base.Message.Printf("(TODO) Finished %s %d\n",
-					instance.TtData.Description, instance.TtData.State)
-				rq.instance_deactivate(instance)
-			} else {
-				base.Message.Printf("(TODO) Waiting? %s %d\n",
-					instance.TtData.Description, instance.TtData.State)
-			}
-		}
-		fmt.Println("Sleeping")
-		base.Message.Println("Sleeping")
-		time.Sleep(1 * time.Second)
-	}
 }
 
 func (rq *RunQueue) add(instance *TtInstance) {
@@ -419,18 +426,39 @@ func (rq *RunQueue) add_front(instance *TtInstance) {
 }
 
 func (rq *RunQueue) update_instances() {
+	// First increment the ticks of active instances.
 	for instance := range rq.Active {
 		ttdata := instance.TtData
-		base.Message.Printf("(TODO) [%d] ? ACTIVE (%d): %s\n",
-			Ticks, ttdata.State, ttdata.Description)
+		base.Message.Printf("(TODO) [%d] ? ACTIVE (%d / %d): %s\n",
+			Ticks, ttdata.State, instance.ProcessingState, ttdata.Description)
 		if ttdata.State != 0 && instance.ProcessingState < 2 {
 			// This should only be possible after the call to
 			// `timetable.BACKEND.Tick` below.
 			panic(fmt.Sprintf("Bug, State = %d", ttdata.State))
 		}
-		ttdata.Ticks++
-		// Among other things, update the state:
-		timetable.BACKEND.Tick(ttdata)
+		if ttdata.State == 0 {
+			ttdata.Ticks++
+			// Among other things, update the state:
+			timetable.BACKEND.Tick(ttdata)
+		} else if instance.ProcessingState < 2 {
+			// This should only be possible after the call to
+			// `timetable.BACKEND.Tick`.
+			panic(fmt.Sprintf("Bug, State = %d", ttdata.State))
+		}
+	}
+
+	for instance := range rq.Active {
+		ttdata := instance.TtData
+
+		//???
+		if instance.ProcessingState == 3 {
+			// Await completion of the goroutine
+			if ttdata.State != 0 {
+				rq.instance_deactivate(instance)
+			}
+			continue
+		}
+
 		switch ttdata.State {
 		case 0: // running, not finished
 			// check for timeout
@@ -582,11 +610,11 @@ func (rq *RunQueue) update_queue() int {
 		}
 
 		if instance.Tagged {
-			base.Message.Printf("(TODO) [%d] >> %s\n",
-				Ticks, ttdata.Description)
+			base.Message.Printf("(TODO) [%d] >> %s (%d)\n",
+				Ticks, ttdata.Description, instance.ProcessingState)
 		} else {
-			base.Message.Printf("(TODO) [%d] Start %s\n",
-				Ticks, ttdata.Description)
+			base.Message.Printf("(TODO) [%d] Start %s (%d)\n",
+				Ticks, ttdata.Description, instance.ProcessingState)
 		}
 		timetable.BACKEND.Run(ttdata)
 	}
@@ -595,7 +623,7 @@ func (rq *RunQueue) update_queue() int {
 		Ticks, running, len(rq.Active))
 	base.Message.Printf("$ [%d] Running/Active instances: %d/%d\n",
 		Ticks, running, len(rq.Active))
-	return running
+	return len(rq.Active)
 }
 
 func (rq *RunQueue) disable() {
@@ -615,18 +643,34 @@ func (rq *RunQueue) instance_deactivate(instance *TtInstance) {
 
 // Cancelling an instance will abort it if it is running.
 // The `ProcessingState` is set to 3 to indicate that a queued instance
-// is not to be started. A cancelled instance is not needed, so no
-// result is expected and its data can be removed.
-func cancel_instance(instance *TtInstance) {
+// is not to be started. Also its subsidiary instances will be cancelled.
+func cancel_instance(instance *TtInstance) *TtInstance {
 	if instance != nil {
-		if instance.ProcessingState == 0 {
+		base.Message.Printf("CANCEL %s / %d\n",
+			instance.TtData.Description, instance.ProcessingState)
+		switch instance.ProcessingState {
+		case 0:
 			abort_instance(instance)
+		case 3:
+			return instance.Result
 		}
 		instance.ProcessingState = 3
+		if instance.Result != nil {
+			return instance.Result
+		}
 		// Cancel subsidiary instances
-		cancel_instance(instance.Instance1)
-		cancel_instance(instance.Instance2)
+		r := cancel_instance(instance.Instance1)
+		r2 := cancel_instance(instance.Instance2)
+		if r == nil {
+			r = r2
+			if r == nil {
+				r = instance.BaseInstance
+			}
+		}
+		instance.Result = r
+		return r
 	}
+	return nil
 }
 
 func abort_instance(instance *TtInstance) {
