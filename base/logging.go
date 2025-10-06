@@ -7,11 +7,18 @@ import (
 )
 
 var (
+	CONSOLE bool
 	Message *log.Logger
 	Warning *log.Logger
 	Error   *log.Logger
 	Bug     *log.Logger
 )
+
+func Report(msg string) {
+	if CONSOLE {
+		fmt.Print(msg)
+	}
+}
 
 func OpenLog(logpath string) {
 	var file *os.File
@@ -30,11 +37,13 @@ func OpenLog(logpath string) {
 	Warning = log.New(file, "*WARNING* ", log.Lshortfile)
 	Error = log.New(file, "*ERROR* ", log.Lshortfile)
 	Bug = log.New(file, "*BUG* ", log.Lshortfile)
+
 }
 
-// TODO? New error reporter?
+/* TODO: New error reporter?
 func ERROR(msg string, args ...any) {
 	fmt.Println("+++ Error +++++++++++++++")
 	fmt.Printf(ErrorMessages[msg], args...)
 	fmt.Println("\n-------------------------")
 }
+*/

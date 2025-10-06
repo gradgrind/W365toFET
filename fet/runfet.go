@@ -30,10 +30,10 @@ func ttRunAbort(tt_data *timetable.TtData) {
 func ttRunClear(tt_data *timetable.TtData) {
 	fttd, ok := tt_data.BackEndData.(*fetTtData)
 	if ok {
-		base.Message.Printf("### Remove %s\n", fttd.workingdir)
+		//base.Message.Printf("### Remove %s\n", fttd.workingdir)
 		os.RemoveAll(fttd.workingdir)
-	} else {
-		base.Message.Printf("### No TtData: %s\n", tt_data.Description)
+		//} else {
+		//	base.Message.Printf("### No TtData: %s\n", tt_data.Description)
 	}
 }
 
@@ -139,9 +139,6 @@ func runFet(tt_data *timetable.TtData) {
 func run(fet_data *fetTtData, cmd *exec.Cmd) {
 	cmd.CombinedOutput()
 	fet_data.finished = true
-
-	//TODO--
-	fmt.Printf(" --->>> %s\n", filepath.Base(fet_data.ifile))
 }
 
 var pattern = "time (.*), FET reached ([0-9]+)"
@@ -190,8 +187,8 @@ func ttTick(tt_data *timetable.TtData) {
 							tt_data.Progress = percent
 							tt_data.LastTime = tt_data.Ticks
 
-							//TODO
-							fmt.Println(tt_data.Description, percent, "@", tt_data.Ticks)
+							base.Report(fmt.Sprintf("%s: %d @ %d\n",
+								tt_data.Description, percent, tt_data.Ticks))
 						}
 					}
 				}

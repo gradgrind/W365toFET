@@ -13,18 +13,18 @@ import (
 	"time"
 )
 
-// TODO: How to set this up?
 var (
-	UNCONSTRAINED_TIMEOUT_FRACTION = 10
-	MIN_UNCONSTRAINED_TIMEOUT      = 10
+	// This approach relies on parallel processing. If there are too few real
+	// processors it will be inefficient:
+	MAXPROCESSES                   int = max(runtime.NumCPU(), 4)
+	UNCONSTRAINED_TIMEOUT_FRACTION int = 10
+	MIN_UNCONSTRAINED_TIMEOUT      int = 10
 	// Below this time a basic constraint type is considered "fast" and need
 	// not be sorted for the constraint type accumulation:
-	QUICK_BASIC_TIME          = 5
-	NEXT_STAGE_TIMEOUT_FACTOR = 2
-	NEXT_STAGE_TIMEOUT_MIN    = 20
+	QUICK_BASIC_TIME          int = 5
+	NEXT_STAGE_TIMEOUT_FACTOR int = 2
+	NEXT_STAGE_TIMEOUT_MIN    int = 20
 )
-
-var MAXPROCESSES int
 
 /*
 Various strategies are used to try to achieve a – possibly imperfect –
@@ -122,9 +122,6 @@ var Descriptions map[string]string = map[string]string{
 }
 
 func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
-	// This approach relies on parallel processing. If there are too few real
-	// processors it will be inefficient.
-	MAXPROCESSES = max(runtime.NumCPU(), 4)
 	tt_shared_data := tt_data_0.SharedData
 
 	// Catch termination signal
@@ -230,8 +227,8 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 
 			if Ticks == TIMEOUT {
 				runqueue.disable()
-				base.Message.Printf(
-					"(TODO) [%d] TIMEOUT\n", Ticks)
+				//base.Message.Printf(
+				//	"(TODO) [%d] TIMEOUT\n", Ticks)
 				if full_instance.ProcessingState == 0 {
 					cancel_instance(full_instance)
 				}
@@ -241,9 +238,6 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 				//TODO: Can current_instance be nil here?
 
 				if current_instance.Result == nil {
-					//TODO--
-					fmt.Println("!!! No result")
-
 					cancel_instance(current_instance)
 				}
 				stage = -1
@@ -276,8 +270,6 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 					// The null instance completed successfully.
 					current_instance = null_instance
 					unconstrained_time = null_instance.TtData.Ticks
-					base.Message.Printf("(TODO) [%d] UNCONSTRAINED TIME: %d\n",
-						Ticks, unconstrained_time)
 					// Start trials of single constraint types.
 					basic_constraints = start_basic_constraints(
 						null_instance, &runqueue, unconstrained_time)
@@ -306,10 +298,8 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 						if bc.TtData.Ticks < QUICK_BASIC_TIME {
 							steps = append(steps, bc)
 							if next_step == 0 {
+								// first constraint
 								current_instance = bc
-								base.Message.Printf(
-									"(TODO) First constraint: %s\n",
-									current_instance.TtData.Description)
 								next_step = 1
 							}
 						} else {
@@ -336,8 +326,8 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 				}
 
 				//TODO--
-				base.Message.Printf("$ [%d] STAGE: %d @ %d steps: %d\n",
-					Ticks, stage, next_step, len(steps))
+				//base.Message.Printf("$ [%d] STAGE: %d @ %d steps: %d\n",
+				//	Ticks, stage, next_step, len(steps))
 			}
 
 			// This bit handles the phase where constraint types are being
@@ -359,8 +349,8 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 			// reduce processing time?
 
 			if current_instance.Result != nil {
-				fmt.Printf("??? %d @ %d: %d %d\n",
-					current_instance.ProcessingState, stage, next_step, len(steps))
+				//fmt.Printf("??? %d @ %d: %d %d\n",
+				//	current_instance.ProcessingState, stage, next_step, len(steps))
 				if next_step < len(steps) {
 					// Add next constraint type
 					st1 := steps[next_step]
@@ -401,7 +391,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	}
 
 	//TODO
-	base.Message.Printf("RESULT: %s\n", ttdata.Description)
+	base.Message.Printf("(TODO) RESULT: %s\n", ttdata.Description)
 }
 
 type RunQueue struct {
@@ -414,8 +404,8 @@ type RunQueue struct {
 func (rq *RunQueue) add(instance *TtInstance) {
 	instance.ProcessingState = -1 // not started yet
 	rq.Queue = append(rq.Queue, instance)
-	base.Message.Printf("(TODO) [%d] Queue %s\n",
-		Ticks, instance.TtData.Description)
+	//base.Message.Printf("(TODO) [%d] Queue %s\n",
+	//	Ticks, instance.TtData.Description)
 }
 
 func (rq *RunQueue) add_front(instance *TtInstance) {
@@ -429,8 +419,8 @@ func (rq *RunQueue) update_instances() {
 	// First increment the ticks of active instances.
 	for instance := range rq.Active {
 		ttdata := instance.TtData
-		base.Message.Printf("(TODO) [%d] ? ACTIVE (%d / %d): %s\n",
-			Ticks, ttdata.State, instance.ProcessingState, ttdata.Description)
+		//base.Message.Printf("(TODO) [%d] ? ACTIVE (%d / %d): %s\n",
+		//	Ticks, ttdata.State, instance.ProcessingState, ttdata.Description)
 		if ttdata.State != 0 && instance.ProcessingState < 2 {
 			// This should only be possible after the call to
 			// `timetable.BACKEND.Tick` below.
@@ -445,10 +435,10 @@ func (rq *RunQueue) update_instances() {
 			// `timetable.BACKEND.Tick`.
 			panic(fmt.Sprintf("Bug, State = %d", ttdata.State))
 		}
-	}
+		//	}
 
-	for instance := range rq.Active {
-		ttdata := instance.TtData
+		//	for instance := range rq.Active {
+		//		ttdata := instance.TtData
 
 		//???
 		if instance.ProcessingState == 3 {
@@ -463,8 +453,8 @@ func (rq *RunQueue) update_instances() {
 		case 0: // running, not finished
 			// check for timeout
 			if instance.Timeout == ttdata.Ticks {
-				base.Message.Printf("(TODO) TIMEOUT [%d] %s @ %d\n",
-					Ticks, ttdata.Description, ttdata.Ticks)
+				base.Message.Printf("(TODO) [%d] TIMEOUT %s @ %d (%d)\n",
+					Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress)
 				// Stop instance
 				abort_instance(instance)
 			}
@@ -474,7 +464,7 @@ func (rq *RunQueue) update_instances() {
 				base.Message.Printf("(TODO) [%d] <<+ %s @ %d\n",
 					Ticks, ttdata.Description, ttdata.Ticks)
 			} else {
-				base.Message.Printf("(TODO) [%d] Done %s @ %d\n",
+				base.Message.Printf("(TODO) [%d] (<+) %s @ %d\n",
 					Ticks, ttdata.Description, ttdata.Ticks)
 			}
 			// Cancel subsidiary instances
@@ -493,8 +483,8 @@ func (rq *RunQueue) update_instances() {
 					base.Message.Printf("(TODO) [%d] <<- %s @ %d\n",
 						Ticks, ttdata.Description, ttdata.Ticks)
 				} else {
-					base.Message.Printf("(TODO) [%d] Failed %s @ %d (%d)\n",
-						Ticks, ttdata.Description, ttdata.Ticks, ttdata.State)
+					base.Message.Printf("(TODO) [%d] (<-) %s @ %d\n",
+						Ticks, ttdata.Description, ttdata.Ticks)
 				}
 				// This doesn't deactivate the instance (for state = 2):
 				rq.instance_completed(instance, 2)
@@ -610,19 +600,19 @@ func (rq *RunQueue) update_queue() int {
 		}
 
 		if instance.Tagged {
-			base.Message.Printf("(TODO) [%d] >> %s (%d)\n",
-				Ticks, ttdata.Description, instance.ProcessingState)
+			base.Message.Printf("(TODO) [%d] >> %s\n",
+				Ticks, ttdata.Description)
 		} else {
-			base.Message.Printf("(TODO) [%d] Start %s (%d)\n",
-				Ticks, ttdata.Description, instance.ProcessingState)
+			base.Message.Printf("(TODO) [%d] (>) %s\n",
+				Ticks, ttdata.Description)
 		}
 		timetable.BACKEND.Run(ttdata)
 	}
 	//TODO--
-	fmt.Printf("$ [%d] Running/Active instances: %d/%d\n",
-		Ticks, running, len(rq.Active))
-	base.Message.Printf("$ [%d] Running/Active instances: %d/%d\n",
-		Ticks, running, len(rq.Active))
+	//fmt.Printf("$ [%d] Running/Active instances: %d/%d\n",
+	//	Ticks, running, len(rq.Active))
+	//base.Message.Printf("$ [%d] Running/Active instances: %d/%d\n",
+	//	Ticks, running, len(rq.Active))
 	return len(rq.Active)
 }
 
@@ -646,8 +636,8 @@ func (rq *RunQueue) instance_deactivate(instance *TtInstance) {
 // is not to be started. Also its subsidiary instances will be cancelled.
 func cancel_instance(instance *TtInstance) *TtInstance {
 	if instance != nil {
-		base.Message.Printf("CANCEL %s / %d\n",
-			instance.TtData.Description, instance.ProcessingState)
+		//base.Message.Printf("CANCEL %s / %d\n",
+		//	instance.TtData.Description, instance.ProcessingState)
 		switch instance.ProcessingState {
 		case 0:
 			abort_instance(instance)
