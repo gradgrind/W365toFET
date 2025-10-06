@@ -210,13 +210,14 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 
 	// *** Ticker loop ***
 	var basic_constraints []*TtInstance
+	var constraint_list []*TtInstance
 	var current_instance *TtInstance
 	ticker := time.NewTicker(time.Second)
 	//TODO? defer tidy(runqueue, ticker)
 	defer ticker.Stop()
 	unconstrained_time := 0
 
-tickloop:
+	//tickloop:
 	for runqueue.update_queue() != 0 {
 		select {
 
@@ -253,6 +254,9 @@ tickloop:
 				if current_instance.Result == nil {
 					cancel_instance(current_instance)
 				}
+				for _, i := range constraint_list {
+					cancel_instance(i)
+				}
 				stage = -1
 				continue
 			}
@@ -263,6 +267,9 @@ tickloop:
 				//cancel_instance(hard_only_instance)
 				cancel_instance(null_instance)
 				cancel_instance(current_instance)
+				for _, i := range constraint_list {
+					cancel_instance(i)
+				}
 				full_instance.Result = full_instance
 				current_instance = full_instance
 				stage = -1
@@ -290,6 +297,7 @@ tickloop:
 					for _, bc := range basic_constraints {
 						runqueue.add(bc)
 					}
+					constraint_list = slices.Clone(basic_constraints)
 					base.Message.Printf("(TODO) [%d] CONSTRAINT-TYPES: %d\n",
 						Ticks, len(basic_constraints))
 					stage = 1
@@ -308,40 +316,42 @@ tickloop:
 			if stage == 1 {
 				// During stage 1 we are accumulating single-constraint
 				// instances: check their states.
-				for i, bc := range basic_constraints {
+				for i, c := range constraint_list {
 					// Handle completed instance.
-					ibc := bc.Result
-					if ibc != nil {
-						current_instance = ibc
-						basic_constraints = slices.Delete(
-							basic_constraints, i, i+1)
-						// Stop other instances
-						for _, bcx := range basic_constraints {
-							cancel_instance(bcx)
-						}
+					icnew := c.Result
+					if icnew != nil {
+						current_instance = icnew
+						constraint_list = slices.Delete(
+							constraint_list, i, i+1)
 
 						//TODO?
-						base.Message.Printf("+++ %s\n", ibc.TtData.Description)
+						base.Message.Printf("+++ %s\n",
+							basic_constraints[i].TtData.Description)
+						basic_constraints = slices.Delete(
+							basic_constraints, i, i+1)
 
-						// Seek next constraint type
 						n := len(basic_constraints)
 						if n == 0 {
-							break tickloop
+							stage = 2 // all basic constraints added
+							break
 						}
-						for _, nbc := range basic_constraints {
+						// Stop other instances, start next instances with the
+						// remaining basic constraint types.
+						for j, bcx := range basic_constraints {
+							cancel_instance(constraint_list[j])
 							desc := fmt.Sprintf("C%02d~%s",
-								n, nbc.TtData.Description)
-							nbci := new_instance(
-								ibc,
+								n, bcx.TtData.Description)
+							cnew := new_instance(
+								icnew,
 								desc,
-								nbc.ConstraintType,
-								nbc.Constraints,
-								max(ibc.TtData.Ticks*NEXT_STAGE_TIMEOUT_FACTOR,
+								bcx.ConstraintType,
+								bcx.Constraints,
+								max(icnew.TtData.Ticks*NEXT_STAGE_TIMEOUT_FACTOR,
 									NEXT_STAGE_TIMEOUT_MIN))
-							nbci.Tagged = true
-							runqueue.add(nbci)
+							cnew.Tagged = true
+							runqueue.add(cnew)
+							constraint_list[j] = cnew
 						}
-
 						break
 					}
 				}
