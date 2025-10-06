@@ -66,9 +66,15 @@ import (
 func main() {
 
 	flag.BoolVar(&base.CONSOLE, "c", false, "enable progress output")
+	flag.BoolVar(&autotimetable.TESTING, "T", false, "run in testing mode")
 	timeout := flag.Int("t", 300, "set timeout")
+	nprocesses := flag.Int("p", 0, "max. parallel processes")
 
 	flag.Parse()
+
+	if *nprocesses > 0 {
+		autotimetable.MAXPROCESSES = *nprocesses
+	}
 
 	args := flag.Args()
 	if len(args) != 1 {

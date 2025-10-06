@@ -234,7 +234,7 @@ func (rq *RunQueue) update_queue() int {
 			base.Message.Printf("(TODO) [%d] (>) %s\n",
 				Ticks, ttdata.Description)
 		}
-		timetable.BACKEND.Run(ttdata)
+		timetable.BACKEND.Run(ttdata, TESTING)
 	}
 	//TODO--
 	//fmt.Printf("$ [%d] Running/Active instances: %d/%d\n",

@@ -14,6 +14,10 @@ import (
 )
 
 var (
+	// The behaviour of the TESTING flag depends on the back-end. It might,
+	// for example, use fixed seeds for random number generators so as to
+	// produce reproduceable runs.
+	TESTING bool
 	// This approach relies on parallel processing. If there are too few real
 	// processors it will be inefficient:
 	MAXPROCESSES                   int
@@ -286,6 +290,8 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 					// Start trials of single constraint types.
 					basic_constraints = start_basic_constraints(
 						null_instance, &runqueue, unconstrained_time)
+					base.Message.Printf("(TODO) [%d] CONSTRAINT-TYPES: %d\n",
+						Ticks, len(basic_constraints))
 					stage = 1
 				default:
 					// The null instance failed.
@@ -307,16 +313,19 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 				// constraint instances: check their states.
 				for bc := range basic_constraints {
 					// Handle completed instance.
-					if bc.Result != nil {
-						if bc.TtData.Ticks < QUICK_BASIC_TIME {
-							steps = append(steps, bc)
+					ibc := bc.Result
+					if ibc != nil {
+						if ibc.TtData.Ticks < QUICK_BASIC_TIME {
+							steps = append(steps, ibc)
 							if next_step == 0 {
 								// first constraint
-								current_instance = bc
+								base.Message.Printf("(TODO) [%d] <<0 %s\n",
+									Ticks, ibc.TtData.Description)
+								current_instance = ibc
 								next_step = 1
 							}
 						} else {
-							long_steps = append(long_steps, bc)
+							long_steps = append(long_steps, ibc)
 						}
 						delete(basic_constraints, bc)
 					}
@@ -393,7 +402,8 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	//TODO: Consider also the possibility that there may be no (or only one)
 	// basic constraint types.
 
-	ttdata := current_instance.Result.TtData
+	result := current_instance.Result
+	ttdata := result.TtData
 
 	//TODO?
 	// Remove temporary data for all instances except the result
@@ -403,6 +413,21 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 			timetable.BACKEND.Clear(ttd)
 		}
 	}
+
+	nn := 0
+	nall := 0
+	for i, clist := range result.HardConstraintEnabled {
+		n := 0
+		for _, b := range clist {
+			if b {
+				n++
+			}
+		}
+		fmt.Printf("$ CONSTRAINT %d: %d / %d\n", i, n, len(clist))
+		nn += n
+		nall += len(clist)
+	}
+	fmt.Printf("$ ALL CONSTRAINTS: %d / %d\n", nn, nall)
 
 	//TODO
 	base.Message.Printf("(TODO) RESULT: %s\n", ttdata.Description)

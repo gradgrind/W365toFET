@@ -15,7 +15,7 @@ type ResourceIndex = int
 type TtSlot int16
 
 type TtBackend struct {
-	Run   func(tt_data *TtData)
+	Run   func(tt_data *TtData, testing bool)
 	Abort func(tt_data *TtData)
 	Tick  func(tt_data *TtData)
 	Clear func(tt_data *TtData)

@@ -37,7 +37,7 @@ func ttRunClear(tt_data *timetable.TtData) {
 	}
 }
 
-func runFet(tt_data *timetable.TtData) {
+func runFet(tt_data *timetable.TtData, testing bool) {
 	shared_data := tt_data.SharedData
 	fname := tt_data.Description
 	dir_n := filepath.Join(shared_data.WorkingDir, fname)
@@ -100,9 +100,8 @@ func runFet(tt_data *timetable.TtData) {
 	}
 	tt_data.BackEndData = fet_data
 
-	runCmd := exec.CommandContext(ctx,
-		//runCmd := exec.Command(
-		"fet-cl", "--inputfile="+fetfile,
+	params := []string{
+		"--inputfile=" + fetfile,
 		"--writetimetablesstatistics=false",
 		"--writetimetablesdayshorizontal=false",
 		"--writetimetablesdaysvertical=false",
@@ -116,7 +115,22 @@ func runFet(tt_data *timetable.TtData) {
 		"--writetimetablesbuildings=false",
 		"--writetimetablesrooms=false",
 		"--writetimetablessubjects=false",
-		"--outputdir="+odir,
+		"--outputdir=" + odir,
+	}
+
+	if testing {
+		params = append(params,
+			"--randomseeds10=10",
+			"--randomseeds11=11",
+			"--randomseeds12=12",
+			"--randomseeds20=20",
+			"--randomseeds21=21",
+			"--randomseeds22=22")
+	}
+
+	runCmd := exec.CommandContext(ctx,
+		//runCmd := exec.Command(
+		"fet-cl", params...,
 	)
 
 	go run(fet_data, runCmd)
