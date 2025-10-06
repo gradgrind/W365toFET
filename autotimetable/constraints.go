@@ -48,18 +48,17 @@ func setup_hard_constraint_map(
 	return cmap
 }
 
-func start_basic_constraints(
+func get_basic_constraints(
 	null_instance *TtInstance,
-	runqueue *RunQueue,
 	unconstrained_time int,
-) map[*TtInstance]struct{} {
+) []*TtInstance {
 	// `null_instance` itself should have no constraints enabled
 	tt_data := TtData_0
 
 	// Start the individual constraints in the order given by the
 	// ConstraintType indexes.
-	instances := map[*TtInstance]struct{}{}
-	counter := 0
+	instances := []*TtInstance{}
+	//counter := 0
 	for k := range timetable.LastConstraint {
 		// Only hard constraints for now ...
 		clist, ok := tt_data.HardConstraints[k]
@@ -71,22 +70,21 @@ func start_basic_constraints(
 			//TODO: Bug?
 			panic("No constraints of type " + k.String())
 		}
-		counter++
+		//counter++
 		// Get all list indexes
 		cilist := make([]int, n)
 		for i := range n {
 			cilist[i] = i
 		}
 		instance := new_instance(
-			null_instance, k.String(),
+			null_instance,
+			k.String(),
 			k,
 			cilist,
 			max(unconstrained_time*NEXT_STAGE_TIMEOUT_FACTOR,
 				NEXT_STAGE_TIMEOUT_MIN))
-		// Queue instance for running
 		instance.Tagged = true
-		runqueue.add(instance)
-		instances[instance] = struct{}{}
+		instances = append(instances, instance)
 	}
 
 	//TODO: With rooms? Fixed und choices? soft constraints?

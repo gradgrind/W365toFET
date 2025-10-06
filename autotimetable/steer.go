@@ -3,7 +3,6 @@ package autotimetable
 import (
 	"W365toFET/base"
 	"W365toFET/timetable"
-	"cmp"
 	"fmt"
 	"os"
 	"os/signal"
@@ -210,17 +209,14 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	stage := 0
 
 	// *** Ticker loop ***
-	next_step := 0
-	var basic_constraints map[*TtInstance]struct{}
+	var basic_constraints []*TtInstance
 	var current_instance *TtInstance
-	steps := []*TtInstance{}
-	long_steps := []*TtInstance{}
 	ticker := time.NewTicker(time.Second)
 	//TODO? defer tidy(runqueue, ticker)
 	defer ticker.Stop()
 	unconstrained_time := 0
 
-	//tickloop:
+tickloop:
 	for runqueue.update_queue() != 0 {
 		select {
 
@@ -288,8 +284,12 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 					current_instance = null_instance
 					unconstrained_time = null_instance.TtData.Ticks
 					// Start trials of single constraint types.
-					basic_constraints = start_basic_constraints(
-						null_instance, &runqueue, unconstrained_time)
+					basic_constraints = get_basic_constraints(
+						null_instance, unconstrained_time)
+					// Queue instances for running
+					for _, bc := range basic_constraints {
+						runqueue.add(bc)
+					}
 					base.Message.Printf("(TODO) [%d] CONSTRAINT-TYPES: %d\n",
 						Ticks, len(basic_constraints))
 					stage = 1
@@ -301,56 +301,54 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 
 					//TODO: Seek problems in the unconstrained data.
 					panic("TODO")
-
 				}
 				continue
 			}
 
 			if stage == 1 {
-				//TODO: These should now always deliver a Result.
-
-				// During stage 1 we are awaiting completion of the single-
-				// constraint instances: check their states.
-				for bc := range basic_constraints {
+				// During stage 1 we are accumulating single-constraint
+				// instances: check their states.
+				for i, bc := range basic_constraints {
 					// Handle completed instance.
 					ibc := bc.Result
 					if ibc != nil {
-						if ibc.TtData.Ticks < QUICK_BASIC_TIME {
-							steps = append(steps, ibc)
-							if next_step == 0 {
-								// first constraint
-								base.Message.Printf("(TODO) [%d] <<0 %s\n",
-									Ticks, ibc.TtData.Description)
-								current_instance = ibc
-								next_step = 1
-							}
-						} else {
-							long_steps = append(long_steps, ibc)
+						current_instance = ibc
+						basic_constraints = slices.Delete(
+							basic_constraints, i, i+1)
+						// Stop other instances
+						for _, bcx := range basic_constraints {
+							cancel_instance(bcx)
 						}
-						delete(basic_constraints, bc)
-					}
-				}
-				if len(basic_constraints) == 0 {
-					// All single-constraint instances have completed.
-					if next_step == 0 {
-						//TODO
-						panic("No successful basic constraint trials")
-					}
-					// Sort `long_steps` according to completion time (fastest
-					// first) and append them to `steps`.
-					if len(long_steps) > 1 {
-						slices.SortFunc(long_steps, func(a, b *TtInstance) int {
-							return cmp.Compare(a.TtData.Ticks, b.TtData.Ticks)
-						})
-					}
-					steps = append(steps, long_steps...)
-					stage = 2 // all basic-constraint trials completed
-				}
 
-				//TODO--
-				//base.Message.Printf("$ [%d] STAGE: %d @ %d steps: %d\n",
-				//	Ticks, stage, next_step, len(steps))
+						//TODO?
+						base.Message.Printf("+++ %s\n", ibc.TtData.Description)
+
+						// Seek next constraint type
+						n := len(basic_constraints)
+						if n == 0 {
+							break tickloop
+						}
+						for _, nbc := range basic_constraints {
+							desc := fmt.Sprintf("C%02d~%s",
+								n, nbc.TtData.Description)
+							nbci := new_instance(
+								ibc,
+								desc,
+								nbc.ConstraintType,
+								nbc.Constraints,
+								max(ibc.TtData.Ticks*NEXT_STAGE_TIMEOUT_FACTOR,
+									NEXT_STAGE_TIMEOUT_MIN))
+							nbci.Tagged = true
+							runqueue.add(nbci)
+						}
+
+						break
+					}
+				}
+				continue
 			}
+
+			//TODO--
 
 			// This bit handles the phase where constraint types are being
 			// added step by step.
@@ -370,32 +368,6 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 			//TODO: A "stuck" analysis on running instances might help to
 			// reduce processing time?
 
-			if current_instance.Result != nil {
-				//fmt.Printf("??? %d @ %d: %d %d\n",
-				//	current_instance.ProcessingState, stage, next_step, len(steps))
-				if next_step < len(steps) {
-					// Add next constraint type
-					st1 := steps[next_step]
-					desc := fmt.Sprintf("C%02d~%s",
-						next_step, st1.TtData.Description)
-					current_instance = new_instance(
-						current_instance.Result,
-						desc,
-						st1.ConstraintType,
-						st1.Constraints,
-						max(current_instance.TtData.Ticks*NEXT_STAGE_TIMEOUT_FACTOR,
-							NEXT_STAGE_TIMEOUT_MIN))
-					next_step++
-					current_instance.Tagged = true
-					runqueue.add(current_instance)
-				} else if stage == 2 {
-					// No more constraint types => finished ...
-					if full_instance.ProcessingState != 0 {
-						//TODO? && hard_only_instance != 0
-						// Nothing left to wait for
-					}
-				}
-			}
 		}
 	} // tickloop: end
 
