@@ -13,7 +13,6 @@ var Ticks int // global time ticker
 var TtData_0 *timetable.TtData // the original data
 
 type TtInstance struct {
-	Tagged  bool              // to identify primary instances
 	Timeout int               // ticks
 	TtData  *timetable.TtData // current (possibly modified) data
 
@@ -28,11 +27,6 @@ type TtInstance struct {
 	Stopped         bool // `abort_instance()` has been called on this instance
 	ProcessingState int  // -1: queued, 0: running, 1: success, 2: failure,
 	// there is also 3: cancelled before starting
-
-	Instance1 *TtInstance
-	Instance2 *TtInstance
-
-	Result *TtInstance
 }
 
 type ManageRun struct {

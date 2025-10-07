@@ -28,15 +28,26 @@ func (rq *RunQueue) add_front(instance *TtInstance) {
 		Ticks, instance.TtData.Description)
 }
 
-func (rq *RunQueue) disable() {
-	rq.MaxRunning = 0 // no new starts possible
-}
+//func (rq *RunQueue) disable() {
+//	rq.MaxRunning = 0 // no new starts possible
+//}
 
-func (rq *RunQueue) instance_completed(instance *TtInstance, state int) {
-	instance.ProcessingState = state
-	if state != 2 {
-		rq.instance_deactivate(instance)
+//func (rq *RunQueue) instance_completed(instance *TtInstance, state int) {
+//	instance.ProcessingState = state
+//	if state != 2 {
+//		rq.instance_deactivate(instance)
+//	}
+//}
+
+// TODO??
+func (rq *RunQueue) stop_step() {
+	for instance := range rq.Active {
+		if instance.ProcessingState == 0 && instance.StepInstance {
+			timetable.BACKEND.Abort(instance.TtData)
+			rq.instance_deactivate(instance)
+		}
 	}
+	rq.Queue = rq.Queue[:0]
 }
 
 func (rq *RunQueue) instance_deactivate(instance *TtInstance) {
@@ -83,100 +94,23 @@ func (rq *RunQueue) update_instances() {
 			if instance.Timeout == ttdata.Ticks {
 				base.Message.Printf("(TODO) [%d] TIMEOUT %s @ %d (%d)\n",
 					Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress)
+
+				//TODO: even if it adds only one constraint?
 				// Stop instance
 				abort_instance(instance)
 			}
 
 		case 1: // completed successfully
-			if instance.Tagged {
-				base.Message.Printf("(TODO) [%d] <<+ %s @ %d\n",
-					Ticks, ttdata.Description, ttdata.Ticks)
-			} else {
-				base.Message.Printf("(TODO) [%d] (<+) %s @ %d\n",
-					Ticks, ttdata.Description, ttdata.Ticks)
-			}
-			// Cancel subsidiary instances
-			cancel_instance(instance.Instance1)
-			cancel_instance(instance.Instance2)
-			instance.Result = instance
-			rq.instance_completed(instance, 1)
+			base.Message.Printf("(TODO) [%d] <<+ %s @ %d\n",
+				Ticks, ttdata.Description, ttdata.Ticks)
+			instance.ProcessingState = 1
+			rq.instance_deactivate(instance)
 
 		default: // completed unsuccessfully
-			if instance.ProcessingState != 2 {
-				// This is done only the first time round for this instance.
-				// Some instances remain active after the primary run has
-				// completed, so for subsequent loops this block should be
-				// skipped.
-				if instance.Tagged {
-					base.Message.Printf("(TODO) [%d] <<- %s @ %d\n",
-						Ticks, ttdata.Description, ttdata.Ticks)
-				} else {
-					base.Message.Printf("(TODO) [%d] (<-) %s @ %d\n",
-						Ticks, ttdata.Description, ttdata.Ticks)
-				}
-				// This doesn't deactivate the instance (for state = 2):
-				rq.instance_completed(instance, 2)
-			}
-
-			//TODO: If it is an actual error, the halves should perhaps still
-			// be allowed to run, even though they may not have started yet.
-
-			if instance.Instance1 == nil {
-				if instance.Instance2 == nil {
-					// No halves
-					instance.Result = instance.BaseInstance
-					rq.instance_deactivate(instance)
-				} else {
-					// The 1st half has completed, the 2nd half is now
-					// building, possibly based on the result of the 1st half.
-					if instance.Instance2.Result != nil {
-						instance.Result = instance.Instance2.Result
-						rq.instance_deactivate(instance)
-					}
-					// Otherwise the instance remains active (though not
-					// running).
-				}
-				continue
-			}
-
-			// else: instance.Instance1 != nil
-
-			if instance.Instance1.Result != nil {
-				// The 1st half has completed.
-				// Check that it actually added constraints.
-				if instance.Instance1.Result == instance.BaseInstance {
-					// 1st half: no constraints added,
-					// wait for completion of 2nd half.
-					instance.Instance1 = nil
-				} else {
-					if instance.Instance2.ProcessingState < 0 {
-						// The 2nd half hasn't started yet: replace its
-						// base by the completed 1st half.
-						instance.Instance2.BaseInstance = instance.Instance1.Result
-						instance.Instance1 = nil
-
-						// Otherwise wait for the 2nd half to finish before
-						// adding it to the 1st half.
-					} else if instance.Instance2.Result != nil {
-						i2 := instance.Instance2.Result
-						if i2 == instance.BaseInstance {
-							// 2nd half: no constraints added
-							instance.Result = instance.Instance1.Result
-							rq.instance_deactivate(instance)
-						} else {
-							next_instance := new_instance(
-								instance.Instance1,
-								instance.Instance1.TtData.Description+"+",
-								i2.ConstraintType,
-								i2.Constraints,
-								instance.Timeout)
-							instance.Instance2 = next_instance
-							instance.Instance1 = nil
-							rq.add_front(next_instance)
-						}
-					}
-				}
-			}
+			base.Message.Printf("(TODO) [%d] <<- %s @ %d\n",
+				Ticks, ttdata.Description, ttdata.Ticks)
+			instance.ProcessingState = 2
+			rq.instance_deactivate(instance)
 		}
 	}
 }
@@ -205,36 +139,9 @@ func (rq *RunQueue) update_queue() int {
 			continue
 		}
 
-		ttdata := instance.TtData
-
-		// If eligible for binary splitting, queue the two halves
-		if len(instance.Constraints) > 1 {
-			nhalf := len(instance.Constraints) / 2
-			instance.Instance1 = new_instance(
-				instance.BaseInstance,
-				ttdata.Description+"~0",
-				instance.ConstraintType,
-				instance.Constraints[:nhalf],
-				instance.Timeout)
-			rq.add(instance.Instance1)
-
-			instance.Instance2 = new_instance(
-				instance.BaseInstance,
-				ttdata.Description+"~1",
-				instance.ConstraintType,
-				instance.Constraints[nhalf:],
-				instance.Timeout)
-			rq.add(instance.Instance2)
-		}
-
-		if instance.Tagged {
-			base.Message.Printf("(TODO) [%d] >> %s\n",
-				Ticks, ttdata.Description)
-		} else {
-			base.Message.Printf("(TODO) [%d] (>) %s\n",
-				Ticks, ttdata.Description)
-		}
-		timetable.BACKEND.Run(ttdata, TESTING)
+		base.Message.Printf("(TODO) [%d] >> %s\n",
+			Ticks, instance.TtData.Description)
+		timetable.BACKEND.Run(instance.TtData, TESTING)
 	}
 	//TODO--
 	//fmt.Printf("$ [%d] Running/Active instances: %d/%d\n",

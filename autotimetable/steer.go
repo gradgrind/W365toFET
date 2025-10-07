@@ -215,7 +215,6 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	ticker := time.NewTicker(time.Second)
 	//TODO? defer tidy(runqueue, ticker)
 	defer ticker.Stop()
-	unconstrained_time := 0
 
 	//tickloop:
 	for runqueue.update_queue() != 0 {
@@ -289,10 +288,9 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 				case 1:
 					// The null instance completed successfully.
 					current_instance = null_instance
-					unconstrained_time = null_instance.TtData.Ticks
 					// Start trials of single constraint types.
 					basic_constraints = get_basic_constraints(
-						null_instance, unconstrained_time)
+						null_instance, null_instance.TtData.Ticks)
 					// Queue instances for running
 					for _, bc := range basic_constraints {
 						runqueue.add(bc)
@@ -314,47 +312,91 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 			}
 
 			if stage == 1 {
-				// During stage 1 we are accumulating single-constraint
+				// During stage 1 we are accumulating single-constraint-type
 				// instances: check their states.
-				for i, c := range constraint_list {
-					// Handle completed instance.
-					icnew := c.Result
-					if icnew != nil {
-						current_instance = icnew
-						constraint_list = slices.Delete(
-							constraint_list, i, i+1)
-
-						//TODO?
-						base.Message.Printf("+++ %s\n",
-							basic_constraints[i].TtData.Description)
-						basic_constraints = slices.Delete(
-							basic_constraints, i, i+1)
-
-						n := len(basic_constraints)
-						if n == 0 {
-							stage = 2 // all basic constraints added
-							break
-						}
-						// Stop other instances, start next instances with the
-						// remaining basic constraint types.
-						for j, bcx := range basic_constraints {
-							cancel_instance(constraint_list[j])
-							desc := fmt.Sprintf("C%02d~%s",
-								n, bcx.TtData.Description)
-							cnew := new_instance(
-								icnew,
-								desc,
-								bcx.ConstraintType,
-								bcx.Constraints,
-								max(icnew.TtData.Ticks*NEXT_STAGE_TIMEOUT_FACTOR/10,
-									NEXT_STAGE_TIMEOUT_MIN))
-							cnew.Tagged = true
-							runqueue.add(cnew)
-							constraint_list[j] = cnew
-						}
+				inext := -1
+				next_timeout := 0
+				for i, instance := range constraint_list {
+					if instance.ProcessingState == 1 {
+						// completed successfully
+						inext = i
 						break
 					}
 				}
+				if inext >= 0 {
+					// Update current_instance ...
+
+					//TODO: Clear old current_instance data?
+
+					current_instance = constraint_list[inext]
+					base.Message.Printf("+++ %s\n",
+						current_instance.TtData.Description)
+					next_timeout = max(
+						current_instance.TtData.Ticks*NEXT_STAGE_TIMEOUT_FACTOR/10,
+						NEXT_STAGE_TIMEOUT_MIN)
+
+					constraint_list = slices.Delete(
+						constraint_list, inext, inext+1)
+
+					if len(constraint_list) == 0 {
+						//TODO?
+						break xxx
+					}
+
+					//TODO: renew instances
+				}
+
+				split_instances := []*TtInstance{}
+				new_constraint_list := []*TtInstance{}
+				for _, instance := range constraint_list {
+					//TODO ...
+					if instance.ProcessingState == 2 {
+						// failed (or timed out): split the instance
+
+						// Split if more than one instance in list
+						if len(instance.Constraints) > 1 {
+							nhalf := len(instance.Constraints) / 2
+							split_instances = append(split_instances,
+								new_instance(
+									current_instance,
+									instance.TtData.Description+"~0",
+									instance.ConstraintType,
+									instance.Constraints[:nhalf],
+									instance.Timeout))
+							split_instances = append(split_instances,
+								new_instance(
+									current_instance,
+									instance.TtData.Description+"~1",
+									instance.ConstraintType,
+									instance.Constraints[nhalf:],
+									instance.Timeout))
+						}
+					} else {
+						if inext >= 0 {
+							if instance.ProcessingState == 0 {
+								abort_instance(instance)
+							}
+							instance = new_instance(
+								current_instance,
+								instance.TtData.Description+"+",
+								instance.ConstraintType,
+								instance.Constraints,
+								next_timeout)
+							runqueue.add(instance)
+						}
+						new_constraint_list = append(
+							new_constraint_list, instance)
+					}
+				}
+				constraint_list = append(new_constraint_list,
+					split_instances...)
+
+				for _, instance := range split_instances {
+					runqueue.add(instance)
+				}
+
+				//TODO?
+
 				continue
 			}
 
@@ -387,7 +429,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	result := current_instance.Result
 	ttdata := result.TtData
 
-	//TODO?
+	/*TODO++?
 	// Remove temporary data for all instances except the result
 	for i := 0; i < runqueue.Next; i++ {
 		ttd := runqueue.Queue[i].TtData
@@ -395,6 +437,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 			timetable.BACKEND.Clear(ttd)
 		}
 	}
+	*/
 
 	nn := 0
 	nall := 0
