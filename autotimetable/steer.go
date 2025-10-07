@@ -25,7 +25,7 @@ var (
 	// Below this time a basic constraint type is considered "fast" and need
 	// not be sorted for the constraint type accumulation:
 	QUICK_BASIC_TIME          int
-	NEXT_STAGE_TIMEOUT_FACTOR int
+	NEXT_STAGE_TIMEOUT_FACTOR int // factor * 10
 	NEXT_STAGE_TIMEOUT_MIN    int
 )
 
@@ -34,7 +34,7 @@ func SetParameterDefault() {
 	UNCONSTRAINED_TIMEOUT_FRACTION = 10
 	MIN_UNCONSTRAINED_TIMEOUT = 10
 	QUICK_BASIC_TIME = 5
-	NEXT_STAGE_TIMEOUT_FACTOR = 2
+	NEXT_STAGE_TIMEOUT_FACTOR = 15 // => 1.5
 	NEXT_STAGE_TIMEOUT_MIN = 20
 }
 
@@ -346,7 +346,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 								desc,
 								bcx.ConstraintType,
 								bcx.Constraints,
-								max(icnew.TtData.Ticks*NEXT_STAGE_TIMEOUT_FACTOR,
+								max(icnew.TtData.Ticks*NEXT_STAGE_TIMEOUT_FACTOR/10,
 									NEXT_STAGE_TIMEOUT_MIN))
 							cnew.Tagged = true
 							runqueue.add(cnew)

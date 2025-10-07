@@ -81,7 +81,7 @@ func get_basic_constraints(
 			k.String(),
 			k,
 			cilist,
-			max(unconstrained_time*NEXT_STAGE_TIMEOUT_FACTOR,
+			max(unconstrained_time*NEXT_STAGE_TIMEOUT_FACTOR/10,
 				NEXT_STAGE_TIMEOUT_MIN))
 		instance.Tagged = true
 		instances = append(instances, instance)
