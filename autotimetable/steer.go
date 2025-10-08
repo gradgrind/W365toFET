@@ -22,9 +22,12 @@ var (
 	MAXPROCESSES                   int
 	UNCONSTRAINED_TIMEOUT_FRACTION int
 	MIN_UNCONSTRAINED_TIMEOUT      int
+
+	//TODO: Currently not used
 	// Below this time a basic constraint type is considered "fast" and need
 	// not be sorted for the constraint type accumulation:
-	QUICK_BASIC_TIME          int
+	QUICK_BASIC_TIME int
+
 	NEXT_STAGE_TIMEOUT_FACTOR int // factor * 10
 	NEXT_STAGE_TIMEOUT_MIN    int
 )
@@ -34,8 +37,8 @@ func SetParameterDefault() {
 	UNCONSTRAINED_TIMEOUT_FRACTION = 10
 	MIN_UNCONSTRAINED_TIMEOUT = 10
 	QUICK_BASIC_TIME = 5
-	NEXT_STAGE_TIMEOUT_FACTOR = 15 // => 1.5
-	NEXT_STAGE_TIMEOUT_MIN = 20
+	NEXT_STAGE_TIMEOUT_FACTOR = 12 // => 1.2
+	NEXT_STAGE_TIMEOUT_MIN = 10
 }
 
 func init() {
@@ -144,9 +147,6 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
 
-	//TODO-- Wait group to ensure all goroutines finish before exiting
-	//var wg sync.WaitGroup
-
 	runqueue := &RunQueue{
 		Queue:      nil,
 		Active:     map[*TtInstance]struct{}{},
@@ -204,6 +204,8 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 
 	// Start stage 0
 	stage := 0
+	full_progress := 0      // current percentage
+	full_progress_last := 0 // time of last increment
 
 	// *** Ticker loop ***
 	var basic_constraints []*TtInstance
@@ -213,6 +215,9 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	defer ticker.Stop()
 	defer func() {
 		// Tidy up
+		if recover() != nil {
+			base.Message.Println("(TODO) *** RECOVER ***")
+		}
 		for {
 			count := 0
 			for instance := range runqueue.Active {
@@ -229,22 +234,44 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 		}
 	}()
 
-	//tickloop:
+tickloop:
 	for runqueue.update_queue() != 0 {
-		<-ticker.C
+		select {
+		case <-ticker.C:
+		case <-sigChan:
+			base.Message.Printf("(TODO) *** INTERRUPTED @ %d ***\n", Ticks)
+			break tickloop
+		}
+
 		Ticks++
 		runqueue.update_instances()
-
-		if Ticks == TIMEOUT {
-			base.Message.Printf(
-				"(TODO) [%d] TIMEOUT (%d)\n",
-				Ticks, full_instance.TtData.Progress)
-			break
-		}
 
 		if full_instance.ProcessingState == 1 {
 			// Cancel all other runs and return this instance as result.
 			current_instance = full_instance
+			break
+		} else {
+			p := full_instance.TtData.Progress
+			if p > full_progress {
+				full_progress = p
+				full_progress_last = Ticks
+				base.Message.Printf(
+					"(TODO) [%d] ? %s (%d @ %d)\n",
+					Ticks,
+					full_instance.TtData.Description,
+					full_progress,
+					full_progress_last,
+				)
+			}
+		}
+
+		if Ticks == TIMEOUT {
+			base.Message.Printf(
+				"(TODO) [%d] TIMEOUT (%d @ %d)\n",
+				Ticks,
+				full_progress,
+				full_progress_last,
+			)
 			break
 		}
 
@@ -313,7 +340,10 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 			}
 			if len(constraint_list) == 0 {
 				// all constraints added
-				break
+				base.Message.Printf(
+					"(TODO) [%d] WAITING FOR 'COMPLETE'\n", Ticks)
+				stage = 2
+				continue
 			}
 
 			// Seek failed instances, which should be split.
@@ -403,7 +433,8 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 				n++
 			}
 		}
-		fmt.Printf("$ CONSTRAINT %d: %d / %d\n", i, n, len(clist))
+		fmt.Printf("$ CONSTRAINT %d: %d / %d (%s)\n",
+			i, n, len(clist), timetable.ConstraintType(i).String())
 		nn += n
 		nall += len(clist)
 	}

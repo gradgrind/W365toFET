@@ -33,9 +33,9 @@ func OpenLog(logpath string) {
 		}
 	}
 
-	Message = log.New(file, "*INFO* ", log.Lshortfile)
-	Warning = log.New(file, "*WARNING* ", log.Lshortfile)
-	Error = log.New(file, "*ERROR* ", log.Lshortfile)
+	Message = log.New(file, "*INFO* ", 0)
+	Warning = log.New(file, "*WARNING* ", 0)
+	Error = log.New(file, "*ERROR* ", 0)
 	Bug = log.New(file, "*BUG* ", log.Lshortfile)
 
 }

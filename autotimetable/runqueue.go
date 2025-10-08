@@ -81,7 +81,7 @@ func (rq *RunQueue) update_instances() {
 		case 0: // running, not finished
 			// check for timeout
 			if instance.Timeout == ttdata.Ticks {
-				base.Message.Printf("(TODO) [%d] TIMEOUT %s @ %d (%d)\n",
+				base.Message.Printf("(TODO) [%d] Timeout %s @ %d (%d)\n",
 					Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress)
 
 				//TODO: even if it adds only one constraint?
