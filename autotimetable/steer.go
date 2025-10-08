@@ -335,6 +335,13 @@ tickloop:
 					constraint_list = slices.Delete(
 						constraint_list, i, i+1)
 
+					//TODO: Here or somewhere else?
+					alist := timetable.BACKEND.Results(instance.TtData)
+					for _, a := range alist {
+						fmt.Printf("§§§ %v\n", a)
+					}
+					return
+
 					break
 				}
 			}

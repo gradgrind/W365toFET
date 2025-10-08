@@ -68,7 +68,7 @@ func weight2fet(w int) string {
 
 type idMap struct {
 	activityId timetable.ActivityIndex
-	baseId     string
+	baseId     timetable.NodeRef
 }
 
 type fetInfo struct {
@@ -133,7 +133,7 @@ type basicSpaceConstraint struct {
 	Active            bool
 }
 
-func MakeFetFile(tt_data *timetable.TtData) (string, string) {
+func MakeFetFile(tt_data *timetable.TtData) (string, []idMap) {
 	dbdata := tt_data.SharedData.Db
 
 	// Build ref-index -> fet-key mapping. This is needed for the class
@@ -195,15 +195,7 @@ func MakeFetFile(tt_data *timetable.TtData) (string, string) {
 	//addRoomConstraints(&fetinfo)
 	getExtraConstraints(&fetinfo)
 
-	// Convert lessonIdMap to string
-	idmlines := []string{}
-	for _, idm := range lessonIdMap {
-		idmlines = append(idmlines,
-			strconv.Itoa(int(idm.activityId))+":"+string(idm.baseId))
-	}
-	lidmap := strings.Join(idmlines, "\n")
-
-	return xml.Header + makeXML(fetinfo.fetdata, 0), lidmap
+	return xml.Header + makeXML(fetinfo.fetdata, 0), lessonIdMap
 }
 
 /*

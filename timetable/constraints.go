@@ -47,7 +47,7 @@ const (
 	// number of constraints.
 )
 
-// TODO? Associate constraint names with their indexes
+// Associate constraint names with their indexes
 var cnmap map[string]ConstraintType
 
 func init() {

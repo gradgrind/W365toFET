@@ -5,6 +5,7 @@ import (
 	"W365toFET/timetable"
 	"bufio"
 	"context"
+	"encoding/xml"
 	"fmt"
 	"io"
 	"os"
@@ -12,14 +13,16 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 func Setup() {
 	timetable.BACKEND = timetable.TtBackend{
-		Run:   runFet,
-		Abort: ttRunAbort,
-		Tick:  ttTick,
-		Clear: ttRunClear,
+		Run:     runFet,
+		Abort:   ttRunAbort,
+		Tick:    ttTick,
+		Clear:   ttRunClear,
+		Results: ttResults,
 	}
 }
 
@@ -67,13 +70,20 @@ func runFet(tt_data *timetable.TtData, testing bool) {
 
 	//fmt.Printf("FET file written to: %s\n", fetfile)
 
-	// Write Id-map file.
+	// Convert lessonIdMap to string, write Id-map file.
+	idmlines := []string{}
+	for _, idm := range lessonIdMap {
+		idmlines = append(idmlines,
+			strconv.Itoa(int(idm.activityId))+":"+string(idm.baseId))
+	}
+	lidmap := strings.Join(idmlines, "\n")
+
 	fm, err := os.Create(mapfile)
 	if err != nil {
 		panic("Couldn't open output file: " + mapfile)
 	}
 	defer fm.Close()
-	_, err = fm.WriteString(lessonIdMap)
+	_, err = fm.WriteString(lidmap)
 	if err != nil {
 		panic("Couldn't write fet output to: " + mapfile)
 	}
@@ -87,6 +97,10 @@ func runFet(tt_data *timetable.TtData, testing bool) {
 	os.RemoveAll(odir)
 	logfile := filepath.Join(odir, "logs", "max_placed_activities.txt")
 
+	idmap := map[timetable.ActivityIndex]timetable.NodeRef{}
+	for _, kv := range lessonIdMap {
+		idmap[kv.activityId] = kv.baseId
+	}
 	ctx, cancel := context.WithCancel(context.Background())
 	// Note that it should be safe to call `cancel` multiple times.
 	fet_data := &fetTtData{
@@ -97,6 +111,7 @@ func runFet(tt_data *timetable.TtData, testing bool) {
 		odir:       odir,
 		logfile:    logfile,
 		cancel:     cancel,
+		id2ref:     idmap,
 	}
 	tt_data.BackEndData = fet_data
 
@@ -168,6 +183,7 @@ type fetTtData struct {
 	reader     *bufio.Reader
 	cancel     func()
 	finished   bool
+	id2ref     map[timetable.ActivityIndex]timetable.NodeRef
 }
 
 // `ttTick` runs in the "tick" loop. Rather like a "tail" function it reads
@@ -226,4 +242,68 @@ exit:
 			tt_data.Message = string(efile)
 		}
 	}
+}
+
+func ttResults(tt_data *timetable.TtData) []timetable.ActivityPlacement {
+	data := *tt_data.BackEndData.(*fetTtData)
+	xmlpath := filepath.Join(data.odir, "timetables", tt_data.Description,
+		tt_data.Description+"_activities.xml")
+	// Open the  XML file
+	xmlFile, err := os.Open(xmlpath)
+	if err != nil {
+		base.Error.Fatal(err)
+	}
+	// Remember to close the file at the end of the function
+	defer xmlFile.Close()
+	// read the opened XML file as a byte array.
+	base.Message.Printf("Reading: %s\n", xmlpath)
+	byteValue, _ := io.ReadAll(xmlFile)
+	v := fetResultRoot{}
+	err = xml.Unmarshal(byteValue, &v)
+	if err != nil {
+		base.Bug.Printf("XML error in %s:\n %v\n", xmlpath, err)
+		return nil
+	}
+
+	//TODO--
+	fmt.Printf("$$$$$$$$$\n%v\n$$$$$$$$$\n", v)
+
+	activities := make([]timetable.ActivityPlacement, len(v.Activities))
+	for i, a := range v.Activities {
+		id, ok := data.id2ref[a.Id]
+		if !ok {
+			base.Bug.Printf("Activity Id unknown in %s: %d\n", xmlpath, a.Id)
+			return nil
+		}
+
+		//TODO: Surely the rooms would need to be NodeRef ?!
+		rooms := []string{}
+		if len(a.Real_Room) != 0 {
+			rooms = a.Real_Room
+		} else if len(a.Room) != 0 {
+			rooms = []string{a.Room}
+		}
+
+		activities[i] = timetable.ActivityPlacement{
+			Id:    id,
+			Day:   a.Day,
+			Hour:  a.Hour,
+			Rooms: rooms,
+		}
+	}
+	return activities
+}
+
+type fetResultRoot struct { // The root node.
+	XMLName    xml.Name `xml:"Activities_Timetable"`
+	Activities []fetResultActivity
+}
+
+type fetResultActivity struct {
+	XMLName   xml.Name `xml:"Activity"`
+	Id        timetable.ActivityIndex
+	Day       int
+	Hour      int
+	Room      string
+	Real_Room []string
 }

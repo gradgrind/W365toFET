@@ -119,7 +119,8 @@ func getActivities(fetinfo *fetInfo) []idMap {
 	})
 	lessonIdMap := []idMap{}
 	for _, a := range activities {
-		lessonIdMap = append(lessonIdMap, idMap{a.Id, a.Comments})
+		lessonIdMap = append(lessonIdMap, idMap{
+			a.Id, timetable.NodeRef(a.Comments)})
 	}
 
 	fetinfo.fetdata.Activities_List = fetActivitiesList{

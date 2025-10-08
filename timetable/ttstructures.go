@@ -19,6 +19,9 @@ type TtBackend struct {
 	Abort func(tt_data *TtData)
 	Tick  func(tt_data *TtData)
 	Clear func(tt_data *TtData)
+
+	//TODO: This will probably need to return a more elaborate structure
+	Results func(tt_data *TtData) []ActivityPlacement
 }
 
 var BACKEND TtBackend
@@ -176,4 +179,13 @@ type MinDaysBetweenActivities struct {
 type ParallelLessons struct {
 	Weight         int
 	ActivityGroups [][]ActivityIndex
+}
+
+// This structure is used to return the placement results from the
+// timetable back-end.
+type ActivityPlacement struct {
+	Id    NodeRef
+	Day   int
+	Hour  int
+	Rooms []string
 }
