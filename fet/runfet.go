@@ -266,7 +266,7 @@ func ttResults(tt_data *timetable.TtData) []timetable.ActivityPlacement {
 	}
 
 	//TODO--
-	fmt.Printf("$$$$$$$$$\n%v\n$$$$$$$$$\n", v)
+	//fmt.Printf("$$$$$$$$$\n%v\n$$$$$$$$$\n", v)
 
 	activities := make([]timetable.ActivityPlacement, len(v.Activities))
 	for i, a := range v.Activities {
@@ -295,8 +295,8 @@ func ttResults(tt_data *timetable.TtData) []timetable.ActivityPlacement {
 }
 
 type fetResultRoot struct { // The root node.
-	XMLName    xml.Name `xml:"Activities_Timetable"`
-	Activities []fetResultActivity
+	XMLName    xml.Name            `xml:"Activities_Timetable"`
+	Activities []fetResultActivity `xml:"Activity"`
 }
 
 type fetResultActivity struct {

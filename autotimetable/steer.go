@@ -338,7 +338,7 @@ tickloop:
 					//TODO: Here or somewhere else?
 					alist := timetable.BACKEND.Results(instance.TtData)
 					for _, a := range alist {
-						fmt.Printf("§§§ %v\n", a)
+						fmt.Printf("§§§ %+v\n", a)
 					}
 					return
 
