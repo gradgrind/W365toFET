@@ -39,17 +39,6 @@ func (rq *RunQueue) add_front(instance *TtInstance) {
 //	}
 //}
 
-// TODO??
-func (rq *RunQueue) stop_step() {
-	for instance := range rq.Active {
-		if instance.ProcessingState == 0 && instance.StepInstance {
-			timetable.BACKEND.Abort(instance.TtData)
-			rq.instance_deactivate(instance)
-		}
-	}
-	rq.Queue = rq.Queue[:0]
-}
-
 func (rq *RunQueue) instance_deactivate(instance *TtInstance) {
 	delete(rq.Active, instance)
 }
