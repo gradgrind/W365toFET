@@ -49,6 +49,9 @@ func (fetinfo *fetInfo) handle_class_constraints() {
 		}
 		if len(nats) > 0 {
 			cl := db.Classes[cix]
+			if len(cl.Tag) == 0 {
+				continue
+			}
 			natimes = append(natimes,
 				studentsNotAvailable{
 					Weight_Percentage:             100,

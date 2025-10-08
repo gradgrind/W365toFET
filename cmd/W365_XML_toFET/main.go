@@ -1,17 +1,17 @@
 package main
 
 import (
-	"W365toFET/autotimetable"
-	"W365toFET/base"
-	"W365toFET/fet"
-	"W365toFET/readxml"
-	"W365toFET/timetable"
-	"flag"
-	"fmt"
-	"log"
-	"path/filepath"
-	"slices"
-	"strings"
+    "W365toFET/autotimetable"
+    "W365toFET/base"
+    "W365toFET/fet"
+    "W365toFET/readxml"
+    "W365toFET/timetable"
+    "flag"
+    "fmt"
+    "log"
+    "path/filepath"
+    "slices"
+    "strings"
 )
 
 //Input files:
@@ -19,58 +19,73 @@ import (
 //  "../../_testdata_N1/x01/x01.xml"
 
 func main() {
-	flag.Parse()
-	args := flag.Args()
-	if len(args) != 1 {
-		if len(args) == 0 {
-			log.Fatalln("ERROR* No input file")
-		}
-		log.Fatalf("*ERROR* Too many command-line arguments:\n  %+v\n", args)
-	}
-	abspath, err := filepath.Abs(args[0])
-	if err != nil {
-		log.Fatalf("*ERROR* Couldn't resolve file path: %s\n", args[0])
-	}
 
-	base.OpenLog("")
+    flag.BoolVar(&base.CONSOLE, "c", false, "enable progress output")
+    flag.BoolVar(&autotimetable.TESTING, "T", false, "run in testing mode")
+    timeout := flag.Int("t", 300, "set timeout")
+    nprocesses := flag.Int("p", 0, "max. parallel processes")
 
-	cdata := readxml.ConvertToDb(abspath)
-	fmt.Println("*** Available Schedules:")
-	slist := cdata.ScheduleNames()
-	for _, sname := range slist {
-		fmt.Printf("  -- %s\n", sname)
-	}
-	sname := "Vorlage"
-	if !slices.Contains(slist, sname) {
-		if len(slist) != 0 {
-			sname = slist[0]
-		} else {
-			fmt.Println(" ... stopping ...")
-			return
-		}
-	}
-	fmt.Printf("*** Using Schedule '%s'\n", sname)
-	if !cdata.ReadSchedule(sname) {
-		fmt.Println(" ... failed ...")
-		return
-	}
+    flag.Parse()
 
-	// This allows for an option to select different generator back-ends
-	fet.Setup()
+    if *nprocesses > 0 {
+        autotimetable.MAXPROCESSES = *nprocesses
+    }
 
-	db := cdata.Db()
-	db.PrepareDb()
+    args := flag.Args()
+    if len(args) != 1 {
+        if len(args) == 0 {
+            log.Fatalln("ERROR* No input file")
+        }
+        log.Fatalf("*ERROR* Too many command-line arguments:\n  %+v\n", args)
+    }
+    abspath, err := filepath.Abs(args[0])
+    if err != nil {
+        log.Fatalf("*ERROR* Couldn't resolve file path: %s\n", args[0])
+    }
 
-	stempath := strings.TrimSuffix(abspath, filepath.Ext(abspath))
-	db.SaveDb(stempath + "_DB.json")
+    //base.OpenLog("")
+    stempath := strings.TrimSuffix(abspath, filepath.Ext(abspath))
+    logpath := stempath + ".log"
+    base.OpenLog(logpath)
+    //stempath = strings.TrimSuffix(stempath, "_w365")
 
-	// May want to change this with a different back-end ...
-	workingdir := stempath + "_fet"
+    cdata := readxml.ConvertToDb(abspath)
+    fmt.Println("*** Available Schedules:")
+    slist := cdata.ScheduleNames()
+    for _, sname := range slist {
+        fmt.Printf("  -- %s\n", sname)
+    }
+    sname := "Vorlage"
+    if !slices.Contains(slist, sname) {
+        if len(slist) != 0 {
+            sname = slist[0]
+        } else {
+            fmt.Println(" ... stopping ...")
+            return
+        }
+    }
+    fmt.Printf("*** Using Schedule '%s'\n", sname)
+    if !cdata.ReadSchedule(sname) {
+        fmt.Println(" ... failed ...")
+        return
+    }
 
-	tt_data := timetable.BasicSetup(db, workingdir)
-	fmt.Printf("Resources: %d\n", len(tt_data.SharedData.Resources))
-	fmt.Printf("Activities: %d\n", len(tt_data.SharedData.Activities)-1)
+    // This allows for an option to select different generator back-ends
+    fet.Setup()
 
-	timeout := 200 // seconds
-	autotimetable.StartGeneration(tt_data, timeout)
+    db := cdata.Db()
+    db.PrepareDb()
+
+    db.SaveDb(stempath + "_DB.json")
+
+    // May want to change this with a different back-end ...
+    workingdir := stempath + "_fet"
+
+    tt_data := timetable.BasicSetup(db, workingdir)
+    base.Report(fmt.Sprintf("Resources: %d\n",
+        len(tt_data.SharedData.Resources)))
+    base.Report(fmt.Sprintf("Activities: %d\n",
+        len(tt_data.SharedData.Activities)-1))
+
+    autotimetable.StartGeneration(tt_data, *timeout)
 }

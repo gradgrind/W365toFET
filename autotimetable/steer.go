@@ -33,7 +33,7 @@ var (
 )
 
 func SetParameterDefault() {
-	MAXPROCESSES = max(runtime.NumCPU(), 4)
+	MAXPROCESSES = min(max(runtime.NumCPU(), 4), 6)
 	UNCONSTRAINED_TIMEOUT_FRACTION = 10
 	MIN_UNCONSTRAINED_TIMEOUT = 10
 	QUICK_BASIC_TIME = 5
