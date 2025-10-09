@@ -49,7 +49,7 @@ func (rq *RunQueue) update_instances() {
 		switch ttdata.State {
 		case 0: // running, not finished
 			// check for timeout
-			if instance.Timeout == ttdata.Ticks {
+			if instance.Timeout == ttdata.Ticks && ttdata.Progress != 100 {
 				base.Message.Printf("(TODO) [%d] Timeout %s @ %d (%d)\n",
 					Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress)
 

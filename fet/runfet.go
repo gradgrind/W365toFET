@@ -233,19 +233,6 @@ exit:
 			data.rdfile.Close()
 		}
 		if tt_data.Progress == 100 {
-
-			//TODO--
-			entries, err := os.ReadDir(
-				filepath.Join(data.odir, "timetables", tt_data.Description))
-			if err != nil {
-				panic(err)
-			}
-			flist := []string{}
-			for _, e := range entries {
-				flist = append(flist, e.Name())
-			}
-			fmt.Printf("??? %s: %v\n", tt_data.Description, flist)
-
 			tt_data.State = 1
 		} else {
 			tt_data.State = 2
@@ -264,8 +251,7 @@ func ttResults(tt_data *timetable.TtData) []timetable.ActivityPlacement {
 	// Open the  XML file
 	xmlFile, err := os.Open(xmlpath)
 	if err != nil {
-		//TODO: base.Error.Print(err) ?
-		base.Error.Fatal(err)
+		base.Bug.Print(err)
 		return nil
 	}
 	// Remember to close the file at the end of the function
