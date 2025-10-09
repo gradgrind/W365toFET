@@ -29,12 +29,13 @@ func _() {
 	_ = x[ParallelCourses-18]
 	_ = x[MinHoursFollowing-19]
 	_ = x[DoubleActivityNotOverBreaks-20]
-	_ = x[LastConstraint-21]
+	_ = x[ActivityRooms-21]
+	_ = x[LastConstraint-22]
 }
 
-const _ConstraintType_name = "TeacherMinLessonsPerDayTeacherMaxLessonsPerDayTeacherMaxAfternoonsTeacherMaxDaysTeacherLunchBreakTeacherMaxGapsPerDayTeacherMaxGapsPerWeekClassMinLessonsPerDayClassMaxLessonsPerDayClassMaxAfternoonsClassLunchBreakClassForceFirstHourClassMaxGapsPerDayClassMaxGapsPerWeekActivitiesEndDayBeforeAfterHourDaysBetweenJoinMinDaysBetweenParallelCoursesMinHoursFollowingDoubleActivityNotOverBreaksLastConstraint"
+const _ConstraintType_name = "TeacherMinLessonsPerDayTeacherMaxLessonsPerDayTeacherMaxAfternoonsTeacherMaxDaysTeacherLunchBreakTeacherMaxGapsPerDayTeacherMaxGapsPerWeekClassMinLessonsPerDayClassMaxLessonsPerDayClassMaxAfternoonsClassLunchBreakClassForceFirstHourClassMaxGapsPerDayClassMaxGapsPerWeekActivitiesEndDayBeforeAfterHourDaysBetweenJoinMinDaysBetweenParallelCoursesMinHoursFollowingDoubleActivityNotOverBreaksActivityRoomsLastConstraint"
 
-var _ConstraintType_index = [...]uint16{0, 23, 46, 66, 80, 97, 117, 138, 159, 180, 198, 213, 232, 250, 269, 285, 300, 315, 329, 344, 361, 388, 402}
+var _ConstraintType_index = [...]uint16{0, 23, 46, 66, 80, 97, 117, 138, 159, 180, 198, 213, 232, 250, 269, 285, 300, 315, 329, 344, 361, 388, 401, 415}
 
 func (i ConstraintType) String() string {
 	if i < 0 || i >= ConstraintType(len(_ConstraintType_index)-1) {

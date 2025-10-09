@@ -100,8 +100,9 @@ func disable_all_constraints(ttdata *timetable.TtData) {
 		ttdata.HardConstraints[k] = nil
 	}
 
+	//TODO?
 	// The room constraints are available in the `timetable.CourseInfo`
 	// items accessible via the `CourseInfo` pointer in the individual
 	// `timetable.Activity` items.
-	ttdata.WITHOUT_ROOM_PLACEMENTS = true
+	//ttdata.WITHOUT_ROOM_PLACEMENTS = true
 }

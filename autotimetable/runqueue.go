@@ -14,6 +14,14 @@ type RunQueue struct {
 }
 
 func (rq *RunQueue) add(instance *TtInstance) {
+	if rq.Next >= 100 {
+		// Reclaim space
+		vec2 := rq.Queue[rq.Next:]
+		n := len(vec2)
+		copy(rq.Queue, vec2)
+		rq.Queue = rq.Queue[:n]
+		rq.Next = 0
+	}
 	instance.ProcessingState = -1 // not started yet
 	rq.Queue = append(rq.Queue, instance)
 	//base.Message.Printf("(TODO) [%d] Queue %s\n",
@@ -77,7 +85,7 @@ func (rq *RunQueue) update_queue() int {
 	for instance := range rq.Active {
 		if instance.TtData.State != 0 {
 			delete(rq.Active, instance)
-			//TODO++ timetable.BACKEND.Clear(instance.TtData)
+			timetable.BACKEND.Clear(instance.TtData)
 			continue
 		}
 		if instance.ProcessingState == 0 || instance.ProcessingState == 3 {
@@ -86,6 +94,7 @@ func (rq *RunQueue) update_queue() int {
 	}
 	for rq.Next < len(rq.Queue) && running < rq.MaxRunning {
 		instance := rq.Queue[rq.Next]
+		rq.Queue[rq.Next] = nil
 		rq.Next++
 
 		if instance.ProcessingState < 0 {

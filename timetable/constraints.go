@@ -43,6 +43,8 @@ const (
 
 	DoubleActivityNotOverBreaks //??? This is a one-off, handle specially?
 
+	ActivityRooms
+
 	LastConstraint // not a real constraint, it can be used as the total
 	// number of constraints.
 )

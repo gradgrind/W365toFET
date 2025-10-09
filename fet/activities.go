@@ -132,6 +132,12 @@ func getActivities(fetinfo *fetInfo) []idMap {
 
 func addPlacementConstraints(fetinfo *fetInfo) {
 	tt_data := fetinfo.tt_data
+
+	armap := map[int]struct{}{}
+	for a := range tt_data.HardConstraints[timetable.ActivityRooms] {
+		armap[a] = struct{}{}
+	}
+
 	for _, cinfo := range tt_data.SharedData.CourseInfoList {
 		var rooms []string
 		// Set "preferred" rooms, if not blocked.
@@ -147,7 +153,8 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 		tcl := &fetinfo.fetdata.Time_Constraints_List
 		for i, l := range cinfo.Lessons {
 			aid := cinfo.Activities[i]
-			if len(rooms) != 0 {
+			_, ok := armap[int(aid)]
+			if ok && len(rooms) != 0 {
 				scl.ConstraintActivityPreferredRooms = append(
 					scl.ConstraintActivityPreferredRooms,
 					roomChoice{

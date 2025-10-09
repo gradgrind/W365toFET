@@ -22,21 +22,14 @@ var (
 	MAXPROCESSES                   int
 	UNCONSTRAINED_TIMEOUT_FRACTION int
 	MIN_UNCONSTRAINED_TIMEOUT      int
-
-	//TODO: Currently not used
-	// Below this time a basic constraint type is considered "fast" and need
-	// not be sorted for the constraint type accumulation:
-	QUICK_BASIC_TIME int
-
-	NEXT_STAGE_TIMEOUT_FACTOR int // factor * 10
-	NEXT_STAGE_TIMEOUT_MIN    int
+	NEXT_STAGE_TIMEOUT_FACTOR      int // factor * 10
+	NEXT_STAGE_TIMEOUT_MIN         int
 )
 
 func SetParameterDefault() {
 	MAXPROCESSES = min(max(runtime.NumCPU(), 4), 6)
 	UNCONSTRAINED_TIMEOUT_FRACTION = 10
 	MIN_UNCONSTRAINED_TIMEOUT = 10
-	QUICK_BASIC_TIME = 5
 	NEXT_STAGE_TIMEOUT_FACTOR = 12 // => 1.2
 	NEXT_STAGE_TIMEOUT_MIN = 10
 }
@@ -50,88 +43,72 @@ Various strategies are used to try to achieve a – possibly imperfect –
 timetable within a specified time. It is impossible to guarantee that all
 constraints will be satisfied within a given time, so in order to place
 all the activities within this time it may be necessary to drop some of
-the constraints.
+them.
 
-A certain degree of parallel processing is assumed – less than four processor
-cores is likely to result in a very significant slowdown.
+A certain degree of parallel processing is assumed – too few (less than four?)
+processor cores is likely to result in a very significant slowdown.
+
+TODO: hard-only, with/without rooms, additional fully constrained? Perhaps
+dependent on number of cores?
 
 The main function (`StartGeneration`) starts a run with the fully constrained
 data and a second run with all the "non-basic" constraints removed. Fixed
 activity placements and blocked time-slots (for teachers, classes, and rooms)
 are regarded as basic, non-negotiable.
 
-TODO: If there are soft constraints, it may make sense to start a further run
-with just the hard constraints enabled. The current state of development is
-that soft constraints are completely ignored, though they are included in the
-fully constrained run.
-
 A `TtInstance` structure is constructed to manage the data for each
 timetable generation run, each run having its own goroutine. Each instance
-has its own individual timeout to stop it running forever.
+has its own individual timeout. There is also a global timeout to stop
+all instances which are still running.
 
 Once these initial instances have been started, a "tick-loop" (which is
 triggered every second) is entered. This monitors the progress of each active
 instance and handles the actions resulting from their completion, whether
 successful or not.
 
-Should the fully constrained instance complete successfully within the
+Should a fully constrained instance complete successfully within the
 allotted time, all other instances are terminated and the result will be as
 if only this instance had run.
 
 When the unconstrained instance completes successfully, a series of further
 instances is queued for running, each specifying the addition of a list of
 (hard) constraints of a single type. Thus for each type of constraint an
-instance is constructed. Using timeouts and binary divisions of these lists
-an attempt is made to find individual "difficult" constraints, which can then
-be disabled in order to get full activity placement within a reasonable time.
-Parallel processing can be of some assistance here.
+instance is constructed. Using timeouts leading to binary divisions of these
+lists an attempt is made to find individual "difficult" constraints, which can
+then be disabled in order to get full activity placement within a reasonable
+time. Parallel processing can be of some assistance here.
 
 TODO: Should the unconstrained instance fail to complete successfully within
 its allotted time, further steps may be taken to trace difficulties within the
 activity collection, perhaps identifying "difficult" classes or teachers.
 
-Once the single-constraint-type instances start delivering results, the next
-stage can be started, in which the constraint types are added one after the
-other to the gradually expanding base. The constraint types are added in order
-of their completion in the single-constraint-type trials, so that the less
-"difficult" constraints are added first.
+When a single-constraint-type instance completes successfully, it is used as
+a new base (`current_instance`) for the addition of further constraints. All
+the remaining constraint-type instances are stopped and restarted with this
+new base. If a constraint-type instance is timed out, it is stopped and split
+into two halves, which then run in its place. If there are no halves (only
+one constraint being added) there is no successor, the constraint is dropped.
 
-Using parallel processing, it is possible that instances will be started
-"preemptively", but then turn out to be irrelevant. To handle this, it is
-possible to "cancel" an instance, including any instances that have been
-started as a consequence. For example, when an instance with a list of
-constraints is started, it queues (to be started later, when processors
-become available) two further instances, one for each half of the list. If
-the instance completes successfully before its timeout is reached, these
-subsidiary instances become redundant and can be cancelled.
-
-If the overall timeout is reached (i.e. if the fully constrained instance
+If the overall timeout is reached (i.e. if a fully constrained instance
 has not completed successfuly yet), the "best solution so far" is sought:
 
-If there is an all-hard-constraints-only instance and that has completed
-successfuly, its result will be used (the single-constraint accumulation
-processes can be cancelled in this case as they are then superfluous).
+TODO: That may be the hard-constraint-only instance, or one without room
+allocation?
 
-Otherwise, if the single-constraint accumulation has completed, its result
-can be used. If it has not completed, the result will be the last successfully
-completed instance. Diagnostic information will also be available (at least
-an indication of which constraints were dropped).
+Otherwise, the `current_instance` is taken, as it represents the instance with
+the most constraints enabled which completed successfully.
 
-If the single-constraint accumulation completes well before the overall
-timeout, it may be a sign that its internal timeouts could be lengthened to
-(possibly) obtain a result with fewer constraints disabled. Alternatively,
-a shorter overall timeout might be considered.
+Diagnostic information will also be available (at least an indication of which
+constraints were dropped).
 
 If the single-constraint accumulation doesn't complete before the overall
-timeout, that may indicate that a shortening of its internal timeouts
-could produce a better result (testing more constraints). Alternatively,
-a longer overall timeout might be considered.
+timeout, that may indicate that a longer overall timeout might be considered.
 
-There is probably no general "optimum" value for the various timeouts, that
-is likely to depend on the data. But perhaps values can be found which are
-frequently useful. It might be helpful to use shorter overall timeouts during
-the initial phases of testing the data, to identify potential problem areas
-without long processing delays. For later phases longer times may be
+TODO: There is probably no general "optimum" value for the various timeouts,
+that is likely to depend on the data. But perhaps values can be found which
+are frequently useful. It might be helpful to use shorter overall timeouts
+during the initial phases of testing the data, to identify potential problem
+areas without long processing delays. For later phases longer times may be
 necessary (depending on the difficulty of the data).
 */
 
@@ -150,7 +127,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	runqueue := &RunQueue{
 		Queue:      nil,
 		Active:     map[*TtInstance]struct{}{},
-		MaxRunning: MAXPROCESSES, //TODO????
+		MaxRunning: MAXPROCESSES,
 		Next:       0,
 	}
 
@@ -228,10 +205,11 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 				}
 			}
 			if count == 0 {
-				return
+				break
 			}
 			<-ticker.C
 		}
+		os.RemoveAll(workingdir)
 	}()
 
 tickloop:
@@ -411,16 +389,6 @@ tickloop:
 
 	result := current_instance
 	ttdata := result.TtData
-
-	/*TODO++?
-	// Remove temporary data for all instances except the result
-	for i := 0; i < runqueue.Next; i++ {
-		ttd := runqueue.Queue[i].TtData
-		if ttd != ttdata {
-			timetable.BACKEND.Clear(ttd)
-		}
-	}
-	*/
 
 	nn := 0
 	nall := 0

@@ -148,4 +148,15 @@ func (tt_data *TtData) collect_room_constraints() {
 		}
 		tt_data.RoomNotAvailable[i] = blocked_slots
 	}
+
+	// The room wishes are based on the activities
+	for _, cinfo := range tt_shared_data.CourseInfoList {
+		if len(cinfo.FixedRooms) != 0 || len(cinfo.RoomChoices) != 0 {
+			for _, a := range cinfo.Activities {
+				tt_data.HardConstraints[ActivityRooms] = append(
+					tt_data.HardConstraints[ActivityRooms],
+					SpecialConstraint{int(a), struct{}{}})
+			}
+		}
+	}
 }
