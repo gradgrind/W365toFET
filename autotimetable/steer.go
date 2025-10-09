@@ -24,6 +24,7 @@ var (
 	MIN_UNCONSTRAINED_TIMEOUT      int
 	NEXT_STAGE_TIMEOUT_FACTOR      int // factor * 10
 	NEXT_STAGE_TIMEOUT_MIN         int
+	REMOVE_OLD_DATA                bool
 )
 
 func SetParameterDefault() {
@@ -32,6 +33,8 @@ func SetParameterDefault() {
 	MIN_UNCONSTRAINED_TIMEOUT = 10
 	NEXT_STAGE_TIMEOUT_FACTOR = 12 // => 1.2
 	NEXT_STAGE_TIMEOUT_MIN = 10
+
+	REMOVE_OLD_DATA = false
 }
 
 func init() {
@@ -209,7 +212,9 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 			}
 			<-ticker.C
 		}
-		os.RemoveAll(workingdir)
+		if REMOVE_OLD_DATA {
+			os.RemoveAll(workingdir)
+		}
 	}()
 
 tickloop:

@@ -85,7 +85,9 @@ func (rq *RunQueue) update_queue() int {
 	for instance := range rq.Active {
 		if instance.TtData.State != 0 {
 			delete(rq.Active, instance)
-			timetable.BACKEND.Clear(instance.TtData)
+			if REMOVE_OLD_DATA {
+				timetable.BACKEND.Clear(instance.TtData)
+			}
 			continue
 		}
 		if instance.ProcessingState == 0 || instance.ProcessingState == 3 {

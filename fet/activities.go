@@ -134,8 +134,8 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 	tt_data := fetinfo.tt_data
 
 	armap := map[int]struct{}{}
-	for a := range tt_data.HardConstraints[timetable.ActivityRooms] {
-		armap[a] = struct{}{}
+	for _, a0 := range tt_data.HardConstraints[timetable.ActivityRooms] {
+		armap[a0.(timetable.SpecialConstraint).Item] = struct{}{}
 	}
 
 	for _, cinfo := range tt_data.SharedData.CourseInfoList {
