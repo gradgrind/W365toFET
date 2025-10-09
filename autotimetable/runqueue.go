@@ -4,7 +4,6 @@ import (
 	"W365toFET/base"
 	"W365toFET/timetable"
 	"fmt"
-	"slices"
 )
 
 type RunQueue struct {
@@ -19,28 +18,6 @@ func (rq *RunQueue) add(instance *TtInstance) {
 	rq.Queue = append(rq.Queue, instance)
 	//base.Message.Printf("(TODO) [%d] Queue %s\n",
 	//	Ticks, instance.TtData.Description)
-}
-
-func (rq *RunQueue) add_front(instance *TtInstance) {
-	instance.ProcessingState = -1 // not started yet
-	rq.Queue = slices.Insert(rq.Queue, rq.Next, instance)
-	base.Message.Printf("(TODO) [%d] Queue Front %s\n",
-		Ticks, instance.TtData.Description)
-}
-
-//func (rq *RunQueue) disable() {
-//	rq.MaxRunning = 0 // no new starts possible
-//}
-
-//func (rq *RunQueue) instance_completed(instance *TtInstance, state int) {
-//	instance.ProcessingState = state
-//	if state != 2 {
-//		rq.instance_deactivate(instance)
-//	}
-//}
-
-func (rq *RunQueue) instance_deactivate(instance *TtInstance) {
-	delete(rq.Active, instance)
 }
 
 func (rq *RunQueue) update_instances() {
@@ -63,17 +40,9 @@ func (rq *RunQueue) update_instances() {
 			// `timetable.BACKEND.Tick`.
 			panic(fmt.Sprintf("Bug, State = %d", ttdata.State))
 		}
-		//	}
 
-		//	for instance := range rq.Active {
-		//		ttdata := instance.TtData
-
-		//???
 		if instance.ProcessingState == 3 {
 			// Await completion of the goroutine
-			if ttdata.State != 0 {
-				rq.instance_deactivate(instance)
-			}
 			continue
 		}
 
@@ -93,13 +62,11 @@ func (rq *RunQueue) update_instances() {
 			base.Message.Printf("(TODO) [%d] <<+ %s @ %d\n",
 				Ticks, ttdata.Description, ttdata.Ticks)
 			instance.ProcessingState = 1
-			rq.instance_deactivate(instance)
 
 		default: // completed unsuccessfully
 			base.Message.Printf("(TODO) [%d] <<- %s @ %d\n",
 				Ticks, ttdata.Description, ttdata.Ticks)
 			instance.ProcessingState = 2
-			rq.instance_deactivate(instance)
 		}
 	}
 }
@@ -107,8 +74,13 @@ func (rq *RunQueue) update_instances() {
 func (rq *RunQueue) update_queue() int {
 	// Try to start queued instances
 	running := 0
-	for i := range rq.Active {
-		if i.ProcessingState == 0 || i.ProcessingState == 3 {
+	for instance := range rq.Active {
+		if instance.TtData.State != 0 {
+			delete(rq.Active, instance)
+			//TODO++ timetable.BACKEND.Clear(instance.TtData)
+			continue
+		}
+		if instance.ProcessingState == 0 || instance.ProcessingState == 3 {
 			running++
 		}
 	}

@@ -249,6 +249,8 @@ tickloop:
 		if full_instance.ProcessingState == 1 {
 			// Cancel all other runs and return this instance as result.
 			current_instance = full_instance
+			new_current_instance(current_instance)
+
 			break
 		} else {
 			p := full_instance.TtData.Progress
@@ -288,6 +290,7 @@ tickloop:
 			case 1:
 				// The null instance completed successfully.
 				current_instance = null_instance
+				new_current_instance(current_instance)
 				// Start trials of single constraint types.
 				basic_constraints = get_basic_constraints(
 					null_instance, null_instance.TtData.Ticks)
@@ -319,14 +322,9 @@ tickloop:
 			// See if an instance has completed successfully.
 			for i, instance := range constraint_list {
 				if instance.ProcessingState == 1 {
-					// completed successfully
-
-					//TODO: Clear old current_instance data?
-
-					// Make this instance the new base.
+					// Completed successfully, make this instance the new base.
 					current_instance = instance
-					base.Message.Printf("+++ %s\n",
-						instance.TtData.Description)
+					new_current_instance(current_instance)
 					next_timeout = max(
 						instance.TtData.Ticks*NEXT_STAGE_TIMEOUT_FACTOR/10,
 						NEXT_STAGE_TIMEOUT_MIN)
@@ -334,13 +332,6 @@ tickloop:
 					// Remove it from constraint list.
 					constraint_list = slices.Delete(
 						constraint_list, i, i+1)
-
-					//TODO: Here or somewhere else?
-					alist := timetable.BACKEND.Results(instance.TtData)
-					for _, a := range alist {
-						fmt.Printf("§§§ %+v\n", a)
-					}
-					return
 
 					break
 				}
