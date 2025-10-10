@@ -13,7 +13,9 @@ func new_current_instance(instance *TtInstance) {
 
 	// Read placements
 	alist := timetable.BACKEND.Results(ttdata)
-	timetable.BACKEND.Clear(ttdata)
+	if REMOVE_OLD_DATA {
+		timetable.BACKEND.Clear(ttdata)
+	}
 
 	//TODO
 

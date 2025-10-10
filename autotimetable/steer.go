@@ -37,7 +37,7 @@ func SetParameterDefault() {
 	NEXT_STAGE_TIMEOUT_FACTOR = 12 // => 1.2
 	NEXT_STAGE_TIMEOUT_MIN = 10
 
-	REMOVE_OLD_DATA = false
+	REMOVE_OLD_DATA = true
 }
 
 func init() {
@@ -438,10 +438,10 @@ func new_instance(
 ) *TtInstance {
 	// Prepare instnace "name"
 	InstanceCounter++
-	if i := strings.LastIndex(descriptor, "~"); i >= 0 {
-		descriptor = descriptor[:i]
+	if i := strings.Index(descriptor, "~"); i >= 0 {
+		descriptor = descriptor[i+1:]
 	}
-	descriptor = fmt.Sprintf("%s~%03d", descriptor, InstanceCounter)
+	descriptor = fmt.Sprintf("z%05d~%s", InstanceCounter, descriptor)
 	// Copy original TtData (shallow copy only!)
 	ttdata := new_ttdata(instance_0.TtData, descriptor)
 
