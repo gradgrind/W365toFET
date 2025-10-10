@@ -4,6 +4,7 @@
 _*
 .vscode
 *.log
+tmp*
 
 #
 # Binaries for programs and plugins
