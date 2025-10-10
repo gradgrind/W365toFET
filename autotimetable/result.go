@@ -35,7 +35,7 @@ func new_current_instance(instance *TtInstance) {
 		x := TtData_0.HardConstraints[timetable.ConstraintType(ctype)]
 		for i, b := range clist {
 			if !b {
-				fmt.Printf("$ -- %s: %v\n", ctname, x[i])
+				fmt.Printf("$ -- %s: %+v\n", ctname, x[i])
 			}
 		}
 	}
