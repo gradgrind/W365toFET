@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"runtime"
 	"slices"
+	"strings"
 	"syscall"
 	"time"
 )
@@ -25,6 +26,8 @@ var (
 	NEXT_STAGE_TIMEOUT_FACTOR      int // factor * 10
 	NEXT_STAGE_TIMEOUT_MIN         int
 	REMOVE_OLD_DATA                bool
+
+	InstanceCounter int = 0
 )
 
 func SetParameterDefault() {
@@ -346,14 +349,14 @@ tickloop:
 						split_instances = append(split_instances,
 							new_instance(
 								current_instance,
-								instance.TtData.Description+"~0",
+								instance.TtData.Description,
 								instance.ConstraintType,
 								instance.Constraints[:nhalf],
 								timeout))
 						split_instances = append(split_instances,
 							new_instance(
 								current_instance,
-								instance.TtData.Description+"~1",
+								instance.TtData.Description,
 								instance.ConstraintType,
 								instance.Constraints[nhalf:],
 								timeout))
@@ -365,7 +368,7 @@ tickloop:
 						// Build new instance
 						instance = new_instance(
 							current_instance,
-							instance.TtData.Description+"+",
+							instance.TtData.Description,
 							instance.ConstraintType,
 							instance.Constraints,
 							next_timeout)
@@ -440,6 +443,11 @@ func new_instance(
 	timeout int,
 ) *TtInstance {
 	// Copy original TtData (shallow copy only!)
+	InstanceCounter++
+	if i := strings.LastIndex(descriptor, "~"); i >= 0 {
+		descriptor = descriptor[:i]
+	}
+	descriptor = fmt.Sprintf("%s~%03d", descriptor, InstanceCounter)
 	ttdata := new_ttdata(instance_0.TtData, descriptor)
 
 	// Make a deep copy of the hard constraint matrix
