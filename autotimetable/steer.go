@@ -363,8 +363,12 @@ tickloop:
 					}
 				} else {
 					if next_timeout != 0 {
-						// Cancel existiong instance
-						cancel_instance(instance)
+						// Cancel existing instance
+						if instance.ProcessingState == 0 {
+							abort_instance(instance)
+						}
+						// Indicate that a queued instance is not to be started
+						instance.ProcessingState = 3
 						// Build new instance
 						instance = new_instance(
 							current_instance,
@@ -418,16 +422,6 @@ tickloop:
 	base.Message.Printf("(TODO) RESULT: %s\n", ttdata.Description)
 }
 
-// Cancelling an instance will abort it if it is running.
-// The `ProcessingState` is set to 3 to indicate that a queued instance
-// is not to be started.
-func cancel_instance(instance *TtInstance) {
-	if instance.ProcessingState == 0 {
-		abort_instance(instance)
-	}
-	instance.ProcessingState = 3
-}
-
 func abort_instance(instance *TtInstance) {
 	if !instance.Stopped {
 		timetable.BACKEND.Abort(instance.TtData)
@@ -442,12 +436,13 @@ func new_instance(
 	constraint_indexes []int,
 	timeout int,
 ) *TtInstance {
-	// Copy original TtData (shallow copy only!)
+	// Prepare instnace "name"
 	InstanceCounter++
 	if i := strings.LastIndex(descriptor, "~"); i >= 0 {
 		descriptor = descriptor[:i]
 	}
 	descriptor = fmt.Sprintf("%s~%03d", descriptor, InstanceCounter)
+	// Copy original TtData (shallow copy only!)
 	ttdata := new_ttdata(instance_0.TtData, descriptor)
 
 	// Make a deep copy of the hard constraint matrix
