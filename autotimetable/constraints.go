@@ -51,9 +51,9 @@ func setup_hard_constraint_map(
 func get_basic_constraints(
 	null_instance *TtInstance,
 	unconstrained_time int,
+	stage int,
 ) []*TtInstance {
 	// `null_instance` itself should have no constraints enabled
-	tt_data := TtData_0
 
 	// Start the individual constraints in the order given by the
 	// ConstraintType indexes.
@@ -61,7 +61,22 @@ func get_basic_constraints(
 	//counter := 0
 	for k := range timetable.LastConstraint {
 		// Only hard constraints for now ...
-		clist, ok := tt_data.HardConstraints[k]
+
+		if stage == 0 {
+			// Exclude class gaps constraints
+			if k == timetable.ClassMaxGapsPerDay ||
+				k == timetable.ClassMaxGapsPerWeek {
+				continue
+			}
+		} else {
+			// Include only class gaps constraints
+			if k != timetable.ClassMaxGapsPerDay &&
+				k != timetable.ClassMaxGapsPerWeek {
+				continue
+			}
+		}
+
+		clist, ok := TtData_0.HardConstraints[k]
 		if !ok {
 			continue
 		}

@@ -37,7 +37,7 @@ func SetParameterDefault() {
 	NEXT_STAGE_TIMEOUT_FACTOR = 12 // => 1.2
 	NEXT_STAGE_TIMEOUT_MIN = 10
 
-	REMOVE_OLD_DATA = true
+	//REMOVE_OLD_DATA = true
 }
 
 func init() {
@@ -192,7 +192,10 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	full_progress_last := 0 // time of last increment
 
 	// *** Ticker loop ***
+
+	//TODO: Why is this needed in addition to constraint_list?
 	var basic_constraints []*TtInstance
+
 	var constraint_list []*TtInstance
 	var current_instance *TtInstance
 	ticker := time.NewTicker(time.Second)
@@ -279,7 +282,7 @@ tickloop:
 				new_current_instance(current_instance)
 				// Start trials of single constraint types.
 				basic_constraints = get_basic_constraints(
-					null_instance, null_instance.TtData.Ticks)
+					null_instance, null_instance.TtData.Ticks, 0)
 				// Queue instances for running
 				for _, bc := range basic_constraints {
 					runqueue.add(bc)
@@ -300,14 +303,14 @@ tickloop:
 			continue
 		}
 
-		if stage == 1 {
+		if stage <= 2 {
 			// During stage 1 we are accumulating single-constraint-type
 			// instances: check their states.
 			next_timeout := 0
 
 			// See if an instance has completed successfully.
 			for i, instance := range constraint_list {
-				if instance.ProcessingState == 1 {
+				if instance.ProcessingState == 0 {
 					// Completed successfully, make this instance the new base.
 					current_instance = instance
 					new_current_instance(current_instance)
@@ -324,9 +327,23 @@ tickloop:
 			}
 			if len(constraint_list) == 0 {
 				// all constraints added
-				base.Message.Printf(
-					"(TODO) [%d] WAITING FOR 'COMPLETE'\n", Ticks)
-				stage = 2
+				if stage == 2 {
+					base.Message.Printf(
+						"(TODO) [%d] WAITING FOR 'COMPLETE'\n", Ticks)
+					stage = 3
+				} else {
+					//TODO!
+
+					// Start trials of single constraint types.
+					basic_constraints = get_basic_constraints(
+						null_instance, null_instance.TtData.Ticks, 1)
+					// Queue instances for running
+					for _, bc := range basic_constraints {
+						runqueue.add(bc)
+					}
+					constraint_list = slices.Clone(basic_constraints)
+
+				}
 				continue
 			}
 
