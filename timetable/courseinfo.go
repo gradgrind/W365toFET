@@ -15,10 +15,10 @@ type CourseInfo struct {
 	Id           NodeRef // Course or SuperCourse
 	Subject      string
 	Groups       []*base.Group // a `Class` is represented by its ClassGroup
-	AtomicGroups []ResourceIndex
-	Teachers     []ResourceIndex
-	FixedRooms   []ResourceIndex
-	RoomChoices  [][]ResourceIndex
+	AtomicGroups []AtomicIndex
+	Teachers     []TeacherIndex
+	FixedRooms   []RoomIndex
+	RoomChoices  [][]RoomIndex
 	Lessons      []*base.Lesson
 	Activities   []ActivityIndex
 }
@@ -35,7 +35,7 @@ type Activity struct {
 func (tt_shared_data *TtSharedData) View(cinfo *CourseInfo) string {
 	tlist := []string{}
 	for _, t := range cinfo.Teachers {
-		tlist = append(tlist, tt_shared_data.Resources[t].GetResourceTag())
+		tlist = append(tlist, tt_shared_data.TeacherNodes[t].GetResourceTag())
 	}
 	glist := []string{}
 	for _, g := range cinfo.Groups {
@@ -59,10 +59,10 @@ func (tt_shared_data *TtSharedData) CollectCourses() {
 	for _, spc := range db.SuperCourses {
 		cref := spc.Id
 		groups := []*base.Group{}
-		agroups := []ResourceIndex{}
-		teachers := []ResourceIndex{}
-		rooms := []ResourceIndex{}
-		crooms := [][]ResourceIndex{}
+		agroups := []AtomicIndex{}
+		teachers := []TeacherIndex{}
+		rooms := []RoomIndex{}
+		crooms := [][]RoomIndex{}
 		for _, sbc := range spc.SubCourses {
 			// Add groups
 			for _, gref := range sbc.Groups {
@@ -110,7 +110,7 @@ func (tt_shared_data *TtSharedData) CollectCourses() {
 
 				rcg, ok := gr.(*base.RoomChoiceGroup)
 				if ok {
-					roomlist := []ResourceIndex{}
+					roomlist := []RoomIndex{}
 					for _, rr := range rcg.Rooms {
 						r, ok = tt_shared_data.RoomIndex[rr]
 						if !ok {
@@ -175,7 +175,7 @@ func (tt_shared_data *TtSharedData) CollectCourses() {
 
 		// Get groups
 		groups := []*base.Group{}
-		agroups := []ResourceIndex{}
+		agroups := []AtomicIndex{}
 		for _, gref := range c.Groups {
 			g, ok := db.GetElement(gref).(*base.Group)
 			if !ok {
@@ -186,7 +186,7 @@ func (tt_shared_data *TtSharedData) CollectCourses() {
 		}
 
 		// Get teachers
-		teachers := []ResourceIndex{}
+		teachers := []TeacherIndex{}
 		for _, tref := range c.Teachers {
 			t, ok := tt_shared_data.TeacherIndex[tref]
 			if !ok {
@@ -196,8 +196,8 @@ func (tt_shared_data *TtSharedData) CollectCourses() {
 		}
 
 		// Get rooms
-		rooms := []ResourceIndex{}
-		crooms := [][]ResourceIndex{}
+		rooms := []RoomIndex{}
+		crooms := [][]RoomIndex{}
 		if c.Room != "" {
 			r, ok := tt_shared_data.RoomIndex[c.Room]
 			if ok {
@@ -219,7 +219,7 @@ func (tt_shared_data *TtSharedData) CollectCourses() {
 				} else {
 					rcg, ok := gr.(*base.RoomChoiceGroup)
 					if ok {
-						roomlist := []ResourceIndex{}
+						roomlist := []RoomIndex{}
 						for _, rr := range rcg.Rooms {
 							r, ok = tt_shared_data.RoomIndex[rr]
 							if !ok {

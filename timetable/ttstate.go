@@ -4,6 +4,7 @@ package timetable
  * at a particular time. It can be used for saving and restoring the state.
  */
 
+/*
 type TtState struct {
 	ActivitySlots []TtSlot
 	ResourceWeeks []ActivityIndex
@@ -31,3 +32,4 @@ func (tt_data *TtData) RestoreStateClone(state TtState) {
 	tt_data.ActivitySlots = append([]TtSlot{}, state.ActivitySlots...)
 	tt_data.ResourceWeeks = append([]ActivityIndex{}, state.ResourceWeeks...)
 }
+*/

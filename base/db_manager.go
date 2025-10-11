@@ -220,7 +220,7 @@ func newtags[T Element](etype string, elist []T) {
 	checktags := map[string]bool{}
 	errortags := []Element{}
 	for _, e0 := range elist {
-		tag := e0.getTag()
+		tag := e0.GetTag()
 		if checktags[tag] {
 			errortags = append(errortags, e0)
 		} else {
@@ -228,7 +228,7 @@ func newtags[T Element](etype string, elist []T) {
 		}
 	}
 	for _, e := range errortags {
-		tag0 := e.getTag()
+		tag0 := e.GetTag()
 		i := 1
 		var tag string
 		for {
@@ -241,7 +241,7 @@ func newtags[T Element](etype string, elist []T) {
 		checktags[tag] = true
 		e.setTag(tag)
 		Error.Printf("%s tag <%s> not unique: Element %s changed to <%s>\n",
-			etype, tag0, e.getId(), tag)
+			etype, tag0, e.GetRef(), tag)
 	}
 }
 

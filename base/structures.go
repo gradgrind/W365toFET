@@ -60,20 +60,20 @@ type Info struct {
 type ElementBase struct {
 	Id Ref
 	// Not all elements use the Tag field
-	Tag string // abbreviation/acronmym
+	Tag string // abbreviation/acronym
 }
 
 type Element interface {
-	getId() Ref
-	getTag() string
+	GetRef() Ref
+	GetTag() string
 	setTag(string)
 }
 
-func (e *ElementBase) getId() Ref {
+func (e *ElementBase) GetRef() Ref {
 	return e.Id
 }
 
-func (e *ElementBase) getTag() string {
+func (e *ElementBase) GetTag() string {
 	return e.Tag
 }
 
@@ -334,7 +334,7 @@ func (db *DbTopLevel) Ref2Tag(ref Ref) string {
 	if !ok {
 		Bug.Fatalf("No Ref2Tag for %s\n", ref)
 	}
-	return e.getTag()
+	return e.GetTag()
 }
 
 type Resource interface {

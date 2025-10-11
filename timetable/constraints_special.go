@@ -16,10 +16,8 @@ type ClassConstraint struct {
 type ActivityRoomConstraint struct {
 	Constraint    string
 	ActivityIndex ActivityIndex
-
-	//TODO: Do I really want the ResourceIndexes here? Rather the room indexes?
-	FixedRooms  []ResourceIndex
-	RoomChoices [][]ResourceIndex
+	FixedRooms    []RoomIndex
+	RoomChoices   [][]RoomIndex
 }
 
 // Gather the active teacher constraints, according to type, adding them

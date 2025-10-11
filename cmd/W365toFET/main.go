@@ -106,8 +106,12 @@ func main() {
 	workingdir := stempath + "_fet"
 
 	tt_data := timetable.BasicSetup(db, workingdir)
-	base.Report(fmt.Sprintf("Resources: %d\n",
-		len(tt_data.SharedData.Resources)))
+	base.Report(fmt.Sprintf("Atomic Groups: %d\n",
+		len(tt_data.SharedData.AtomicNodes)))
+	base.Report(fmt.Sprintf("Teachers: %d\n",
+		len(tt_data.SharedData.TeacherNodes)))
+	base.Report(fmt.Sprintf("Rooms: %d\n",
+		len(tt_data.SharedData.RoomNodes)))
 	base.Report(fmt.Sprintf("Activities: %d\n",
 		len(tt_data.SharedData.Activities)-1))
 

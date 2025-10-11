@@ -71,7 +71,7 @@ func getClasses(fetinfo *fetInfo) {
 				for _, ag := range ags {
 					subgroups = append(subgroups,
 						fetSubgroup{
-							Name: shared_data.Resources[ag].GetResourceTag()},
+							Name: shared_data.AtomicNodes[ag].GetResourceTag()},
 					)
 				}
 				groups = append(groups, fetGroup{

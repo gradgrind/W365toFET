@@ -13,13 +13,13 @@ func (tt_shared_data *TtSharedData) roomChoiceFilter(cinfo *CourseInfo) {
 	rclist := cinfo.RoomChoices
 
 	// The validity of the rooms in a RoomChoiceGroup has already been checked.
-	// They have been ordered while converting to ResourceIndexes.
+	// They have been ordered while converting to RoomIndexes.
 
 stage1:
-	newlist := [][]ResourceIndex{}
+	newlist := [][]RoomIndex{}
 	for i, rc0 := range rclist {
 		// Filter out fixed rooms from the choice list
-		rc := []ResourceIndex{}
+		rc := []RoomIndex{}
 		for _, r := range rc0 {
 			if !slices.Contains(necessary, r) {
 				rc = append(rc, r)
@@ -64,11 +64,11 @@ stage1:
 
 	// Now build the Cartesian product of the choice lists, omitting
 	// values with duplicate rooms and duplicate values generally.
-	cp := [][]ResourceIndex{{}} // build Cartesian product values here
+	cp := [][]RoomIndex{{}} // build Cartesian product values here
 	for _, rc := range newlist {
 		// Add next choice list, extending the entries in `cp`
-		newcp := [][]ResourceIndex{} // build new `cp` here
-		for _, cp0 := range cp {     // for each C-p value
+		newcp := [][]RoomIndex{} // build new `cp` here
+		for _, cp0 := range cp { // for each C-p value
 			for _, r := range rc { // add each room in current choice list
 				if !slices.Contains(cp0, r) { // ... if not a duplicate
 					cp1 := append(slices.Clone(cp0), r)
@@ -134,10 +134,10 @@ stage1:
 	//fmt.Printf("\n delta: %d\n", delta)
 }
 
-func (tt_shared_data *TtSharedData) errorRCG(cinfo *CourseInfo, rooms []ResourceIndex) {
+func (tt_shared_data *TtSharedData) errorRCG(cinfo *CourseInfo, rooms []RoomIndex) {
 	rlist := []string{}
 	for _, r := range rooms {
-		rlist = append(rlist, tt_shared_data.Resources[r].GetResourceTag())
+		rlist = append(rlist, tt_shared_data.RoomNodes[r].GetResourceTag())
 	}
 	base.Error.Printf("Course %s: Invalid room-choice-group with %s\n",
 		tt_shared_data.View(cinfo), strings.Join(rlist, ", "))
@@ -149,7 +149,7 @@ func init() {
 		"Course %s: Invalid room-choice-group with %s"
 }
 
-func (tt_shared_data *TtSharedData) errorRCG(cinfo *CourseInfo, rooms []ResourceIndex) {
+func (tt_shared_data *TtSharedData) errorRCG(cinfo *CourseInfo, rooms []RoomIndex) {
 	rlist := []string{}
 	for _, r := range rooms {
 		rlist = append(rlist, tt_shared_data.Resources[r].GetResourceTag())

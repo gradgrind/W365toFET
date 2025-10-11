@@ -64,7 +64,7 @@ func getActivities(fetinfo *fetInfo) []idMap {
 		// Teachers
 		tlist := []string{}
 		for _, ti := range cinfo.Teachers {
-			tlist = append(tlist, shared_data.Resources[ti].GetResourceTag())
+			tlist = append(tlist, shared_data.TeacherNodes[ti].GetResourceTag())
 		}
 		slices.Sort(tlist)
 		// Groups

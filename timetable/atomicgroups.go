@@ -4,6 +4,8 @@ import (
 	"strings"
 )
 
+type AtomicIndex int
+
 const ATOMIC_GROUP_SEP1 = "#"
 const ATOMIC_GROUP_SEP2 = "~"
 
@@ -46,9 +48,7 @@ func (tt_shared_data *TtSharedData) FilterDivisions() {
 	}
 }
 
-// TODO: Do I actually need the Index field?
 type AtomicGroup struct {
-	//Index  ResourceIndex
 	Class  NodeRef
 	Groups []NodeRef
 	Tag    string // A constructed tag to represent the atomic group
@@ -61,7 +61,7 @@ func (a *AtomicGroup) GetResourceTag() string {
 func (tt_shared_data *TtSharedData) MakeAtomicGroups() {
 	// An atomic group is an ordered list of single groups, one from each
 	// division.
-	tt_shared_data.AtomicGroups = map[NodeRef][]ResourceIndex{}
+	tt_shared_data.AtomicGroups = map[NodeRef][]AtomicIndex{}
 	db := tt_shared_data.Db
 
 	// Go through the classes inspecting their Divisions.
@@ -70,14 +70,15 @@ func (tt_shared_data *TtSharedData) MakeAtomicGroups() {
 		cl := cdivs.Class
 		if len(cdivs.Divisions) == 0 {
 			// Make an atomic group for the class
-			agix := len(tt_shared_data.Resources)
+			agix := len(tt_shared_data.AtomicNodes)
 			ag := &AtomicGroup{
 				//Index: agix,
 				Class: cl.Id,
 				Tag:   cl.Tag + ATOMIC_GROUP_SEP1,
 			}
-			tt_shared_data.Resources = append(tt_shared_data.Resources, ag)
-			tt_shared_data.AtomicGroups[cl.ClassGroup] = []ResourceIndex{agix}
+			tt_shared_data.AtomicNodes = append(tt_shared_data.AtomicNodes, ag)
+			tt_shared_data.AtomicGroups[cl.ClassGroup] = []AtomicIndex{
+				AtomicIndex(agix)}
 			continue
 		}
 
@@ -103,23 +104,22 @@ func (tt_shared_data *TtSharedData) MakeAtomicGroups() {
 		//fmt.Printf("     --> %+v\n", agrefs)
 
 		// Make AtomicGroups
-		aglist := []ResourceIndex{}
+		aglist := []AtomicIndex{}
 		for _, ag := range agrefs {
 			glist := []string{}
 			for _, gref := range ag {
 				gtag := db.Ref2Tag(gref)
 				glist = append(glist, gtag)
 			}
-			agix := len(tt_shared_data.Resources)
+			agix := len(tt_shared_data.AtomicNodes)
 			ag := &AtomicGroup{
-				//Index:  agix,
 				Class:  cl.Id,
 				Groups: ag,
 				Tag: cl.Tag + ATOMIC_GROUP_SEP1 +
 					strings.Join(glist, ATOMIC_GROUP_SEP2),
 			}
-			tt_shared_data.Resources = append(tt_shared_data.Resources, ag)
-			aglist = append(aglist, agix)
+			tt_shared_data.AtomicNodes = append(tt_shared_data.AtomicNodes, ag)
+			aglist = append(aglist, AtomicIndex(agix))
 		}
 		tt_shared_data.AtomicGroups[cl.ClassGroup] = aglist
 		// Map the individual groups to their atomic groups.

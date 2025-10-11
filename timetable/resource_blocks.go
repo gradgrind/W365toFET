@@ -1,5 +1,6 @@
 package timetable
 
+/*
 import "W365toFET/base"
 
 const BLOCKED_ACTIVITY = -1
@@ -51,3 +52,4 @@ func (tt_data *TtData) BlockResources() {
 		}
 	}
 }
+*/
