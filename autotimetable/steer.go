@@ -73,8 +73,8 @@ instance and handles the actions resulting from their completion, whether
 successful or not.
 
 Should a fully constrained instance complete successfully within the
-allotted time, all other instances are terminated and the result will be as
-if only this instance had run.
+allotted time, all other instances are terminated and its result will be
+saved.
 
 When the unconstrained instance completes successfully, a series of further
 instances is queued for running, each specifying the addition of a list of
@@ -95,20 +95,21 @@ new base. If a constraint-type instance is timed out, it is stopped and split
 into two halves, which then run in its place. If there are no halves (only
 one constraint being added) there is no successor, the constraint is dropped.
 
-If the overall timeout is reached (i.e. if a fully constrained instance
-has not completed successfuly yet), the "best solution so far" is sought:
+When an instance completes successfully within the allotted time, its result
+is saved as a JSON file, so that the best result so far gradually encompasses
+more of the constraints. However, it can happen that the divisions complete
+before the overall timeout occurs, leaving only the fully constrained
+instance running.
 
-TODO: That may be the hard-constraint-only instance, or one without room
-allocation?
+TODO: At this point rejected constraints should be tried again, but with
+longer timeouts.
 
-Otherwise, the `current_instance` is taken, as it represents the instance with
-the most constraints enabled which completed successfully.
-
-Diagnostic information will also be available (at least an indication of which
+The results include diagnostic information (at least an indication of which
 constraints were dropped).
 
-If the single-constraint accumulation doesn't complete before the overall
-timeout, that may indicate that a longer overall timeout might be considered.
+If the first run through of the single-constraint accumulation doesn't
+complete before the overall timeout, that may indicate that a longer overall
+timeout might be considered.
 
 TODO: There is probably no general "optimum" value for the various timeouts,
 that is likely to depend on the data. But perhaps values can be found which
@@ -138,7 +139,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	}
 
 	// `workingdir` provides the path to a working directory which can be used
-	// freely during processing. It may or may not already exist, existing
+	// freely during processing. It may or may not already exist: existing
 	// contents need not be preserved during processing.
 	workingdir := tt_shared_data.WorkingDir
 
@@ -216,9 +217,6 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 				break
 			}
 			<-ticker.C
-		}
-		if REMOVE_OLD_DATA {
-			//os.RemoveAll(workingdir)
 		}
 	}()
 

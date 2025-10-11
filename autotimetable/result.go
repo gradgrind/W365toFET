@@ -14,12 +14,14 @@ type RefTag struct {
 }
 
 type Result struct {
+	Time                 int
 	Teachers             []RefTag
 	Classes              []RefTag
 	Rooms                []RefTag
 	Activities           []timetable.NodeRef
 	Placements           []timetable.ActivityPlacement
 	DiscardedConstraints []any
+	TotalConstraints     int
 }
 
 // Save the result of the current instance as a JSON file.
@@ -59,6 +61,7 @@ func new_current_instance(instance *TtInstance) {
 
 	// The discarded constraints
 	constraints := []any{}
+	n := 0 // count all constraints
 	for ctype, clist := range instance.HardConstraintEnabled {
 		x := TtData_0.HardConstraints[timetable.ConstraintType(ctype)]
 		for i, b := range clist {
@@ -66,15 +69,18 @@ func new_current_instance(instance *TtInstance) {
 				constraints = append(constraints, x[i])
 			}
 		}
+		n += len(clist)
 	}
 
 	result := Result{
+		Time:                 ttdata.Ticks,
 		Teachers:             t2ref,
 		Classes:              c2ref,
 		Rooms:                r2ref,
 		Activities:           a2ref,
 		Placements:           alist,
 		DiscardedConstraints: constraints,
+		TotalConstraints:     n,
 	}
 
 	//b, err := json.Marshal(result)
