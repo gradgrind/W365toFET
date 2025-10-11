@@ -51,7 +51,8 @@ type TtSharedData struct {
 	// list of its divisions ([][]NodeRef).
 	ClassDivisions []ClassDivision
 
-	// Set up by `MakeActivities`
+	// Set up by `CollectCourses`, which calls `makeActivities`
+	// Note that activity 0 is invalid, the first activity has index 1.
 	Activities     []*Activity
 	CourseInfoList []*CourseInfo
 	Ref2CourseInfo map[NodeRef]*CourseInfo
@@ -188,7 +189,7 @@ type ParallelLessons struct {
 // This structure is used to return the placement results from the
 // timetable back-end.
 type ActivityPlacement struct {
-	Id    NodeRef
+	Id    ActivityIndex
 	Day   int
 	Hour  int
 	Rooms []string

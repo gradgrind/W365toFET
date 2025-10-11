@@ -46,43 +46,43 @@ func (tt_data *TtData) collect_teacher_constraints() {
 		if t.MinLessonsPerDay > 0 {
 			tt_data.HardConstraints[TeacherMinLessonsPerDay] = append(
 				tt_data.HardConstraints[TeacherMinLessonsPerDay],
-				TeacherConstraint{TeacherMinLessonsPerDay.String(),
+				&TeacherConstraint{TeacherMinLessonsPerDay.String(),
 					i, t.MinLessonsPerDay})
 		}
 		if t.MaxLessonsPerDay != -1 && t.MaxLessonsPerDay < nhours {
 			tt_data.HardConstraints[TeacherMaxLessonsPerDay] = append(
 				tt_data.HardConstraints[TeacherMaxLessonsPerDay],
-				TeacherConstraint{TeacherMaxLessonsPerDay.String(),
+				&TeacherConstraint{TeacherMaxLessonsPerDay.String(),
 					i, t.MaxLessonsPerDay})
 		}
 		if t.MaxAfternoons != -1 && t.MaxAfternoons < ndays {
 			tt_data.HardConstraints[TeacherMaxAfternoons] = append(
 				tt_data.HardConstraints[TeacherMaxAfternoons],
-				TeacherConstraint{TeacherMaxAfternoons.String(),
+				&TeacherConstraint{TeacherMaxAfternoons.String(),
 					i, t.MaxAfternoons})
 		}
 		if t.MaxDays != -1 && t.MaxDays < ndays {
 			tt_data.HardConstraints[TeacherMaxDays] = append(
 				tt_data.HardConstraints[TeacherMaxDays],
-				TeacherConstraint{TeacherMaxDays.String(),
+				&TeacherConstraint{TeacherMaxDays.String(),
 					i, t.MaxDays})
 		}
 		if t.LunchBreak {
 			tt_data.HardConstraints[TeacherLunchBreak] = append(
 				tt_data.HardConstraints[TeacherLunchBreak],
-				TeacherConstraint{TeacherLunchBreak.String(),
+				&TeacherConstraint{TeacherLunchBreak.String(),
 					i, t.LunchBreak})
 		}
 		if t.MaxGapsPerDay != -1 {
 			tt_data.HardConstraints[TeacherMaxGapsPerDay] = append(
 				tt_data.HardConstraints[TeacherMaxGapsPerDay],
-				TeacherConstraint{TeacherMaxGapsPerDay.String(),
+				&TeacherConstraint{TeacherMaxGapsPerDay.String(),
 					i, t.MaxGapsPerDay})
 		}
 		if t.MaxGapsPerWeek != -1 {
 			tt_data.HardConstraints[TeacherMaxGapsPerWeek] = append(
 				tt_data.HardConstraints[TeacherMaxGapsPerWeek],
-				TeacherConstraint{TeacherMaxGapsPerWeek.String(),
+				&TeacherConstraint{TeacherMaxGapsPerWeek.String(),
 					i, t.MaxGapsPerWeek})
 		}
 	}
@@ -113,43 +113,43 @@ func (tt_data *TtData) collect_class_constraints() {
 		if c.MinLessonsPerDay != -1 {
 			tt_data.HardConstraints[ClassMinLessonsPerDay] = append(
 				tt_data.HardConstraints[ClassMinLessonsPerDay],
-				ClassConstraint{ClassMinLessonsPerDay.String(),
+				&ClassConstraint{ClassMinLessonsPerDay.String(),
 					i, c.MinLessonsPerDay})
 		}
 		if c.MaxLessonsPerDay != -1 && c.MaxLessonsPerDay < nhours {
 			tt_data.HardConstraints[ClassMaxLessonsPerDay] = append(
 				tt_data.HardConstraints[ClassMaxLessonsPerDay],
-				ClassConstraint{ClassMaxLessonsPerDay.String(),
+				&ClassConstraint{ClassMaxLessonsPerDay.String(),
 					i, c.MaxLessonsPerDay})
 		}
 		if c.MaxAfternoons != -1 && c.MaxAfternoons < ndays {
 			tt_data.HardConstraints[ClassMaxAfternoons] = append(
 				tt_data.HardConstraints[ClassMaxAfternoons],
-				ClassConstraint{ClassMaxAfternoons.String(),
+				&ClassConstraint{ClassMaxAfternoons.String(),
 					i, c.MaxAfternoons})
 		}
 		if c.ForceFirstHour {
 			tt_data.HardConstraints[ClassForceFirstHour] = append(
 				tt_data.HardConstraints[ClassForceFirstHour],
-				ClassConstraint{ClassForceFirstHour.String(),
+				&ClassConstraint{ClassForceFirstHour.String(),
 					i, c.ForceFirstHour})
 		}
 		if c.LunchBreak {
 			tt_data.HardConstraints[ClassLunchBreak] = append(
 				tt_data.HardConstraints[ClassLunchBreak],
-				ClassConstraint{ClassLunchBreak.String(),
+				&ClassConstraint{ClassLunchBreak.String(),
 					i, c.LunchBreak})
 		}
 		if c.MaxGapsPerDay != -1 {
 			tt_data.HardConstraints[ClassMaxGapsPerDay] = append(
 				tt_data.HardConstraints[ClassMaxGapsPerDay],
-				ClassConstraint{ClassMaxGapsPerDay.String(),
+				&ClassConstraint{ClassMaxGapsPerDay.String(),
 					i, c.MaxGapsPerDay})
 		}
 		if c.MaxGapsPerWeek != -1 {
 			tt_data.HardConstraints[ClassMaxGapsPerWeek] = append(
 				tt_data.HardConstraints[ClassMaxGapsPerWeek],
-				ClassConstraint{ClassMaxGapsPerWeek.String(),
+				&ClassConstraint{ClassMaxGapsPerWeek.String(),
 					i, c.MaxGapsPerWeek})
 		}
 	}
@@ -184,7 +184,7 @@ func (tt_data *TtData) collect_room_constraints() {
 			for _, a := range cinfo.Activities {
 				tt_data.HardConstraints[ActivityRooms] = append(
 					tt_data.HardConstraints[ActivityRooms],
-					ActivityRoomConstraint{ActivityRooms.String(),
+					&ActivityRoomConstraint{ActivityRooms.String(),
 						a, cinfo.FixedRooms, cinfo.RoomChoices})
 			}
 		}

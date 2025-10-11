@@ -133,7 +133,7 @@ type basicSpaceConstraint struct {
 	Active            bool
 }
 
-func MakeFetFile(tt_data *timetable.TtData) (string, []idMap) {
+func MakeFetFile(tt_data *timetable.TtData) string {
 	dbdata := tt_data.SharedData.Db
 
 	// Build ref-index -> fet-key mapping. This is needed for the class
@@ -177,25 +177,11 @@ func MakeFetFile(tt_data *timetable.TtData) (string, []idMap) {
 	getTeachers(&fetinfo)
 	getSubjects(&fetinfo)
 	getRooms(&fetinfo)
-
-	//TODO--
-	//fmt.Println("=====================================")
-	//gatherCourseInfo(&fetinfo)
-
-	//readCourseIndexes(&fetinfo)
-	//makeAtomicGroups(&fetinfo)
-	//fmt.Println("\n +++++++++++++++++++++++++++")
-	//printAtomicGroups(&fetinfo)
-
 	getClasses(&fetinfo)
-	lessonIdMap := getActivities(&fetinfo)
-
-	//addTeacherConstraints(&fetinfo)
-	//addClassConstraints(&fetinfo)
-	//addRoomConstraints(&fetinfo)
+	getActivities(&fetinfo)
 	getExtraConstraints(&fetinfo)
 
-	return xml.Header + makeXML(fetinfo.fetdata, 0), lessonIdMap
+	return xml.Header + makeXML(fetinfo.fetdata, 0)
 }
 
 /*

@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
-	"strings"
 )
 
 func Setup() {
@@ -52,10 +51,9 @@ func runFet(tt_data *timetable.TtData, testing bool) {
 	}
 	stemfile := filepath.Join(dir_n, fname)
 	fetfile := stemfile + ".fet"
-	mapfile := stemfile + ".map"
 
 	// Construct the FET-file
-	xmlitem, lessonIdMap := MakeFetFile(tt_data)
+	xmlitem := MakeFetFile(tt_data)
 
 	// Write FET file
 	f, err := os.Create(fetfile)
@@ -70,24 +68,14 @@ func runFet(tt_data *timetable.TtData, testing bool) {
 
 	//fmt.Printf("FET file written to: %s\n", fetfile)
 
-	// Convert lessonIdMap to string, write Id-map file.
+	/* TODO-- Convert lessonIdMap to string, write Id-map file.
 	idmlines := []string{}
 	for _, idm := range lessonIdMap {
 		idmlines = append(idmlines,
 			strconv.Itoa(int(idm.activityId))+":"+string(idm.baseId))
 	}
 	lidmap := strings.Join(idmlines, "\n")
-
-	fm, err := os.Create(mapfile)
-	if err != nil {
-		panic("Couldn't open output file: " + mapfile)
-	}
-	defer fm.Close()
-	_, err = fm.WriteString(lidmap)
-	if err != nil {
-		panic("Couldn't write fet output to: " + mapfile)
-	}
-	//fmt.Printf("Id-map written to: %s\n", mapfile)
+	*/
 
 	//TODO--
 	//return
@@ -97,10 +85,6 @@ func runFet(tt_data *timetable.TtData, testing bool) {
 	os.RemoveAll(odir)
 	logfile := filepath.Join(odir, "logs", "max_placed_activities.txt")
 
-	idmap := map[timetable.ActivityIndex]timetable.NodeRef{}
-	for _, kv := range lessonIdMap {
-		idmap[kv.activityId] = kv.baseId
-	}
 	ctx, cancel := context.WithCancel(context.Background())
 	// Note that it should be safe to call `cancel` multiple times.
 	fet_data := &fetTtData{
@@ -111,7 +95,6 @@ func runFet(tt_data *timetable.TtData, testing bool) {
 		odir:       odir,
 		logfile:    logfile,
 		cancel:     cancel,
-		id2ref:     idmap,
 	}
 	tt_data.BackEndData = fet_data
 
@@ -183,7 +166,6 @@ type fetTtData struct {
 	reader     *bufio.Reader
 	cancel     func()
 	finished   bool
-	id2ref     map[timetable.ActivityIndex]timetable.NodeRef
 }
 
 // `ttTick` runs in the "tick" loop. Rather like a "tail" function it reads
@@ -271,13 +253,6 @@ func ttResults(tt_data *timetable.TtData) []timetable.ActivityPlacement {
 
 	activities := make([]timetable.ActivityPlacement, len(v.Activities))
 	for i, a := range v.Activities {
-		id, ok := data.id2ref[a.Id]
-		if !ok {
-			base.Bug.Printf("Activity Id unknown in %s: %d\n", xmlpath, a.Id)
-			return nil
-		}
-
-		//TODO: Surely the rooms would need to be NodeRef ?!
 		rooms := []string{}
 		if len(a.Real_Room) != 0 {
 			rooms = a.Real_Room
@@ -286,7 +261,7 @@ func ttResults(tt_data *timetable.TtData) []timetable.ActivityPlacement {
 		}
 
 		activities[i] = timetable.ActivityPlacement{
-			Id:    id,
+			Id:    a.Id,
 			Day:   a.Day,
 			Hour:  a.Hour,
 			Rooms: rooms,

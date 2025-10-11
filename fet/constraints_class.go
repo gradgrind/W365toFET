@@ -67,7 +67,7 @@ func (fetinfo *fetInfo) handle_class_constraints() {
 
 	cminlpd := []minLessonsPerDay{}
 	for _, c := range cmap[timetable.ClassMinLessonsPerDay] {
-		cn := c.(timetable.ClassConstraint)
+		cn := c.(*timetable.ClassConstraint)
 		n := cn.Value.(int)
 		if n >= 2 && n <= nhours {
 			cl := db.Classes[cn.ClassIndex]
@@ -85,7 +85,7 @@ func (fetinfo *fetInfo) handle_class_constraints() {
 
 	cmaxlpd := []maxLessonsPerDay{}
 	for _, c := range cmap[timetable.ClassMaxLessonsPerDay] {
-		cn := c.(timetable.ClassConstraint)
+		cn := c.(*timetable.ClassConstraint)
 		n := cn.Value.(int)
 		if n >= 0 && n < nhours {
 			cl := db.Classes[cn.ClassIndex]
@@ -108,7 +108,7 @@ func (fetinfo *fetInfo) handle_class_constraints() {
 	h0 := db.Info.FirstAfternoonHour
 	if h0 > 0 {
 		for _, c := range cmap[timetable.ClassMaxAfternoons] {
-			cn := c.(timetable.ClassConstraint)
+			cn := c.(*timetable.ClassConstraint)
 			n := cn.Value.(int)
 			cl := db.Classes[cn.ClassIndex]
 			cmaxaft = append(cmaxaft, maxDaysinIntervalPerWeek{
@@ -127,7 +127,7 @@ func (fetinfo *fetInfo) handle_class_constraints() {
 
 	cmaxls := []maxLateStarts{}
 	for _, c := range cmap[timetable.ClassForceFirstHour] {
-		cn := c.(timetable.ClassConstraint)
+		cn := c.(*timetable.ClassConstraint)
 		if cn.Value.(bool) {
 			cl := db.Classes[cn.ClassIndex]
 			cmaxls = append(cmaxls, maxLateStarts{
@@ -148,7 +148,7 @@ func (fetinfo *fetInfo) handle_class_constraints() {
 	lbmap := map[int]int{}
 	if mbhours := db.Info.MiddayBreak; len(mbhours) != 0 {
 		for _, c := range cmap[timetable.ClassLunchBreak] {
-			cn := c.(timetable.ClassConstraint)
+			cn := c.(*timetable.ClassConstraint)
 			if cn.Value.(bool) {
 				// Generate the constraint unless all days have a blocked
 				// lesson at lunchtime.
@@ -183,7 +183,7 @@ func (fetinfo *fetInfo) handle_class_constraints() {
 
 	cmaxgpd := []maxGapsPerDay{}
 	for _, c := range cmap[timetable.ClassMaxGapsPerDay] {
-		cn := c.(timetable.ClassConstraint)
+		cn := c.(*timetable.ClassConstraint)
 		n := cn.Value.(int)
 		// Ensure that a gap is allowed if there are lunch breaks.
 		if n == 0 {
@@ -211,7 +211,7 @@ func (fetinfo *fetInfo) handle_class_constraints() {
 
 	cmaxgpw := []maxGapsPerWeek{}
 	for _, c := range cmap[timetable.ClassMaxGapsPerWeek] {
-		cn := c.(timetable.ClassConstraint)
+		cn := c.(*timetable.ClassConstraint)
 		n := cn.Value.(int)
 		if n >= 0 {
 			// Adjust to accommodate lunch breaks

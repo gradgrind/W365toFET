@@ -38,13 +38,13 @@ type fetActivityTags struct {
 }
 
 // Generate the fet activties.
-func getActivities(fetinfo *fetInfo) []idMap {
+func getActivities(fetinfo *fetInfo) {
 	tt_data := fetinfo.tt_data
 	shared_data := tt_data.SharedData
 
 	// ************* Start with the activity tags
 	tags := []fetActivityTag{}
-	/* ???
+	/* TODO ???
 	s2tag := map[string]string{}
 	for _, ts := range tagged_subjects {
 		tag := fmt.Sprintf("Tag_%s", ts)
@@ -60,7 +60,11 @@ func getActivities(fetinfo *fetInfo) []idMap {
 
 	// ************* Now the activities
 	activities := []fetActivity{}
-	for _, cinfo := range shared_data.CourseInfoList {
+	for aid, tt_activity := range shared_data.Activities {
+		if aid == 0 {
+			continue
+		}
+		cinfo := tt_activity.CourseInfo
 		// Teachers
 		tlist := []string{}
 		for _, ti := range cinfo.Teachers {
@@ -91,43 +95,25 @@ func getActivities(fetinfo *fetInfo) []idMap {
 		if len(cinfo.Activities) > 1 {
 			agid = cinfo.Activities[0]
 		}
-		for i, l := range cinfo.Lessons {
-			aid := cinfo.Activities[i]
-			activities = append(activities,
-				fetActivity{
-					Id:       aid,
-					Teacher:  tlist,
-					Subject:  cinfo.Subject,
-					Students: glist,
-					//Activity_Tag:      atag,
-					Active:            true,
-					Total_Duration:    totalDuration,
-					Duration:          l.Duration,
-					Activity_Group_Id: agid,
-					Comments:          string(l.Id),
-				},
-			)
-		}
+		activities = append(activities,
+			fetActivity{
+				Id:       timetable.ActivityIndex(aid),
+				Teacher:  tlist,
+				Subject:  cinfo.Subject,
+				Students: glist,
+				//Activity_Tag:      atag,
+				Active:            true,
+				Total_Duration:    totalDuration,
+				Duration:          tt_activity.Lesson.Duration,
+				Activity_Group_Id: agid,
+				Comments:          string(tt_activity.Lesson.GetRef()),
+			},
+		)
 	}
-
-	// Sort Activities - TODO: is this necessary?
-	slices.SortFunc(activities, func(a, b fetActivity) int {
-		if a.Id < b.Id {
-			return -1
-		}
-		return 1
-	})
-	lessonIdMap := []idMap{}
-	for _, a := range activities {
-		lessonIdMap = append(lessonIdMap, idMap{
-			a.Id, timetable.NodeRef(a.Comments)})
-	}
-
 	fetinfo.fetdata.Activities_List = fetActivitiesList{
 		Activity: activities,
 	}
 	addPlacementConstraints(fetinfo)
-	return lessonIdMap
 }
 
 func addPlacementConstraints(fetinfo *fetInfo) {
@@ -135,7 +121,7 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 
 	armap := map[int]struct{}{}
 	for _, a0 := range tt_data.HardConstraints[timetable.ActivityRooms] {
-		armap[int(a0.(timetable.ActivityRoomConstraint).ActivityIndex)] = struct{}{}
+		armap[int(a0.(*timetable.ActivityRoomConstraint).ActivityIndex)] = struct{}{}
 	}
 
 	for _, cinfo := range tt_data.SharedData.CourseInfoList {
