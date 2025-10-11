@@ -42,11 +42,10 @@ func ttRunClear(tt_data *timetable.TtData) {
 func runFet(tt_data *timetable.TtData, testing bool) {
 	shared_data := tt_data.SharedData
 	fname := tt_data.Description
-	dir_n := filepath.Join(shared_data.WorkingDir, fname)
+	dir_n := filepath.Join(shared_data.WorkingDir, "tmp", fname)
 
-	//err := os.MkdirAll(newpath, os.ModePerm)
-	err := os.Mkdir(dir_n, 0755)
-	if err != nil && !os.IsExist(err) {
+	err := os.MkdirAll(dir_n, 0700)
+	if err != nil {
 		panic(err)
 	}
 	stemfile := filepath.Join(dir_n, fname)
@@ -85,10 +84,16 @@ func runFet(tt_data *timetable.TtData, testing bool) {
 	os.RemoveAll(odir)
 	logfile := filepath.Join(odir, "logs", "max_placed_activities.txt")
 
+	room_indexes := map[string]timetable.RoomIndex{}
+	for i, rnode := range tt_data.SharedData.Db.Rooms {
+		room_indexes[rnode.GetTag()] = timetable.RoomIndex(i)
+	}
+
 	ctx, cancel := context.WithCancel(context.Background())
 	// Note that it should be safe to call `cancel` multiple times.
 	fet_data := &fetTtData{
 		finished:   false,
+		room2index: room_indexes,
 		activities: len(shared_data.Activities),
 		ifile:      fetfile,
 		workingdir: cwd,
@@ -158,6 +163,7 @@ var re *regexp.Regexp = regexp.MustCompile(pattern)
 
 type fetTtData struct {
 	activities int // total number of activities to place
+	room2index map[string]timetable.RoomIndex
 	ifile      string
 	workingdir string
 	odir       string
@@ -248,18 +254,16 @@ func ttResults(tt_data *timetable.TtData) []timetable.ActivityPlacement {
 		return nil
 	}
 
-	//TODO--
-	//fmt.Printf("$$$$$$$$$\n%v\n$$$$$$$$$\n", v)
-
 	activities := make([]timetable.ActivityPlacement, len(v.Activities))
 	for i, a := range v.Activities {
-		rooms := []string{}
+		rooms := []timetable.RoomIndex{}
 		if len(a.Real_Room) != 0 {
-			rooms = a.Real_Room
+			for _, r := range a.Real_Room {
+				rooms = append(rooms, data.room2index[r])
+			}
 		} else if len(a.Room) != 0 {
-			rooms = []string{a.Room}
+			rooms = append(rooms, data.room2index[a.Room])
 		}
-
 		activities[i] = timetable.ActivityPlacement{
 			Id:    a.Id,
 			Day:   a.Day,

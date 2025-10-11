@@ -137,7 +137,7 @@ stage1:
 func (tt_shared_data *TtSharedData) errorRCG(cinfo *CourseInfo, rooms []RoomIndex) {
 	rlist := []string{}
 	for _, r := range rooms {
-		rlist = append(rlist, tt_shared_data.RoomNodes[r].GetResourceTag())
+		rlist = append(rlist, tt_shared_data.Db.Rooms[r].GetTag())
 	}
 	base.Error.Printf("Course %s: Invalid room-choice-group with %s\n",
 		tt_shared_data.View(cinfo), strings.Join(rlist, ", "))

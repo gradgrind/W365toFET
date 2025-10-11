@@ -37,9 +37,7 @@ type TtSharedData struct {
 
 	// `xxxNodes` are arrays mapping resource indexes to their corresponding
 	// atomic group, teacher or room nodes (they contains pointers).
-	AtomicNodes  []base.Resource
-	TeacherNodes []base.Resource
-	RoomNodes    []base.Resource
+	AtomicNodes []base.Resource
 
 	TeacherIndex map[NodeRef]TeacherIndex
 	RoomIndex    map[NodeRef]RoomIndex
@@ -157,19 +155,15 @@ func BasicSetup(db *base.DbTopLevel, workingdir string) *TtData {
 
 func (tt_shared_data *TtSharedData) TeacherResources() {
 	tt_shared_data.TeacherIndex = map[NodeRef]TeacherIndex{}
-	for _, t := range tt_shared_data.Db.Teachers {
-		i := len(tt_shared_data.TeacherNodes)
+	for i, t := range tt_shared_data.Db.Teachers {
 		tt_shared_data.TeacherIndex[t.Id] = TeacherIndex(i)
-		tt_shared_data.TeacherNodes = append(tt_shared_data.TeacherNodes, t)
 	}
 }
 
 func (tt_shared_data *TtSharedData) RoomResources() {
 	tt_shared_data.RoomIndex = map[NodeRef]RoomIndex{}
-	for _, r := range tt_shared_data.Db.Rooms {
-		i := len(tt_shared_data.RoomNodes)
+	for i, r := range tt_shared_data.Db.Rooms {
 		tt_shared_data.RoomIndex[r.Id] = RoomIndex(i)
-		tt_shared_data.RoomNodes = append(tt_shared_data.RoomNodes, r)
 	}
 }
 
@@ -192,5 +186,5 @@ type ActivityPlacement struct {
 	Id    ActivityIndex
 	Day   int
 	Hour  int
-	Rooms []string
+	Rooms []RoomIndex
 }

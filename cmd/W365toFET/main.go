@@ -109,9 +109,9 @@ func main() {
 	base.Report(fmt.Sprintf("Atomic Groups: %d\n",
 		len(tt_data.SharedData.AtomicNodes)))
 	base.Report(fmt.Sprintf("Teachers: %d\n",
-		len(tt_data.SharedData.TeacherNodes)))
+		len(tt_data.SharedData.Db.Teachers)))
 	base.Report(fmt.Sprintf("Rooms: %d\n",
-		len(tt_data.SharedData.RoomNodes)))
+		len(tt_data.SharedData.Db.Rooms)))
 	base.Report(fmt.Sprintf("Activities: %d\n",
 		len(tt_data.SharedData.Activities)-1))
 

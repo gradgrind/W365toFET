@@ -208,6 +208,8 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 					timetable.BACKEND.Tick(instance.TtData)
 					count++
 					abort_instance(instance)
+				} else {
+					timetable.BACKEND.Clear(instance.TtData)
 				}
 			}
 			if count == 0 {
@@ -216,7 +218,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 			<-ticker.C
 		}
 		if REMOVE_OLD_DATA {
-			os.RemoveAll(workingdir)
+			//os.RemoveAll(workingdir)
 		}
 	}()
 

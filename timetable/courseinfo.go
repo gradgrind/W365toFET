@@ -35,7 +35,7 @@ type Activity struct {
 func (tt_shared_data *TtSharedData) View(cinfo *CourseInfo) string {
 	tlist := []string{}
 	for _, t := range cinfo.Teachers {
-		tlist = append(tlist, tt_shared_data.TeacherNodes[t].GetResourceTag())
+		tlist = append(tlist, tt_shared_data.Db.Teachers[t].GetTag())
 	}
 	glist := []string{}
 	for _, g := range cinfo.Groups {

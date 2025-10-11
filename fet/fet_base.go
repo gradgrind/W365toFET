@@ -66,11 +66,6 @@ func weight2fet(w int) string {
 	return strconv.FormatFloat(wfet, 'f', 3, 64)
 }
 
-type idMap struct {
-	activityId timetable.ActivityIndex
-	baseId     timetable.NodeRef
-}
-
 type fetInfo struct {
 	tt_data       *timetable.TtData
 	ref2grouponly map[Ref]string

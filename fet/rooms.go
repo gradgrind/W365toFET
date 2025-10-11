@@ -83,14 +83,14 @@ func (fetinfo *fetInfo) getFetRooms(cinfo *timetable.CourseInfo) []string {
 	rtags := []string{}
 	for _, rr := range cinfo.FixedRooms {
 		rtags = append(rtags,
-			tt_data.SharedData.RoomNodes[rr].GetResourceTag())
+			tt_data.SharedData.Db.Rooms[rr].GetResourceTag())
 	}
 	rctags := [][]string{}
 	for _, rc := range cinfo.RoomChoices {
 		rcl := []string{}
 		for _, rr := range rc {
 			rcl = append(rcl,
-				tt_data.SharedData.RoomNodes[rr].GetResourceTag())
+				tt_data.SharedData.Db.Rooms[rr].GetResourceTag())
 		}
 		rctags = append(rctags, rcl)
 	}
