@@ -236,7 +236,7 @@ func ttResults(tt_data *timetable.TtData) []timetable.ActivityPlacement {
 	data := *tt_data.BackEndData.(*fetTtData)
 	xmlpath := filepath.Join(data.odir, "timetables", tt_data.Description,
 		tt_data.Description+"_activities.xml")
-	// Open the  XML file
+	// Open the XML file
 	xmlFile, err := os.Open(xmlpath)
 	if err != nil {
 		base.Bug.Print(err)

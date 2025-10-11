@@ -37,7 +37,7 @@ func SetParameterDefault() {
 	NEXT_STAGE_TIMEOUT_FACTOR = 12 // => 1.2
 	NEXT_STAGE_TIMEOUT_MIN = 10
 
-	//REMOVE_OLD_DATA = true
+	REMOVE_OLD_DATA = true
 }
 
 func init() {
@@ -310,7 +310,7 @@ tickloop:
 
 			// See if an instance has completed successfully.
 			for i, instance := range constraint_list {
-				if instance.ProcessingState == 0 {
+				if instance.ProcessingState == 1 {
 					// Completed successfully, make this instance the new base.
 					current_instance = instance
 					new_current_instance(current_instance)
@@ -334,9 +334,9 @@ tickloop:
 				} else {
 					//TODO!
 
-					// Start trials of single constraint types.
+					// Start trials of delayed single-constraint types.
 					basic_constraints = get_basic_constraints(
-						null_instance, null_instance.TtData.Ticks, 1)
+						current_instance, current_instance.TtData.Ticks, 1)
 					// Queue instances for running
 					for _, bc := range basic_constraints {
 						runqueue.add(bc)
