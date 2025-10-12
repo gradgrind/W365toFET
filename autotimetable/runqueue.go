@@ -57,7 +57,11 @@ func (rq *RunQueue) update_instances() {
 		switch ttdata.State {
 		case 0: // running, not finished
 			// check for timeout
-			if instance.Timeout == ttdata.Ticks && ttdata.Progress != 100 {
+			t := instance.Timeout
+			if t == ttdata.Ticks {
+				if ttdata.Progress == 100 {
+					continue
+				}
 				base.Message.Printf("(TODO) [%d] Timeout %s @ %d (%d)\n",
 					Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress)
 
@@ -111,8 +115,8 @@ func (rq *RunQueue) update_queue() int {
 			continue
 		}
 
-		base.Message.Printf("(TODO) [%d] >> %s\n",
-			Ticks, instance.TtData.Description)
+		base.Message.Printf("(TODO) [%d] >> %s {%d}\n",
+			Ticks, instance.TtData.Description, instance.Timeout)
 		timetable.BACKEND.Run(instance.TtData, TESTING)
 	}
 	//TODO--

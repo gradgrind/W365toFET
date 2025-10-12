@@ -49,16 +49,15 @@ func setup_hard_constraint_map(
 }
 
 func get_basic_constraints(
-	null_instance *TtInstance,
-	unconstrained_time int,
+	instance0 *TtInstance,
 	stage int,
 ) []*TtInstance {
-	// `null_instance` itself should have no constraints enabled
-
+	// When `stage` is 0, `instance0` should be the unconstrained instance.
+	timeout := max(instance0.TtData.Ticks*NEXT_STAGE_TIMEOUT_FACTOR/10,
+		NEXT_STAGE_TIMEOUT_MIN)
 	// Start the individual constraints in the order given by the
 	// ConstraintType indexes.
 	instances := []*TtInstance{}
-	//counter := 0
 	for k := range timetable.LastConstraint {
 		// Only hard constraints for now ...
 
@@ -92,12 +91,11 @@ func get_basic_constraints(
 			cilist[i] = i
 		}
 		instance := new_instance(
-			null_instance,
+			instance0,
 			k.String(),
 			k,
 			cilist,
-			max(unconstrained_time*NEXT_STAGE_TIMEOUT_FACTOR/10,
-				NEXT_STAGE_TIMEOUT_MIN))
+			timeout)
 		instances = append(instances, instance)
 	}
 

@@ -21,6 +21,7 @@ type Result struct {
 	Activities           []timetable.NodeRef
 	Placements           []timetable.ActivityPlacement
 	DiscardedConstraints []any
+	Unfulfilled          map[string][]int
 	TotalConstraints     int
 }
 
@@ -61,15 +62,21 @@ func new_current_instance(instance *TtInstance) {
 
 	// The discarded constraints
 	constraints := []any{}
-	n := 0 // count all constraints
+	nall := 0 // count all constraints
+	unfulfilled := map[string][]int{}
 	for ctype, clist := range instance.HardConstraintEnabled {
 		x := TtData_0.HardConstraints[timetable.ConstraintType(ctype)]
+		ulist := []int{}
 		for i, b := range clist {
 			if !b {
 				constraints = append(constraints, x[i])
+				ulist = append(ulist, i)
 			}
 		}
-		n += len(clist)
+		if len(ulist) != 0 {
+			unfulfilled[timetable.ConstraintType(ctype).String()] = ulist
+		}
+		nall += len(clist)
 	}
 
 	result := Result{
@@ -80,7 +87,8 @@ func new_current_instance(instance *TtInstance) {
 		Activities:           a2ref,
 		Placements:           alist,
 		DiscardedConstraints: constraints,
-		TotalConstraints:     n,
+		Unfulfilled:          unfulfilled,
+		TotalConstraints:     nall,
 	}
 
 	//b, err := json.Marshal(result)

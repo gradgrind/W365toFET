@@ -192,10 +192,6 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	full_progress_last := 0 // time of last increment
 
 	// *** Ticker loop ***
-
-	//TODO: Why is this needed in addition to constraint_list?
-	var basic_constraints []*TtInstance
-
 	var constraint_list []*TtInstance
 	var current_instance *TtInstance
 	ticker := time.NewTicker(time.Second)
@@ -281,15 +277,14 @@ tickloop:
 				current_instance = null_instance
 				new_current_instance(current_instance)
 				// Start trials of single constraint types.
-				basic_constraints = get_basic_constraints(
-					null_instance, null_instance.TtData.Ticks, 0)
+				constraint_list = get_basic_constraints(
+					null_instance, 0)
 				// Queue instances for running
-				for _, bc := range basic_constraints {
+				for _, bc := range constraint_list {
 					runqueue.add(bc)
 				}
-				constraint_list = slices.Clone(basic_constraints)
 				base.Message.Printf("(TODO) [%d] CONSTRAINT-TYPES: %d\n",
-					Ticks, len(basic_constraints))
+					Ticks, len(constraint_list))
 				stage = 1
 			default:
 				// The null instance failed.
@@ -329,19 +324,21 @@ tickloop:
 				// all constraints added
 				if stage == 2 {
 					base.Message.Printf(
-						"(TODO) [%d] WAITING FOR 'COMPLETE'\n", Ticks)
+						"(TODO) [%d] Stage 2 ended\n", Ticks)
 					stage = 3
 				} else {
 					//TODO!
+					base.Message.Printf(
+						"(TODO) [%d] Stage 1 ended\n", Ticks)
+					stage = 2
 
 					// Start trials of delayed single-constraint types.
-					basic_constraints = get_basic_constraints(
-						current_instance, current_instance.TtData.Ticks, 1)
+					constraint_list = get_basic_constraints(
+						current_instance, 1)
 					// Queue instances for running
-					for _, bc := range basic_constraints {
+					for _, bc := range constraint_list {
 						runqueue.add(bc)
 					}
-					constraint_list = slices.Clone(basic_constraints)
 
 				}
 				continue
