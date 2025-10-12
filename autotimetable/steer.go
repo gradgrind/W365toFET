@@ -283,7 +283,8 @@ tickloop:
 				for _, bc := range constraint_list {
 					runqueue.add(bc)
 				}
-				base.Message.Printf("(TODO) [%d] CONSTRAINT-TYPES: %d\n",
+				//TODO: This is the initial set, possibly excluding some ...
+				base.Message.Printf("(TODO) [%d] INITIAL CONSTRAINT-TYPES: %d\n",
 					Ticks, len(constraint_list))
 				stage = 1
 			default:

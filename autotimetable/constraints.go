@@ -2,6 +2,8 @@ package autotimetable
 
 import (
 	"W365toFET/timetable"
+	"fmt"
+	"slices"
 )
 
 /* TODO?
@@ -58,42 +60,50 @@ func get_basic_constraints(
 	// Start the individual constraints in the order given by the
 	// ConstraintType indexes.
 	instances := []*TtInstance{}
-	for k := range timetable.LastConstraint {
+	for ctype := range timetable.LastConstraint {
 		// Only hard constraints for now ...
 
+		blist := instance0.HardConstraintEnabled[ctype]
+		cixlist := []int{}
+		for i, b := range blist {
+			if !b {
+				cixlist = append(cixlist, i)
+			}
+		}
+		if len(cixlist) == 0 {
+			continue
+		}
 		if stage == 0 {
 			// Exclude class gaps constraints
-			if k == timetable.ClassMaxGapsPerDay ||
-				k == timetable.ClassMaxGapsPerWeek {
-				continue
-			}
-		} else {
-			// Include only class gaps constraints
-			if k != timetable.ClassMaxGapsPerDay &&
-				k != timetable.ClassMaxGapsPerWeek {
+			if ctype == timetable.ClassMaxGapsPerDay ||
+				ctype == timetable.ClassMaxGapsPerWeek {
 				continue
 			}
 		}
 
-		clist, ok := TtData_0.HardConstraints[k]
+		clist, ok := TtData_0.HardConstraints[ctype]
 		if !ok {
 			continue
 		}
 		n := len(clist)
 		if n == 0 {
 			//TODO: Bug?
-			panic("No constraints of type " + k.String())
+			panic("No constraints of type " + ctype.String())
 		}
-		//counter++
 		// Get all list indexes
 		cilist := make([]int, n)
 		for i := range n {
 			cilist[i] = i
 		}
+
+		if slices.Compare(cilist, cixlist) != 0 {
+			fmt.Printf("$$$ TODO: NO MATCH %v ::: %v\n", cilist, cixlist)
+		}
+
 		instance := new_instance(
 			instance0,
-			k.String(),
-			k,
+			ctype.String(),
+			ctype,
 			cilist,
 			timeout)
 		instances = append(instances, instance)
