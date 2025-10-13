@@ -59,6 +59,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"strings"
 )
@@ -96,18 +97,23 @@ func main() {
 	fet.Setup()
 
 	stempath := strings.TrimSuffix(abspath, filepath.Ext(abspath))
-	logpath := stempath + ".log"
-	base.OpenLog(logpath)
 	stempath = strings.TrimSuffix(stempath, "_w365")
+
+	// May want to change this with a different back-end ...
+	workingdir := stempath + "_fet"
+	err = os.MkdirAll(workingdir, 0755)
+	if err != nil {
+		panic(err)
+	}
+
+	logpath := filepath.Join(workingdir, "run.log")
+	base.OpenLog(logpath)
 
 	db := base.NewDb()
 	w365tt.LoadJSON(db, abspath)
 	db.PrepareDb()
 
 	db.SaveDb(stempath + "_DB.json")
-
-	// May want to change this with a different back-end ...
-	workingdir := stempath + "_fet"
 
 	tt_data := timetable.BasicSetup(db, workingdir)
 	base.Report(fmt.Sprintf("Atomic Groups: %d\n",

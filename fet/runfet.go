@@ -50,7 +50,7 @@ func runFet(tt_data *timetable.TtData, testing bool) {
 	fname := tt_data.Description
 	dir_n := filepath.Join(shared_data.WorkingDir, "tmp", fname)
 
-	err := os.MkdirAll(dir_n, 0700)
+	err := os.MkdirAll(dir_n, 0755)
 	if err != nil {
 		panic(err)
 	}
@@ -61,12 +61,7 @@ func runFet(tt_data *timetable.TtData, testing bool) {
 	xmlitem := MakeFetFile(tt_data)
 
 	// Write FET file
-	f, err := os.Create(fetfile)
-	if err != nil {
-		panic("Couldn't open output file: " + fetfile)
-	}
-	defer f.Close()
-	_, err = f.WriteString(xmlitem)
+	err = os.WriteFile(fetfile, xmlitem, 0644)
 	if err != nil {
 		panic("Couldn't write fet output to: " + fetfile)
 	}
@@ -76,12 +71,7 @@ func runFet(tt_data *timetable.TtData, testing bool) {
 		cfile := filepath.Join(shared_data.WorkingDir,
 			filepath.Base(strings.TrimSuffix(
 				shared_data.WorkingDir, "_fet")+".fet"))
-		cf, err := os.Create(cfile)
-		if err != nil {
-			panic("Couldn't open output file: " + cfile)
-		}
-		defer cf.Close()
-		_, err = cf.WriteString(xmlitem)
+		err = os.WriteFile(cfile, xmlitem, 0644)
 		if err != nil {
 			panic("Couldn't write fet output to: " + cfile)
 		}

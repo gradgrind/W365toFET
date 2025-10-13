@@ -24,14 +24,14 @@ const fet_version = "6.28.2"
 
 // Function makeXML produces a chunk of pretty-printed XML output from
 // the input data.
-func makeXML(data interface{}, indent_level int) string {
+func makeXML(data interface{}, indent_level int) []byte {
 	const indent = "  "
 	prefix := strings.Repeat(indent, indent_level)
 	xmlData, err := xml.MarshalIndent(data, prefix, indent)
 	if err != nil {
 		base.Error.Fatalf("%v\n", err)
 	}
-	return string(xmlData)
+	return xmlData
 }
 
 type Fet struct {
@@ -128,7 +128,7 @@ type basicSpaceConstraint struct {
 	Active            bool
 }
 
-func MakeFetFile(tt_data *timetable.TtData) string {
+func MakeFetFile(tt_data *timetable.TtData) []byte {
 	dbdata := tt_data.SharedData.Db
 
 	// Build ref-index -> fet-key mapping. This is needed for the class
@@ -176,7 +176,7 @@ func MakeFetFile(tt_data *timetable.TtData) string {
 	getActivities(&fetinfo)
 	getExtraConstraints(&fetinfo)
 
-	return xml.Header + makeXML(fetinfo.fetdata, 0)
+	return append([]byte(xml.Header), makeXML(fetinfo.fetdata, 0)...)
 }
 
 /*

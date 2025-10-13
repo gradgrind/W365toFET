@@ -9,6 +9,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -47,11 +48,20 @@ func main() {
 		log.Fatalf("*ERROR* Couldn't resolve file path: %s\n", args[0])
 	}
 
-	//base.OpenLog("")
+	// This allows for an option to select different generator back-ends
+	fet.Setup()
+
 	stempath := strings.TrimSuffix(abspath, filepath.Ext(abspath))
-	logpath := stempath + ".log"
+
+	// May want to change this with a different back-end ...
+	workingdir := stempath + "_fet"
+	err = os.MkdirAll(workingdir, 0755)
+	if err != nil {
+		panic(err)
+	}
+
+	logpath := filepath.Join(workingdir, "run.log")
 	base.OpenLog(logpath)
-	//stempath = strings.TrimSuffix(stempath, "_w365")
 
 	cdata := readxml.ConvertToDb(abspath)
 	fmt.Println("*** Available Schedules:")
@@ -74,16 +84,10 @@ func main() {
 		return
 	}
 
-	// This allows for an option to select different generator back-ends
-	fet.Setup()
-
 	db := cdata.Db()
 	db.PrepareDb()
 
 	db.SaveDb(stempath + "_DB.json")
-
-	// May want to change this with a different back-end ...
-	workingdir := stempath + "_fet"
 
 	tt_data := timetable.BasicSetup(db, workingdir)
 	base.Report(fmt.Sprintf("Atomic Groups: %d\n",

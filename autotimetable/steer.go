@@ -149,13 +149,6 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 
 	tt_data_0.Description = "COMPLETE"
 
-	// Provide an empty working directory.
-	os.RemoveAll(workingdir)
-	err := os.Mkdir(workingdir, 0755)
-	if err != nil && !os.IsExist(err) {
-		panic(err)
-	}
-
 	// Global data
 	Ticks = 0
 	TtData_0 = tt_data_0
