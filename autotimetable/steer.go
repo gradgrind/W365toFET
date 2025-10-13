@@ -208,7 +208,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 					timetable.BACKEND.Tick(instance.TtData)
 					count++
 					abort_instance(instance)
-				} else {
+				} else if REMOVE_OLD_DATA {
 					timetable.BACKEND.Clear(instance.TtData)
 				}
 			}

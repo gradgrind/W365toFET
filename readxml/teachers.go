@@ -55,7 +55,7 @@ func (cdata *conversionData) readTeachers() {
 		e.MaxLessonsPerDay = maxlpd
 		e.MaxDays = maxdays
 		e.MaxGapsPerDay = n.MaxGapsPerDay
-		e.MaxGapsPerWeek = -1
+		e.MaxGapsPerWeek = n.MaxGapsPerWeek
 		e.MaxAfternoons = maxpm
 		e.LunchBreak = lb
 	}

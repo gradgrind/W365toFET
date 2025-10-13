@@ -66,8 +66,8 @@ type Teacher struct {
 	MaxLessonsPerDay int `xml:",attr"`
 	MaxDays          int `xml:",attr"`
 	MaxGapsPerDay    int `xml:"MaxWindowsPerDay,attr"`
-	//TODO: I have found MaxGapsPerWeek more useful
-	MaxAfternoons int `xml:"NumberOfAfterNoonDays,attr"`
+	MaxGapsPerWeek   int `xml:",attr"`
+	MaxAfternoons    int `xml:"NumberOfAfterNoonDays,attr"`
 }
 
 func (n *Teacher) IdStr() w365tt.Ref {
@@ -124,8 +124,8 @@ type Class struct {
 	MaxAfternoons    int     `xml:"NumberOfAfterNoonDays,attr"`
 	//+ ClassTeachers string `xml:"ClassTeacher,attr"`
 	//+ Color string  `xml:",attr"` // "#ffcc00"
-	//TODO: Implement in W365?
-	//+ MaxGapsPerWeek    int `xml:"MaxWindowsPerWeek,attr"`
+	MaxGapsPerWeek int `xml:",attr"`
+	MaxGapsPerDay  int `xml:",attr"`
 }
 
 func (n *Class) IdStr() w365tt.Ref {

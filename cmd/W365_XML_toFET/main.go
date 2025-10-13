@@ -24,11 +24,15 @@ func main() {
 	flag.BoolVar(&autotimetable.TESTING, "T", false, "run in testing mode")
 	timeout := flag.Int("t", 300, "set timeout")
 	nprocesses := flag.Int("p", 0, "max. parallel processes")
+	debug := flag.Bool("d", false, "debug")
 
 	flag.Parse()
 
 	if *nprocesses > 0 {
 		autotimetable.MAXPROCESSES = *nprocesses
+	}
+	if *debug {
+		autotimetable.REMOVE_OLD_DATA = false
 	}
 
 	args := flag.Args()
