@@ -32,7 +32,7 @@ func main() {
 		autotimetable.MAXPROCESSES = *nprocesses
 	}
 	if *debug {
-		autotimetable.REMOVE_OLD_DATA = false
+		autotimetable.DEBUG = true
 	}
 
 	args := flag.Args()

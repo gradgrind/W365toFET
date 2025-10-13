@@ -25,7 +25,8 @@ type Result struct {
 	TotalConstraints     int
 }
 
-// Save the result of the current instance as a JSON file.
+// Get the result of the current instance as a `Result` structure.
+// Save as JSON if debugging.
 func new_current_instance(instance *TtInstance) {
 	ttdata := instance.TtData
 	base.Message.Printf("+++ %s\n",
@@ -33,9 +34,9 @@ func new_current_instance(instance *TtInstance) {
 
 	// Read placements
 	alist := timetable.BACKEND.Results(ttdata)
-	if REMOVE_OLD_DATA {
-		timetable.BACKEND.Clear(ttdata)
-	}
+	//if !DEBUG {
+	//	timetable.BACKEND.Clear(ttdata)
+	//}
 
 	// Collect teachers, classes and rooms
 	db := ttdata.SharedData.Db
@@ -79,7 +80,7 @@ func new_current_instance(instance *TtInstance) {
 		nall += len(clist)
 	}
 
-	result := Result{
+	LastResult = &Result{
 		Time:                 ttdata.Ticks,
 		Teachers:             t2ref,
 		Classes:              c2ref,
@@ -91,20 +92,22 @@ func new_current_instance(instance *TtInstance) {
 		TotalConstraints:     nall,
 	}
 
-	//b, err := json.Marshal(result)
-	b, err := json.MarshalIndent(result, "", "  ")
-	if err != nil {
-		panic(err)
-	}
-	fpath := filepath.Join(ttdata.SharedData.WorkingDir,
-		ttdata.Description+".json")
-	f, err := os.Create(fpath)
-	if err != nil {
-		panic("Couldn't open output file: " + fpath)
-	}
-	defer f.Close()
-	_, err = f.Write(b)
-	if err != nil {
-		panic("Couldn't write result to: " + fpath)
+	if DEBUG {
+		//b, err := json.Marshal(LastResult)
+		b, err := json.MarshalIndent(LastResult, "", "  ")
+		if err != nil {
+			panic(err)
+		}
+		fpath := filepath.Join(ttdata.SharedData.WorkingDir,
+			ttdata.Description+".json")
+		f, err := os.Create(fpath)
+		if err != nil {
+			panic("Couldn't open output file: " + fpath)
+		}
+		defer f.Close()
+		_, err = f.Write(b)
+		if err != nil {
+			panic("Couldn't write result to: " + fpath)
+		}
 	}
 }

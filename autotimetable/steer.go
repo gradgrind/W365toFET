@@ -3,9 +3,11 @@ package autotimetable
 import (
 	"W365toFET/base"
 	"W365toFET/timetable"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime"
 	"slices"
 	"strings"
@@ -25,9 +27,10 @@ var (
 	MIN_UNCONSTRAINED_TIMEOUT      int
 	NEXT_STAGE_TIMEOUT_FACTOR      int // factor * 10
 	NEXT_STAGE_TIMEOUT_MIN         int
-	REMOVE_OLD_DATA                bool
+	DEBUG                          bool
 
 	InstanceCounter int = 0
+	LastResult      *Result
 )
 
 func SetParameterDefault() {
@@ -37,7 +40,7 @@ func SetParameterDefault() {
 	NEXT_STAGE_TIMEOUT_FACTOR = 12 // => 1.2
 	NEXT_STAGE_TIMEOUT_MIN = 10
 
-	REMOVE_OLD_DATA = true
+	DEBUG = false
 }
 
 func init() {
@@ -125,6 +128,7 @@ var Descriptions map[string]string = map[string]string{
 }
 
 func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
+	LastResult = nil
 	tt_shared_data := tt_data_0.SharedData
 
 	// Catch termination signal
@@ -208,14 +212,33 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 					timetable.BACKEND.Tick(instance.TtData)
 					count++
 					abort_instance(instance)
-				} else if REMOVE_OLD_DATA {
-					timetable.BACKEND.Clear(instance.TtData)
 				}
 			}
 			if count == 0 {
 				break
 			}
 			<-ticker.C
+		}
+		if !DEBUG {
+			// Remove all remaining temporary files
+			timetable.BACKEND.Tidy(workingdir)
+		}
+		if LastResult != nil {
+			//b, err := json.Marshal(LastResult)
+			b, err := json.MarshalIndent(LastResult, "", "  ")
+			if err != nil {
+				panic(err)
+			}
+			fpath := filepath.Join(workingdir, "Result.json")
+			f, err := os.Create(fpath)
+			if err != nil {
+				panic("Couldn't open output file: " + fpath)
+			}
+			defer f.Close()
+			_, err = f.Write(b)
+			if err != nil {
+				panic("Couldn't write result to: " + fpath)
+			}
 		}
 	}()
 
@@ -235,7 +258,6 @@ tickloop:
 			// Cancel all other runs and return this instance as result.
 			current_instance = full_instance
 			new_current_instance(current_instance)
-
 			break
 		} else {
 			p := full_instance.TtData.Progress

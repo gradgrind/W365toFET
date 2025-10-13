@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 func Setup() {
@@ -21,12 +22,17 @@ func Setup() {
 		Abort:   ttRunAbort,
 		Tick:    ttTick,
 		Clear:   ttRunClear,
+		Tidy:    ttRunTidy,
 		Results: ttResults,
 	}
 }
 
 func ttRunAbort(tt_data *timetable.TtData) {
 	tt_data.BackEndData.(*fetTtData).cancel()
+}
+
+func ttRunTidy(workingdir string) {
+	os.RemoveAll(filepath.Join(workingdir, "tmp"))
 }
 
 func ttRunClear(tt_data *timetable.TtData) {
@@ -63,6 +69,22 @@ func runFet(tt_data *timetable.TtData, testing bool) {
 	_, err = f.WriteString(xmlitem)
 	if err != nil {
 		panic("Couldn't write fet output to: " + fetfile)
+	}
+
+	if tt_data.Description == "COMPLETE" {
+		// Save fet file at top level of working directory.
+		cfile := filepath.Join(shared_data.WorkingDir,
+			filepath.Base(strings.TrimSuffix(
+				shared_data.WorkingDir, "_fet")+".fet"))
+		cf, err := os.Create(cfile)
+		if err != nil {
+			panic("Couldn't open output file: " + cfile)
+		}
+		defer cf.Close()
+		_, err = cf.WriteString(xmlitem)
+		if err != nil {
+			panic("Couldn't write fet output to: " + cfile)
+		}
 	}
 
 	//fmt.Printf("FET file written to: %s\n", fetfile)

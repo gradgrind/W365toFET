@@ -15,12 +15,11 @@ type RoomIndex int
 type TtSlot int
 
 type TtBackend struct {
-	Run   func(tt_data *TtData, testing bool)
-	Abort func(tt_data *TtData)
-	Tick  func(tt_data *TtData)
-	Clear func(tt_data *TtData)
-
-	//TODO: This will probably need to return a more elaborate structure
+	Run     func(tt_data *TtData, testing bool)
+	Abort   func(tt_data *TtData)
+	Tick    func(tt_data *TtData)
+	Clear   func(tt_data *TtData)
+	Tidy    func(string)
 	Results func(tt_data *TtData) []ActivityPlacement
 }
 
