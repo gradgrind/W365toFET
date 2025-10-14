@@ -25,7 +25,7 @@ func (db *DbTopLevel) readLessons(newdb *base.DbTopLevel) {
 					e.Id, rref)
 			}
 		}
-		n := newdb.NewLesson(e.Id)
+		n := newdb.NewActivity(e.Id)
 		n.Course = e.Course
 		n.Duration = e.Duration
 		n.Day = e.Day

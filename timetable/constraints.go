@@ -216,32 +216,32 @@ func (tt_data *TtData) preprocessConstraints() {
 		{
 			cn, ok := c.(*base.ParallelCourses)
 			if ok {
-				// The courses must have the same number of lessons and the
-				// lengths of the corresponding lessons must also be the same.
+				// The courses must have the same number of activities and the
+				// lengths of the corresponding activities must also be the same.
 
 				//TODO: later ...
-				// A constraint is generated for each lesson of the courses.
+				// A constraint is generated for each activity of the courses.
 
-				// Check lesson lengths
+				// Check activity lengths
 				footprint := []int{}         // activity durations
 				var alen int = 0             // number of activities in each course
 				var alists [][]ActivityIndex // collect the parallel activities
 				for i, cref := range cn.Courses {
 					cinfo := tt_shared_data.Ref2CourseInfo[cref]
 					if i == 0 {
-						alen = len(cinfo.Activities)
+						alen = len(cinfo.TtActivities)
 						alists = make([][]ActivityIndex, alen)
-					} else if len(cinfo.Activities) != alen {
+					} else if len(cinfo.TtActivities) != alen {
 						//TODO: This is a data error
 						clist := []string{}
 						for _, cr := range cn.Courses {
 							clist = append(clist, string(cr))
 						}
 						base.Error.Fatalf("Parallel courses have different"+
-							" lessons: %s\n",
+							" activities: %s\n",
 							strings.Join(clist, ","))
 					}
-					for j, l := range cinfo.Lessons {
+					for j, l := range cinfo.Activities {
 						if i == 0 {
 							footprint = append(footprint, l.Duration)
 						} else if l.Duration != footprint[j] {
@@ -250,11 +250,11 @@ func (tt_data *TtData) preprocessConstraints() {
 							for _, cr := range cn.Courses {
 								clist = append(clist, string(cr))
 							}
-							base.Error.Fatalf("Parallel courses have lesson"+
+							base.Error.Fatalf("Parallel courses have activity"+
 								" mismatch: %s\n",
 								strings.Join(clist, ","))
 						}
-						alists[j] = append(alists[j], cinfo.Activities[j])
+						alists[j] = append(alists[j], cinfo.TtActivities[j])
 					}
 				}
 				// alists is now a list of lists of parallel activity indexes.
@@ -298,7 +298,7 @@ func (tt_data *TtData) preprocessConstraints() {
 	for _, cinfo := range tt_shared_data.CourseInfoList {
 		cref := cinfo.Id
 
-		if len(cinfo.Lessons) > 1 && !noauto_ddays[cref] {
+		if len(cinfo.Activities) > 1 && !noauto_ddays[cref] {
 			cn := &TtDaysBetween{
 				Constraint:           C_GENERAL_DAYS_BETWEEN,
 				Weight:               auto_weight,
@@ -328,11 +328,11 @@ func (tt_shared_data *TtSharedData) days_between_activities(
 	cinfo := tt_shared_data.Ref2CourseInfo[cref]
 	fixeds := []ActivityIndex{}
 	unfixeds := []ActivityIndex{}
-	for i, l := range cinfo.Lessons {
+	for i, l := range cinfo.Activities {
 		if l.Fixed {
-			fixeds = append(fixeds, cinfo.Activities[i])
+			fixeds = append(fixeds, cinfo.TtActivities[i])
 		} else {
-			unfixeds = append(unfixeds, cinfo.Activities[i])
+			unfixeds = append(unfixeds, cinfo.TtActivities[i])
 		}
 	}
 
@@ -347,7 +347,7 @@ func (tt_shared_data *TtSharedData) days_between_activities(
 	aidlists := [][]ActivityIndex{}
 	if len(fixeds) <= 1 {
 		// At most 1 fixed activity, so all activities are relevant
-		aidlists = append(aidlists, cinfo.Activities)
+		aidlists = append(aidlists, cinfo.TtActivities)
 	} else {
 		// Multiple fixed activities, at least one unfixed one:
 		for _, aidf := range fixeds {
@@ -365,7 +365,7 @@ func (tt_shared_data *TtSharedData) days_between_activities(
 		for _, alist := range aidlists {
 			if len(alist) > tt_shared_data.NDays {
 				//TODO
-				base.Warning.Printf("Course has too many lessons for"+
+				base.Warning.Printf("Course has too many activities for"+
 					"DifferentDays constraint:\n  -- %s\n",
 					tt_shared_data.View(cinfo))
 				continue
@@ -383,14 +383,14 @@ func (tt_shared_data *TtSharedData) days_between_join_activities(
 	c1 := tt_shared_data.Ref2CourseInfo[constraint.Course1]
 	c2 := tt_shared_data.Ref2CourseInfo[constraint.Course2]
 	allist := [][]ActivityIndex{}
-	for i1, l1 := range c1.Lessons {
-		for i2, l2 := range c2.Lessons {
+	for i1, l1 := range c1.Activities {
+		for i2, l2 := range c2.Activities {
 			if l1.Fixed && l2.Fixed {
 				// both fixed => no constraint
 				continue
 			}
 			allist = append(allist, []ActivityIndex{
-				c1.Activities[i1], c2.Activities[i2]})
+				c1.TtActivities[i1], c2.TtActivities[i2]})
 		}
 	}
 	return allist

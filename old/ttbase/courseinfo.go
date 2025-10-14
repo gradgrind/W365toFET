@@ -218,7 +218,7 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 			//Room: filled later
 			Lessons: []ActivityIndex{},
 		})
-		clessons = append(clessons, spc.Lessons)
+		clessons = append(clessons, spc.Activities)
 		roomData[cref] = slices.Compact(rooms)
 	}
 	for _, c := range db.Courses {
@@ -235,7 +235,7 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 			//Room: filled later
 			Lessons: []ActivityIndex{},
 		})
-		clessons = append(clessons, c.Lessons)
+		clessons = append(clessons, c.Activities)
 		roomData[cref] = rooms
 	}
 
@@ -246,7 +246,7 @@ func collectCourses(ttinfo *TtInfo) map[Ref][]Ref {
 		// Add lessons to CourseInfo
 		llist := clessons[i]
 		for _, lref := range llist {
-			l := db.Elements[lref].(*base.Lesson)
+			l := db.Elements[lref].(*base.Activity)
 			if slices.Contains(l.Flags, "SubstitutionService") {
 				cinfo.Groups = nil
 			}

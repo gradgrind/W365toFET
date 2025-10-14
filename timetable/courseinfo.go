@@ -9,7 +9,7 @@ import (
 
 // A CourseInfo is a representation of a course (Course or SuperCourse) for
 // the timetable.
-// Lessons within a course are (already) ordered, highest duration first,
+// Activities within a course are (already) ordered, highest duration first,
 // and the Activities field has the same order.
 type CourseInfo struct {
 	Id           NodeRef // Course or SuperCourse
@@ -19,13 +19,13 @@ type CourseInfo struct {
 	Teachers     []TeacherIndex
 	FixedRooms   []RoomIndex
 	RoomChoices  [][]RoomIndex
-	Lessons      []*base.Lesson
-	Activities   []ActivityIndex
+	Activities   []*base.Activity
+	TtActivities []ActivityIndex
 }
 
-type Activity struct {
+type TtActivity struct {
 	CourseInfo *CourseInfo
-	Lesson     *base.Lesson
+	Activity   *base.Activity
 	Placement  TtSlot
 	Duration   int16
 	Fixed      bool
@@ -53,7 +53,7 @@ func (tt_shared_data *TtSharedData) View(cinfo *CourseInfo) string {
 func (tt_shared_data *TtSharedData) CollectCourses() {
 	db := tt_shared_data.Db
 	tt_shared_data.Ref2CourseInfo = map[NodeRef]*CourseInfo{}
-	tt_shared_data.Activities = []*Activity{{}} // first entry is empty
+	tt_shared_data.Activities = []*TtActivity{{}} // first entry is empty
 
 	// *** Gather the SuperCourses. ***
 	for _, spc := range db.SuperCourses {
@@ -156,7 +156,7 @@ func (tt_shared_data *TtSharedData) CollectCourses() {
 			Teachers:     slices.Compact(teachers),
 			FixedRooms:   slices.Compact(rooms),
 			RoomChoices:  crooms,
-			Lessons:      spc.Lessons,
+			Activities:   spc.Activities,
 			//Activities
 		}
 
@@ -256,7 +256,7 @@ func (tt_shared_data *TtSharedData) CollectCourses() {
 			Teachers:     teachers,
 			FixedRooms:   rooms,
 			RoomChoices:  crooms,
-			Lessons:      c.Lessons,
+			Activities:   c.Activities,
 			//Activities
 		}
 
@@ -267,23 +267,23 @@ func (tt_shared_data *TtSharedData) CollectCourses() {
 	}
 }
 
-// Build an `Activity` for each `Lesson` – they are already sorted
+// Build a `TtActivity` for each `Activity` – they are already sorted
 // with the longest first.
 func (tt_shared_data *TtSharedData) makeActivities(cinfo *CourseInfo) {
-	for _, l := range cinfo.Lessons {
+	for _, l := range cinfo.Activities {
 		p := -1
 		if l.Day >= 0 {
 			p = l.Day*tt_shared_data.NHours + l.Hour
 		}
 		aix := ActivityIndex(len(tt_shared_data.Activities))
-		ttl := &Activity{
+		ttl := &TtActivity{
 			CourseInfo: cinfo,
-			Lesson:     l,
+			Activity:   l,
 			Placement:  TtSlot(p),
 			Duration:   int16(l.Duration),
 			Fixed:      l.Fixed,
 		}
-		cinfo.Activities = append(cinfo.Activities, aix)
+		cinfo.TtActivities = append(cinfo.TtActivities, aix)
 		tt_shared_data.Activities = append(tt_shared_data.Activities, ttl)
 	}
 }

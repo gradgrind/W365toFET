@@ -50,7 +50,7 @@ type TtSharedData struct {
 
 	// Set up by `CollectCourses`, which calls `makeActivities`
 	// Note that activity 0 is invalid, the first activity has index 1.
-	Activities     []*Activity
+	Activities     []*TtActivity
 	CourseInfoList []*CourseInfo
 	Ref2CourseInfo map[NodeRef]*CourseInfo
 }
@@ -80,6 +80,7 @@ type TtData struct {
 	//		 2: failed (with errors or aborted)
 	State    int
 	Progress int // percent
+	//LastProgress int // percent, previous value of `Progress`
 	Ticks    int
 	LastTime int // ticks at last Progress change
 	Message  string
@@ -174,7 +175,7 @@ type MinDaysBetweenActivities struct {
 	MinDays              int
 }
 
-type ParallelLessons struct {
+type ParallelActivities struct {
 	Weight         int
 	ActivityGroups [][]ActivityIndex
 }

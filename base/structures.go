@@ -17,24 +17,24 @@ var ErrorMessages = map[string]string{}
 // A Ref is used to identify the constituent elements of the database.
 type Ref string // Element Id
 
-// A TimeSlot specifies a lesson time period within the school week. The
-// school week is divided into days, which are divided into "hours" (lesson
+// A TimeSlot specifies an activity time period within the school week. The
+// school week is divided into days, which are divided into "hours" (activity
 // periods), which are usually not 60 minutes in length. Each day has the
-// same number of lessons.
+// same number of activities.
 type TimeSlot struct {
 	Day  int // index to [DbTopLevel.Days]
 	Hour int // index to [DbTopLevel.Hours]
 }
 
 // A Division specifies a particular splitting of a school "class" (the
-// students, not the lessons) into a number of groups (say, "A" and "B").
+// students, not the activities) into a number of groups (say, "A" and "B").
 //
 // In principle, a class may have any number of divisions, each of which
 // may have any number of groups, though keeping them to a minimum is
 // generally advisable.
 //
 // Group names must be unique within a class and groups from different
-// divisions may not have lessons at the same time.
+// divisions may not have activities at the same time.
 type Division struct {
 	Name   string
 	Groups []Ref
@@ -87,7 +87,7 @@ type Day struct {
 	Name string
 }
 
-// An Hour represents a lesson period ("hour") of a timetable's day
+// An Hour represents an activity period ("hour") of a timetable's day
 type Hour struct {
 	ElementBase
 	Name  string
@@ -104,17 +104,17 @@ type Teacher struct {
 	Firstname string
 	// NotAvailable is an ordered list of time-slots in which the teacher
 	// is to be regarded as not available for the timetable.
-	NotAvailable     []TimeSlot
-	MinLessonsPerDay int  // default = -1 (unconstrained)
-	MaxLessonsPerDay int  // default = -1 (unconstrained)
-	MaxDays          int  // default = -1 (unconstrained)
-	MaxGapsPerDay    int  // default = -1 (unconstrained)
-	MaxGapsPerWeek   int  // default = -1 (unconstrained)
-	MaxAfternoons    int  // default = -1 (unconstrained)
-	LunchBreak       bool // whether the teacher should have a lunch break
+	NotAvailable        []TimeSlot
+	MinActivitiesPerDay int  // default = -1 (unconstrained)
+	MaxActivitiesPerDay int  // default = -1 (unconstrained)
+	MaxDays             int  // default = -1 (unconstrained)
+	MaxGapsPerDay       int  // default = -1 (unconstrained)
+	MaxGapsPerWeek      int  // default = -1 (unconstrained)
+	MaxAfternoons       int  // default = -1 (unconstrained)
+	LunchBreak          bool // whether the teacher should have a lunch break
 }
 
-// A Subject represents a taught subject, used for labelling a lesson, but
+// A Subject represents a taught subject, used for labelling an activitiy, but
 // it can also be used for any other activities which are timetabled (say,
 // conferences).
 type Subject struct {
@@ -161,7 +161,7 @@ func (r *RoomChoiceGroup) IsReal() bool {
 }
 
 // A Class represents a collection of students and will generally correspond
-// to a school class (not lesson). It includes various constraint
+// to a school class (not "lesson"). It includes various constraint
 // information relevant for the timetable.
 // See type [Group] (representing a subgroup of a class) for the student
 // groups which can be specified as a resourse for an activity.
@@ -172,19 +172,19 @@ func (r *RoomChoiceGroup) IsReal() bool {
 // description of the class.
 type Class struct {
 	ElementBase
-	Name             string
-	Year             int
-	Letter           string
-	NotAvailable     []TimeSlot
-	Divisions        []Division
-	MinLessonsPerDay int  // default = -1 (unconstrained)
-	MaxLessonsPerDay int  // default = -1 (unconstrained)
-	MaxGapsPerDay    int  // default = -1 (unconstrained)
-	MaxGapsPerWeek   int  // default = -1 (unconstrained)
-	MaxAfternoons    int  // default = -1 (unconstrained)
-	LunchBreak       bool // whether the students should have a lunch break
-	ForceFirstHour   bool // whether lessons need to start at hour 0
-	ClassGroup       Ref  // the Group representing the whole class
+	Name                string
+	Year                int
+	Letter              string
+	NotAvailable        []TimeSlot
+	Divisions           []Division
+	MinActivitiesPerDay int  // default = -1 (unconstrained)
+	MaxActivitiesPerDay int  // default = -1 (unconstrained)
+	MaxGapsPerDay       int  // default = -1 (unconstrained)
+	MaxGapsPerWeek      int  // default = -1 (unconstrained)
+	MaxAfternoons       int  // default = -1 (unconstrained)
+	LunchBreak          bool // whether the students should have a lunch break
+	ForceFirstHour      bool // whether activities need to start at hour 0
+	ClassGroup          Ref  // the Group representing the whole class
 }
 
 type Group struct {
@@ -194,7 +194,7 @@ type Group struct {
 }
 
 // A Course specifies a collection of resources needed for a set of
-// activities ([Lesson] elements). The [Subject] field is a sort of label.
+// activities ([Activity] elements). The [Subject] field is a sort of label.
 type Course struct {
 	ElementBase
 	Subject  Ref
@@ -202,15 +202,15 @@ type Course struct {
 	Teachers []Ref
 	Room     Ref // [Room], [RoomGroup] or [RoomChoiceGroup] element
 	// These fields do not belong in the JSON object:
-	Lessons []*Lesson `json:"-"`
+	Activities []*Activity `json:"-"`
 }
 
-func (c *Course) GetLessonList() []*Lesson {
-	return c.Lessons
+func (c *Course) GetActivityList() []*Activity {
+	return c.Activities
 }
 
-func (c *Course) SetLessonList(ll []*Lesson) {
-	c.Lessons = ll
+func (c *Course) SetActivityList(ll []*Activity) {
+	c.Activities = ll
 }
 
 func (c *Course) IsSuperCourse() bool {
@@ -218,29 +218,29 @@ func (c *Course) IsSuperCourse() bool {
 }
 
 // A SuperCourse specifies a collection of [SubCourse] elements which are
-// associated with a set of activities ([Lesson] elements). The [Subject]
+// associated with a set of activities ([Activity] elements). The [Subject]
 // field is a sort of label.
 type SuperCourse struct {
 	ElementBase
 	Subject Ref
 	// These fields do not belong in the JSON object:
 	SubCourses []*SubCourse `json:"-"`
-	Lessons    []*Lesson    `json:"-"`
+	Activities []*Activity  `json:"-"`
 }
 
 func (c *SuperCourse) IsSuperCourse() bool {
 	return true
 }
 
-func (c *SuperCourse) GetLessonList() []*Lesson {
-	return c.Lessons
+func (c *SuperCourse) GetActivityList() []*Activity {
+	return c.Activities
 }
 
-func (c *SuperCourse) SetLessonList(ll []*Lesson) {
-	c.Lessons = ll
+func (c *SuperCourse) SetActivityList(ll []*Activity) {
+	c.Activities = ll
 }
 
-// A SubCourse has no Lessons of its own, but shares those of its parent
+// A SubCourse has no activities of its own, but shares those of its parent
 // [SuperCourse] elements. A SubCourse may blong to more than one
 // [SuperCourse]. Otherwise it is much like a [Course], bundling the
 // necessary resources.
@@ -258,33 +258,34 @@ type GeneralRoom interface {
 	IsReal() bool
 }
 
-// A Lesson is an activity which needs placing in the timetable.
+// A Activity is an activity which needs placing in the timetable.
 // Its resources are determined by the course ([Course] or [SuperCourse]) to
 // which it belongs.
-type Lesson struct {
+type Activity struct {
 	ElementBase
 	Course   Ref   // [Course] or [SuperCourse] elements
 	Duration int   // number of "hours" covered
 	Day      int   // 0-based index, -1 for "unplaced"
 	Hour     int   // 0-based index
-	Fixed    bool  // whether the Lesson is unmovable
+	Fixed    bool  // whether the Activity is unmovable
 	Rooms    []Ref // actually allocated Room elements
 	//Background string // colour, as "#RRGGBB"
 	//Footnote   string
 }
 
-// LessonCourse is a type of course which can have lessons, i.e. a
+// ActivityCourse is a type of course which can have activities, i.e. a
 // [Course] or a [SuperCourse].
-type LessonCourse interface {
+type ActivityCourse interface {
 	IsSuperCourse() bool // whether this is a SuperCourse
 
-	// When the data is initially loaded the courses have no attached lessons.
-	// The lesson list is built from the course references in the Lesson
-	// elements. The individual lessons are inserted such that they are
+	// When the data is initially loaded the courses have no attached
+	// activities.
+	// The activity list is built from the course references in the Activity
+	// elements. The individual activities are inserted such that they are
 	// ordered with the longest (duration) first. The following functions
 	// are used in the building of these lists.
-	GetLessonList() []*Lesson
-	SetLessonList([]*Lesson)
+	GetActivityList() []*Activity
+	SetActivityList([]*Activity)
 }
 
 // Constraint is a rule used in the construction of a timetable.
@@ -314,7 +315,7 @@ type DbTopLevel struct {
 	Courses          []*Course      `json:",omitempty"`
 	SuperCourses     []*SuperCourse `json:",omitempty"`
 	SubCourses       []*SubCourse   `json:",omitempty"`
-	Lessons          []*Lesson      `json:",omitempty"`
+	Activities       []*Activity    `json:",omitempty"`
 	Constraints      []Constraint   `json:",omitempty"`
 
 	// These fields do not belong in the JSON object:

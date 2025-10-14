@@ -87,13 +87,13 @@ func getActivities(fetinfo *fetInfo) {
 		// Generate the Activities for this course (one per Lesson).
 		totalDuration := 0
 		//llist := []*ttbase.Activity{}
-		for _, l := range cinfo.Lessons {
+		for _, l := range cinfo.Activities {
 			totalDuration += l.Duration
 			//llist = append(llist, l)
 		}
 		var agid timetable.ActivityIndex = 0
-		if len(cinfo.Activities) > 1 {
-			agid = cinfo.Activities[0]
+		if len(cinfo.TtActivities) > 1 {
+			agid = cinfo.TtActivities[0]
 		}
 		activities = append(activities,
 			fetActivity{
@@ -104,9 +104,9 @@ func getActivities(fetinfo *fetInfo) {
 				//Activity_Tag:      atag,
 				Active:            true,
 				Total_Duration:    totalDuration,
-				Duration:          tt_activity.Lesson.Duration,
+				Duration:          tt_activity.Activity.Duration,
 				Activity_Group_Id: agid,
-				Comments:          string(tt_activity.Lesson.GetRef()),
+				Comments:          string(tt_activity.Activity.GetRef()),
 			},
 		)
 	}
@@ -137,8 +137,8 @@ func addPlacementConstraints(fetinfo *fetInfo) {
 		// Add the constraints.
 		scl := &fetinfo.fetdata.Space_Constraints_List
 		tcl := &fetinfo.fetdata.Time_Constraints_List
-		for i, l := range cinfo.Lessons {
-			aid := cinfo.Activities[i]
+		for i, l := range cinfo.Activities {
+			aid := cinfo.TtActivities[i]
 			_, ok := armap[int(aid)]
 			if ok && len(rooms) != 0 {
 				scl.ConstraintActivityPreferredRooms = append(

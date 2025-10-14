@@ -118,10 +118,10 @@ func (db *DbTopLevel) NewSubCourse(ref Ref) *SubCourse {
 	return e
 }
 
-func (db *DbTopLevel) NewLesson(ref Ref) *Lesson {
-	e := &Lesson{}
+func (db *DbTopLevel) NewActivity(ref Ref) *Activity {
+	e := &Activity{}
 	e.Id = db.addElement(ref, e)
-	db.Lessons = append(db.Lessons, e)
+	db.Activities = append(db.Activities, e)
 	return e
 }
 
@@ -148,13 +148,13 @@ func (db *DbTopLevel) PrepareDb() {
 		}
 	}
 
-	// Collect the Lessons for each Course and SuperCourse, the list being
+	// Collect the Activities for each Course and SuperCourse, the list being
 	// ordered with the longest durations first
-	for _, l := range db.Lessons {
-		c := db.Elements[l.Course].(LessonCourse)
+	for _, l := range db.Activities {
+		c := db.Elements[l.Course].(ActivityCourse)
 		d := l.Duration
 		var i int = 0
-		ll := c.GetLessonList()
+		ll := c.GetActivityList()
 		for _, a := range ll {
 			if a.Duration <= d {
 				break
@@ -162,7 +162,7 @@ func (db *DbTopLevel) PrepareDb() {
 			i++
 		}
 		ll = slices.Insert(ll, i, l)
-		c.SetLessonList(ll)
+		c.SetActivityList(ll)
 	}
 
 	// Expand Group information

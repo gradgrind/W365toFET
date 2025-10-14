@@ -88,7 +88,7 @@ func (db *DbTopLevel) initElements() {
 	for _, e := range db.SubCourses {
 		db.testElement(e.Id, e)
 	}
-	for _, e := range db.Lessons {
+	for _, e := range db.Activities {
 		db.testElement(e.Id, e)
 	}
 	//TODO: Handle Constraints

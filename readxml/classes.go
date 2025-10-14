@@ -71,8 +71,8 @@ func (cdata *conversionData) readClasses() {
 			e.Letter = ""
 			e.Tag = ""
 			e.Divisions = []base.Division{}
-			e.MinLessonsPerDay = -1
-			e.MaxLessonsPerDay = -1
+			e.MinActivitiesPerDay = -1
+			e.MaxActivitiesPerDay = -1
 			e.MaxGapsPerDay = -1
 			e.MaxGapsPerWeek = -1
 			e.MaxAfternoons = -1
@@ -158,8 +158,8 @@ func (cdata *conversionData) readClasses() {
 		}
 
 		e.Divisions = divs
-		e.MinLessonsPerDay = n.MinLessonsPerDay
-		e.MaxLessonsPerDay = maxlpd
+		e.MinActivitiesPerDay = n.MinLessonsPerDay
+		e.MaxActivitiesPerDay = maxlpd
 		e.MaxGapsPerDay = n.MaxGapsPerDay
 		e.MaxGapsPerWeek = n.MaxGapsPerWeek
 		e.MaxAfternoons = maxpm

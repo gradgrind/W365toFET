@@ -22,12 +22,14 @@ var (
 	TESTING bool
 	// This approach relies on parallel processing. If there are too few real
 	// processors it will be inefficient:
-	MAXPROCESSES                   int
-	UNCONSTRAINED_TIMEOUT_FRACTION int
-	MIN_UNCONSTRAINED_TIMEOUT      int
-	NEXT_STAGE_TIMEOUT_FACTOR      int // factor * 10
-	NEXT_STAGE_TIMEOUT_MIN         int
-	DEBUG                          bool
+	MAXPROCESSES int
+
+	NEW_BASE_TIMEOUT_FACTOR  int // factor * 10
+	STAGE_TIMEOUT_MIN        int
+	STAGE_TIMEOUT            int
+	NEW_STAGE_TIMEOUT_FACTOR int
+
+	DEBUG bool
 
 	InstanceCounter int = 0
 	LastResult      *Result
@@ -35,10 +37,10 @@ var (
 
 func SetParameterDefault() {
 	MAXPROCESSES = min(max(runtime.NumCPU(), 4), 6)
-	UNCONSTRAINED_TIMEOUT_FRACTION = 10
-	MIN_UNCONSTRAINED_TIMEOUT = 10
-	NEXT_STAGE_TIMEOUT_FACTOR = 12 // => 1.2
-	NEXT_STAGE_TIMEOUT_MIN = 10
+
+	NEW_BASE_TIMEOUT_FACTOR = 12 // => 1.2
+	STAGE_TIMEOUT_MIN = 5
+	NEW_STAGE_TIMEOUT_FACTOR = 20
 
 	DEBUG = false
 }
@@ -170,10 +172,12 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	//TODO: Instance without soft constraints (if any)?
 
 	// Unconstrained instance
+	STAGE_TIMEOUT = STAGE_TIMEOUT_MIN
 	tt_data := new_ttdata(tt_data_0, "ONLY_BLOCKED_SLOTS")
 	null_instance := &TtInstance{
-		Timeout: max(TIMEOUT/UNCONSTRAINED_TIMEOUT_FRACTION,
-			MIN_UNCONSTRAINED_TIMEOUT),
+		//Timeout: max(TIMEOUT/UNCONSTRAINED_TIMEOUT_FRACTION,
+		//	MIN_UNCONSTRAINED_TIMEOUT),
+		Timeout: STAGE_TIMEOUT,
 
 		TtData: tt_data,
 		HardConstraintEnabled: setup_hard_constraint_map(
@@ -292,7 +296,7 @@ tickloop:
 				current_instance = null_instance
 				new_current_instance(current_instance)
 				// Start trials of single constraint types.
-				constraint_list = get_basic_constraints(
+				constraint_list, _ = get_basic_constraints(
 					null_instance, 0)
 				// Queue instances for running
 				for _, bc := range constraint_list {
@@ -326,9 +330,8 @@ tickloop:
 					current_instance = instance
 					new_current_instance(current_instance)
 					next_timeout = max(
-						instance.TtData.Ticks*NEXT_STAGE_TIMEOUT_FACTOR/10,
-						NEXT_STAGE_TIMEOUT_MIN)
-
+						instance.TtData.Ticks*NEW_BASE_TIMEOUT_FACTOR/10,
+						STAGE_TIMEOUT)
 					// Remove it from constraint list.
 					constraint_list = slices.Delete(
 						constraint_list, i, i+1)
@@ -337,25 +340,31 @@ tickloop:
 				}
 			}
 			if len(constraint_list) == 0 {
-				// all constraints added
-				if stage == 2 {
+				// ... all constraint trials finished.
+				if stage == 1 {
+					base.Message.Printf(
+						"(TODO) [%d] Stage 1 ended\n", Ticks)
+					stage = 2
+				}
+				// Start trials of remaining (hard) constraints.
+				STAGE_TIMEOUT = max(STAGE_TIMEOUT,
+					current_instance.TtData.Ticks) *
+					NEW_STAGE_TIMEOUT_FACTOR / 10
+				var n int
+				constraint_list, n = get_basic_constraints(
+					current_instance, stage)
+				if len(constraint_list) == 0 {
 					base.Message.Printf(
 						"(TODO) [%d] Stage 2 ended\n", Ticks)
 					stage = 3
 				} else {
-					//TODO!
 					base.Message.Printf(
-						"(TODO) [%d] Stage 1 ended\n", Ticks)
-					stage = 2
-
-					// Start trials of delayed single-constraint types.
-					constraint_list = get_basic_constraints(
-						current_instance, 1)
+						"(TODO) [%d] Remaining: %d (timeout %d)\n",
+						Ticks, n, STAGE_TIMEOUT)
 					// Queue instances for running
 					for _, bc := range constraint_list {
 						runqueue.add(bc)
 					}
-
 				}
 				continue
 			}

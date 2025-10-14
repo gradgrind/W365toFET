@@ -99,8 +99,8 @@ func (db *DbTopLevel) readTeachers(newdb *base.DbTopLevel) {
 		n.Name = e.Name
 		n.Firstname = e.Firstname
 		n.NotAvailable = tsl
-		n.MinLessonsPerDay = e.MinLessonsPerDay
-		n.MaxLessonsPerDay = e.MaxLessonsPerDay
+		n.MinActivitiesPerDay = e.MinLessonsPerDay
+		n.MaxActivitiesPerDay = e.MaxLessonsPerDay
 		n.MaxDays = e.MaxDays
 		n.MaxGapsPerDay = e.MaxGapsPerDay
 		n.MaxGapsPerWeek = e.MaxGapsPerWeek

@@ -62,6 +62,22 @@ func (rq *RunQueue) update_instances() {
 				if ttdata.Progress == 100 {
 					continue
 				}
+
+				//TODO: This is an attempt to extend the allotted time a bit
+				// if progress is being made.
+
+				// Use instance.LastProgress instead of ttdata.LastProgress?
+
+				/*
+					if ttdata.Progress > 90 && ttdata.Progress > ttdata.LastProgress {
+						ttdata.LastProgress = ttdata.Progress
+						instance.Timeout = t * 12 / 10
+
+					}
+				*/
+
+				// TODO end.
+
 				base.Message.Printf("(TODO) [%d] Timeout %s @ %d (%d)\n",
 					Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress)
 

@@ -10,7 +10,7 @@ const ATOMIC_GROUP_SEP1 = "#"
 const ATOMIC_GROUP_SEP2 = "~"
 
 // Prepare filtered versions of the class Divisions containing only
-// those Divisions which have Groups used in Lessons.
+// those Divisions which have Groups used in activities.
 func (tt_shared_data *TtSharedData) FilterDivisions() {
 	db := tt_shared_data.Db
 

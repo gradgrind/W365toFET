@@ -43,17 +43,17 @@ func (tt_data *TtData) collect_teacher_constraints() {
 		}
 		tt_data.TeacherNotAvailable[i] = blocked_slots
 
-		if t.MinLessonsPerDay > 0 {
+		if t.MinActivitiesPerDay > 0 {
 			tt_data.HardConstraints[TeacherMinLessonsPerDay] = append(
 				tt_data.HardConstraints[TeacherMinLessonsPerDay],
 				&TeacherConstraint{TeacherMinLessonsPerDay.String(),
-					i, t.MinLessonsPerDay})
+					i, t.MinActivitiesPerDay})
 		}
-		if t.MaxLessonsPerDay != -1 && t.MaxLessonsPerDay < nhours {
+		if t.MaxActivitiesPerDay != -1 && t.MaxActivitiesPerDay < nhours {
 			tt_data.HardConstraints[TeacherMaxLessonsPerDay] = append(
 				tt_data.HardConstraints[TeacherMaxLessonsPerDay],
 				&TeacherConstraint{TeacherMaxLessonsPerDay.String(),
-					i, t.MaxLessonsPerDay})
+					i, t.MaxActivitiesPerDay})
 		}
 		if t.MaxAfternoons != -1 && t.MaxAfternoons < ndays {
 			tt_data.HardConstraints[TeacherMaxAfternoons] = append(
@@ -110,17 +110,17 @@ func (tt_data *TtData) collect_class_constraints() {
 		}
 		tt_data.ClassNotAvailable[i] = blocked_slots
 
-		if c.MinLessonsPerDay != -1 {
+		if c.MinActivitiesPerDay != -1 {
 			tt_data.HardConstraints[ClassMinLessonsPerDay] = append(
 				tt_data.HardConstraints[ClassMinLessonsPerDay],
 				&ClassConstraint{ClassMinLessonsPerDay.String(),
-					i, c.MinLessonsPerDay})
+					i, c.MinActivitiesPerDay})
 		}
-		if c.MaxLessonsPerDay != -1 && c.MaxLessonsPerDay < nhours {
+		if c.MaxActivitiesPerDay != -1 && c.MaxActivitiesPerDay < nhours {
 			tt_data.HardConstraints[ClassMaxLessonsPerDay] = append(
 				tt_data.HardConstraints[ClassMaxLessonsPerDay],
 				&ClassConstraint{ClassMaxLessonsPerDay.String(),
-					i, c.MaxLessonsPerDay})
+					i, c.MaxActivitiesPerDay})
 		}
 		if c.MaxAfternoons != -1 && c.MaxAfternoons < ndays {
 			tt_data.HardConstraints[ClassMaxAfternoons] = append(
@@ -181,7 +181,7 @@ func (tt_data *TtData) collect_room_constraints() {
 	// The room wishes are based on the activities
 	for _, cinfo := range tt_shared_data.CourseInfoList {
 		if len(cinfo.FixedRooms) != 0 || len(cinfo.RoomChoices) != 0 {
-			for _, a := range cinfo.Activities {
+			for _, a := range cinfo.TtActivities {
 				tt_data.HardConstraints[ActivityRooms] = append(
 					tt_data.HardConstraints[ActivityRooms],
 					&ActivityRoomConstraint{ActivityRooms.String(),

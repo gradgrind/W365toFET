@@ -137,9 +137,9 @@ func getExtraConstraints(fetinfo *fetInfo) {
 		}
 
 		for _, c := range clist[timetable.ActivitiesEndDay] {
-			cn := c.(*base.LessonsEndDay)
+			cn := c.(*base.ActivitiesEndDay)
 			cinfo := shared_data.Ref2CourseInfo[cn.Course]
-			for _, aid := range cinfo.Activities {
+			for _, aid := range cinfo.TtActivities {
 				tclist.ConstraintActivityEndsStudentsDay = append(
 					tclist.ConstraintActivityEndsStudentsDay,
 					lessonEndsDay{
@@ -151,7 +151,7 @@ func getExtraConstraints(fetinfo *fetInfo) {
 		}
 
 		for _, c := range clist[timetable.DoubleActivityNotOverBreaks] {
-			cn := c.(*base.DoubleLessonNotOverBreaks)
+			cn := c.(*base.DoubleActivityNotOverBreaks)
 
 			if len(doubleBlocked) != 0 {
 				base.Error.Fatalln("Constraint DoubleActivityNotOverBreaks" +
@@ -213,7 +213,7 @@ func getExtraConstraints(fetinfo *fetInfo) {
 				if !ok {
 					base.Bug.Fatalf("Invalid course: %s\n", k)
 				}
-				for _, aid := range cinfo.Activities {
+				for _, aid := range cinfo.TtActivities {
 					tclist.ConstraintActivityPreferredTimeSlots = append(
 						tclist.ConstraintActivityPreferredTimeSlots,
 						activityPreferredTimes{

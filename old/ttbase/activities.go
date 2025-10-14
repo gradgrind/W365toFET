@@ -42,7 +42,7 @@ type Activity struct {
 
 	// Access to basic information about this activity
 	CourseInfo *CourseInfo
-	Lesson     *base.Lesson
+	Lesson     *base.Activity
 }
 
 // addActivityInfo completes the initialization of the Activities. This

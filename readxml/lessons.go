@@ -96,7 +96,7 @@ func (cdata *conversionData) makeLessons(scheduled []Ref) {
 			next:
 			}
 		add_lesson:
-			l := cdata.db.NewLesson("")
+			l := cdata.db.NewActivity("")
 			l.Course = cref
 			l.Duration = llen
 			l.Day = day

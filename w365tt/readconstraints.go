@@ -32,7 +32,7 @@ func (db *DbTopLevel) readConstraints(newdb *base.DbTopLevel) {
 	for _, e := range db.Constraints {
 		switch e["Constraint"] {
 		case "MARGIN_HOUR":
-			c := newdb.NewLessonsEndDay()
+			c := newdb.NewActivitiesEndDay()
 			c.Weight = a2i(e["Weight"])
 			c.Course = a2r(e["Course"])
 		case "BEFORE_AFTER_HOUR":
@@ -65,7 +65,7 @@ func (db *DbTopLevel) readConstraints(newdb *base.DbTopLevel) {
 			c.Course1 = a2r(e["Course1"])
 			c.Course2 = a2r(e["Course2"])
 		case "DOUBLE_LESSON_NOT_OVER_BREAKS":
-			c := newdb.NewDoubleLessonNotOverBreaks()
+			c := newdb.NewDoubleActivityNotOverBreaks()
 			c.Weight = a2i(e["Weight"])
 			c.Hours = a2ii(e["Hours"])
 		case "PARALLEL_COURSES":

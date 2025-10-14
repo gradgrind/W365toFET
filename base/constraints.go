@@ -6,24 +6,24 @@ func (db *DbTopLevel) addConstraint(c Constraint) {
 	db.Constraints = append(db.Constraints, c)
 }
 
-// ++ LessonsEndDay
+// ++ ActivitiesEndDay
 
-type LessonsEndDay struct {
+type ActivitiesEndDay struct {
 	Constraint string
 	Weight     int
 	Course     Ref
 }
 
-func (c *LessonsEndDay) CType() string {
+func (c *ActivitiesEndDay) CType() string {
 	return c.Constraint
 }
 
-func (c *LessonsEndDay) IsHard() bool {
+func (c *ActivitiesEndDay) IsHard() bool {
 	return c.Weight == MAXWEIGHT
 }
 
-func (db *DbTopLevel) NewLessonsEndDay() *LessonsEndDay {
-	c := &LessonsEndDay{Constraint: "LessonsEndDay"}
+func (db *DbTopLevel) NewActivitiesEndDay() *ActivitiesEndDay {
+	c := &ActivitiesEndDay{Constraint: "ActivitiesEndDay"}
 	db.addConstraint(c)
 	return c
 }
@@ -55,7 +55,7 @@ func (db *DbTopLevel) NewBeforeAfterHour() *BeforeAfterHour {
 }
 
 // ++ AutomaticDifferentDays
-// This Constraint applies to all courses (with more than one Lesson).
+// This Constraint applies to all courses (with more than one Activity).
 // If not present, all courses will by default apply it as a hard constraint,
 // except for courses which have an overriding DAYS_BETWEEN constraint.
 
@@ -80,7 +80,7 @@ func (db *DbTopLevel) NewAutomaticDifferentDays() *AutomaticDifferentDays {
 }
 
 // ++ DaysBetween
-// This constraint applies between the lessons of the individual courses.
+// This constraint applies between the activitys of the individual courses.
 // It does not connect the courses. If DaysBetween = 1, this constraint
 // overrides the global AutomaticDifferentDays constraint for these courses.
 
@@ -107,10 +107,10 @@ func (db *DbTopLevel) NewDaysBetween() *DaysBetween {
 }
 
 // ++ DaysBetweenJoin
-// This constraint applies between the individual lessons of the two courses,
-// not between the lessons of a course itself. That is, between course 1,
-// lesson 1 and course 2 lesson 1; between course 1, lesson 1 and course 2,
-// lesson 2, etc.
+// This constraint applies between the individual activities of the two courses,
+// not between the activities of a course itself. That is, between course 1,
+// activity 1 and course 2 activity 1; between course 1, activity 1 and course 2,
+// activity 2, etc.
 
 type DaysBetweenJoin struct {
 	Constraint           string
@@ -136,9 +136,9 @@ func (db *DbTopLevel) NewDaysBetweenJoin() *DaysBetweenJoin {
 }
 
 // ++ ParallelCourses
-// The lessons of the courses specified here should be at the same time.
+// The activities of the courses specified here should be at the same time.
 // To avoid complications, it is required that the number and lengths of
-// lessons be the same in each course.
+// activities be the same in each course.
 
 type ParallelCourses struct {
 	Constraint string
@@ -160,27 +160,27 @@ func (db *DbTopLevel) NewParallelCourses() *ParallelCourses {
 	return c
 }
 
-// ++ DoubleLessonNotOverBreaks
+// ++ DoubleActivityNotOverBreaks
 
 // There should be at most one of these. The breaks are immediately before
 // the specified hours.
 
-type DoubleLessonNotOverBreaks struct {
+type DoubleActivityNotOverBreaks struct {
 	Constraint string
 	Weight     int
 	Hours      []int
 }
 
-func (c *DoubleLessonNotOverBreaks) CType() string {
+func (c *DoubleActivityNotOverBreaks) CType() string {
 	return c.Constraint
 }
 
-func (c *DoubleLessonNotOverBreaks) IsHard() bool {
+func (c *DoubleActivityNotOverBreaks) IsHard() bool {
 	return c.Weight == MAXWEIGHT
 }
 
-func (db *DbTopLevel) NewDoubleLessonNotOverBreaks() *DoubleLessonNotOverBreaks {
-	c := &DoubleLessonNotOverBreaks{Constraint: "DoubleLessonNotOverBreaks"}
+func (db *DbTopLevel) NewDoubleActivityNotOverBreaks() *DoubleActivityNotOverBreaks {
+	c := &DoubleActivityNotOverBreaks{Constraint: "DoubleActivityNotOverBreaks"}
 	db.addConstraint(c)
 	return c
 }

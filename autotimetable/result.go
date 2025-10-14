@@ -29,8 +29,8 @@ type Result struct {
 // Save as JSON if debugging.
 func new_current_instance(instance *TtInstance) {
 	ttdata := instance.TtData
-	base.Message.Printf("+++ %s\n",
-		ttdata.Description)
+	base.Message.Printf("+++ %s @ %d\n",
+		ttdata.Description, ttdata.Ticks)
 
 	// Read placements
 	alist := timetable.BACKEND.Results(ttdata)
@@ -57,7 +57,7 @@ func new_current_instance(instance *TtInstance) {
 	a2ref := make([]timetable.NodeRef, len(ttdata.SharedData.Activities))
 	for i, anode := range ttdata.SharedData.Activities {
 		if i != 0 {
-			a2ref[i] = anode.Lesson.Id
+			a2ref[i] = anode.Activity.Id
 		}
 	}
 

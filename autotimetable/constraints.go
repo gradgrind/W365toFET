@@ -2,8 +2,6 @@ package autotimetable
 
 import (
 	"W365toFET/timetable"
-	"fmt"
-	"slices"
 )
 
 /* TODO?
@@ -53,13 +51,12 @@ func setup_hard_constraint_map(
 func get_basic_constraints(
 	instance0 *TtInstance,
 	stage int,
-) []*TtInstance {
+) ([]*TtInstance, int) {
 	// When `stage` is 0, `instance0` should be the unconstrained instance.
-	timeout := max(instance0.TtData.Ticks*NEXT_STAGE_TIMEOUT_FACTOR/10,
-		NEXT_STAGE_TIMEOUT_MIN)
 	// Start the individual constraints in the order given by the
 	// ConstraintType indexes.
 	instances := []*TtInstance{}
+	nconstraints := 0
 	for ctype := range timetable.LastConstraint {
 		// Only hard constraints for now ...
 
@@ -80,6 +77,7 @@ func get_basic_constraints(
 				continue
 			}
 		}
+		nconstraints += len(cixlist)
 
 		clist, ok := TtData_0.HardConstraints[ctype]
 		if !ok {
@@ -90,28 +88,18 @@ func get_basic_constraints(
 			//TODO: Bug?
 			panic("No constraints of type " + ctype.String())
 		}
-		// Get all list indexes
-		cilist := make([]int, n)
-		for i := range n {
-			cilist[i] = i
-		}
-
-		if slices.Compare(cilist, cixlist) != 0 {
-			fmt.Printf("$$$ TODO: NO MATCH %v ::: %v\n", cilist, cixlist)
-		}
-
 		instance := new_instance(
 			instance0,
 			ctype.String(),
 			ctype,
-			cilist,
-			timeout)
+			cixlist,
+			STAGE_TIMEOUT)
 		instances = append(instances, instance)
 	}
 
 	//TODO: With rooms? Fixed und choices? soft constraints?
 
-	return instances
+	return instances, nconstraints
 }
 
 func disable_all_constraints(ttdata *timetable.TtData) {
