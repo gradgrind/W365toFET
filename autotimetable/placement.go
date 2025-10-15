@@ -3,7 +3,6 @@ package autotimetable
 import (
 	"W365toFET/base"
 	"W365toFET/timetable"
-	"fmt"
 )
 
 type TtClash struct {
@@ -60,8 +59,8 @@ func test_fixed(ttdata *timetable.TtData) []*TtClash {
 
 		cg := classes[ix].ClassGroup
 		aglist := shared_data.AtomicGroups[cg]
-		fmt.Printf("ATOMIC GROUPS for %s: %v\n", classes[ix].Tag, aglist)
-		fmt.Printf(" ::: %v\n", blocks)
+		//fmt.Printf("ATOMIC GROUPS for %s: %v\n", classes[ix].Tag, aglist)
+		//fmt.Printf(" ::: %v\n", blocks)
 		for _, ag := range aglist {
 			rix := (int(ag) + rbase) * hpw
 			for d, blist := range blocks {
@@ -105,9 +104,12 @@ func test_fixed(ttdata *timetable.TtData) []*TtClash {
 			rix := (int(ix)+atomicGroupResourceIndex0)*hpw + slot
 			resources = append(resources, rix)
 			if resourceWeeks[rix] != 0 {
-				a0 := shared_data.Activities[resourceWeeks[rix]]
+				var c0 *timetable.CourseInfo = nil
+				if resourceWeeks[rix] > 0 {
+					c0 = shared_data.Activities[resourceWeeks[rix]].CourseInfo
+				}
 				clashes = append(clashes, &TtClash{
-					Course1:  a0.CourseInfo,
+					Course1:  c0,
 					Course2:  cinfo,
 					Slot:     timeslot,
 					Resource: shared_data.AtomicNodes[ix],
@@ -120,9 +122,12 @@ func test_fixed(ttdata *timetable.TtData) []*TtClash {
 				rix := (int(ix)+roomResourceIndex0)*hpw + slot
 				resources = append(resources, rix)
 				if resourceWeeks[rix] != 0 {
-					a0 := shared_data.Activities[resourceWeeks[rix]]
+					var c0 *timetable.CourseInfo = nil
+					if resourceWeeks[rix] > 0 {
+						c0 = shared_data.Activities[resourceWeeks[rix]].CourseInfo
+					}
 					clashes = append(clashes, &TtClash{
-						Course1:  a0.CourseInfo,
+						Course1:  c0,
 						Course2:  cinfo,
 						Slot:     timeslot,
 						Resource: shared_data.Db.Rooms[ix],
