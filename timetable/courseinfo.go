@@ -7,30 +7,6 @@ import (
 	"strings"
 )
 
-// A CourseInfo is a representation of a course (Course or SuperCourse) for
-// the timetable.
-// Activities within a course are (already) ordered, highest duration first,
-// and the Activities field has the same order.
-type CourseInfo struct {
-	Id           NodeRef // Course or SuperCourse
-	Subject      string
-	Groups       []*base.Group // a `Class` is represented by its ClassGroup
-	AtomicGroups []AtomicIndex
-	Teachers     []TeacherIndex
-	FixedRooms   []RoomIndex
-	RoomChoices  [][]RoomIndex
-	Activities   []*base.Activity
-	TtActivities []ActivityIndex
-}
-
-type TtActivity struct {
-	CourseInfo *CourseInfo
-	Activity   *base.Activity
-	Placement  TtSlot
-	Duration   int16
-	Fixed      bool
-}
-
 // Make a shortish string view of a CourseInfo – can be useful in tests
 func (tt_shared_data *TtSharedData) View(cinfo *CourseInfo) string {
 	tlist := []string{}

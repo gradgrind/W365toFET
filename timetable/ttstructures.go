@@ -14,6 +14,15 @@ type TeacherIndex int
 type RoomIndex int
 type TtSlot int
 
+func (shared_data *TtSharedData) ToTimeSlot(slot TtSlot) base.TimeSlot {
+	t := int(slot)
+	d := t / shared_data.NHours
+	return base.TimeSlot{
+		Day:  d,
+		Hour: t - d*shared_data.NHours,
+	}
+}
+
 type TtBackend struct {
 	Run     func(tt_data *TtData, testing bool)
 	Abort   func(tt_data *TtData)
@@ -44,6 +53,7 @@ type TtSharedData struct {
 	// `AtomicGroups` maps a class or group NodeRef to its list of atomic
 	// group indexes.
 	AtomicGroups map[NodeRef][]AtomicIndex
+
 	// `ClassDivisions` is a list with an entry for each class, containing a
 	// list of its divisions ([][]NodeRef).
 	ClassDivisions []ClassDivision
@@ -71,7 +81,8 @@ type TtData struct {
 	HardConstraints map[ConstraintType][]any
 	SoftConstraints map[ConstraintType][]any
 
-	WITHOUT_ROOM_PLACEMENTS bool // ignore room allocation constraints
+	// Ignore room allocation constraints, default false:
+	WITHOUT_ROOM_PLACEMENTS bool
 
 	// `State` values:
 	//		-1: not started (yet)
@@ -98,9 +109,33 @@ type TtData struct {
 	// `ResourceWeeks` contains the allocations of the "resources" (atomic
 	// groups, teachers, rooms) to activities (indexes). This is organized
 	// as an array of "week-chunks" (`HoursPerWeek` entries), one for each
-	// resource in the `Resources array`.
+	// resource (atomic groups, teachers, rooms).
 	ResourceWeeks []ActivityIndex
 	*/
+}
+
+// A CourseInfo is a representation of a course (Course or SuperCourse) for
+// the timetable.
+// Activities within a course are (already) ordered, highest duration first,
+// and the Activities field has the same order.
+type CourseInfo struct {
+	Id           NodeRef // Course or SuperCourse
+	Subject      string
+	Groups       []*base.Group // a `Class` is represented by its ClassGroup
+	AtomicGroups []AtomicIndex
+	Teachers     []TeacherIndex
+	FixedRooms   []RoomIndex
+	RoomChoices  [][]RoomIndex
+	Activities   []*base.Activity
+	TtActivities []ActivityIndex
+}
+
+type TtActivity struct {
+	CourseInfo *CourseInfo
+	Activity   *base.Activity
+	Placement  TtSlot
+	Duration   int16
+	Fixed      bool
 }
 
 type ClassDivision struct {

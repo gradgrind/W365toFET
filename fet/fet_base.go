@@ -161,10 +161,6 @@ func MakeFetFile(tt_data *timetable.TtData) []byte {
 		},
 		fetVirtualRooms: map[string]string{},
 		fetVirtualRoomN: map[string]int{},
-
-		//ONLY_FIXED:              true,
-		//WITHOUT_ROOM_PLACEMENTS: true,
-		//daysBetween:             map[Ref][]*base.DaysBetween{},
 	}
 
 	getDays(&fetinfo)

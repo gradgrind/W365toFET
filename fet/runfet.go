@@ -237,8 +237,9 @@ exit:
 		} else {
 			tt_data.State = 2
 		}
+
 		efile, err := os.ReadFile(filepath.Join(data.odir, "logs", "errors.txt"))
-		if err != nil {
+		if err == nil {
 			tt_data.Message = string(efile)
 		}
 	}

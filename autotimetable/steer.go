@@ -27,7 +27,7 @@ var (
 	NEW_BASE_TIMEOUT_FACTOR  int // factor * 10
 	STAGE_TIMEOUT_MIN        int
 	STAGE_TIMEOUT            int
-	NEW_STAGE_TIMEOUT_FACTOR int
+	NEW_STAGE_TIMEOUT_FACTOR int // factor * 10
 
 	DEBUG bool
 
@@ -40,7 +40,7 @@ func SetParameterDefault() {
 
 	NEW_BASE_TIMEOUT_FACTOR = 12 // => 1.2
 	STAGE_TIMEOUT_MIN = 5
-	NEW_STAGE_TIMEOUT_FACTOR = 20
+	NEW_STAGE_TIMEOUT_FACTOR = 20 // => 2.0
 
 	DEBUG = false
 }
@@ -132,6 +132,32 @@ var Descriptions map[string]string = map[string]string{
 func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	LastResult = nil
 	tt_shared_data := tt_data_0.SharedData
+
+	clashes := test_fixed(tt_data_0)
+	if len(clashes) != 0 {
+		for _, clash := range clashes {
+			if clash.Course1 == nil {
+				base.Error.Printf(
+					"(TODO) Fixed lesson in blocked slot: %s @ %d.%d,\n Course %s\n",
+					clash.Resource.GetResourceTag(),
+					clash.Slot.Day,
+					clash.Slot.Hour,
+					tt_shared_data.View(clash.Course2),
+				)
+
+			} else {
+				base.Error.Printf(
+					"(TODO) Fixed lesson clash: %s @ %d.%d,\n Courses %s & %s\n",
+					clash.Resource.GetResourceTag(),
+					clash.Slot.Day,
+					clash.Slot.Hour,
+					tt_shared_data.View(clash.Course1),
+					tt_shared_data.View(clash.Course2),
+				)
+			}
+		}
+		return
+	}
 
 	// Catch termination signal
 	sigChan := make(chan os.Signal, 1)
@@ -311,6 +337,8 @@ tickloop:
 				stage = 10
 				base.Message.Printf(
 					"(TODO) [%d] Unconstrained instance failed", Ticks)
+
+				base.Error.Println(" ... " + tt_data.Message)
 
 				//TODO: Seek problems in the unconstrained data.
 				panic("TODO")
