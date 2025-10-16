@@ -65,26 +65,42 @@ func (rq *RunQueue) update_instances() {
 				//TODO: How to decide whether there is no progress in this case?
 				continue
 			}
-			if t == ttdata.Ticks {
 
-				/* TODO?: This is an attempt to extend the allotted time a bit
-				 * if progress is being made.
-				// Use instance.LastProgress instead of ttdata.LastProgress?
-				if ttdata.Progress > 90 && ttdata.Progress > ttdata.LastProgress {
-					ttdata.LastProgress = ttdata.Progress
-					instance.Timeout = t * 12 / 10
+			/*
+				if t == ttdata.Ticks {
+
+					// TODO?: This is an attempt to extend the allotted time a bit
+					// if progress is being made.
+					// Use instance.LastProgress instead of ttdata.LastProgress?
+					//if ttdata.Progress > 90 && ttdata.Progress > ttdata.LastProgress {
+					//	ttdata.LastProgress = ttdata.Progress
+					//	instance.Timeout = t * 12 / 10
+					//}
+
+					base.Message.Printf("(TODO) [%d] Timeout %s @ %d (%d)\n",
+						Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress)
+
+					//TODO: even if it adds only one constraint?
+					// Stop instance
+					abort_instance(instance)
+
+				} else if ttdata.Progress < (ttdata.Ticks*100)/t {
+			*/
+			if ttdata.Progress < (ttdata.Ticks*100)/t {
+
+				// Progress is too slow ...
+
+				if ttdata.Progress > 90 {
+					t = t * 12 / 10
+					if ttdata.Progress > (ttdata.Ticks*100)/t {
+						instance.Timeout = t
+						base.Message.Printf("(TODO) [%d] Time++ %s @ %d (%d): %d\n",
+							Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress,
+							t)
+						continue
+					}
 				}
-				*/
 
-				base.Message.Printf("(TODO) [%d] Timeout %s @ %d (%d)\n",
-					Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress)
-
-				//TODO: even if it adds only one constraint?
-				// Stop instance
-				abort_instance(instance)
-
-			} else if ttdata.Progress < (ttdata.Ticks*100)/t {
-				// Progress is too slow, stop instance
 				// Perhaps counterintuitively, this seems to perform less well
 				// sometimes!
 				base.Message.Printf("(TODO) [%d] Trap %s @ %d (%d): %d\n",

@@ -41,7 +41,8 @@ func SetParameterDefault() {
 
 	NEW_BASE_TIMEOUT_FACTOR = 12 // => 1.2
 	STAGE_TIMEOUT_MIN = 5
-	NEW_STAGE_TIMEOUT_FACTOR = 20 // => 2.0
+	//NEW_STAGE_TIMEOUT_FACTOR = 20 // => 2.0
+	NEW_STAGE_TIMEOUT_FACTOR = 12 // => 1.5
 
 	DEBUG = false
 }
