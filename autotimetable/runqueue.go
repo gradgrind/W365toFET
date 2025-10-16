@@ -82,6 +82,15 @@ func (rq *RunQueue) update_instances() {
 				//TODO: even if it adds only one constraint?
 				// Stop instance
 				abort_instance(instance)
+
+			} else if ttdata.Progress < (ttdata.Ticks*100)/t {
+				// Progress is too slow, stop instance
+				// Perhaps counterintuitively, this seems to perform less well
+				// sometimes!
+				base.Message.Printf("(TODO) [%d] Trap %s @ %d (%d): %d\n",
+					Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress,
+					len(instance.Constraints))
+				abort_instance(instance)
 			}
 
 		case 1: // completed successfully
