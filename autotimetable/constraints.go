@@ -2,7 +2,6 @@ package autotimetable
 
 import (
 	"W365toFET/timetable"
-	"slices"
 )
 
 /* TODO?
@@ -60,13 +59,10 @@ func get_basic_constraints(
 	nconstraints := 0
 	for ctype := range timetable.LastConstraint {
 		// Only hard constraints for now ...
-
-		failed := FailedConstraints[ctype]
-
 		blist := instance0.HardConstraintEnabled[ctype]
 		cixlist := []int{}
 		for i, b := range blist {
-			if !b && !slices.Contains(failed, i) {
+			if !b {
 				cixlist = append(cixlist, i)
 			}
 		}

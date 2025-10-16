@@ -131,7 +131,6 @@ var Descriptions map[string]string = map[string]string{
 }
 
 func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
-	InitFailedConstraints()
 	LastResult = nil
 	tt_shared_data := tt_data_0.SharedData
 

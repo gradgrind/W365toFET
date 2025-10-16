@@ -82,19 +82,6 @@ func (rq *RunQueue) update_instances() {
 				//TODO: even if it adds only one constraint?
 				// Stop instance
 				abort_instance(instance)
-			} else if ttdata.Progress < (ttdata.Ticks*100)/t {
-				// Progress is too slow, stop instance
-				base.Message.Printf("(TODO) [%d] Trap %s @ %d (%d): %d\n",
-					Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress,
-					len(instance.Constraints))
-				abort_instance(instance)
-				// ... and add it to "failed" list if only one constraint
-				if len(instance.Constraints) == 1 {
-					FailedConstraints[instance.ConstraintType] = append(
-						FailedConstraints[instance.ConstraintType],
-						instance.Constraints[0],
-					)
-				}
 			}
 
 		case 1: // completed successfully
@@ -106,26 +93,8 @@ func (rq *RunQueue) update_instances() {
 			base.Message.Printf("(TODO) [%d] <<- %s @ %d\n",
 				Ticks, ttdata.Description, ttdata.Ticks)
 			instance.ProcessingState = 2
-
-			//TODO: Permanently disable individual constraints which actually
-			// fail. NOT HERE? Only with single constraint!
-			if len(ttdata.Message) != 0 && len(instance.Constraints) == 1 {
-				FailedConstraints[instance.ConstraintType] = append(
-					FailedConstraints[instance.ConstraintType],
-					instance.Constraints[0],
-				)
-				base.Message.Printf("(TODO) [%d] Fail %s : %d\n",
-					Ticks, ttdata.Description, instance.Constraints[0])
-			}
 		}
 	}
-}
-
-// TODO??
-var FailedConstraints map[timetable.ConstraintType][]int
-
-func InitFailedConstraints() {
-	FailedConstraints = map[timetable.ConstraintType][]int{}
 }
 
 func (rq *RunQueue) update_queue() int {
