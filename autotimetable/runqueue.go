@@ -56,27 +56,25 @@ func (rq *RunQueue) update_instances() {
 
 		switch ttdata.State {
 		case 0: // running, not finished
-			// check for timeout
+			if ttdata.Progress == 100 {
+				continue // the state will be changed next time round
+			}
+			// Check for timeout or getting "stuck"
 			t := instance.Timeout
+			if t == 0 {
+				//TODO: How to decide whether there is no progress in this case?
+				continue
+			}
 			if t == ttdata.Ticks {
-				if ttdata.Progress == 100 {
-					continue
-				}
 
-				//TODO: This is an attempt to extend the allotted time a bit
-				// if progress is being made.
-
+				/* TODO?: This is an attempt to extend the allotted time a bit
+				 * if progress is being made.
 				// Use instance.LastProgress instead of ttdata.LastProgress?
-
-				/*
-					if ttdata.Progress > 90 && ttdata.Progress > ttdata.LastProgress {
-						ttdata.LastProgress = ttdata.Progress
-						instance.Timeout = t * 12 / 10
-
-					}
+				if ttdata.Progress > 90 && ttdata.Progress > ttdata.LastProgress {
+					ttdata.LastProgress = ttdata.Progress
+					instance.Timeout = t * 12 / 10
+				}
 				*/
-
-				// TODO end.
 
 				base.Message.Printf("(TODO) [%d] Timeout %s @ %d (%d)\n",
 					Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress)
@@ -84,6 +82,19 @@ func (rq *RunQueue) update_instances() {
 				//TODO: even if it adds only one constraint?
 				// Stop instance
 				abort_instance(instance)
+			} else if ttdata.Progress < (ttdata.Ticks*100)/t {
+				// Progress is too slow, stop instance
+				base.Message.Printf("(TODO) [%d] Trap %s @ %d (%d): %d\n",
+					Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress,
+					len(instance.Constraints))
+				abort_instance(instance)
+				// ... and add it to "failed" list if only one constraint
+				if len(instance.Constraints) == 1 {
+					FailedConstraints[instance.ConstraintType] = append(
+						FailedConstraints[instance.ConstraintType],
+						instance.Constraints[0],
+					)
+				}
 			}
 
 		case 1: // completed successfully
@@ -95,8 +106,26 @@ func (rq *RunQueue) update_instances() {
 			base.Message.Printf("(TODO) [%d] <<- %s @ %d\n",
 				Ticks, ttdata.Description, ttdata.Ticks)
 			instance.ProcessingState = 2
+
+			//TODO: Permanently disable individual constraints which actually
+			// fail. NOT HERE? Only with single constraint!
+			if len(ttdata.Message) != 0 && len(instance.Constraints) == 1 {
+				FailedConstraints[instance.ConstraintType] = append(
+					FailedConstraints[instance.ConstraintType],
+					instance.Constraints[0],
+				)
+				base.Message.Printf("(TODO) [%d] Fail %s : %d\n",
+					Ticks, ttdata.Description, instance.Constraints[0])
+			}
 		}
 	}
+}
+
+// TODO??
+var FailedConstraints map[timetable.ConstraintType][]int
+
+func InitFailedConstraints() {
+	FailedConstraints = map[timetable.ConstraintType][]int{}
 }
 
 func (rq *RunQueue) update_queue() int {

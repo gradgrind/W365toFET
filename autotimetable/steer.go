@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"slices"
 	"strings"
 	"syscall"
@@ -130,6 +131,7 @@ var Descriptions map[string]string = map[string]string{
 }
 
 func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
+	InitFailedConstraints()
 	LastResult = nil
 	tt_shared_data := tt_data_0.SharedData
 
@@ -225,8 +227,11 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	defer ticker.Stop()
 	defer func() {
 		// Tidy up
-		if recover() != nil {
-			base.Message.Println("(TODO) *** RECOVER ***")
+		r := recover()
+		if r != nil {
+			base.Message.Println("(TODO) *** RECOVER ***", r)
+			fmt.Printf("(TODO) *** RECOVER *** %s\n%s\n",
+				r, debug.Stack())
 		}
 		for {
 			count := 0
@@ -349,6 +354,10 @@ tickloop:
 		if stage <= 2 {
 			// During stage 1 we are accumulating single-constraint-type
 			// instances: check their states.
+			// In stage 2 the constraints which failed (or weren't included)
+			// in stage 1 are tried again with longer timeouts. This stage
+			// runs until there are no more failing constraints or, more
+			// likely, the overall timeout is reached.
 			next_timeout := 0
 
 			// See if an instance has completed successfully.
