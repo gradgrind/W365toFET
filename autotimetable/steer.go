@@ -40,10 +40,9 @@ var (
 func SetParameterDefault() {
 	MAXPROCESSES = min(max(runtime.NumCPU(), 4), 6)
 
-	NEW_BASE_TIMEOUT_FACTOR = 12 // => 1.2
+	NEW_BASE_TIMEOUT_FACTOR = 15 // => 1.5
 	STAGE_TIMEOUT_MIN = 5
-	//NEW_STAGE_TIMEOUT_FACTOR = 20 // => 2.0
-	NEW_STAGE_TIMEOUT_FACTOR = 12 // => 1.5
+	NEW_STAGE_TIMEOUT_FACTOR = 15 // => 1.5
 	UNCHANGED_LIMIT_PERCENT = 80
 
 	DEBUG = false
@@ -106,26 +105,18 @@ one constraint being added) there is no successor, the constraint is dropped.
 
 When an instance completes successfully within the allotted time, its result
 is saved as a JSON file, so that the best result so far gradually encompasses
-more of the constraints. However, it can happen that the divisions complete
-before the overall timeout occurs, leaving only the fully constrained
-instance running.
-
-TODO: At this point rejected constraints should be tried again, but with
-longer timeouts.
+more of the constraints. When all the constraints have been tested with a
+certain timeout, the rejected ones are tried again, but with longer timeouts.
 
 The results include diagnostic information (at least an indication of which
 constraints were dropped).
 
-If the first run through of the single-constraint accumulation doesn't
-complete before the overall timeout, that may indicate that a longer overall
-timeout might be considered.
-
-TODO: There is probably no general "optimum" value for the various timeouts,
-that is likely to depend on the data. But perhaps values can be found which
-are frequently useful. It might be helpful to use shorter overall timeouts
-during the initial phases of testing the data, to identify potential problem
-areas without long processing delays. For later phases longer times may be
-necessary (depending on the difficulty of the data).
+TODO: There is probably no general "optimum" value for the various timeout
+parameters, that is likely to depend on the data. But perhaps values can be
+found which are frequently useful. It might be helpful to use shorter overall
+timeouts during the initial phases of testing the data, to identify potential
+problem areas without long processing delays. For later phases longer times
+may be necessary (depending on the difficulty of the data).
 */
 
 var Descriptions map[string]string = map[string]string{
@@ -224,7 +215,6 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 
 	// *** Ticker loop ***
 	var constraint_list []*TtInstance
-	var sidelined []*TtInstance
 	var current_instance *TtInstance
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
@@ -362,7 +352,7 @@ tickloop:
 			// in stage 1 are tried again with longer timeouts. This stage
 			// runs until there are no more failing constraints or, more
 			// likely, the overall timeout is reached.
-			next_timeout := 0
+			next_timeout := 0 // non-zero => "restart with new base"
 
 			// See if an instance has completed successfully.
 			for i, instance := range constraint_list {
@@ -377,11 +367,12 @@ tickloop:
 					constraint_list = slices.Delete(
 						constraint_list, i, i+1)
 
+					// next_timeout! = 0 and current_instance is new
 					break
 				}
 			}
 			if len(constraint_list) == 0 {
-				// ... all constraint trials finished.
+				// ... all current constraint trials finished.
 				if stage == 1 {
 					base.Message.Printf(
 						"(TODO) [%d] Stage 1 ended\n", Ticks)
@@ -417,7 +408,7 @@ tickloop:
 			new_constraint_list := []*TtInstance{}
 			for _, instance := range constraint_list {
 				if instance.ProcessingState == 2 {
-					// failed (or timed out): split the instance
+					// failed (or timed out)
 
 					// Split if more than one instance in list
 					if len(instance.Constraints) > 1 && stage == 2 {
@@ -440,12 +431,8 @@ tickloop:
 								instance.ConstraintType,
 								instance.Constraints[nhalf:],
 								timeout))
-					} else {
-						if len(instance.Constraints) == 0 {
-							panic("Bug, expected constraint(s)")
-						}
-						// Add to sidelined instances, for next restart
-						sidelined = append(sidelined, instance)
+					} else if len(instance.Constraints) == 0 {
+						panic("Bug, expected constraint(s)")
 					}
 				} else {
 					if next_timeout != 0 {
@@ -470,50 +457,6 @@ tickloop:
 			}
 			constraint_list = append(new_constraint_list,
 				split_instances...)
-
-			//TODO: This is not right! Sidelined items should only be added
-			// at the next restart ...
-			
-			if next_timeout != 0 {
-				for _, instance := range sidelined {
-					// Build new instance
-
-					if len(instance.Constraints) > 1 {
-						timeout := next_timeout
-						if timeout == 0 {
-							timeout = instance.Timeout
-						}
-						nhalf := len(instance.Constraints) / 2
-						split_instances = append(split_instances,
-							new_instance(
-								current_instance,
-								instance.TtData.Description,
-								instance.ConstraintType,
-								instance.Constraints[:nhalf],
-								timeout))
-						split_instances = append(split_instances,
-							new_instance(
-								current_instance,
-								instance.TtData.Description,
-								instance.ConstraintType,
-								instance.Constraints[nhalf:],
-								timeout))
-					} else {
-
-
-
-					instance = new_instance(
-						current_instance,
-						instance.TtData.Description,
-						instance.ConstraintType,
-						instance.Constraints,
-						next_timeout)
-					runqueue.add(instance)
-					new_constraint_list = append(
-						new_constraint_list, instance)
-				}
-				sidelined = []*TtInstance{}
-			}
 
 			for _, instance := range split_instances {
 				runqueue.add(instance)
