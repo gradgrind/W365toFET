@@ -69,13 +69,15 @@ func get_basic_constraints(
 		if len(cixlist) == 0 {
 			continue
 		}
-		if stage == 0 {
-			// Exclude class gaps constraints
-			if ctype == timetable.ClassMaxGapsPerDay ||
-				ctype == timetable.ClassMaxGapsPerWeek {
-				continue
+		/*
+			if stage == 0 {
+				// Exclude class gaps constraints
+				if ctype == timetable.ClassMaxGapsPerDay ||
+					ctype == timetable.ClassMaxGapsPerWeek {
+					continue
+				}
 			}
-		}
+		*/
 		nconstraints += len(cixlist)
 
 		clist, ok := TtData_0.HardConstraints[ctype]

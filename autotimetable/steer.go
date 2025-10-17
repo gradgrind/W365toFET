@@ -411,7 +411,7 @@ tickloop:
 					// failed (or timed out)
 
 					// Split if more than one instance in list
-					if len(instance.Constraints) > 1 && stage == 2 {
+					if len(instance.Constraints) > 1 { //&& stage == 2 {
 						timeout := next_timeout
 						if timeout == 0 {
 							timeout = instance.Timeout
