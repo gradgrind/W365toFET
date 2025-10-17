@@ -420,7 +420,7 @@ tickloop:
 					// failed (or timed out): split the instance
 
 					// Split if more than one instance in list
-					if len(instance.Constraints) > 1 {
+					if len(instance.Constraints) > 1 && stage == 2 {
 						timeout := next_timeout
 						if timeout == 0 {
 							timeout = instance.Timeout
@@ -441,8 +441,8 @@ tickloop:
 								instance.Constraints[nhalf:],
 								timeout))
 					} else {
-						if len(instance.Constraints) != 1 {
-							panic("Bug, expected a single constraint")
+						if len(instance.Constraints) == 0 {
+							panic("Bug, expected constraint(s)")
 						}
 						// Add to sidelined instances, for next restart
 						sidelined = append(sidelined, instance)
@@ -470,9 +470,38 @@ tickloop:
 			}
 			constraint_list = append(new_constraint_list,
 				split_instances...)
+
+			//TODO: This is not right! Sidelined items should only be added
+			// at the next restart ...
+			
 			if next_timeout != 0 {
 				for _, instance := range sidelined {
 					// Build new instance
+
+					if len(instance.Constraints) > 1 {
+						timeout := next_timeout
+						if timeout == 0 {
+							timeout = instance.Timeout
+						}
+						nhalf := len(instance.Constraints) / 2
+						split_instances = append(split_instances,
+							new_instance(
+								current_instance,
+								instance.TtData.Description,
+								instance.ConstraintType,
+								instance.Constraints[:nhalf],
+								timeout))
+						split_instances = append(split_instances,
+							new_instance(
+								current_instance,
+								instance.TtData.Description,
+								instance.ConstraintType,
+								instance.Constraints[nhalf:],
+								timeout))
+					} else {
+
+
+
 					instance = new_instance(
 						current_instance,
 						instance.TtData.Description,
@@ -489,12 +518,7 @@ tickloop:
 			for _, instance := range split_instances {
 				runqueue.add(instance)
 			}
-			continue
 		}
-
-		//TODO: A "stuck" analysis on running instances might help to
-		// reduce processing time?
-
 	} // tickloop: end
 
 	//TODO: Consider also the possibility that there may be no (or only one)
