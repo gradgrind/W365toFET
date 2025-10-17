@@ -62,7 +62,12 @@ func (rq *RunQueue) update_instances() {
 			// Check for timeout or getting "stuck"
 			t := instance.Timeout
 			if t == 0 {
-				//TODO: How to decide whether there is no progress in this case?
+				//TODO?
+				// Check for lack of progress when there is no timeout
+				if (Ticks-ttdata.LastTime)*100 > UNCHANGED_LIMIT_PERCENT*Ticks {
+					// Stop instance
+					abort_instance(instance)
+				}
 				continue
 			}
 
@@ -86,23 +91,28 @@ func (rq *RunQueue) update_instances() {
 
 				} else if ttdata.Progress < (ttdata.Ticks*100)/t {
 			*/
-			if ttdata.Progress < (ttdata.Ticks*100)/t {
+
+			limit := (ttdata.Ticks * 100) / t
+			if ttdata.Progress < limit {
 
 				// Progress is too slow ...
-
-				if ttdata.Progress > 90 {
-					t = t * 12 / 10
-					if ttdata.Progress > (ttdata.Ticks*100)/t {
-						instance.Timeout = t
-						base.Message.Printf("(TODO) [%d] Time++ %s @ %d (%d): %d\n",
-							Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress,
-							t)
-						continue
-					}
+				if ttdata.Progress*2 > limit {
+					continue
 				}
 
-				// Perhaps counterintuitively, this seems to perform less well
-				// sometimes!
+				/*
+					if ttdata.Progress > 90 {
+						t = t * 12 / 10
+						if ttdata.Progress > (ttdata.Ticks*100)/t {
+							instance.Timeout = t
+							base.Message.Printf("(TODO) [%d] Time++ %s @ %d (%d): %d\n",
+								Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress,
+								t)
+							continue
+						}
+					}
+				*/
+
 				base.Message.Printf("(TODO) [%d] Trap %s @ %d (%d): %d\n",
 					Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress,
 					len(instance.Constraints))

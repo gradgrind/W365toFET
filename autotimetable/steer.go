@@ -32,8 +32,9 @@ var (
 
 	DEBUG bool
 
-	InstanceCounter int = 0
-	LastResult      *Result
+	InstanceCounter         int = 0
+	LastResult              *Result
+	UNCHANGED_LIMIT_PERCENT int
 )
 
 func SetParameterDefault() {
@@ -43,6 +44,7 @@ func SetParameterDefault() {
 	STAGE_TIMEOUT_MIN = 5
 	//NEW_STAGE_TIMEOUT_FACTOR = 20 // => 2.0
 	NEW_STAGE_TIMEOUT_FACTOR = 12 // => 1.5
+	UNCHANGED_LIMIT_PERCENT = 80
 
 	DEBUG = false
 }
@@ -222,6 +224,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 
 	// *** Ticker loop ***
 	var constraint_list []*TtInstance
+	var sidelined []*TtInstance
 	var current_instance *TtInstance
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
@@ -271,7 +274,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	}()
 
 tickloop:
-	for runqueue.update_queue() != 0 {
+	for runqueue.update_queue() != 0 || stage != 3 {
 		select {
 		case <-ticker.C:
 		case <-sigChan:
@@ -286,6 +289,7 @@ tickloop:
 			// Cancel all other runs and return this instance as result.
 			current_instance = full_instance
 			new_current_instance(current_instance)
+			base.Message.Printf("(TODO) *** All constraints OK @ %d ***\n", Ticks)
 			break
 		} else {
 			p := full_instance.TtData.Progress
@@ -436,6 +440,12 @@ tickloop:
 								instance.ConstraintType,
 								instance.Constraints[nhalf:],
 								timeout))
+					} else {
+						if len(instance.Constraints) != 1 {
+							panic("Bug, expected a single constraint")
+						}
+						// Add to sidelined instances, for next restart
+						sidelined = append(sidelined, instance)
 					}
 				} else {
 					if next_timeout != 0 {
@@ -460,6 +470,21 @@ tickloop:
 			}
 			constraint_list = append(new_constraint_list,
 				split_instances...)
+			if next_timeout != 0 {
+				for _, instance := range sidelined {
+					// Build new instance
+					instance = new_instance(
+						current_instance,
+						instance.TtData.Description,
+						instance.ConstraintType,
+						instance.Constraints,
+						next_timeout)
+					runqueue.add(instance)
+					new_constraint_list = append(
+						new_constraint_list, instance)
+				}
+				sidelined = []*TtInstance{}
+			}
 
 			for _, instance := range split_instances {
 				runqueue.add(instance)
