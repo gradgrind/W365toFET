@@ -27,7 +27,7 @@ var (
 
 	NEW_BASE_TIMEOUT_FACTOR  int // factor * 10
 	STAGE_TIMEOUT_MIN        int
-	STAGE_TIMEOUT            int
+	CYCLE_TIMEOUT            int
 	NEW_STAGE_TIMEOUT_FACTOR int // factor * 10
 
 	DEBUG bool
@@ -193,12 +193,12 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	//TODO: Instance without soft constraints (if any)?
 
 	// Unconstrained instance
-	STAGE_TIMEOUT = STAGE_TIMEOUT_MIN
+	CYCLE_TIMEOUT = STAGE_TIMEOUT_MIN
 	tt_data := new_ttdata(tt_data_0, "ONLY_BLOCKED_SLOTS")
 	null_instance := &TtInstance{
 		//Timeout: max(TIMEOUT/UNCONSTRAINED_TIMEOUT_FRACTION,
 		//	MIN_UNCONSTRAINED_TIMEOUT),
-		Timeout: STAGE_TIMEOUT,
+		Timeout: CYCLE_TIMEOUT,
 
 		TtData: tt_data,
 		HardConstraintEnabled: setup_hard_constraint_map(
@@ -210,11 +210,12 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 
 	// Start stage 0
 	stage := 0
-	full_progress := 0      // current percentage
-	full_progress_last := 0 // time of last increment
+	full_progress := 0       // current percentage
+	full_progress_ticks := 0 // time of last increment
 
 	// *** Ticker loop ***
 	var constraint_list []*TtInstance
+	// The (successful) instance on which current trials are based:
 	var current_instance *TtInstance
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
@@ -223,10 +224,11 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 		r := recover()
 		if r != nil {
 			base.Message.Println("(TODO) *** RECOVER ***", r)
-			fmt.Printf("(TODO) *** RECOVER *** %s\n%s\n",
-				r, debug.Stack())
+			debug.PrintStack()
 		}
 		for {
+			// Wait for active instances to finish, stopping them if
+			// necessary.
 			count := 0
 			for instance := range runqueue.Active {
 				if instance.TtData.State == 0 {
@@ -245,6 +247,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 			timetable.BACKEND.Tidy(workingdir)
 		}
 		if LastResult != nil {
+			// Save result of last successful instance.
 			//b, err := json.Marshal(LastResult)
 			b, err := json.MarshalIndent(LastResult, "", "  ")
 			if err != nil {
@@ -264,7 +267,10 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	}()
 
 tickloop:
-	for runqueue.update_queue() != 0 || stage != 3 {
+	// Start queued instances if there are free processors.
+	// Quit the loop if there are no instances left and no constraints
+	// pending (stage -1).
+	for runqueue.update_queue() != 0 || stage >= 0 {
 		select {
 		case <-ticker.C:
 		case <-sigChan:
@@ -285,13 +291,13 @@ tickloop:
 			p := full_instance.TtData.Progress
 			if p > full_progress {
 				full_progress = p
-				full_progress_last = Ticks
+				full_progress_ticks = Ticks
 				base.Message.Printf(
 					"(TODO) [%d] ? %s (%d @ %d)\n",
 					Ticks,
 					full_instance.TtData.Description,
 					full_progress,
-					full_progress_last,
+					full_progress_ticks,
 				)
 			}
 		}
@@ -301,9 +307,13 @@ tickloop:
 				"(TODO) [%d] TIMEOUT (%d @ %d)\n",
 				Ticks,
 				full_progress,
-				full_progress_last,
+				full_progress_ticks,
 			)
 			break
+		}
+
+		if stage < 0 {
+			continue
 		}
 
 		//TODO: Special treatment if there are no constraints to add?
@@ -316,24 +326,18 @@ tickloop:
 				if null_instance.TtData.Ticks == null_instance.Timeout {
 					abort_instance(null_instance)
 				}
+				continue
 			case 1:
 				// The null instance completed successfully.
 				current_instance = null_instance
 				new_current_instance(current_instance)
 				// Start trials of single constraint types.
-				constraint_list, _ = get_basic_constraints(
-					null_instance, 0)
-				// Queue instances for running
-				for _, bc := range constraint_list {
-					runqueue.add(bc)
-				}
-				//TODO: This is the initial set, possibly excluding some ...
 				base.Message.Printf("(TODO) [%d] INITIAL CONSTRAINT-TYPES: %d\n",
 					Ticks, len(constraint_list))
-				stage = 1
+				// not continue!
 			default:
 				// The null instance failed.
-				stage = 10
+				stage = -10
 				base.Message.Printf(
 					"(TODO) [%d] Unconstrained instance failed", Ticks)
 
@@ -341,126 +345,138 @@ tickloop:
 
 				//TODO: Seek problems in the unconstrained data.
 				panic("TODO")
+				continue
 			}
+		}
+
+		// This is the main phase, during which instances are run which
+		// try to add the (as yet not included) constraints of a single
+		// type, with a given timeout. A certain number of these can be
+		// run in parallel. If one completes successfully, it is removed
+		// from the constraint list. All the other instances are stopped
+		// and the successful instance is used as the base for a new
+		// cycle. Depending on the time this instance took to complete,
+		// the timeout may be increased.
+		// There is some flexibility around the timeouts. If an instance
+		// seems to be progressing too slowly, it can be halted
+		// immediately. On the other hand, if the instance looks like it
+		// might complete if given a little more time, the timeout is
+		// delayed.
+		// When an instance times out, it is removed from the constraint
+		// list. It is split into two, each with half of the constraints,
+		// the new instances being added to the constraint list and to the
+		// end of the run-queue. If the instance has only one constraint
+		// to add, no new instance is started – until the next stage.
+		// When the constraint list is empty, the stage ends. For the next
+		// stage, the as yet unincluded constraints are collected again
+		// and the timeout is increased somewhat.
+
+		// Should it come to pass that all the constraints have been
+		// added successfully (unlikely, because the overall timeout
+		// will have been reached or the hard-only or full instance
+		// will have completed already), stage -1 is entered, which will
+		// cause the loop to be exited.
+
+		next_timeout := 0 // non-zero => "restart with new base"
+
+		// See if an instance has completed successfully.
+		for i, instance := range constraint_list {
+			if instance.ProcessingState == 1 {
+				// Completed successfully, make this instance the new base.
+				current_instance = instance
+				new_current_instance(current_instance)
+				next_timeout = max(
+					instance.TtData.Ticks*NEW_BASE_TIMEOUT_FACTOR/10,
+					CYCLE_TIMEOUT)
+				// Remove it from constraint list.
+				constraint_list = slices.Delete(
+					constraint_list, i, i+1)
+
+				// next_timeout != 0 and current_instance is new
+				break
+			}
+		}
+		if len(constraint_list) == 0 {
+			// ... all current constraint trials finished.
+			// Start trials of remaining (hard) constraints.
+			CYCLE_TIMEOUT = max(CYCLE_TIMEOUT,
+				current_instance.TtData.Ticks) *
+				NEW_STAGE_TIMEOUT_FACTOR / 10
+			var n int
+			constraint_list, n = get_basic_constraints(current_instance)
+			if n == 0 {
+				stage = -1
+			} else {
+				stage++
+				// Queue instances for running
+				for _, bc := range constraint_list {
+					runqueue.add(bc)
+				}
+			}
+			base.Message.Printf(
+				"(TODO) [%d] Stage %d: %d (timeout %d)\n",
+				Ticks, stage, n, CYCLE_TIMEOUT)
 			continue
 		}
 
-		if stage <= 2 {
-			// During stage 1 we are accumulating single-constraint-type
-			// instances: check their states.
-			// In stage 2 the constraints which failed (or weren't included)
-			// in stage 1 are tried again with longer timeouts. This stage
-			// runs until there are no more failing constraints or, more
-			// likely, the overall timeout is reached.
-			next_timeout := 0 // non-zero => "restart with new base"
+		// Seek failed instances, which should be split.
+		// If there is a new base, stop the old instances and
+		// restart them accordingly.
+		split_instances := []*TtInstance{}
+		new_constraint_list := []*TtInstance{}
+		for _, instance := range constraint_list {
+			if instance.ProcessingState == 2 {
+				// timed out / failed
 
-			// See if an instance has completed successfully.
-			for i, instance := range constraint_list {
-				if instance.ProcessingState == 1 {
-					// Completed successfully, make this instance the new base.
-					current_instance = instance
-					new_current_instance(current_instance)
-					next_timeout = max(
-						instance.TtData.Ticks*NEW_BASE_TIMEOUT_FACTOR/10,
-						STAGE_TIMEOUT)
-					// Remove it from constraint list.
-					constraint_list = slices.Delete(
-						constraint_list, i, i+1)
-
-					// next_timeout! = 0 and current_instance is new
-					break
-				}
-			}
-			if len(constraint_list) == 0 {
-				// ... all current constraint trials finished.
-				if stage == 1 {
-					base.Message.Printf(
-						"(TODO) [%d] Stage 1 ended\n", Ticks)
-					stage = 2
-				}
-				// Start trials of remaining (hard) constraints.
-				STAGE_TIMEOUT = max(STAGE_TIMEOUT,
-					current_instance.TtData.Ticks) *
-					NEW_STAGE_TIMEOUT_FACTOR / 10
-				var n int
-				constraint_list, n = get_basic_constraints(
-					current_instance, stage)
-				if len(constraint_list) == 0 {
-					base.Message.Printf(
-						"(TODO) [%d] Stage 2 ended\n", Ticks)
-					stage = 3
-				} else {
-					base.Message.Printf(
-						"(TODO) [%d] Remaining: %d (timeout %d)\n",
-						Ticks, n, STAGE_TIMEOUT)
-					// Queue instances for running
-					for _, bc := range constraint_list {
-						runqueue.add(bc)
+				// Split if more than one instance in list
+				if len(instance.Constraints) > 1 {
+					timeout := next_timeout
+					if timeout == 0 {
+						timeout = instance.Timeout
 					}
-				}
-				continue
-			}
-
-			// Seek failed instances, which should be split.
-			// If there is a new base, stop the old instances and
-			// restart them accordingly.
-			split_instances := []*TtInstance{}
-			new_constraint_list := []*TtInstance{}
-			for _, instance := range constraint_list {
-				if instance.ProcessingState == 2 {
-					// failed (or timed out)
-
-					// Split if more than one instance in list
-					if len(instance.Constraints) > 1 { //&& stage == 2 {
-						timeout := next_timeout
-						if timeout == 0 {
-							timeout = instance.Timeout
-						}
-						nhalf := len(instance.Constraints) / 2
-						split_instances = append(split_instances,
-							new_instance(
-								current_instance,
-								instance.TtData.Description,
-								instance.ConstraintType,
-								instance.Constraints[:nhalf],
-								timeout))
-						split_instances = append(split_instances,
-							new_instance(
-								current_instance,
-								instance.TtData.Description,
-								instance.ConstraintType,
-								instance.Constraints[nhalf:],
-								timeout))
-					} else if len(instance.Constraints) == 0 {
-						panic("Bug, expected constraint(s)")
-					}
-				} else {
-					if next_timeout != 0 {
-						// Cancel existing instance
-						if instance.ProcessingState == 0 {
-							abort_instance(instance)
-						}
-						// Indicate that a queued instance is not to be started
-						instance.ProcessingState = 3
-						// Build new instance
-						instance = new_instance(
+					nhalf := len(instance.Constraints) / 2
+					split_instances = append(split_instances,
+						new_instance(
 							current_instance,
 							instance.TtData.Description,
 							instance.ConstraintType,
-							instance.Constraints,
-							next_timeout)
-						runqueue.add(instance)
-					}
-					new_constraint_list = append(
-						new_constraint_list, instance)
+							instance.Constraints[:nhalf],
+							timeout))
+					split_instances = append(split_instances,
+						new_instance(
+							current_instance,
+							instance.TtData.Description,
+							instance.ConstraintType,
+							instance.Constraints[nhalf:],
+							timeout))
+				} else if len(instance.Constraints) == 0 {
+					panic("Bug, expected constraint(s)")
 				}
+			} else {
+				if next_timeout != 0 {
+					// Cancel existing instance
+					if instance.ProcessingState == 0 {
+						abort_instance(instance)
+					}
+					// Indicate that a queued instance is not to be started
+					instance.ProcessingState = 3
+					// Build new instance
+					instance = new_instance(
+						current_instance,
+						instance.TtData.Description,
+						instance.ConstraintType,
+						instance.Constraints,
+						next_timeout)
+					runqueue.add(instance)
+				}
+				new_constraint_list = append(
+					new_constraint_list, instance)
 			}
-			constraint_list = append(new_constraint_list,
-				split_instances...)
-
-			for _, instance := range split_instances {
-				runqueue.add(instance)
-			}
+		}
+		constraint_list = append(new_constraint_list,
+			split_instances...)
+		for _, instance := range split_instances {
+			runqueue.add(instance)
 		}
 	} // tickloop: end
 
@@ -589,35 +605,6 @@ func new_ttdata(
 	return ttdata
 }
 
-/*
-// This will probably need some tuning. There is probably no such thing as
-// an optimal algorithm, that depends very much on the data.
-func timed_out(instance *TtInstance) bool {
-	if instance.Timeout < 0 {
-		// This allows a complete override of the timeout feature.
-		// Unlike Timeout = 0 it will not try to catch runs which get
-		// stuck at low completion levels.
-		return false
-	}
-	if instance.Timeout != 0 && instance.Ticks > instance.Timeout {
-		return true
-	}
-	delta := instance.Ticks - instance.LastTime
-	if delta < 5 {
-		return false
-	}
-	// The acceptable time should depend on Progress.
-	if instance.Progress < 80 && delta*2 > instance.Progress {
-		return true
-	}
-	if instance.Progress < 95 && delta > 400 {
-		return true
-	}
-	return false
-}
-*/
-
-//
 /*
 // TODO:  Is this old bit fetching file names from db.ModuleData still
 // needed somehow?
