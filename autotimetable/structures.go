@@ -16,12 +16,11 @@ type TtInstance struct {
 	Timeout int               // ticks
 	TtData  *timetable.TtData // current (possibly modified) data
 
-	HardConstraintEnabled [][]bool // [type][index] -> enabled
-
 	// Base data for this instance:
-	BaseInstance   *TtInstance
-	ConstraintType timetable.ConstraintType
-	Constraints    []int // individual constraint indexes
+	BaseInstance            *TtInstance
+	ConstraintType          timetable.ConstraintType
+	Constraints             []int    // individual constraint indexes
+	ConstraintEnabledMatrix [][]bool // [type][index] -> enabled
 
 	// Run time
 	Stopped         bool // `abort_instance()` has been called on this instance

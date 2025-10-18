@@ -55,6 +55,7 @@ func main() {
 
 	// May want to change this with a different back-end ...
 	workingdir := stempath + "_fet"
+	os.RemoveAll(workingdir)
 	err = os.MkdirAll(workingdir, 0755)
 	if err != nil {
 		panic(err)

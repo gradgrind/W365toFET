@@ -62,7 +62,6 @@ func (rq *RunQueue) update_instances() {
 			// Check for timeout or getting "stuck"
 			t := instance.Timeout
 			if t == 0 {
-				//TODO?
 				// Check for lack of progress when there is no timeout
 				if (Ticks-ttdata.LastTime)*100 > UNCHANGED_LIMIT_PERCENT*Ticks {
 					// Stop instance
@@ -71,48 +70,12 @@ func (rq *RunQueue) update_instances() {
 				continue
 			}
 
-			/*
-				if t == ttdata.Ticks {
-
-					// TODO?: This is an attempt to extend the allotted time a bit
-					// if progress is being made.
-					// Use instance.LastProgress instead of ttdata.LastProgress?
-					//if ttdata.Progress > 90 && ttdata.Progress > ttdata.LastProgress {
-					//	ttdata.LastProgress = ttdata.Progress
-					//	instance.Timeout = t * 12 / 10
-					//}
-
-					base.Message.Printf("(TODO) [%d] Timeout %s @ %d (%d)\n",
-						Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress)
-
-					//TODO: even if it adds only one constraint?
-					// Stop instance
-					abort_instance(instance)
-
-				} else if ttdata.Progress < (ttdata.Ticks*100)/t {
-			*/
-
 			limit := (ttdata.Ticks * 100) / t
 			if ttdata.Progress < limit {
-
 				// Progress is too slow ...
 				if ttdata.Progress*2 > limit {
 					continue
 				}
-
-				/*
-					if ttdata.Progress > 90 {
-						t = t * 12 / 10
-						if ttdata.Progress > (ttdata.Ticks*100)/t {
-							instance.Timeout = t
-							base.Message.Printf("(TODO) [%d] Time++ %s @ %d (%d): %d\n",
-								Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress,
-								t)
-							continue
-						}
-					}
-				*/
-
 				base.Message.Printf("(TODO) [%d] Trap %s @ %d (%d): %d\n",
 					Ticks, ttdata.Description, ttdata.Ticks, ttdata.Progress,
 					len(instance.Constraints))
@@ -168,10 +131,5 @@ func (rq *RunQueue) update_queue() int {
 			Ticks, instance.TtData.Description, instance.Timeout)
 		timetable.BACKEND.Run(instance.TtData, TESTING)
 	}
-	//TODO--
-	//fmt.Printf("$ [%d] Running/Active instances: %d/%d\n",
-	//	Ticks, running, len(rq.Active))
-	//base.Message.Printf("$ [%d] Running/Active instances: %d/%d\n",
-	//	Ticks, running, len(rq.Active))
 	return len(rq.Active)
 }

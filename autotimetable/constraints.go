@@ -4,9 +4,9 @@ import (
 	"W365toFET/timetable"
 )
 
-// Set up the `TtInstance.HardConstraintEnabled` matrix based on the initial
-// hard constraint map. Initially all constraints are disabled in this map.
-func setup_hard_constraint_map(
+// Return a constraint-enabled matrix based on the initial hard or soft
+// constraint map. Initially all constraints are disabled in this map.
+func setup_constraint_map(
 	constraints map[timetable.ConstraintType][]any,
 ) [][]bool {
 	cmap := make([][]bool, timetable.LastConstraint)
@@ -22,12 +22,19 @@ func setup_hard_constraint_map(
 
 // Collect the individual constraints in the order given by the
 // ConstraintType indexes.
-func get_basic_constraints(instance0 *TtInstance) ([]*TtInstance, int) {
+func get_basic_constraints(instance0 *TtInstance, soft bool,
+) ([]*TtInstance, int) {
 	instances := []*TtInstance{} // one instance per constraint type
 	nconstraints := 0            // count constraints
+	emap := instance0.ConstraintEnabledMatrix
+	var cmap map[timetable.ConstraintType][]any
+	if soft {
+		cmap = TtData_0.SoftConstraints
+	} else {
+		cmap = TtData_0.HardConstraints
+	}
 	for ctype := range timetable.LastConstraint {
-		// Only hard constraints for now ...
-		blist := instance0.HardConstraintEnabled[ctype]
+		blist := emap[ctype]
 		cixlist := []int{}
 		for i, b := range blist {
 			if !b {
@@ -39,7 +46,7 @@ func get_basic_constraints(instance0 *TtInstance) ([]*TtInstance, int) {
 		}
 		nconstraints += len(cixlist)
 
-		clist, ok := TtData_0.HardConstraints[ctype]
+		clist, ok := cmap[ctype]
 		if !ok {
 			continue
 		}
@@ -53,7 +60,8 @@ func get_basic_constraints(instance0 *TtInstance) ([]*TtInstance, int) {
 			ctype.String(),
 			ctype,
 			cixlist,
-			CYCLE_TIMEOUT)
+			CYCLE_TIMEOUT,
+			soft)
 		instances = append(instances, instance)
 	}
 	return instances, nconstraints
@@ -66,5 +74,12 @@ func disable_all_constraints(ttdata *timetable.TtData) {
 	}
 	for k := range ttdata.HardConstraints {
 		ttdata.HardConstraints[k] = nil
+	}
+}
+
+func disable_soft_constraints(ttdata *timetable.TtData) {
+	// Remove soft constraints
+	for k := range ttdata.SoftConstraints {
+		ttdata.SoftConstraints[k] = nil
 	}
 }

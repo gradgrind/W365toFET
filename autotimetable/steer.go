@@ -43,7 +43,7 @@ func SetParameterDefault() {
 	NEW_BASE_TIMEOUT_FACTOR = 15 // => 1.5
 	STAGE_TIMEOUT_MIN = 5
 	NEW_STAGE_TIMEOUT_FACTOR = 15 // => 1.5
-	UNCHANGED_LIMIT_PERCENT = 80
+	UNCHANGED_LIMIT_PERCENT = 90
 
 	DEBUG = false
 }
@@ -120,8 +120,9 @@ may be necessary (depending on the difficulty of the data).
 */
 
 var Descriptions map[string]string = map[string]string{
-	"COMPLETE":           "All constraints active",
+	"COMPLETE":           "All constraints enabled",
 	"ONLY_BLOCKED_SLOTS": "All constraints – except blocked slots – disabled",
+	"HARD_ONLY":          "All hard constraints enabled",
 }
 
 func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
@@ -190,28 +191,43 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	// Add to run queue
 	runqueue.add(full_instance)
 
-	//TODO: Instance without soft constraints (if any)?
+	// Instance without soft constraints (if any, otherwise same as full
+	// instance)
+	tt_data := new_ttdata(tt_data_0, "HARD_ONLY")
+	hard_instance := &TtInstance{
+		Timeout: 0,
+
+		TtData: tt_data,
+		ConstraintEnabledMatrix: setup_constraint_map(
+			tt_data_0.HardConstraints),
+	}
+	disable_soft_constraints(tt_data)
+	// Add to run queue
+	runqueue.add(hard_instance)
 
 	// Unconstrained instance
 	CYCLE_TIMEOUT = STAGE_TIMEOUT_MIN
-	tt_data := new_ttdata(tt_data_0, "ONLY_BLOCKED_SLOTS")
+	tt_data = new_ttdata(tt_data_0, "ONLY_BLOCKED_SLOTS")
 	null_instance := &TtInstance{
 		//Timeout: max(TIMEOUT/UNCONSTRAINED_TIMEOUT_FRACTION,
 		//	MIN_UNCONSTRAINED_TIMEOUT),
 		Timeout: CYCLE_TIMEOUT,
 
 		TtData: tt_data,
-		HardConstraintEnabled: setup_hard_constraint_map(
+		ConstraintEnabledMatrix: setup_constraint_map(
 			tt_data_0.HardConstraints),
 	}
-	disable_all_constraints(null_instance.TtData)
+	disable_all_constraints(tt_data)
 	// Add to run queue
 	runqueue.add(null_instance)
 
 	// Start stage 0
 	stage := 0
+	soft := false
 	full_progress := 0       // current percentage
 	full_progress_ticks := 0 // time of last increment
+	hard_progress := 0       // current percentage
+	hard_progress_ticks := 0 // time of last increment
 
 	// *** Ticker loop ***
 	var constraint_list []*TtInstance
@@ -302,12 +318,49 @@ tickloop:
 			}
 		}
 
+		//TODO: If COMPLETE fails (is timed out) and HARD_ONLY completes, the soft
+		// constraints should be started. If thee are non of these, or when these finish,
+		// the whole thing should stop.
+		// On Demo1, if HARD_ONLY finishes first, I get 0/888 constraints!
+
+		if hard_instance.ProcessingState == 1 && !soft {
+			// Cancel all other runs and return this instance as result.
+			current_instance = hard_instance
+			new_current_instance(current_instance)
+			base.Message.Printf("(TODO) *** All hard constraints OK @ %d ***\n", Ticks)
+			// Cancel everything in constraint list, then start adding
+			// soft constraints.
+			for _, instance := range constraint_list {
+				if instance.ProcessingState == 0 {
+					abort_instance(instance)
+				}
+				// Indicate that a queued instance is not to be started
+				instance.ProcessingState = 3
+			}
+			soft = true
+		} else {
+			p := hard_instance.TtData.Progress
+			if p > hard_progress {
+				hard_progress = p
+				hard_progress_ticks = Ticks
+				base.Message.Printf(
+					"(TODO) [%d] ? %s (%d @ %d)\n",
+					Ticks,
+					hard_instance.TtData.Description,
+					hard_progress,
+					hard_progress_ticks,
+				)
+			}
+		}
+
 		if Ticks == TIMEOUT {
 			base.Message.Printf(
-				"(TODO) [%d] TIMEOUT (%d @ %d)\n",
+				"(TODO) [%d] TIMEOUT (%d @ %d) (%d @ %d) \n",
 				Ticks,
 				full_progress,
 				full_progress_ticks,
+				hard_progress,
+				hard_progress_ticks,
 			)
 			break
 		}
@@ -316,11 +369,11 @@ tickloop:
 			continue
 		}
 
-		//TODO: Special treatment if there are no constraints to add?
+		// There should be no problem if there are no constraints to add.
 
 		if stage == 0 {
-			// During stage 0 only `full_instance` and `null_instance`
-			// (and perhaps hard_only_instance) are running.
+			// During stage 0 only `full_instance`, `hard_instance` and
+			// `null_instance` are running.
 			switch null_instance.ProcessingState {
 			case 0:
 				if null_instance.TtData.Ticks == null_instance.Timeout {
@@ -398,14 +451,32 @@ tickloop:
 		}
 		if len(constraint_list) == 0 {
 			// ... all current constraint trials finished.
-			// Start trials of remaining (hard) constraints.
+			// Start trials of remaining constraints, hard then soft.
 			CYCLE_TIMEOUT = max(CYCLE_TIMEOUT,
 				current_instance.TtData.Ticks) *
 				NEW_STAGE_TIMEOUT_FACTOR / 10
 			var n int
-			constraint_list, n = get_basic_constraints(current_instance)
+			constraint_list, n = get_basic_constraints(
+				current_instance, soft)
 			if n == 0 {
-				stage = -1
+				if soft {
+					stage = -1
+				} else {
+					soft = true
+					constraint_list, n = get_basic_constraints(
+						current_instance, soft)
+					if n == 0 {
+						stage = -1
+					} else {
+						stage++
+						// Queue instances for running
+						for _, bc := range constraint_list {
+							runqueue.add(bc)
+						}
+						base.Message.Printf(
+							"(TODO) [%d] Start soft constraints", Ticks)
+					}
+				}
 			} else {
 				stage++
 				// Queue instances for running
@@ -441,14 +512,16 @@ tickloop:
 							instance.TtData.Description,
 							instance.ConstraintType,
 							instance.Constraints[:nhalf],
-							timeout))
+							timeout,
+							soft))
 					split_instances = append(split_instances,
 						new_instance(
 							current_instance,
 							instance.TtData.Description,
 							instance.ConstraintType,
 							instance.Constraints[nhalf:],
-							timeout))
+							timeout,
+							soft))
 				} else if len(instance.Constraints) == 0 {
 					panic("Bug, expected constraint(s)")
 				}
@@ -466,7 +539,8 @@ tickloop:
 						instance.TtData.Description,
 						instance.ConstraintType,
 						instance.Constraints,
-						next_timeout)
+						next_timeout,
+						soft)
 					runqueue.add(instance)
 				}
 				new_constraint_list = append(
@@ -480,15 +554,12 @@ tickloop:
 		}
 	} // tickloop: end
 
-	//TODO: Consider also the possibility that there may be no (or only one)
-	// basic constraint types.
-
 	result := current_instance
 	ttdata := result.TtData
 
 	nn := 0
 	nall := 0
-	for i, clist := range result.HardConstraintEnabled {
+	for i, clist := range result.ConstraintEnabledMatrix {
 		n := 0
 		for _, b := range clist {
 			if b {
@@ -519,6 +590,7 @@ func new_instance(
 	constraint_type timetable.ConstraintType,
 	constraint_indexes []int,
 	timeout int,
+	soft bool,
 ) *TtInstance {
 	// Prepare instnace "name"
 	InstanceCounter++
@@ -529,18 +601,18 @@ func new_instance(
 	// Copy original TtData (shallow copy only!)
 	ttdata := new_ttdata(instance_0.TtData, descriptor)
 
-	// Make a deep copy of the hard constraint matrix
-	hcmat0 := instance_0.HardConstraintEnabled
-	hcmat := make([][]bool, len(hcmat0))
-	for i, c := range hcmat0 {
-		hcmat[i] = slices.Clone(c)
+	cmat0 := instance_0.ConstraintEnabledMatrix
+	// Make a deep copy of the constraint-enabled matrix
+	cmat := make([][]bool, len(cmat0))
+	for i, c := range cmat0 {
+		cmat[i] = slices.Clone(c)
 	}
 
 	// Make a new `TtInstance`
 	instance := &TtInstance{
-		Timeout:               timeout,
-		TtData:                ttdata,
-		HardConstraintEnabled: hcmat,
+		Timeout:                 timeout,
+		TtData:                  ttdata,
+		ConstraintEnabledMatrix: cmat,
 
 		// Base data for this instance:
 		BaseInstance:   instance_0,
@@ -555,19 +627,29 @@ func new_instance(
 	//fmt.Printf("§ENABLE %s: %v\n", constraint_type.String(), constraint_indexes)
 
 	// Mark the constraints in the matrix
-	cmap := instance.HardConstraintEnabled[constraint_type]
+	cmap := instance.ConstraintEnabledMatrix[constraint_type]
 	for _, i := range constraint_indexes {
 		cmap[i] = true
 	}
-	// Reconstruct the constraint list
-	newlist := []any{}
-	for i, c := range TtData_0.HardConstraints[constraint_type] {
-		if cmap[i] {
-			newlist = append(newlist, c)
-		}
-	}
-	instance.TtData.HardConstraints[constraint_type] = newlist
 
+	// Reconstruct the constraint list
+	if soft {
+		newlist := []any{}
+		for i, c := range TtData_0.SoftConstraints[constraint_type] {
+			if cmap[i] {
+				newlist = append(newlist, c)
+			}
+		}
+		instance.TtData.SoftConstraints[constraint_type] = newlist
+	} else {
+		newlist := []any{}
+		for i, c := range TtData_0.HardConstraints[constraint_type] {
+			if cmap[i] {
+				newlist = append(newlist, c)
+			}
+		}
+		instance.TtData.HardConstraints[constraint_type] = newlist
+	}
 	return instance
 }
 
@@ -587,15 +669,12 @@ func new_ttdata(
 
 	// Make a deeper copy of the constraints so that these can be
 	// switched on or off without affecting those in the original `TtData`.
-
-	// Make a copy of the constraints lists
 	hcmap := make(map[timetable.ConstraintType][]any,
 		len(ttdata_0.HardConstraints))
 	for k, v := range ttdata_0.HardConstraints {
 		hcmap[k] = slices.Clone(v)
 	}
 	ttdata.HardConstraints = hcmap
-
 	scmap := make(map[timetable.ConstraintType][]any,
 		len(ttdata_0.SoftConstraints))
 	for k, v := range ttdata_0.SoftConstraints {

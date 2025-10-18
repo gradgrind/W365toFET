@@ -73,7 +73,7 @@ func runFet(tt_data *timetable.TtData, testing bool) {
 				shared_data.WorkingDir, "_fet")+".fet"))
 		err = os.WriteFile(cfile, xmlitem, 0644)
 		if err != nil {
-			panic("Couldn't write fet output to: " + cfile)
+			panic("Couldn't write fet file to: " + cfile)
 		}
 	}
 
@@ -108,6 +108,7 @@ func runFet(tt_data *timetable.TtData, testing bool) {
 		room2index: room_indexes,
 		activities: len(shared_data.Activities),
 		ifile:      fetfile,
+		fetxml:     xmlitem,
 		workingdir: cwd,
 		odir:       odir,
 		logfile:    logfile,
@@ -177,6 +178,7 @@ type fetTtData struct {
 	activities int // total number of activities to place
 	room2index map[string]timetable.RoomIndex
 	ifile      string
+	fetxml     []byte
 	workingdir string
 	odir       string
 	logfile    string
@@ -245,8 +247,19 @@ exit:
 	}
 }
 
+// Gather the results of the given run.
 func ttResults(tt_data *timetable.TtData) []timetable.ActivityPlacement {
 	data := *tt_data.BackEndData.(*fetTtData)
+
+	// Write FET file at top level of working directory.
+	wdir := tt_data.SharedData.WorkingDir
+	fetfile := filepath.Join(wdir, "Result.fet")
+	err := os.WriteFile(fetfile, data.fetxml, 0644)
+	if err != nil {
+		panic("Couldn't write fet file to: " + fetfile)
+	}
+
+	// Get placements
 	xmlpath := filepath.Join(data.odir, "timetables", tt_data.Description,
 		tt_data.Description+"_activities.xml")
 	// Open the XML file

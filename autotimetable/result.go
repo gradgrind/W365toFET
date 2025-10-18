@@ -65,7 +65,7 @@ func new_current_instance(instance *TtInstance) {
 	constraints := []any{}
 	nall := 0 // count all constraints
 	unfulfilled := map[string][]int{}
-	for ctype, clist := range instance.HardConstraintEnabled {
+	for ctype, clist := range instance.ConstraintEnabledMatrix {
 		x := TtData_0.HardConstraints[timetable.ConstraintType(ctype)]
 		ulist := []int{}
 		for i, b := range clist {
