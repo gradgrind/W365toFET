@@ -63,7 +63,7 @@ func (rq *RunQueue) update_instances() {
 			t := instance.Timeout
 			if t == 0 {
 				// Check for lack of progress when there is no timeout
-				if (Ticks-ttdata.LastTime)*100 > UNCHANGED_LIMIT_PERCENT*Ticks {
+				if ttdata.LastTime < LAST_TIME_0 && ttdata.Ticks >= LAST_TIME_1 {
 					// Stop instance
 					abort_instance(instance)
 				}

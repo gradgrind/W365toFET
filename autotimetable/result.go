@@ -14,15 +14,18 @@ type RefTag struct {
 }
 
 type Result struct {
-	Time                 int
-	Teachers             []RefTag
-	Classes              []RefTag
-	Rooms                []RefTag
-	Activities           []timetable.NodeRef
-	Placements           []timetable.ActivityPlacement
-	DiscardedConstraints []any
-	Unfulfilled          map[string][]int
-	TotalConstraints     int
+	Time                       int
+	Teachers                   []RefTag
+	Classes                    []RefTag
+	Rooms                      []RefTag
+	Activities                 []timetable.NodeRef
+	Placements                 []timetable.ActivityPlacement
+	DiscardedHardConstraints   []any
+	UnfulfilledHardConstraints map[string][]int
+	TotalHardConstraints       int
+	DiscardedSoftConstraints   []any
+	UnfulfilledSoftConstraints map[string][]int
+	TotalSoftConstraints       int
 }
 
 // Get the result of the current instance as a `Result` structure.
@@ -61,35 +64,56 @@ func new_current_instance(instance *TtInstance) {
 		}
 	}
 
-	// The discarded constraints
-	constraints := []any{}
-	nall := 0 // count all constraints
-	unfulfilled := map[string][]int{}
+	// The discarded hard constraints
+	hconstraints := []any{}
+	hnall := 0 // count all constraints
+	hunfulfilled := map[string][]int{}
 	for ctype, clist := range instance.HardConstraintEnabledMatrix {
 		x := TtData_0.HardConstraints[timetable.ConstraintType(ctype)]
 		ulist := []int{}
 		for i, b := range clist {
 			if !b {
-				constraints = append(constraints, x[i])
+				hconstraints = append(hconstraints, x[i])
 				ulist = append(ulist, i)
 			}
 		}
 		if len(ulist) != 0 {
-			unfulfilled[timetable.ConstraintType(ctype).String()] = ulist
+			hunfulfilled[timetable.ConstraintType(ctype).String()] = ulist
 		}
-		nall += len(clist)
+		hnall += len(clist)
+	}
+	// The discarded soft constraints
+	sconstraints := []any{}
+	snall := 0 // count all constraints
+	sunfulfilled := map[string][]int{}
+	for ctype, clist := range instance.SoftConstraintEnabledMatrix {
+		x := TtData_0.SoftConstraints[timetable.ConstraintType(ctype)]
+		ulist := []int{}
+		for i, b := range clist {
+			if !b {
+				sconstraints = append(sconstraints, x[i])
+				ulist = append(ulist, i)
+			}
+		}
+		if len(ulist) != 0 {
+			sunfulfilled[timetable.ConstraintType(ctype).String()] = ulist
+		}
+		snall += len(clist)
 	}
 
 	LastResult = &Result{
-		Time:                 ttdata.Ticks,
-		Teachers:             t2ref,
-		Classes:              c2ref,
-		Rooms:                r2ref,
-		Activities:           a2ref,
-		Placements:           alist,
-		DiscardedConstraints: constraints,
-		Unfulfilled:          unfulfilled,
-		TotalConstraints:     nall,
+		Time:                       ttdata.Ticks,
+		Teachers:                   t2ref,
+		Classes:                    c2ref,
+		Rooms:                      r2ref,
+		Activities:                 a2ref,
+		Placements:                 alist,
+		DiscardedHardConstraints:   hconstraints,
+		UnfulfilledHardConstraints: hunfulfilled,
+		TotalHardConstraints:       hnall,
+		DiscardedSoftConstraints:   sconstraints,
+		UnfulfilledSoftConstraints: sunfulfilled,
+		TotalSoftConstraints:       snall,
 	}
 
 	if DEBUG {

@@ -32,9 +32,12 @@ var (
 
 	DEBUG bool
 
-	InstanceCounter         int = 0
-	LastResult              *Result
-	UNCHANGED_LIMIT_PERCENT int
+	InstanceCounter int = 0
+	LastResult      *Result
+	// Tick count limits for testing whether an instance with no timeout
+	// has got stuck. See `(*RunQueue).update_instances()` method.
+	LAST_TIME_0 int
+	LAST_TIME_1 int
 )
 
 func SetParameterDefault() {
@@ -43,7 +46,8 @@ func SetParameterDefault() {
 	NEW_BASE_TIMEOUT_FACTOR = 15 // => 1.5
 	STAGE_TIMEOUT_MIN = 5
 	NEW_STAGE_TIMEOUT_FACTOR = 15 // => 1.5
-	UNCHANGED_LIMIT_PERCENT = 90
+	LAST_TIME_0 = 5
+	LAST_TIME_1 = 50
 
 	DEBUG = false
 }
