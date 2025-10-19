@@ -17,15 +17,19 @@ type TtInstance struct {
 	TtData  *timetable.TtData // current (possibly modified) data
 
 	// Base data for this instance:
-	BaseInstance            *TtInstance
-	ConstraintType          timetable.ConstraintType
-	Constraints             []int    // individual constraint indexes
-	ConstraintEnabledMatrix [][]bool // [type][index] -> enabled
+	BaseInstance *TtInstance
+	// Matrix detailing inclusion state of each constraint in the base
+	// instance:
+	HardConstraintEnabledMatrix [][]bool // [type][index] -> enabled
+	SoftConstraintEnabledMatrix [][]bool // [type][index] -> enabled
+	// Constraints to be added in this instance:
+	ConstraintType timetable.ConstraintType
+	Constraints    []int // individual constraint indexes
 
 	// Run time
 	Stopped         bool // `abort_instance()` has been called on this instance
 	ProcessingState int  // -1: queued, 0: running, 1: success, 2: failure,
-	// there is also 3: cancelled before starting
+	// there is also 3: cancelled
 }
 
 type ManageRun struct {

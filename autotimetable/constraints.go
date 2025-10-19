@@ -26,12 +26,14 @@ func get_basic_constraints(instance0 *TtInstance, soft bool,
 ) ([]*TtInstance, int) {
 	instances := []*TtInstance{} // one instance per constraint type
 	nconstraints := 0            // count constraints
-	emap := instance0.ConstraintEnabledMatrix
-	var cmap map[timetable.ConstraintType][]any
+	var emap [][]bool
+	//var cmap map[timetable.ConstraintType][]any
 	if soft {
-		cmap = TtData_0.SoftConstraints
+		//cmap = TtData_0.SoftConstraints
+		emap = instance0.SoftConstraintEnabledMatrix
 	} else {
-		cmap = TtData_0.HardConstraints
+		//cmap = TtData_0.HardConstraints
+		emap = instance0.HardConstraintEnabledMatrix
 	}
 	for ctype := range timetable.LastConstraint {
 		blist := emap[ctype]
@@ -46,6 +48,7 @@ func get_basic_constraints(instance0 *TtInstance, soft bool,
 		}
 		nconstraints += len(cixlist)
 
+		/* ???
 		clist, ok := cmap[ctype]
 		if !ok {
 			continue
@@ -55,6 +58,8 @@ func get_basic_constraints(instance0 *TtInstance, soft bool,
 			//TODO: Bug?
 			panic("No constraints of type " + ctype.String())
 		}
+		*/
+
 		instance := new_instance(
 			instance0,
 			ctype.String(),

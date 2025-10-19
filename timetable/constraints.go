@@ -124,7 +124,6 @@ func (c *TtParallelActivities) IsHard() bool {
  * Some of the constraints are "preprocessed" to produce a more convenient
  * structure for their implementation.
  */
-//TODO: rooms, fixed and choices
 func (tt_data *TtData) preprocessConstraints() {
 	tt_shared_data := tt_data.SharedData
 	db := tt_shared_data.Db
@@ -315,8 +314,12 @@ func (tt_data *TtData) preprocessConstraints() {
 		}
 	}
 	// Now add these as new constraints to the constraint map
-	tt_data.HardConstraints[MinDaysBetween] = dd_hard
-	tt_data.SoftConstraints[MinDaysBetween] = dd_soft
+	if len(dd_hard) != 0 {
+		tt_data.HardConstraints[MinDaysBetween] = dd_hard
+	}
+	if len(dd_soft) != 0 {
+		tt_data.SoftConstraints[MinDaysBetween] = dd_soft
+	}
 }
 
 // Convert a `TtDaysBetween` constraint to be based on activities.
