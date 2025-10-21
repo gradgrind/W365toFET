@@ -213,7 +213,7 @@ func StartGeneration(tt_data_0 *timetable.TtData, TIMEOUT int) {
 	tt_data = new_ttdata(tt_data_0, "ONLY_BLOCKED_SLOTS")
 	null_instance := &TtInstance{
 		//Timeout: max(TIMEOUT/UNCONSTRAINED_TIMEOUT_FRACTION,
-		//	MIN_UNCONSTRAINED_TIMEOUT),
+		//  MIN_UNCONSTRAINED_TIMEOUT),
 		Timeout: CYCLE_TIMEOUT,
 
 		TtData: tt_data,
@@ -393,8 +393,6 @@ tickloop:
 				current_instance = null_instance
 				new_current_instance(current_instance)
 				// Start trials of single constraint types.
-				base.Message.Printf("(TODO) [%d] INITIAL CONSTRAINT-TYPES: %d\n",
-					Ticks, len(constraint_list))
 				// not continue!
 			default:
 				// The null instance failed.
@@ -723,22 +721,22 @@ func new_ttdata(
 // TODO:  Is this old bit fetching file names from db.ModuleData still
 // needed somehow?
 
-	fetfile := stempath
-	mapfile := stempath
-	thisdir := filepath.Dir(stempath)
-	moduleData := db.ModuleData
-	fetData, ok := moduleData["FetData"].(map[string]string)
-	if ok {
-		var f string
-		f, ok = fetData["FetFile"]
-		if ok {
-			fetfile = filepath.Join(thisdir, f)
-		}
-		f, ok = fetData["MapFile"]
-		if ok {
-			mapfile = filepath.Join(thisdir, f)
-		}
-	}
-	fetfile += ".fet"
-	mapfile += ".map"
+    fetfile := stempath
+    mapfile := stempath
+    thisdir := filepath.Dir(stempath)
+    moduleData := db.ModuleData
+    fetData, ok := moduleData["FetData"].(map[string]string)
+    if ok {
+        var f string
+        f, ok = fetData["FetFile"]
+        if ok {
+            fetfile = filepath.Join(thisdir, f)
+        }
+        f, ok = fetData["MapFile"]
+        if ok {
+            mapfile = filepath.Join(thisdir, f)
+        }
+    }
+    fetfile += ".fet"
+    mapfile += ".map"
 */
